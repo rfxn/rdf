@@ -1,0 +1,18 @@
+# Transient Claude Code state — not version controlled
+claude/projects/
+claude/worktrees/
+claude/cache/
+claude/backups/
+claude/debug/
+claude/downloads/
+claude/file-history/
+claude/history.jsonl
+claude/paste-cache/
+claude/plans/
+claude/plugins/
+claude/session-env/
+claude/shell-snapshots/
+claude/stats-cache.json
+claude/tasks/
+claude/telemetry/
+claude/todos/
