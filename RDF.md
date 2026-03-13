@@ -161,6 +161,10 @@ rdf/
 - Health checking (rdf-doctor) with drift detection
 - Deterministic state helper (rdf-state.sh)
 - Agent-driven state refresh (/refresh)
+- Pipeline optimization: test result registry, agent test lock protocol,
+  Challenger two-dispatch gate, library integration Sentinel, UX Reviewer
+  expanded triggers, pipeline metrics (JSONL + rolling averages),
+  EM context delegation via Scope work order assembly
 
 **Out of scope (deferred):**
 - Overwatch integration (separate project, separate plan)

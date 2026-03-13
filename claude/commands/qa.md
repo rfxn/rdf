@@ -177,6 +177,24 @@ For HIGH risk: flag as MUST-FIX regardless of stated equivalence.
 
 ### 4. Regression check
 
+**Read test lock first (single-read, no polling):** Check for
+`./work-output/test-lock-P<N>.md` (where N is the phase number). One read,
+one decision — no polling or sleep loops:
+
+- If `STATE=RUNNING` and `STARTED` < 15 min ago: another agent is running
+  tests. Proceed with your own test run but reuse the Docker image if
+  `DOCKER_IMAGE_ID` matches (skip image rebuild).
+- If `STATE=COMPLETE` and `COMMIT` matches current HEAD: tests finished.
+  Read the test registry for baseline data, then decide per tier policy below.
+- If `STATE=IDLE`, missing, or `STARTED` > 15 min ago (stale): claim
+  ownership — write `STATE=RUNNING` to `test-lock-P<N>.md`, then execute.
+
+After test completion, write `STATE=COMPLETE` to the lock file.
+
+**Read test registry:** Check for `./work-output/test-registry-P<N>.md`.
+If it exists, read the COMMIT, TIER, TOTAL, PASSED, FAILED, and
+DOCKER_IMAGE_ID fields.
+
 **Tier 2+ changes (multi-file core, install scripts, cross-OS logic, shared libs):**
 QA ALWAYS runs tests independently. Period. Do not trust SE's reported test results
 as a substitute for independent execution. The conditional policy applies to tier 0-1 only.
@@ -185,14 +203,23 @@ Rationale: Class C bugs (silent wrong-output) only surface via test execution.
 The time saved by trusting SE is less than the time lost to post-merge bug fixes.
 
 - [ ] Run test suite at recommended tier (use `/test-strategy` to determine)
-- [ ] Compare results against SE's reported test counts
+- [ ] **Docker image reuse:** If SE's DOCKER_IMAGE_ID in the registry or lock
+  file matches the current image, QA skips the image rebuild (~1-2 min saved)
+- [ ] Compare QA's independent results against the registry's TOTAL/PASSED
+  counts. Discrepancies (e.g., SE reported 1590, QA got 1589) trigger
+  investigation — document the discrepancy and root cause in the verdict
 - [ ] All tests must pass — any failure blocks merge
 
-**Tier 0-1 (docs-only, single-scope):** May still trust SE results if structural
-review is clean. But if any structural concern exists: run tests independently.
+**Tier 0-1 (docs-only, single-scope):** If test registry exists AND `COMMIT`
+matches current HEAD AND `TIER` >= required tier AND `FAILED` == 0: QA MAY
+trust SE results and skip re-run. But if any structural concern exists or
+COMMIT does not match: run tests independently.
 
-- [ ] Trust SE's reported test results (PASS count, tier, targets)
-- [ ] Verify SE's result file claims are plausible (tier matches change scope)
+- [ ] Verify registry COMMIT matches `git rev-parse HEAD`
+- [ ] Verify registry TIER >= required tier
+- [ ] Verify registry FAILED == 0
+- [ ] If all checks pass: trust registry results (document rationale in verdict)
+- [ ] If any check fails: run tests independently
 
 **Always check (regardless of test execution):**
 - [ ] No existing function signatures changed without caller updates

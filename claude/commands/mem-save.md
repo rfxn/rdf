@@ -47,7 +47,32 @@ have stale data:
 Do NOT rewrite architecture, conventions, or workflow sections.
 Do NOT touch the parent /root/admin/work/proj/CLAUDE.md.
 
-## 5. Summary
+## 5. Pipeline Metrics Harvest
+
+If `./work-output/pipeline-metrics.jsonl` exists, compute rolling averages
+over the last 10 entries and update (or create) the pipeline-metrics memory
+file at `<project-memory-dir>/pipeline-metrics.md`:
+
+```markdown
+---
+name: pipeline-metrics
+description: Rolling pipeline performance summary for trend analysis
+type: project
+---
+
+## Rolling Averages (last 10 sessions)
+- Avg pipeline: <N> min/phase
+- Fix cycle rate: <N>% (<X>/<Y> phases needed QA re-review)
+- Challenger dispatch rate: <N>% (<X>/<Y> eligible tier 2+)
+- Sentinel MUST-FIX/phase: <N>
+- Test registry trust rate: <N>% (<X>/<Y> QA runs used registry)
+- UX dispatch rate: <N>% (<X>/<Y> eligible)
+```
+
+Index this file in MEMORY.md if not already present. If fewer than 10 entries
+exist, compute averages over what is available and note "(<N> sessions)".
+
+## 6. Summary
 
 Print a concise diff summary:
 ```
@@ -57,9 +82,10 @@ MEMORY.md: <N> new commits recorded, <state changes>
 PLAN.md: <N> items updated (<completed> completed, <in_progress> in progress)
 AUDIT.md: <N> findings resolved (or "no AUDIT.md" / "no changes")
 CLAUDE.md: <sections updated> (or "no updates needed")
+Pipeline metrics: <N> entries, averages updated (or "no metrics file")
 ```
 
-## 6. MEMORY.md Size Check
+## 7. MEMORY.md Size Check
 
 After updating MEMORY.md, count the total lines. If >= 180 lines, add a
 warning to the summary output:

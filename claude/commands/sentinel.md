@@ -26,6 +26,36 @@ logic, shared libraries).
 Sentinel and QA run independently. QA completes Steps 1-5 before reading
 Sentinel output (at QA Step 5.5) -- this prevents anchoring.
 
+### Mode: LIBRARY_INTEGRATION
+
+Dispatched by EM after a shared library sync commit (when staged diff includes
+files matching `files/internals/tlog_lib.sh`, `files/internals/alert_lib.sh`,
+etc.). This is a lightweight 2-pass review focused on integration correctness
+-- the canonical library already passed full 4-pass review in its own release.
+
+**Scope:** Review only:
+- The `source` line and surrounding init code in the consumer
+- Any consumer functions that call the updated library's changed API
+- The consumer's test coverage of library-dependent paths
+
+**Passes (2 of 4):**
+1. **REGRESSION** -- Compare consumer's sourcing/init pattern against the
+   library's API changes. Check: source guard, init call arguments, variable
+   mappings, any deprecated function calls removed/renamed in the update.
+2. **SECURITY** -- Check for credential handling changes, temp file patterns,
+   or permission model changes that the consumer inherits from the library.
+
+Skip Anti-Slop and Performance passes (already done on the canonical library).
+
+**Output:** Write `./work-output/sentinel-lib-N.md` (same format as standard
+sentinel output, but only PASS_2_REGRESSION and PASS_3_SECURITY sections).
+
+**Work order fields EM provides:**
+```
+SENTINEL_MODE: LIBRARY_INTEGRATION
+LIBRARY_UPDATE: <lib_name> v<old> → v<new>
+```
+
 ---
 
 ## Input

@@ -54,8 +54,8 @@ For DRIFTED entries, show a brief `diff --stat` of the differences.
 If `$ARGUMENTS` contains `--sync`:
 
 For each DRIFTED library:
-1. `/usr/bin/cp` canonical → consumer path
-2. Set permissions per project convention (750 for LMD, 750 for APF/BFD)
+1. `/usr/bin/cp` canonical → consumer path (NEVER bare `cp` — aliased to `cp -i`, hangs on stdin=/dev/null)
+2. `/usr/bin/chmod 750` consumer path (NEVER bare `chmod` — use absolute path)
 3. Run `bash -n` on the copied file to verify syntax
 4. Run `sha256sum` to confirm match
 5. Report success/failure
@@ -63,6 +63,9 @@ For each DRIFTED library:
 After sync:
 - Do NOT commit — leave files staged for user review
 - Report: "Synced N libraries. Review with `git diff` before committing."
+- Note: "EM will dispatch Sentinel in LIBRARY_INTEGRATION mode (2-pass:
+  Regression + Security) when this sync is committed as part of a phase.
+  proj-lib-sync itself does not dispatch agents — EM handles that."
 
 If `--sync` not specified, end with:
 "Run `/proj-lib-sync --sync` to copy drifted libraries."

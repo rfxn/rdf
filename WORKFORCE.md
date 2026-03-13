@@ -647,13 +647,21 @@ cd <canonical-lib>               # Work in canonical repo
 ```
 work-output/
 ├── current-phase.md          # EM -> SE: work order with phase details
+├── implementation-plan.md    # SE -> Challenger: plan-only mode output
 ├── plan-validation-N.md      # Planner -> EM: ref validation (or skipped)
+├── scope-workorder-P<N>.md   # Scope -> EM: work order draft + context
+├── challenge-N.md            # Challenger -> SE: pre-impl findings
 ├── phase-N-status.md         # SE -> EM: progress updates (in-flight)
 ├── phase-N-result.md         # SE -> EM: completion report
+├── test-registry-P<N>.md     # SE -> QA: test results (commit, counts, Docker ID)
+├── test-lock-P<N>.md         # SE/QA/UAT: test execution state coordination
 ├── sentinel-N.md             # Sentinel -> QA: 4-pass findings
+├── sentinel-lib-N.md         # Sentinel -> QA: 2-pass library integration findings
+├── ux-review-N.md            # UX Reviewer -> SE: design/output review
 ├── qa-phase-N-status.md      # QA -> EM: review progress (LITE or FULL mode)
 ├── qa-phase-N-verdict.md     # QA -> EM: verdict (QA_MODE: LITE|FULL)
-└── uat-phase-N-verdict.md    # UAT -> EM: acceptance (tier 2+ only)
+├── uat-phase-N-verdict.md    # UAT -> EM: acceptance (tier 2+ only)
+└── pipeline-metrics.jsonl    # EM: append-only phase completion metrics
 
 audit-output/
 ├── agent1.md ... agent15.md  # Domain agent raw findings
@@ -704,6 +712,58 @@ With:     SE(4) ── QA(4) ─────────────────
                    SE(5) ── QA(5) ─────────
 ```
 
+### Test Result Registry
+
+SE writes `test-registry-P<N>.md` after test execution with commit hash, tier,
+pass/fail counts, Docker image ID. QA reads this before running tests:
+- **Tier 0-1:** QA may trust registry if COMMIT matches, TIER >=, FAILED == 0
+- **Tier 2+:** QA always runs independently but reuses Docker images and
+  compares baseline counts from the registry
+
+### Agent Test Lock Protocol
+
+`test-lock-P<N>.md` with STATE (IDLE/RUNNING/COMPLETE) enables passive
+coordination between SE, QA, and UAT. Single-read, no polling — agents read
+the lock once, decide whether to proceed or reuse results, and act. Primary
+savings come from Docker image reuse, not from skipping test execution.
+
+### Challenger Gate (Two-Dispatch Pattern)
+
+For tier 2+ changes, EM dispatches SE in `plan-only` mode (Steps 1-2 only),
+then dispatches Challenger to review the implementation plan, then re-dispatches
+SE from Step 3 with challenge findings. Mandatory checkpoint in work orders:
+`CHALLENGER: DISPATCHED | SKIPPED (<code>)`.
+
+### Library Integration Sentinel
+
+When a shared library sync introduces updated files in a consumer project,
+EM dispatches Sentinel in LIBRARY_INTEGRATION mode — a lightweight 2-pass
+review (Regression + Security) focused on sourcing/init patterns, API
+mapping, and credential handling. Skips Anti-Slop and Performance (already
+done on the canonical library release).
+
+### UX Reviewer Expanded Triggers
+
+UX Reviewer dispatches automatically in DESIGN_REVIEW mode (pre-implementation)
+when phases touch: alert templates, display formatting, machine-readable output,
+or when PLAN description mentions display/format/template/output/email keywords.
+Shifts template iteration from post-impl (3-5 commits) to pre-impl (1-2).
+
+### Pipeline Metrics
+
+EM appends one JSONL line to `pipeline-metrics.jsonl` at each successful merge.
+`/mem-save` harvests the JSONL into rolling averages stored in the project's
+`pipeline-metrics.md` memory file. Tracks: fix cycle rate, Challenger dispatch
+rate, Sentinel effectiveness, test registry trust rate, UX dispatch rate.
+
+### EM Context Delegation
+
+Scope agent assembles work order drafts (`scope-workorder-P<N>.md`) as the
+default path for standard phases. EM reads the ~2-3K token structured summary
+instead of doing ~15-20K tokens of raw code search, sustaining 5-8 phases per
+session vs 2-3. EM retains full IC authority and steps in directly when
+judgment, speed, or authority is needed.
+
 ---
 
 ## 8. Quick Reference Card
@@ -728,4 +788,4 @@ INFRA                                              TESTING
 /reload
 ```
 
-**Total: 9 personas + 15 audit agents + 30 workflow commands = 54 commands**
+**Total: 9 personas + 15 audit agents + 30 workflow commands = 54 commands + pipeline optimization protocols**

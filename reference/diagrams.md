@@ -23,22 +23,25 @@ flowchart TD
         EM[EM — Engineering Manager]
     end
 
-    EM -->|tier 2+| Scope
+    EM -->|tier 2+: Scope workorder| Scope
     EM -->|tier 0-1| SE
 
     subgraph Pre-Implementation
-        Scope[Scope — Research & Validation]
-        Scope --> Challenger
+        Scope[Scope — Work Order Assembly]
+        Scope -->|plan-only dispatch| SEPlan[SE — Plan Only]
+        SEPlan -->|implementation-plan.md| Challenger
         Challenger{{Challenger — Pre-Impl Adversary}}
     end
 
     Challenger -->|challenge findings| SE
-    Scope -->|validation| SE
+    Scope -->|scope-workorder| EM
 
     subgraph Implementation
         SE[SE — Senior Engineer]
+        Registry[(test-registry-P N .md\ntest-lock-P N .md)]
     end
 
+    SE -->|writes| Registry
     SE -->|result| QAGate
 
     subgraph Verification
@@ -47,6 +50,7 @@ flowchart TD
         Sentinel{{Sentinel — 4-Pass Review}}
     end
 
+    Registry -->|reads: Docker reuse + baseline| QAGate
     SE -->|tier 2+ parallel| Sentinel
     Sentinel -->|findings| QAGate
 
@@ -70,6 +74,7 @@ flowchart TD
     style User fill:#4a5568,color:#fff,stroke:#2d3748
     style Merge fill:#276749,color:#fff,stroke:#22543d
     style SE fill:#553c9a,color:#fff,stroke:#44337a
+    style SEPlan fill:#553c9a,color:#fff,stroke:#44337a
     style EM fill:#2b6cb0,color:#fff,stroke:#2c5282
     style QAGate fill:#975a16,color:#fff,stroke:#744210
     style Sentinel fill:#9b2c2c,color:#fff,stroke:#742a2a
@@ -78,6 +83,7 @@ flowchart TD
     style Scope fill:#2b6cb0,color:#fff,stroke:#2c5282
     style UX fill:#2b6cb0,color:#fff,stroke:#2c5282
     style UAT fill:#2b6cb0,color:#fff,stroke:#2c5282
+    style Registry fill:#276749,color:#fff,stroke:#22543d
 ```
 
 ---
@@ -121,11 +127,15 @@ flowchart LR
 
 ---
 
-## 3. Sentinel 4-Pass Review
+## 3. Sentinel Review (Standard + Library Integration)
 
 ```mermaid
 flowchart TD
-    Input([SE Result + Full Diff]) --> Gather[Gather Context]
+    Input([SE Result + Full Diff]) --> Mode{Mode?}
+
+    Mode -->|Standard 4-pass| Gather[Gather Context]
+    Mode -->|LIBRARY_INTEGRATION| GatherLib[Gather Context\nfocus: source/init/API]
+
     Gather --> P1 & P2 & P3 & P4
 
     P1[Pass 1\nAnti-Slop]
@@ -134,24 +144,36 @@ flowchart TD
     P4[Pass 4\nPerformance]
 
     P1 & P2 & P3 & P4 --> Output([sentinel-N.md\nmax 20 findings])
+
+    GatherLib --> LP2[Pass 2\nRegression\nsource guard, init, API mapping]
+    GatherLib --> LP3[Pass 3\nSecurity\ncredentials, permissions]
+
+    LP2 & LP3 --> LibOutput([sentinel-lib-N.md])
+
     Output --> QA([QA reads at Step 5.5])
+    LibOutput --> QA
 
     style P1 fill:#9b2c2c,color:#fff
     style P2 fill:#9b2c2c,color:#fff
     style P3 fill:#9b2c2c,color:#fff
     style P4 fill:#9b2c2c,color:#fff
+    style LP2 fill:#9b2c2c,color:#fff
+    style LP3 fill:#9b2c2c,color:#fff
     style Input fill:#4a5568,color:#fff
     style Output fill:#975a16,color:#fff
+    style LibOutput fill:#975a16,color:#fff
     style QA fill:#975a16,color:#fff
     style Gather fill:#4a5568,color:#fff
+    style GatherLib fill:#4a5568,color:#fff
+    style Mode fill:#2b6cb0,color:#fff
 ```
 
-| Pass | Lens | Default Severity |
-|------|------|-----------------|
-| Anti-Slop | Naming lies, copy-paste, premature abstraction | SHOULD-FIX |
-| Regression | Behavioral continuity, caller contracts, exit codes | MUST-FIX |
-| Security | Injection, credentials, temp files, eval | MUST-FIX |
-| Performance | O(N²), process spawning, redundant I/O | SHOULD-FIX |
+| Pass | Lens | Default Severity | Library Integration |
+|------|------|-----------------|---------------------|
+| Anti-Slop | Naming lies, copy-paste, premature abstraction | SHOULD-FIX | Skipped |
+| Regression | Behavioral continuity, caller contracts, exit codes | MUST-FIX | Included |
+| Security | Injection, credentials, temp files, eval | MUST-FIX | Included |
+| Performance | O(N²), process spawning, redundant I/O | SHOULD-FIX | Skipped |
 
 ---
 
@@ -340,20 +362,40 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant EM
+    participant Scope
+    participant Challenger
     participant SE
     participant Sentinel
     participant QA
     participant UAT
 
+    EM->>Scope: workorder mode (phase N)
+    activate Scope
+    Scope->>EM: scope-workorder-P<N>.md
+    deactivate Scope
+
+    opt Tier 2+ Challenger Gate
+        EM->>SE: plan-only mode
+        activate SE
+        SE->>EM: implementation-plan.md (PLAN_COMPLETE)
+        deactivate SE
+        EM->>Challenger: review plan
+        activate Challenger
+        Challenger->>EM: challenge-N.md
+        deactivate Challenger
+    end
+
     EM->>SE: current-phase.md (work order)
     activate SE
     SE-->>SE: phase-N-status.md (progress)
+    SE-->>SE: test-registry-P<N>.md (after tests)
     SE->>EM: phase-N-result.md
     deactivate SE
 
     par Parallel verification
         EM->>QA: dispatch review
         activate QA
+        Note over QA: reads test-registry-P<N>.md
         EM->>Sentinel: dispatch review
         activate Sentinel
         Sentinel->>QA: sentinel-N.md (findings)
@@ -371,4 +413,5 @@ sequenceDiagram
     end
 
     EM-->>EM: merge decision
+    EM-->>EM: append pipeline-metrics.jsonl
 ```

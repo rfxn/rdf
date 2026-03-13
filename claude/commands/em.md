@@ -303,7 +303,13 @@ authoritative scope and skip PO dispatch -- the intake is already done.
 - Verify all prerequisite phases are COMPLETED/DONE
 - If prerequisites unmet, report and stop
 
-### 3. Dispatch Scope Agent (pre-validation) — with skip conditions
+### 3. Dispatch Scope Agent — with skip conditions and delegation mode
+
+**Default path: delegate context gathering to Scope (workorder mode).**
+EM dispatches Scope as an isolated subagent to do the heavy code research.
+Scope's tool results fill Scope's context window (discarded after), not EM's.
+The ~2-3K structured summary is all that returns to EM. This preserves EM's
+context budget for multi-phase sessions.
 
 **Skip Scope when ALL of these are true:**
 - Phase creates only new files (no modification of existing files listed in PLAN)
@@ -321,8 +327,29 @@ authoritative scope and skip PO dispatch -- the intake is already done.
 **If skipping Scope:** Note `SCOPE: SKIPPED (<reason>)` in the work order
 CONTEXT section and proceed directly to step 4.
 
-**If running Scope:** Dispatch the Scope agent to validate phase references
-and assess impact:
+**Scope dispatch mode selection:**
+
+- **Workorder mode (default for standard phases):** Scope does full context
+  gathering AND assembles a work order draft. EM reviews the draft and
+  dispatches SE with it. Saves ~12-17K tokens per phase in EM's context.
+- **Validate mode (lightweight):** Scope validates references only. Used when
+  EM wants a quick check without full work order assembly (e.g., tier 0-1
+  phases where EM can assemble the work order inline with minimal cost).
+
+**Workorder mode dispatch:**
+- Use the Agent tool to spawn Scope (`rfxn-scope` subagent if available,
+  otherwise `general-purpose` with model sonnet)
+- Prompt: "You are the Scoping and Research Agent. Read
+  `/root/.claude/commands/scope.md` for your full protocol. Run
+  `workorder <N>` for project at `<project-path>`. Read project PLAN file at
+  `<plan-path>`. Create `./work-output/` if needed via mkdir. Write your
+  work order draft to `./work-output/scope-workorder-P<N>.md`."
+- Read `./work-output/scope-workorder-P<N>.md` when the agent completes
+- Review TIER_RECOMMENDATION, CHALLENGER_RECOMMENDED, UX_REVIEW_RECOMMENDED
+- Use the DRAFT_WORK_ORDER as the basis for the work order in Step 4
+  (EM may supplement or override based on judgment)
+
+**Validate mode dispatch (alternative):**
 - Use the Agent tool to spawn Scope (`rfxn-scope` subagent if available,
   otherwise `general-purpose` with model sonnet)
 - Prompt: "You are the Scoping and Research Agent. Read
@@ -332,7 +359,9 @@ and assess impact:
   validation report to `./work-output/scope-validation-N.md`."
 - Read the validation report when the agent completes
 
-**If VALIDATION_STATUS: INVALID:**
+**Processing Scope output (both modes):**
+
+**If VALIDATION_STATUS: INVALID (or Scope reports critical missing refs):**
 - Print stale references and missing files/functions
 - Report to user: "Phase N references are invalid — plan needs updating"
 - STOP — do not dispatch SE
@@ -340,28 +369,48 @@ and assess impact:
 **If VALIDATION_STATUS: STALE:**
 - Print stale references
 - Include them in the SE work order CONTEXT section so SE can adapt
-- Proceed to step 4
+- Proceed to step 3.5 (Challenger) or step 4
 
 **If VALIDATION_STATUS: VALID:**
 - Proceed to step 3.5 (Challenger) or step 4
 - Include any CONTEXT_NOTES in the SE work order
 
-### 3.5 Dispatch Challenger (pre-implementation, tier 2+ only)
+**EM retains full IC authority.** EM CAN and SHOULD run git commands, grep
+code, read files, and intervene directly when judgment calls for it. The
+delegation to Scope is the default path for efficiency, not a restriction.
+Step in directly for: triage/redirect, quick tier 0-1 phases, incident
+response, cross-project judgment calls, fix cycles where EM can read the
+finding and code directly.
+
+### 3.5 Challenger Gate (pre-implementation, tier 2+ only — two-dispatch pattern)
 
 **Skip Challenger when ANY of these are true:**
 - Scope was skipped for this phase (docs-only, new-file-only, or recently-updated PLAN)
 - Change is tier 0-1 (docs-only, single-scope)
+- User specifies `--no-challenger`
+- Phase is identical in pattern to a prior phase that already has a
+  `challenge-N.md` on file (cite the prior challenge file)
 
 **Dispatch Challenger when ALL of these are true:**
 - Phase modifies existing core logic files
 - Tier is 2+ (multi-file core, install scripts, cross-OS logic, shared libs)
 - Scope was not skipped
 
-**If dispatching Challenger:**
-- First, ensure SE has completed Step 2 (implementation-plan.md). If SE has not
-  yet been dispatched, dispatch SE first with instructions to complete Step 2 only,
-  then pause for Challenger review. Alternatively, include Challenger dispatch in
-  the work order and have SE pause after Step 2 to wait for challenge findings.
+**Two-dispatch flow (replaces the fragile "pause SE" pattern):**
+
+**Step A — Dispatch SE in plan-only mode (Steps 1-2 only):**
+- Use the Agent tool to spawn SE (`rfxn-se` subagent if available, otherwise
+  `general-purpose` with model opus)
+- Prompt: "You are the Senior Engineer. Read `/root/.claude/commands/se.md` for
+  your full protocol. Execute in **plan-only** mode. Read project CLAUDE.md and
+  parent CLAUDE.md at `/root/admin/work/proj/CLAUDE.md`. Create
+  `./work-output/` if needed. Read the work order at
+  `./work-output/current-phase.md`. Execute Steps 1-2 only. Write your
+  implementation plan to `./work-output/implementation-plan.md`. Set STATUS:
+  PLAN_COMPLETE in `./work-output/phase-N-status.md`. Then STOP."
+- Read `./work-output/implementation-plan.md` when the agent completes
+
+**Step B — Dispatch Challenger to review the plan:**
 - Use the Agent tool to spawn Challenger (`rfxn-challenger` subagent if available,
   otherwise `general-purpose` with model sonnet)
 - Prompt: "You are the Challenger agent. Read `/root/.claude/commands/challenger.md`
@@ -372,14 +421,28 @@ and assess impact:
   will be modified. Read MEMORY.md for lessons learned. Create `./work-output/`
   if needed. Write your findings to `./work-output/challenge-N.md`."
 - Read `./work-output/challenge-N.md` when the agent completes
-- If Challenger returns BLOCKING_CONCERNS: include them in SE's work order and
-  require SE to address them before Step 3 proceeds
-- If Challenger returns only ADVISORY_CONCERNS: include in SE's work order
-  CONTEXT as CHALLENGE_FINDINGS for SE to consider
-- If Challenger returns no concerns: note "CHALLENGER: NO_CONCERNS" in work order
 
-**If skipping Challenger:** Note `CHALLENGER: SKIPPED (<reason>)` in the
-work order CONTEXT section.
+**Step C — Re-dispatch SE for full execution (Step 3 onward):**
+- Update the work order with CHALLENGE_FINDINGS from Step B
+- If Challenger returns BLOCKING_CONCERNS: include them in the work order and
+  require SE to address each one before Step 3 proceeds
+- If Challenger returns only ADVISORY_CONCERNS: include in CHALLENGE_FINDINGS
+  for SE to consider (may override with justification)
+- If Challenger returns no concerns: note "CHALLENGER: NO_CONCERNS"
+- Dispatch SE in standard `workorder` mode — SE reads the updated work order
+  and skips Steps 1-2 (already done in plan-only), beginning at Step 3
+
+**Mandatory checkpoint — record in EVERY tier 2+ work order:**
+```
+CHALLENGER: DISPATCHED (challenge-N.md) | SKIPPED (<code>)
+```
+Skip codes: `tier-0-1`, `new-files-only`, `user-bypass`, `docs-only`,
+`identical-pattern` (cite prior challenge-N.md). Undocumented skips for
+tier 2+ are protocol violations.
+
+**If skipping Challenger:** Note `CHALLENGER: SKIPPED (<code>)` in the
+work order CONTEXT section and proceed directly to Step 4 (create work order)
+then Step 5 (dispatch SE in standard mode).
 
 ### 4. Create work order
 Create `./work-output/` directory in the project root if it does not exist.
@@ -416,6 +479,9 @@ CROSS_PROJECT_REFERENCES:
  pkg_backup_exists, _pkg_systemd_unit_dir() for sed targets, BK_LAST for
  importconf. Review their install.sh before implementing.">
 
+LIBRARY_UPDATE: <none | lib_name v<old> → v<new>>
+SENTINEL_MODE: <standard | LIBRARY_INTEGRATION>
+
 CHALLENGE_FINDINGS:
 <Challenger output if dispatched, or SKIPPED with reason if not.
  If BLOCKING_CONCERNS exist, SE must address each one before Step 3.
@@ -434,7 +500,14 @@ Use the Agent tool to spawn the Senior Engineer (`rfxn-se` subagent):
   `./work-output/phase-result.md` when done."
 
 ### 6. Process result
-Read `./work-output/phase-result.md` when the agent completes.
+Read `./work-output/phase-result.md` (or `./work-output/phase-N-status.md` for
+plan-only dispatch) when the agent completes.
+
+**If STATUS: PLAN_COMPLETE:**
+- This is from a plan-only dispatch (Step 3.5, Step A). SE completed Steps 1-2
+  and wrote `./work-output/implementation-plan.md`.
+- Proceed to Step 3.5 Step B (Challenger dispatch) — do NOT go to verification gate.
+- After Challenger completes, re-dispatch SE at Step 3 (Step 3.5 Step C).
 
 **If STATUS: COMPLETE:**
 - Proceed to step 7 (verification gate)
@@ -496,6 +569,20 @@ Dispatch UX Reviewer when the phase includes ANY of:
 - Email or notification template changes (alert templates, report emails)
 - Modifications to help(), man pages, or README sections
 - New or modified error messages
+- Alert template changes (files/alert/*.tpl or equivalent)
+- Display formatting changes (table columns, progress bars, summary lines)
+- Machine-readable output changes (JSON/CSV schema, field additions)
+- Any phase where the PLAN description mentions "display", "format",
+  "template", "output", "email", "notification", or "UX"
+
+**DESIGN_REVIEW as default mode for template work:** When the phase
+description or changed files include template/format/output patterns,
+dispatch UX Reviewer in DESIGN_REVIEW mode BEFORE SE starts Step 3
+(after SE's plan-only dispatch or after implementation-plan.md is
+written). UX Reviewer reviews the proposed format against the Design
+System Reference and returns feedback that SE incorporates. This shifts
+template iteration from post-impl (3-5 commits to converge) to pre-impl
+(1-2 commits).
 
 Skip UX Reviewer when ALL of:
 - Phase is pure logic with no output surface changes
@@ -547,6 +634,25 @@ Sentinel dispatch (tier 2+ only, parallel with QA):
   at `<project-path>`. Read the SE result at `./work-output/phase-result.md`
   for context. Create `./work-output/` if needed via `mkdir -p ./work-output`.
   Write your findings to `./work-output/sentinel-N.md`."
+
+**Library Integration Sentinel dispatch (after library sync commits):**
+
+When SE's diff includes files matching shared library patterns
+(`files/internals/tlog_lib.sh`, `files/internals/alert_lib.sh`,
+`files/internals/elog_lib.sh`, `files/internals/pkg_lib.sh`), dispatch
+Sentinel in LIBRARY_INTEGRATION mode instead of standard 4-pass mode.
+
+- Prompt: "You are the Sentinel agent. Read `/root/.claude/commands/sentinel.md`
+  for your full protocol, specifically the LIBRARY_INTEGRATION mode. Read
+  `/root/admin/work/proj/CLAUDE.md` for project conventions. Run 2-pass
+  LIBRARY_INTEGRATION review (Regression + Security only) for phase <N> in
+  project at `<project-path>`. Library update: <lib_name> v<old> → v<new>.
+  Focus on sourcing/init patterns, API mapping, and credential handling.
+  Create `./work-output/` if needed. Write findings to
+  `./work-output/sentinel-lib-N.md`."
+
+This is lighter than full Sentinel (2 passes vs 4) because the canonical
+library already passed full review in its own release.
 
 Dispatch QA, Sentinel, and UX Reviewer (if triggered) simultaneously (all as
 Agent tool calls in the same message). QA reads Sentinel output at Step 5.5
@@ -610,6 +716,20 @@ advisory and do not block merge.
 | REJECTED | any | not dispatched | Phase BLOCKED -- print full findings, propose resolution |
 
 **Post-merge actions (on MERGE_READY verdict):**
+- Append one JSONL line to `./work-output/pipeline-metrics.jsonl`:
+  ```json
+  {"date":"<ISO date>","phase":<N>,"project":"<name>","tier":<0-4>,
+   "agents":["SE","QA",...],
+   "challenger":<true|false>,"challenger_blocking":<count>,
+   "sentinel_must":<count>,"sentinel_should":<count>,
+   "qa_verdict":"<verdict>","qa_cycles":<count>,"qa_must":<count>,"qa_should":<count>,
+   "uat_verdict":"<verdict|N/A>","uat_findings":<count>,
+   "ux_dispatched":<true|false>,
+   "test_registry_trusted":<true|false>,
+   "pipeline_seconds":<elapsed>,"commits":<count>}
+  ```
+  This fires only on successful merge. Incomplete phases (CHANGES_REQUESTED,
+  REJECTED) are not recorded.
 - Run `/mem-save` in the project directory
 - Update PLAN file: mark phase as DONE with commit hash
 - Print completion summary (include QA mode used: lite vs full, and UAT verdict if dispatched)
@@ -843,12 +963,7 @@ For each completed phase, dispatch QA and Sentinel (tier 2+):
 
 **Sentinel dispatch (tier 2+ phases, parallel with QA):**
 - Use `rfxn-sentinel` subagent if available, otherwise `general-purpose` with model opus
-- Prompt: "You are the Sentinel agent. Read `/root/.claude/commands/sentinel.md`
-  for your full protocol. Read `/root/admin/work/proj/CLAUDE.md` for project
-  conventions. Run four adversarial passes on the diff for phase <N> in project
-  at `<project-path>`. Read the SE result at `./work-output/phase-N-result.md`
-  for context. Create `./work-output/` if needed via `mkdir -p ./work-output`.
-  Write your findings to `./work-output/sentinel-N.md`."
+- Same prompt as Phase mode Step 7b Sentinel dispatch, substituting `phase-N-result.md` for `phase-result.md`.
 
 **UX Reviewer dispatch (trigger-based, parallel with QA — same as Phase mode):**
 If the phase touches user-facing output surfaces, dispatch UX Reviewer in
@@ -1006,7 +1121,10 @@ This directory is git-excluded.
 - `qa-phase-N-verdict.md` — QA verdict
 - `uat-phase-N-status.md` — UAT step progress
 - `uat-phase-N-verdict.md` — UAT verdict
-- `implementation-plan.md` — SE implementation notes
+- `implementation-plan.md` — SE implementation notes (always written in plan-only mode)
+- `test-registry-P<N>.md` — SE/QA test result registry (phase-scoped)
+- `test-lock-P<N>.md` — test execution state coordination (phase-scoped)
+- `scope-workorder-P<N>.md` — Scope agent work order draft (when delegating context)
 
 **Parallel mode files** (numbered to prevent collisions):
 - `scope-validation-parallel.md` — Scope agent overlap matrix and validation
@@ -1081,26 +1199,17 @@ project that has a `.git/` directory. Do NOT use `.gitignore`.
   QA reads Sentinel output at Step 5.5 only (after completing Steps 1-5
   independently). If Sentinel has unaddressed MUST-FIX findings, EM flags
   before merge.
-- **UX Reviewer dispatch policy (trigger-based, all tiers):**
-  - Dispatch when phase touches user-facing output surfaces (CLI output format,
-    email/notification templates, help(), man pages, README, error messages)
-  - Skip when phase is pure logic, test-only, or config-only with no output
-    surface changes
-  - `--no-ux`: user override that bypasses UX Reviewer dispatch entirely.
-    Note reason in session log.
-  - UX Reviewer MUST-FIX elevates to SE rework (same as QA CHANGES_REQUESTED).
-    UX Reviewer VERDICT: REVISE blocks merge until MUST-FIX findings are
-    addressed.
-  - UX Reviewer runs in parallel with QA (and Sentinel for tier 2+). It does
-    not block QA dispatch and QA does not read UX findings.
-- **UAT dispatch policy (tiered):**
-  - Tier 0-1: UAT is explicit-only. Only run UAT when the user explicitly
-    requests it (e.g., "run UAT", "with UAT", `/uat`).
-  - Tier 2+: UAT is AUTO-DISPATCHED after QA returns APPROVED. UAT REJECTED
-    blocks merge (dispatch SE for UAT fixes, re-run QA + UAT). UAT CONCERNS
-    is advisory (merge with note, findings logged for follow-up).
-  - `--no-uat`: user override that bypasses UAT dispatch for a tier 2+ phase.
-    Note reason in session log.
+- **UX Reviewer dispatch policy (trigger-based, all tiers):** Dispatch when phase
+  touches output surfaces (CLI format, email/notification templates, help(), man pages,
+  README, error messages, alert templates, display formatting, machine-readable output,
+  or PLAN description mentions display/format/template/output/email/notification/UX);
+  skip for pure logic/test/config-only changes; `--no-ux` bypasses.
+  **DESIGN_REVIEW mode:** default for template/format work — dispatched pre-implementation
+  (after SE plan-only or implementation-plan.md, before SE Step 3).
+  **OUTPUT_REVIEW mode:** post-implementation — dispatched parallel with QA.
+  VERDICT: REVISE blocks merge (MUST-FIX elevates to SE rework).
+- **UAT dispatch policy:** Tier 0-1: explicit-only. Tier 2+: AUTO-DISPATCHED after QA
+  APPROVED; REJECTED blocks merge; CONCERNS advisory. `--no-uat` bypasses with note.
 - QA-lite escalation: if QA-lite sets `ESCALATION_RECOMMENDED: true`, re-dispatch as full gate
 - QA re-dispatch loop: CHANGES_REQUESTED -> SE fix -> QA re-review (max 3 cycles)
 - After 3 QA cycles without APPROVED, escalate to BLOCKED with full findings list
@@ -1108,13 +1217,14 @@ project that has a `.git/` directory. Do NOT use `.gitignore`.
   Tier 0-1: QA-lite trusts SE's reported test results (no independent execution).
 
 ### Scope agent rules
-- Scope runs BEFORE SE dispatch in `phase` mode (step 3) — with skip conditions
-- Scope runs BEFORE overlap check in `parallel` mode (step 2) — never skipped
 - Scope is skipped for: `batch` mode, `audit` mode, `release` mode, ad-hoc text
-- Scope skip conditions in `phase` mode: new-file-only phases, docs/test-only phases,
-  recently-updated PLAN (last 3 commits). See step 3 for full criteria.
-- Scope is NEVER skipped when phase modifies core logic or has cross-project deps
+- **Default dispatch mode: workorder** — Scope assembles work order draft, EM reviews
+  and dispatches. Saves ~12-17K tokens per phase in EM's context window.
+- **Validate mode:** For quick checks (tier 0-1) or when EM prefers to assemble
+  the work order inline
 - INVALID validation status blocks SE dispatch — plan needs updating
 - STALE validation status proceeds with warnings in SE work order context
 - Scope can also be invoked standalone via `/scope` for impact analysis, research,
   or feature decomposition — these modes do not require EM dispatch
+- Scope is always an isolated subagent — its tool results fill its own context
+  window, not EM's. Only the structured output file returns to EM.

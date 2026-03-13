@@ -86,10 +86,34 @@ If the work order contains a `SCOPE_LOCK` section:
 
 - **`workorder`** — read and execute `./work-output/current-phase.md` (sequential)
   or detect `./work-output/phase-N-workorder.md` (parallel)
+- **`plan-only`** — execute Steps 1-2 only, write implementation plan, then STOP.
+  Used by EM for the Challenger two-dispatch pattern (tier 2+). Write
+  `./work-output/implementation-plan.md` and set STATUS: PLAN_COMPLETE in the
+  status file. Do NOT proceed to Step 3 (Implement).
 - **Number (e.g., `3`, `8`)** — execute that phase from the project's PLAN file
 - **Free text** — treat as an ad-hoc work item, execute using the same protocol
 - **No args** — read PLAN.md + MEMORY.md, identify next pending phase, confirm
   with user before executing
+
+---
+
+## Mode: Plan Only
+
+If `$ARGUMENTS` is `plan-only`:
+
+1. Execute Steps 1-2 of the Phase Execution Protocol (Understand Context + Plan
+   Implementation)
+2. Write the implementation plan to `./work-output/implementation-plan.md`
+   (always, regardless of file count — plan-only mode is specifically for
+   Challenger review)
+3. Update the status file: set STATUS: PLAN_COMPLETE
+4. **STOP** — do not proceed to Step 3 or any subsequent steps
+5. EM will dispatch Challenger to review the plan, then re-dispatch SE at
+   Step 3 with challenge findings
+
+The work order (from `./work-output/current-phase.md` or embedded in the
+Agent prompt) provides the phase context. Read it the same way as `workorder`
+mode for Steps 1-2.
 
 ---
 
@@ -169,8 +193,13 @@ Outline what you will do:
 - Changelog entries
 - Documentation updates (help, man page, README, config comments)
 
-For complex phases (more than 3 files changing), write the plan to
-`./work-output/implementation-plan.md` before proceeding.
+Write the plan to `./work-output/implementation-plan.md` when ANY of:
+- Complex phases (more than 3 files changing)
+- Phase includes template, format, output, or display changes (ensures UX
+  Reviewer has material for DESIGN_REVIEW mode)
+- Running in `plan-only` mode (always write, then STOP)
+
+Otherwise, proceed directly to Step 3.
 
 ### Step 3 — Implement
 
@@ -250,6 +279,29 @@ Run `/test-strategy` to determine the recommended test tier based on what change
 Run tests at the recommended tier. **Always capture output with `tee`** — never
 pipe through only `tail` or `grep`. Inspect failures from the capture file.
 
+**Before running tests**, write the test lock to signal ownership:
+
+Write `./work-output/test-lock-P<N>.md` (where N is the phase number):
+```
+STATE: RUNNING
+OWNER: SE
+PHASE: <N>
+STARTED: <ISO 8601>
+COMMIT: <git rev-parse HEAD>
+DOCKER_IMAGE_ID: <docker image inspect --format '{{.Id}}' <image-name>>
+```
+
+**Single-read check first:** Before claiming, read the existing
+`test-lock-P<N>.md` (one read, no loop):
+- If `STATE=RUNNING` and `STARTED` < 15 min ago: proceed with your own
+  test run, but reuse the Docker image if `DOCKER_IMAGE_ID` matches
+  (skip `docker build`/`make build-*`). Write your own lock file
+  (overwrites the stale claim).
+- If `STATE=COMPLETE` and `COMMIT` matches current HEAD: tests already
+  passed — skip to 5c-post (write registry from the existing results).
+- If `STATE=IDLE`, missing, or `STARTED` > 15 min ago: claim ownership
+  by writing `STATE=RUNNING`, then execute tests.
+
 ```bash
 # CORRECT — capture to per-project file, tail for progress
 make -C tests test 2>&1 | tee /tmp/test-<project>.log | tail -30
@@ -266,6 +318,43 @@ Tiers:
 - Tier 4: `make -C tests test-all-parallel`
 
 If tests fail, diagnose from `/tmp/test-<project>.log`. Fix and re-run from 5a.
+
+**After tests complete**, update the lock:
+```
+STATE: COMPLETE
+OWNER: SE
+PHASE: <N>
+STARTED: <original start time>
+COMPLETED: <ISO 8601>
+COMMIT: <git rev-parse HEAD>
+DOCKER_IMAGE_ID: <current image ID>
+```
+
+**5c-post. Write test registry (after tests pass)**
+
+After tests complete successfully, write `./work-output/test-registry-P<N>.md`
+(where N is the phase number from the work order):
+
+```
+COMMIT: <git rev-parse HEAD>
+PHASE: <N>
+TIER: <0-4>
+TIMESTAMP: <ISO 8601>
+RUNTIME: <seconds>
+OS_TARGETS: debian12 [rocky9] [...]
+TOTAL: <count>
+PASSED: <count>
+FAILED: <count>
+LOG: /tmp/test-<project>.log
+DOCKER_IMAGE_ID: <docker image inspect --format '{{.Id}}' <image-name>>
+UAT_TOTAL: N/A
+UAT_PASSED: N/A
+UAT_LOG: N/A
+```
+
+This is in addition to the existing phase-result.md reporting (not a
+replacement). The registry enables QA to reuse Docker images and compare
+baseline test counts.
 
 **5d. Impact check**
 If functions were changed, run `/test-impact` to verify test coverage for

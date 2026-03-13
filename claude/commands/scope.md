@@ -13,6 +13,7 @@ Read `/root/admin/work/proj/CLAUDE.md` before taking any action.
 - **`impact <file-or-function> [project-path]`** — impact analysis for a change target
 - **`research <question> [project-path]`** — deep codebase exploration to answer a question
 - **`decompose <feature-description> [project-path]`** — break a feature into PLAN-ready phases
+- **`workorder <N> [project-path]`** — assemble a work order draft for EM (context gathering + tier recommendation)
 - **No args** — error, require a mode
 
 ---
@@ -402,10 +403,107 @@ NOTES:
 
 ---
 
+## Mode: Work Order Assembly (`workorder <N> [project-path]`)
+
+Assemble a structured work order draft for EM. This is the **default delegation
+path** for standard phases — EM dispatches Scope to do the heavy code research
+instead of doing it inline (preserving EM's context budget).
+
+### Step 1 — Read Plan Phase
+
+Same as Validate mode Step 1: resolve project, find PLAN file, extract Phase N.
+
+### Step 2 — Git State Assessment
+
+Run read-only git commands to assess current branch state:
+```bash
+git branch --show-current
+git log --oneline -5
+git diff --stat HEAD~3..HEAD  # recent change context
+git rev-parse HEAD            # current commit for registry matching
+```
+
+### Step 3 — Codebase Research
+
+For every file, function, and variable mentioned in the phase:
+- Validate existence (same as Validate mode Step 2)
+- Grep for callers and consumers of functions being modified
+- Read relevant file sections to understand current implementation
+- Check test coverage for functions in scope
+- Check MEMORY.md for lessons learned and known gotchas
+
+### Step 4 — Cross-Project Check
+
+- If phase touches shared library files, identify all consuming projects
+- Check for recent library updates that affect this phase
+- Note cross-project implications
+
+### Step 5 — Tier Recommendation
+
+Classify the phase tier (0-4) based on:
+- Number of files to modify
+- Whether files are core logic, install scripts, or docs
+- Whether shared libraries are involved
+- Whether cross-OS logic is affected
+
+### Step 6 — Write Work Order Draft
+
+Write to `./work-output/scope-workorder-P<N>.md`:
+
+```
+AGENT: SCOPE
+MODE: WORKORDER
+PHASE: <N>
+
+SCOPE_WORKORDER:
+  PHASE: <N>
+  DESCRIPTION: <from PLAN.md>
+  TIER_RECOMMENDATION: <0-4 with rationale>
+  FILES_TO_MODIFY:
+    - <path> — <what changes and why>
+  FUNCTIONS_AFFECTED:
+    - <name> (<file>:<line>) — <callers count, test coverage>
+  CROSS_PROJECT: <none | list of affected consumers>
+  CHALLENGER_RECOMMENDED: <true|false> — <rationale>
+  UX_REVIEW_RECOMMENDED: <true|false> — <rationale>
+  CONTEXT_NOTES: <lessons from MEMORY.md, recent commits, gotchas>
+  DRAFT_WORK_ORDER: |
+    PROJECT_PATH: <absolute path>
+    PROJECT_NAME: <name>
+    VERSION: <current version>
+    BRANCH: <current branch>
+    PHASE: <N>
+    PLAN_SOURCE: <plan filename>
+    PHASE_TITLE: <title from plan>
+    DESCRIPTION:
+    <verbatim phase description>
+
+    FILES_TO_MODIFY:
+    <list with rationale>
+
+    ACCEPTANCE_CRITERIA:
+    - Tests pass (tier <N>)
+    - Lint clean
+    - CHANGELOG updated
+    - Commit follows project format
+
+    CONTEXT:
+    <assembled context from Steps 3-5>
+```
+
+This extends (does not replace) `scope-validation-N.md`. When dispatched for
+work order assembly, Scope produces the workorder file. When dispatched for
+validation-only (existing behavior), Scope produces the validation file. EM
+reads whichever file matches the dispatch mode.
+
+---
+
 ## Rules
 
 - **NEVER modify any files** — you are read-only
-- **NEVER execute commands** — you use Read, Glob, and Grep only
+- **Scope uses Read, Glob, Grep, and read-only Bash commands** (git log,
+  git diff, git rev-parse, git branch). Scope NEVER modifies files or runs tests.
+- **NEVER modify files or run tests** — read-only commands only
 - **NEVER approve or reject phases** — you report findings; EM decides
 - Be specific: report exact line numbers, exact function names, exact file paths
 - When a reference is stale, always suggest the correct current name/location

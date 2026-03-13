@@ -106,6 +106,24 @@ SCENARIOS_FAILED: <count>
 
 ### Step 2 — Container Setup
 
+**Read test state for baseline context (single read, no polling):**
+
+Before building containers, check for unit test state from prior agents:
+
+1. Read `./work-output/test-lock-P<N>.md` (if it exists):
+   - If `STATE=COMPLETE` and `DOCKER_IMAGE_ID` is present: reuse the Docker
+     image (skip rebuild if the image ID matches the current image).
+   - Otherwise: build normally.
+
+2. Read `./work-output/test-registry-P<N>.md` (if it exists):
+   - Note the TOTAL/PASSED/FAILED counts as baseline context. UAT does NOT
+     trust or skip based on these — UAT always runs its own tests via
+     `make uat`. The registry provides context for the verdict (e.g.,
+     "1590/1590 unit tests passed per SE registry; UAT found 3 UX concerns").
+
+UAT always runs independently — it executes `make uat` (different test suite
+from SE/QA's `make test`). The lock and registry are read-only references.
+
 The primary execution path uses `make -C tests uat`, which handles its own
 container lifecycle (build, run, destroy). No persistent container needed.
 
@@ -114,7 +132,7 @@ container lifecycle (build, run, destroy). No persistent container needed.
 project_dir=$(basename "$PWD")
 image="${project_dir}-test-debian12"
 
-# Build if image does not exist
+# Build if image does not exist (check lock for reusable image first)
 if ! docker image inspect "$image" >/dev/null 2>&1; then
     make -C tests build-debian12 2>&1 | tail -5
 fi
@@ -233,12 +251,18 @@ during review, regression checks for new features, or exploratory testing:
 
 1. Launch a persistent container (see Step 2 fallback)
 2. Run individual commands via `docker exec`
-3. Capture output using the same pattern:
+3. Capture output — **always assign the log path to a variable first**, then use
+   it consistently. Never run the echo/tee lines without the variable set, as
+   partial execution creates files in CWD named after the echo arguments:
 ```bash
-echo "=== SCENARIO: <name> ===" >> /tmp/uat-${project_dir}-adhoc.log
-docker exec "$cid" <command> 2>&1 | tee -a /tmp/uat-${project_dir}-adhoc.log
-echo "EXIT_CODE: $?" >> /tmp/uat-${project_dir}-adhoc.log
-echo "===" >> /tmp/uat-${project_dir}-adhoc.log
+# REQUIRED: set log path before any logging calls
+adhoc_log="/tmp/uat-${project_dir}-adhoc.log"
+
+# Then use $adhoc_log consistently — never inline the path
+echo "=== SCENARIO: <name> ===" >> "$adhoc_log"
+docker exec "$cid" <command> 2>&1 | tee -a "$adhoc_log"
+echo "EXIT_CODE: $?" >> "$adhoc_log"
+echo "===" >> "$adhoc_log"
 ```
 4. Clean up the container when done
 

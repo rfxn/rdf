@@ -29,11 +29,20 @@ should reference the design system when applicable.
 
 The UX Reviewer operates in two modes, dispatched by EM based on phase timing.
 
-### Mode 1: DESIGN_REVIEW (pre-implementation)
+### Mode 1: DESIGN_REVIEW (pre-implementation — default for template work)
 
 Run when the SE's implementation plan includes new or modified user-facing
 output. EM dispatches this after SE Step 2 (plan) but before SE Step 3
-(implementation).
+(implementation). This is the **default mode** for template/format work —
+EM auto-dispatches DESIGN_REVIEW when the phase description or changed files
+include template, format, output, display, email, or notification patterns.
+
+**Goal:** Shift template iteration from post-impl (3-5 commits to converge)
+to pre-impl (UX Reviewer approves the design, SE implements once or twice).
+
+**Input sources:** Read `./work-output/implementation-plan.md` if it exists.
+If no implementation-plan.md exists (e.g., small template change), read the
+PLAN.md phase description directly as the design proposal.
 
 **Review the SE's implementation plan and answer these questions:**
 
