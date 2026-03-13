@@ -177,7 +177,7 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
         cache_color="$C_GRAY"
     fi
 
-    # Session cost and burn rate from JSON input (cost.total_cost_usd)
+    # Session cost and windowed burn rate (last 5 turns)
     cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
     cost_label=""
     if [[ -n "$cost_usd" ]]; then
@@ -187,7 +187,31 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
         turn_count=$(jq -s '[.[] | select(.message.usage and .isSidechain != true and .isApiErrorMessage != true)] | length' < "$transcript_path")
 
         if [[ "$turn_count" -gt 0 ]]; then
-            per_turn=$(awk "BEGIN { printf \"%.2f\", $cost_usd / $turn_count }")
+            # Track cumulative cost at each turn for windowed average
+            # Prefer XDG_RUNTIME_DIR (user-private tmpfs) over world-readable /tmp
+            _cache_dir="${XDG_RUNTIME_DIR:-/tmp}"
+            cost_cache="${_cache_dir}/claude-cost-$(echo -n "$transcript_path" | md5sum | cut -c1-8).hist"
+            last_recorded=0
+            if [[ -f "$cost_cache" ]]; then
+                last_recorded=$(tail -1 "$cost_cache" | cut -d' ' -f1)
+                [[ -z "$last_recorded" ]] && last_recorded=0
+            fi
+            [[ "$turn_count" -gt "$last_recorded" ]] && echo "$turn_count $cost_usd" >> "$cost_cache"
+
+            # Windowed avg: take last 6 entries to get a 5-turn delta window
+            # (cost_at_N - cost_at_N-5) / 5 = avg marginal cost over last 5 turns
+            per_turn=""
+            if [[ -f "$cost_cache" ]]; then
+                window=$(tail -6 "$cost_cache")
+                w_first=$(echo "$window" | head -1)
+                w_last=$(echo "$window" | tail -1)
+                w_delta=$((${w_last%% *} - ${w_first%% *}))
+                if [[ "$w_delta" -gt 0 ]]; then
+                    per_turn=$(awk "BEGIN { printf \"%.2f\", (${w_last##* } - ${w_first##* }) / $w_delta }")
+                fi
+            fi
+            # Fallback to cumulative if window has only 1 entry
+            [[ -z "$per_turn" ]] && per_turn=$(awk "BEGIN { printf \"%.2f\", $cost_usd / $turn_count }")
 
             # Color $/turn by threshold: >$0.50 red, >$0.25 yellow, else gray
             per_turn_alert=$(awk "BEGIN { print ($per_turn > 0.50) ? \"alert\" : ($per_turn > 0.25) ? \"warn\" : \"ok\" }")
@@ -233,7 +257,7 @@ fi
 health_indicator=""
 if [[ -n "$cwd" ]]; then
     project_name=$(basename "$cwd" 2>/dev/null)
-    cache_file="/tmp/rfxn-health-${project_name}.cache"
+    cache_file="${XDG_RUNTIME_DIR:-/tmp}/rfxn-health-${project_name}.cache"
     if [[ -f "$cache_file" ]]; then
         health_rating=$(cut -d'|' -f1 < "$cache_file")
         case "$health_rating" in
