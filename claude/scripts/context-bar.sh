@@ -36,39 +36,40 @@ git_status=""
 if [[ -n "$cwd" && -d "$cwd" ]]; then
     branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
     if [[ -n "$branch" ]]; then
-        # Count uncommitted files
-        file_count=$(git -C "$cwd" --no-optional-locks status --porcelain -uall 2>/dev/null | wc -l | tr -d ' ')
+        # Count uncommitted tracked changes (staged + unstaged modified/deleted)
+        # Excludes untracked files — those aren't "pending" work
+        file_count=$(git -C "$cwd" --no-optional-locks status --porcelain -uno 2>/dev/null | wc -l | tr -d ' ')
 
-        # Check sync status with upstream
+        # Check sync status with current branch's upstream
         sync_status=""
         upstream=$(git -C "$cwd" rev-parse --abbrev-ref @{upstream} 2>/dev/null)
         if [[ -n "$upstream" ]]; then
-            # Get last fetch time
-            fetch_head="$cwd/.git/FETCH_HEAD"
-            fetch_ago=""
-            if [[ -f "$fetch_head" ]]; then
-                fetch_time=$(stat -c %Y "$fetch_head" 2>/dev/null || stat -f %m "$fetch_head" 2>/dev/null)
-                if [[ -n "$fetch_time" ]]; then
-                    now=$(date +%s)
-                    diff=$((now - fetch_time))
-                    if [[ $diff -lt 60 ]]; then
-                        fetch_ago="<1m ago"
-                    elif [[ $diff -lt 3600 ]]; then
-                        fetch_ago="$((diff / 60))m ago"
-                    elif [[ $diff -lt 86400 ]]; then
-                        fetch_ago="$((diff / 3600))h ago"
-                    else
-                        fetch_ago="$((diff / 86400))d ago"
-                    fi
-                fi
-            fi
-
             counts=$(git -C "$cwd" rev-list --left-right --count HEAD...@{upstream} 2>/dev/null)
             ahead=$(echo "$counts" | cut -f1)
             behind=$(echo "$counts" | cut -f2)
+
+            # Sync time: use the push time of the current branch (last reflog entry
+            # for the remote tracking ref), not FETCH_HEAD which is a global timestamp
+            remote_ref="refs/remotes/${upstream}"
+            sync_ago=""
+            push_time=$(git -C "$cwd" reflog show "$remote_ref" --format='%ct' -1 2>/dev/null)
+            if [[ -n "$push_time" ]]; then
+                now=$(date +%s)
+                diff=$((now - push_time))
+                if [[ $diff -lt 60 ]]; then
+                    sync_ago="<1m ago"
+                elif [[ $diff -lt 3600 ]]; then
+                    sync_ago="$((diff / 60))m ago"
+                elif [[ $diff -lt 86400 ]]; then
+                    sync_ago="$((diff / 3600))h ago"
+                else
+                    sync_ago="$((diff / 86400))d ago"
+                fi
+            fi
+
             if [[ "$ahead" -eq 0 && "$behind" -eq 0 ]]; then
-                if [[ -n "$fetch_ago" ]]; then
-                    sync_status="synced ${fetch_ago}"
+                if [[ -n "$sync_ago" ]]; then
+                    sync_status="synced ${sync_ago}"
                 else
                     sync_status="synced"
                 fi
