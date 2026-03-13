@@ -54,7 +54,7 @@ USER
 
 ════════════════════════════════════════════════════════════════════
 PIPELINE FLOW
-  USER → [PO] → EM → [Scope → Challenger] → SE
+  USER → [PO] → EM → [Scope → SE plan-only → Challenger] → SE
        → [Sentinel ∥ QA] → [UX Reviewer] → UAT → MERGE
 ════════════════════════════════════════════════════════════════════
 ```
@@ -93,22 +93,30 @@ PIPELINE FLOW
  │  2. Cross-project dashboard                                     │
  │  3. Stale worktree detection                                    │
  │  4. Build priority queue                                        │
- │  5. Dispatch Scope → Challenger (tier 2+ only)                  │
+ │  5. Dispatch Scope → SE plan-only → Challenger (tier 2+)        │
  │  6. Dispatch SE with work order                                 │
  │  7. Tiered verification gate → QA [+ UAT]                       │
  │  8. Merge decision + post-merge actions                         │
  └─────┬───────────────────────────────────────────────────────────┘
        │
        ▼  [tier 2+ only]
- ┌─────────────┐    ┌──────────────────────────────┐
- │ SCOPE       │───►│ CHALLENGER  [sonnet]          │
- │ [sonnet]    │    │  1. Read plan + codebase      │
- │  Validate   │    │  2. Design flaw analysis      │
- │  phase refs │    │  3. Edge case / regression    │
- │  Impact +   │    │     identification            │
- │  complexity │    │  4. Simpler-alternative check │
- │  assessment │    │  5. Output: CHALLENGE_FINDINGS │
- └─────────────┘    └──────────────────────────────┘
+ ┌──────────────────┐
+ │ SCOPE  [sonnet]  │
+ │  Work order      │
+ │  assembly +      │
+ │  context harvest │
+ └────────┬─────────┘
+          │  scope-workorder → EM
+          ▼
+ ┌──────────────────┐    ┌──────────────────────────────┐
+ │ SE  [opus]       │───►│ CHALLENGER  [sonnet]          │
+ │  plan-only mode  │    │  1. Read implementation plan  │
+ │  Steps 1-2 only  │    │  2. Design flaw analysis      │
+ │  Output:         │    │  3. Edge case / regression    │
+ │  implementation- │    │     identification            │
+ │  plan.md         │    │  4. Simpler-alternative check │
+ └──────────────────┘    │  5. Output: CHALLENGE_FINDINGS │
+                         └──────────────────────────────┘
                               │  findings injected into SE work order
                               ▼
  ┌─────────────────────────────────────────────────────────────────┐
@@ -497,7 +505,7 @@ Full mode  (/audit):       All 15 agents + test execution
 | `/code-grep` | Pattern-class bug finder | Hunt specific anti-patterns |
 | `/test-strategy` | Recommend test tier for changes | Decide what to test |
 | `/test-impact` | Map functions to BATS tests | Find relevant tests |
-| `/planner` | Validate phase against codebase | Before implementation |
+| `/test-dedup` | Find duplicate/overlapping tests | Test suite maintenance |
 
 ### Project Management Commands
 
@@ -623,7 +631,7 @@ cd <canonical-lib>               # Work in canonical repo
 |  | Brute Force |    |          |     +-------------+                      |
 |  +-------------+    |          |     +-------------+                      |
 |                     +----------+-----| elog_lib    |---> BFD,LMD          |
-|  +-------------+    |          |     | v1.0.2      |                      |
+|  +-------------+    |          |     | v1.0.3      |                      |
 |  | LMD  2.0.1  |----+          |     +-------------+                      |
 |  | Malware Det |               |     +-------------+                      |
 |  +-------------+               +-----| batsman     |---> ALL (test infra) |
@@ -776,16 +784,16 @@ PERSONAS         AUDIT            RELEASE          PROJECT          MEMORY
 /se              /audit-delta     /rel-chg-diff    /proj-cross-aud  /mem-compact
 /qa              /audit-plan      /rel-scrub       /proj-lib-sync
 /uat             /audit-feedback  /rel-merge       /proj-scaffold   CODE
-/planner                          /rel-ship        /proj-health     ────
+/scope                            /rel-ship        /proj-health     ────
 /modernize                        /rel-notes                        /code-validate
                                                                     /code-grep
-
 INFRA                                              TESTING
 ─────                                              ───────
 /ci-setup                                          /test-strategy
 /lib-release                                       /test-impact
+                                                   /test-dedup
 /onboard
 /reload
 ```
 
-**Total: 9 personas + 15 audit agents + 30 workflow commands = 54 commands + pipeline optimization protocols**
+**Total: 10 agents + 65 commands + 11 scripts = 86 primitives + pipeline optimization protocols**

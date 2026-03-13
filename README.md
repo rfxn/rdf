@@ -154,9 +154,10 @@ tells the runtime how to behave — and more importantly, what to focus on.
 flowchart TD
     User([User Request]) --> PO{{PO - Product Owner}}
     PO -->|scoped problem| EM[EM - Engineering Manager]
-    EM -->|tier 2+| Scope[Scope - Research]
+    EM -->|tier 2+: work order| Scope[Scope - Work Order Assembly]
     EM -->|tier 0-1| SE
-    Scope --> Challenger{{Challenger - Adversary}}
+    Scope -->|plan-only dispatch| SEPlan[SE - Plan Only]
+    SEPlan -->|implementation-plan.md| Challenger{{Challenger - Adversary}}
     Challenger -->|findings| SE[SE - Senior Engineer]
     SE -->|result| QA[QA - Verification Gate]
     SE -->|tier 2+| Sentinel{{Sentinel - 4-Pass Review}}
@@ -169,6 +170,7 @@ flowchart TD
     style User fill:#4a5568,color:#fff,stroke:#2d3748
     style Merge fill:#276749,color:#fff,stroke:#22543d
     style SE fill:#553c9a,color:#fff,stroke:#44337a
+    style SEPlan fill:#553c9a,color:#fff,stroke:#44337a
     style EM fill:#2b6cb0,color:#fff,stroke:#2c5282
     style QA fill:#975a16,color:#fff,stroke:#744210
     style Sentinel fill:#9b2c2c,color:#fff,stroke:#742a2a
@@ -187,7 +189,7 @@ flowchart TD
 |------|-------|---------|
 | Engineering Manager - EM | sonnet | Orchestrator - prioritize, delegate, quality gates |
 | Product Owner - PO | sonnet | Requirements translation, scope gating (optional) |
-| Scoping & Research - Scope | sonnet | Impact analysis, phase validation, complexity assessment |
+| Scoping & Work Orders - Scope | sonnet | Work order assembly, impact analysis, complexity assessment |
 | Pre-Impl Adversary - Challenger | sonnet | Design flaws, edge cases, simpler alternatives |
 | Senior Engineer - SE | opus | 7-step execution protocol, implementation |
 | QA Engineer - QA | sonnet | Verification gate - 6-step review, bash 4.1 compliance |
@@ -216,17 +218,18 @@ flowchart TD
 | frontend-qa.md | frontend-qa | sonnet | Overwatch frontend QA |
 | frontend-uat.md | frontend-uat | sonnet | Overwatch frontend UAT |
 
-### Commands - `claude/commands/` (64)
+### Commands - `claude/commands/` (65)
 
 **Personas** (6): `em`, `se`, `qa`, `uat`, `po`, `scope`
 
-**Audit pipeline** (19): `audit`, `audit-quick`, `audit-delta`,
+**Audit pipeline** (24): `audit`, `audit-quick`, `audit-delta`,
 `audit-compile`, `audit-condense`, `audit-context`, `audit-plan`,
 `audit-feedback`, `audit-schema`, `audit-regression`, `audit-latent`,
 `audit-security`, `audit-standards`, `audit-version`, `audit-cli`,
 `audit-docs`, `audit-config`, `audit-test-coverage`, `audit-test-exec`,
 `audit-install`, `audit-build-ci`, `audit-upgrade`, `audit-interfaces`,
 `audit-modernize`
+*(+ 2 deprecated: `audit-dedup`, `audit-synthesis`)*
 
 **Release** (7): `rel-prep`, `rel-ship`, `rel-merge`, `rel-notes`,
 `rel-chg-dedup`, `rel-chg-diff`, `rel-scrub`
@@ -234,14 +237,16 @@ flowchart TD
 **Project** (6): `proj-status`, `proj-health`, `proj-cross`,
 `proj-cross-audit`, `proj-lib-sync`, `proj-scaffold`
 
-**Code quality** (4): `code-validate`, `code-grep`, `test-strategy`,
-`test-impact`
+**Code quality** (5): `code-validate`, `code-grep`, `test-strategy`,
+`test-impact`, `test-dedup`
 
 **Memory** (3): `mem-save`, `mem-audit`, `mem-compact`
 
 **Adversarial** (3): `challenger`, `sentinel`, `ux-review`
 
-**Other** (6): `modernize`, `onboard`, `reload`, `status`,
+**Frontend** (2): `frontend-qa`, `frontend-uat`
+
+**Other** (7): `modernize`, `onboard`, `reload`, `status`,
 `ci-setup`, `lib-release`, `doc-author`
 
 ### Scripts - `claude/scripts/` (11)
@@ -269,7 +274,7 @@ PRODUCTS                         SHARED LIBRARIES
 ┌─────────────┐                  ┌─────────────┐
 │ APF  2.0.2  │──────────────────│ tlog_lib    │ v2.0.3
 │ BFD  2.0.1  │──────────────────│ alert_lib   │ v1.0.4
-│ LMD  2.0.1  │──────────────────│ elog_lib    │ v1.0.2
+│ LMD  2.0.1  │──────────────────│ elog_lib    │ v1.0.3
 └─────────────┘                  │ pkg_lib     │ v1.0.2
 ┌─────────────┐                  │ batsman     │ v1.2.0
 │ Sigforge    │ 1.0.0            └─────────────┘

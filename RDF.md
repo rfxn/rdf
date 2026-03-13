@@ -6,7 +6,7 @@ Tool-agnostic convention governance with profile-based discipline selection,
 delivered through tool-specific adapters, with deterministic state checking
 and repeatable project intake at scale.
 
-**Version target:** 1.0.0
+**Version target:** 1.0.1
 **License:** GNU GPL v2
 
 ---

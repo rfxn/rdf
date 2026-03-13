@@ -333,7 +333,7 @@ flowchart LR
     subgraph Libraries["Shared Libraries"]
         tlog[tlog_lib v2.0.3]
         alert[alert_lib v1.0.4]
-        elog[elog_lib v1.0.2]
+        elog[elog_lib v1.0.3]
         pkg[pkg_lib v1.0.2]
         bats[batsman v1.2.0]
     end
