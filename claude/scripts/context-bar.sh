@@ -77,21 +77,19 @@ if [[ -n "$cwd" && -d "$cwd" ]]; then
             elif [[ "$ahead" -eq 0 && "$behind" -gt 0 ]]; then
                 sync_status="${behind} behind"
             else
-                sync_status="${ahead} ahead, ${behind} behind"
+                sync_status="${ahead}↑ ${behind}↓"
             fi
         else
             sync_status="no upstream"
         fi
 
-        # Build git status string
+        # Build git status string: compact format
+        # 0 pending: just sync status (e.g. "synced 12m ago", "2 ahead")
+        # N pending: "N pending · sync" (e.g. "5 pending · synced 12m ago")
         if [[ "$file_count" -eq 0 ]]; then
-            git_status="(0 files uncommitted, ${sync_status})"
-        elif [[ "$file_count" -eq 1 ]]; then
-            # Show the actual filename when only one file is uncommitted
-            single_file=$(git -C "$cwd" --no-optional-locks status --porcelain -uall 2>/dev/null | head -1 | sed 's/^...//')
-            git_status="(${single_file} uncommitted, ${sync_status})"
+            git_status="${sync_status}"
         else
-            git_status="(${file_count} files uncommitted, ${sync_status})"
+            git_status="${file_count} pending · ${sync_status}"
         fi
     fi
 fi
