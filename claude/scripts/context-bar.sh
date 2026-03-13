@@ -8,6 +8,8 @@ COLOR="blue"
 C_RESET='\033[0m'
 C_GRAY='\033[38;5;245m'  # explicit gray for default text
 C_BAR_EMPTY='\033[38;5;238m'
+C_WARN='\033[38;5;178m'   # yellow-orange for warning thresholds
+C_ALERT='\033[38;5;167m'  # red for alert thresholds
 case "$COLOR" in
     orange)   C_ACCENT='\033[38;5;173m' ;;
     blue)     C_ACCENT='\033[38;5;74m' ;;
@@ -45,7 +47,7 @@ if [[ -n "$cwd" && -d "$cwd" ]]; then
             fetch_head="$cwd/.git/FETCH_HEAD"
             fetch_ago=""
             if [[ -f "$fetch_head" ]]; then
-                fetch_time=$(stat -f %m "$fetch_head" 2>/dev/null || stat -c %Y "$fetch_head" 2>/dev/null)
+                fetch_time=$(stat -c %Y "$fetch_head" 2>/dev/null || stat -f %m "$fetch_head" 2>/dev/null)
                 if [[ -n "$fetch_time" ]]; then
                     now=$(date +%s)
                     diff=$((now - fetch_time))
@@ -105,15 +107,30 @@ max_k=$((max_context / 1000))
 
 # Calculate context bar from transcript
 if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
-    context_length=$(jq -s '
+    context_metrics=$(jq -rs '
         map(select(.message.usage and .isSidechain != true and .isApiErrorMessage != true)) |
         last |
         if . then
-            (.message.usage.input_tokens // 0) +
-            (.message.usage.cache_read_input_tokens // 0) +
-            (.message.usage.cache_creation_input_tokens // 0)
-        else 0 end
+            {
+                total: ((.message.usage.input_tokens // 0) +
+                        (.message.usage.cache_read_input_tokens // 0) +
+                        (.message.usage.cache_creation_input_tokens // 0)),
+                cache_read: (.message.usage.cache_read_input_tokens // 0),
+                cache_create: (.message.usage.cache_creation_input_tokens // 0),
+                input: (.message.usage.input_tokens // 0)
+            }
+        else { total: 0, cache_read: 0, cache_create: 0, input: 0 } end |
+        "\(.total) \(.cache_read) \(.cache_create) \(.input)"
     ' < "$transcript_path")
+    read -r context_length cache_read cache_create uncached_input <<< "$context_metrics"
+
+    # Cache hit rate: cache_read / (cache_read + cache_create + uncached_input)
+    cache_total=$((cache_read + cache_create + uncached_input))
+    if [[ "$cache_total" -gt 0 ]]; then
+        cache_hit_pct=$((cache_read * 100 / cache_total))
+    else
+        cache_hit_pct=0
+    fi
 
     # 20k baseline: includes system prompt (~3k), tools (~15k), memory (~300),
     # plus ~2k for git status, env block, XML framing, and other dynamic context
@@ -144,7 +161,53 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
         fi
     done
 
-    ctx="${bar} ${C_GRAY}${pct_prefix}${pct}% of ${max_k}k tokens"
+    # Color context % by threshold: >80% red, >60% yellow, else gray
+    if [[ $pct -gt 80 ]]; then
+        pct_color="$C_ALERT"
+    elif [[ $pct -gt 60 ]]; then
+        pct_color="$C_WARN"
+    else
+        pct_color="$C_GRAY"
+    fi
+
+    # Color cache % by threshold: <35% red, <60% yellow, else gray
+    if [[ $cache_hit_pct -lt 35 ]]; then
+        cache_color="$C_ALERT"
+    elif [[ $cache_hit_pct -lt 60 ]]; then
+        cache_color="$C_WARN"
+    else
+        cache_color="$C_GRAY"
+    fi
+
+    # Session cost and burn rate from JSON input (cost.total_cost_usd)
+    cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
+    cost_label=""
+    if [[ -n "$cost_usd" ]]; then
+        cost_fmt=$(printf '$%.2f' "$cost_usd")
+
+        # Count turns (assistant messages with usage, excluding sidechain)
+        turn_count=$(jq -s '[.[] | select(.message.usage and .isSidechain != true and .isApiErrorMessage != true)] | length' < "$transcript_path")
+
+        if [[ "$turn_count" -gt 0 ]]; then
+            per_turn=$(awk "BEGIN { printf \"%.2f\", $cost_usd / $turn_count }")
+
+            # Color $/turn by threshold: >$0.50 red, >$0.25 yellow, else gray
+            per_turn_alert=$(awk "BEGIN { print ($per_turn > 0.50) ? \"alert\" : ($per_turn > 0.25) ? \"warn\" : \"ok\" }")
+            if [[ "$per_turn_alert" == "alert" ]]; then
+                rate_color="$C_ALERT"
+            elif [[ "$per_turn_alert" == "warn" ]]; then
+                rate_color="$C_WARN"
+            else
+                rate_color="$C_GRAY"
+            fi
+            cost_label=" ${C_GRAY}${cost_fmt} ${rate_color}\$${per_turn}/t"
+        else
+            cost_label=" ${C_GRAY}${cost_fmt}"
+        fi
+    fi
+
+    # Compact format: ██░░ 40%/200k | ⚡83% $1.42 $0.12/t
+    ctx="${bar} ${pct_color}${pct_prefix}${pct}%/${max_k}k${C_GRAY} | ${cache_color}⚡${cache_hit_pct}%${cost_label}"
 else
     # Transcript not available yet - show baseline estimate
     baseline=20000
@@ -165,7 +228,7 @@ else
         fi
     done
 
-    ctx="${bar} ${C_GRAY}~${pct}% of ${max_k}k tokens"
+    ctx="${bar} ${C_GRAY}~${pct}%/${max_k}k"
 fi
 
 # Read project health cache
@@ -200,7 +263,9 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
     # Calculate visible length (without ANSI codes) - 10 chars for bar + content
     plain_output="${model} | 📁${dir}"
     [[ -n "$branch" ]] && plain_output+=" | 🔀${branch} ${git_status}"
-    plain_output+=" | xxxxxxxxxx ${pct}% of ${max_k}k tokens"
+    cost_plain=""
+    [[ -n "$cost_usd" ]] && cost_plain=" $(printf '$%.2f' "$cost_usd") \$0.00/t"
+    plain_output+=" | xxxxxxxxxx ${pct}%/${max_k}k | ⚡${cache_hit_pct:-0}%${cost_plain}"
     max_len=${#plain_output}
     last_user_msg=$(jq -rs '
         # Messages to skip (not useful as context)
