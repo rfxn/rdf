@@ -27,6 +27,13 @@ Flag every stale year.
 - List open SHOULD items (non-blocking but notable)
 - Verify all COMPLETED phases match actual git history
 
+## 4b. GitHub issue status
+- Verify a `type:release` issue exists for this version:
+  `gh issue list --label "type:release" --state open --json number,title`
+- Verify all `type:phase` issues for this release are closed (status: Done)
+- If a parent `type:initiative` exists, verify it is linked in the release issue body
+- Report any open phase issues as blockers
+
 ## 5. AUDIT.md status (if exists)
 - List any unresolved Critical or High findings
 - Note open Medium count

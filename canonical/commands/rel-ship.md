@@ -162,6 +162,19 @@ Combine findings from Codex (Phase 2) and your own review (Phase 3).
 - If the fix is complex or risky, recommend a follow-up commit
 - Group related fixes that should be committed together
 
+## Phase 4b: GitHub issue lifecycle (post-merge)
+
+After the PR is merged (or when confirmed ready to merge):
+
+- Close the `type:release` issue for this version (if not already closed):
+  ```bash
+  gh issue close <release-issue-number> --repo <repo>
+  ```
+- Verify all `type:phase` issues for this release are already closed
+- If a parent `type:initiative` exists and all its child releases are now
+  complete, update the initiative body Status to "Complete" and close it
+- Reference the release issue in commit messages: `Ref #<release-issue>`
+
 ## Phase 5: Final summary
 
 ```

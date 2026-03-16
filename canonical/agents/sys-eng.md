@@ -22,3 +22,10 @@ Every result file MUST include:
 
 These are mandatory, not optional. Claiming compliance without grep output
 is a protocol violation.
+
+### Phase Issue References
+
+When the work order contains `PHASE_ISSUE: <number>`:
+- Include `Ref #<number>` in every commit message body
+- Post a task-completion comment on the phase issue after each commit
+  (see Step 6b in the full protocol at `/root/.claude/commands/sys-eng.md`)

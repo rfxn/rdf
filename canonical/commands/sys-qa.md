@@ -286,6 +286,16 @@ If no sentinel-N.md exists: mark Step 5.5 as N/A.
 
 ### 6. Verdict
 
+**Post QA verdict as comment on the phase issue** (if `PHASE_ISSUE: <number>`
+is present in the SE result or work order):
+
+```bash
+gh issue comment <number> --repo <repo> --body "**QA Verdict: <APPROVED|CHANGES_REQUESTED>** — <summary of findings>"
+```
+
+If `gh` is not available or the comment fails, note the failure in the verdict
+file but do not block execution.
+
 Write verdict file to `./work-output/qa-phase-N-verdict.md` (where N is the
 phase number from the branch name or result file):
 
@@ -375,6 +385,9 @@ Same checklist as full gate mode step 2 — this is NOT skipped:
 - [ ] No `Co-Authored-By` or Claude/Anthropic attribution in commits
 
 ### 3. Verdict
+
+**Post QA verdict as comment on the phase issue** (same as full gate — see
+Step 6 above).
 
 Write verdict file to `./work-output/qa-phase-N-verdict.md`:
 

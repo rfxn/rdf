@@ -55,17 +55,19 @@ All Development Projects use the 5-state workflow on the Status field:
 | In Review | QA/UAT/peer review gate | In Progress | Done, In Progress (rework) |
 | Done | Complete and verified | In Review | — |
 
-When working issues, agents MUST transition status:
-- `/sys-eng` picks issue → set **In Progress**
+When working phase issues, agents MUST transition status:
+- `/sys-eng` picks up phase → set **In Progress**, post task-completion comments
 - `/sys-eng` commits + reports → set **In Review**
-- `/sys-qa` approves → set **Done**
+- `/sys-qa` approves → set **Done**, close issue
 - `/sys-qa` requests changes → set **In Progress** (rework)
 
-### Issue Conventions
+### Issue Conventions (v2 — Phase-Level Tracking)
 
-- Phase issues (`type:phase`) contain detailed designs
-- Task issues (`type:task`) are pullable work units
-- Reference issue numbers in commit messages
+- Initiative issues (`type:initiative`) for roadmap planning
+- Release issues (`type:release`) for versioned release tracking
+- Phase issues (`type:phase`) contain detailed designs and task lists
+- Task progress tracked via comments on phase issues (no per-task issues)
+- Reference phase issue numbers in commit messages: `Ref #<phase-issue>`
 - Use standardized label taxonomy (see `rdf github sync-labels`)
 
 ### Artifact Taxonomy

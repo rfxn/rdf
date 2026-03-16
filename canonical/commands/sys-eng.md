@@ -460,6 +460,18 @@ Commit body must tag every line item:
 [Fix] corrected return code in error path
 ```
 
+**Phase issue reference:** If the work order contains `PHASE_ISSUE: <number>`,
+include `Ref #<number>` in every commit message (in the body, not the subject
+line). Multiple commits per phase issue is expected and normal. Example:
+```
+2.0.2 | Implement error handling
+
+[New] added validate_input() for path sanitization
+[Fix] corrected exit code on permission denied
+
+Ref #42
+```
+
 Do NOT add `Co-Authored-By` lines. Do NOT add Claude/Anthropic attribution.
 
 **Multi-step phases:** Per CLAUDE.md, commit after every logical unit. If a
@@ -469,6 +481,25 @@ unit. Report all commits in the result.
 
 Do NOT commit working files: CLAUDE.md, PLAN*.md, AUDIT.md, MEMORY.md, `.claude/`,
 `work-output/`.
+
+### Step 6b — Post Task-Completion Comment (when phase issue exists)
+
+After each commit (or logical task completion), if the work order contains
+`PHASE_ISSUE: <number>`, post a progress comment on the phase issue:
+
+```bash
+gh issue comment <number> --repo <repo> --body "$(cat <<'EOF'
+**Task N.M complete** — <one-line summary>
+
+Files: <changed files>
+Commit: <hash> (Ref #<phase-issue>)
+EOF
+)"
+```
+
+This provides async visibility for the operator to monitor progress from any
+terminal. If `gh` is not available or the comment fails, note the failure in
+the result file but do not block execution.
 
 ### Step 7 — Report Results
 

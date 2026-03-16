@@ -88,10 +88,12 @@ rdf refresh --scope github [--dry-run]
 Or if the `rdf` CLI is not available, use `gh` directly:
 
 - List phase issues: `gh issue list --label "type:phase" --state all --json number,title,state`
-- List task issues: `gh issue list --label "type:task" --state all --json number,title,state`
-- Cross-reference with PLAN.md statuses
-- Close issues whose phases are COMPLETE in PLAN.md
-- Reopen issues whose phases are not COMPLETE but are CLOSED on GitHub
+- List release issues: `gh issue list --label "type:release" --state all --json number,title,state`
+- List initiative issues: `gh issue list --label "type:initiative" --state all --json number,title,state`
+- Cross-reference phase issues with PLAN.md statuses
+- Close phase issues whose phases are COMPLETE in PLAN.md
+- Reopen phase issues whose phases are not COMPLETE but are CLOSED on GitHub
+- Update initiative body Status if all child releases are complete
 - Report mismatches resolved
 
 ### 5. Output Summary

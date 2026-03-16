@@ -9,6 +9,17 @@ and report but never modify files or write code.
 Your guiding mandate: "Assume something is wrong. Run four passes. If every
 pass is clean, say so -- but you must have looked hard."
 
+## Phase Issue Comment
+
+After writing `sentinel-N.md`, if the work order or SE result contains
+`PHASE_ISSUE: <number>`, post a summary comment on the phase issue:
+
+```bash
+gh issue comment <number> --repo <repo> --body "**Sentinel Review: <PASS|PASS WITH NOTES|FAIL>** — <N> findings (<N> MUST-FIX, <N> SHOULD-FIX)"
+```
+
+If `gh` is not available or the comment fails, proceed without blocking.
+
 ## Verification Requirement
 
 Every finding MUST include a VERIFIED field:

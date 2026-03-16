@@ -1374,3 +1374,130 @@ project that has a `.git/` directory. Do NOT use `.gitignore`.
   or feature decomposition — these modes do not require EM dispatch
 - Scope is always an isolated subagent — its tool results fill its own context
   window, not EM's. Only the structured output file returns to EM.
+
+---
+
+## GitHub Issue Management (v2 — Phase-Level Tracking)
+
+EM is responsible for GitHub issue lifecycle. The v2 model uses phase-level
+issues with task-completion comments — no per-task issues.
+
+### Issue Hierarchy
+
+```
+Initiative (type:initiative)     — planning horizon, directional timing
+  └─ Release (type:release)      — committed version, specific timeline
+       └─ Phase (type:phase)     — execution unit, tracked on boards
+            └─ Tasks (comments)  — progress trail, async visibility
+```
+
+### Phase Issue Creation (per phase dispatch)
+
+When dispatching SE for a phase, create one phase issue:
+
+1. **Check for existing initiative** — before creating release or phase issues
+   for new work, query for `type:initiative` issues in the target repo:
+   ```bash
+   gh issue list --repo <repo> --label "type:initiative" --state open --json number,title
+   ```
+   Link the release issue to any matching initiative.
+
+2. **Create release issue** (once per release, if not already created):
+   ```bash
+   gh issue create --repo <repo> --title "<Project> <Version>" \
+     --label "type:release" --body "<release template from spec Section 3.5>"
+   ```
+   Add to per-project board and ecosystem project. Set Target Date field.
+
+3. **Create phase issue** (once per phase):
+   ```bash
+   gh issue create --repo <repo> --title "Phase <N>: <Title>" \
+     --label "type:phase" --body "<phase template: goal + tasks + acceptance criteria>"
+   ```
+   Add to per-project board and ecosystem project. Set fields:
+   - Phase: `<N>`
+   - Status: `Ready`
+   - Effort: `<aggregate effort for the phase>`
+   - Assignee Role: `sys-eng`
+
+4. **Include phase issue number in SE work order:**
+   Add `PHASE_ISSUE: <number>` to the work order so SE can reference it in
+   commits and post task-completion comments.
+
+### Phase Lifecycle
+
+```
+Plan approved → Create phase issue (body = plan + tasks + acceptance criteria)
+  → Add to per-project board + ecosystem project
+  → Set fields: Phase, Status=Ready, Effort, Assignee Role
+  → Dispatch agent
+
+Agent picks up → Set Status=In Progress
+
+Agent completes each task → Post comment on phase issue:
+  **Task N.M complete** — <one-line summary>
+
+  Files: <changed files>
+  Commit: <hash> (Ref #<phase-issue>)
+
+All tasks complete → Set Status=In Review (if QA gate)
+  → QA/Sentinel review (verdicts posted as comments)
+  → Set Status=Done → Close issue (gh issue close N)
+```
+
+### Initiative Awareness
+
+When planning new work or starting a session:
+
+- **Read ecosystem board** for initiative context:
+  ```bash
+  gh project item-list 4 --owner rfxn --format json --limit 50
+  ```
+  Filter for `type:initiative` items to understand the roadmap.
+
+- **Read per-project board** for phase execution status:
+  ```bash
+  gh project item-list <project-number> --owner rfxn --format json --limit 50
+  ```
+  Filter for `type:phase` items to see active phase work.
+
+- **Initiative lifecycle states:** Planning → Specced → Executing → Complete.
+  Update initiative body Status section and board Status field together when
+  releases spawn or complete.
+
+- **Link releases to initiatives:** When creating a `type:release` issue for
+  work that belongs to an initiative, add `Parent: #<initiative-issue>` in the
+  release body. Update the initiative body with the release link.
+
+### Board Reading
+
+- **Per-project board:** Shows phase issues for the current release. Read for
+  execution status during session startup and phase dispatch.
+- **Ecosystem board:** Shows phase issues + initiative issues across all
+  projects. Read for roadmap context and cross-project awareness.
+- **No task-level items on any board.** Tasks are tracked via comments on
+  phase issues only.
+
+### Task-Completion Comment Format
+
+When SE reports task completion, EM posts a comment on the phase issue as proxy
+(or instructs SE to post directly via the work order):
+
+```markdown
+**Task N.M complete** — <one-line summary>
+
+Files: <changed files>
+Commit: <hash> (Ref #<phase-issue>)
+```
+
+### QA/Sentinel Verdict Comments
+
+After QA or Sentinel complete, post their verdicts as comments on the phase issue:
+
+```markdown
+**QA Verdict: <APPROVED|CHANGES_REQUESTED>** — <summary>
+```
+
+```markdown
+**Sentinel Review: <PASS|PASS WITH NOTES|FAIL>** — <N> findings (<N> MUST-FIX, <N> SHOULD-FIX)
+```

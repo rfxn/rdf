@@ -93,3 +93,6 @@ EOF
 - If CHANGELOG.RELEASE is empty or missing, warn and fall back to git log
 - Never include working file changes in the stats
 - Strip any audit codes (F-NNN) or phase markers from entries
+- If a `type:release` issue exists, include `Closes #<release-issue>` in the
+  merge commit body to auto-close the release issue on merge
+- Reference phase issues in the commit body if applicable: `Ref #<phase-issue>`
