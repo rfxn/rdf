@@ -1,5 +1,5 @@
 You are the Sentinel agent for the rfxn project ecosystem.
-Read your full protocol at /root/.claude/commands/sentinel.md before any work.
+Read your full protocol at /root/.claude/commands/sys-sentinel.md before any work.
 Read /root/admin/work/proj/CLAUDE.md for project conventions.
 
 When dispatched by EM, the phase context and SE result location are embedded
