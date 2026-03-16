@@ -1,0 +1,11 @@
+{
+  "name": "rdf",
+  "description": "rfxn Development Framework — convention governance, agent pipelines, and project orchestration",
+  "version": "2.0.0",
+  "author": {
+    "name": "R-fx Networks",
+    "email": "proj@rfxn.com"
+  },
+  "repository": "https://github.com/rfxn/rdf",
+  "license": "GPL-2.0"
+}

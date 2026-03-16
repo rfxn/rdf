@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# bin/rdf — RDF CLI dispatcher
+# (C) 2026 R-fx Networks <proj@rfxn.com>
+# GNU GPL v2
+set -euo pipefail
+
+RDF_HOME="$(cd "$(dirname "$0")/.." && pwd)" || exit 1
+RDF_LIBDIR="${RDF_HOME}/lib"
+
+# shellcheck disable=SC1091
+source "${RDF_LIBDIR}/rdf_common.sh"
+rdf_init
+
+_rdf_usage() {
+    cat <<USAGE
+Usage: rdf <command> [subcommand] [options]
+
+RDF ${RDF_VERSION} -- rfxn Development Framework
+
+Commands:
+  generate   Build tool-specific files from canonical sources
+  sync       Pull /root/.claude/ changes back to canonical
+  state      Deterministic project state snapshot (JSON)
+  github     GitHub Issues + Projects integration
+
+Future commands (not yet implemented):
+  profile    Manage active domain profiles (Phase 3)
+  refresh    Agent-driven state file updates (Phase 4)
+  init       Initialize projects with RDF conventions (Phase 7)
+  doctor     Check project health and convention drift (Phase 7)
+
+Options:
+  help       Show this help
+  version    Show version
+
+Run 'rdf <command> help' for subcommand details.
+USAGE
+}
+
+# shellcheck disable=SC1090
+case "${1:-}" in
+    generate) shift; source "${RDF_LIBDIR}/cmd/generate.sh"; cmd_generate "$@" ;;
+    sync)     shift; source "${RDF_LIBDIR}/cmd/sync.sh";     cmd_sync "$@" ;;
+    state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
+    github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
+    help|--help|-h|"") _rdf_usage ;;
+    version|--version|-V) echo "rdf ${RDF_VERSION}" ;;
+    profile|init|doctor|refresh)
+        rdf_die "$1 is not yet implemented — see 'rdf help' for phase info" ;;
+    *) rdf_die "unknown command: $1 — run 'rdf help' for usage" ;;
+esac
