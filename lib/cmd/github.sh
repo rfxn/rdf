@@ -29,7 +29,6 @@ USAGE
 # Format: "name;color;description"
 _LABEL_TAXONOMY=(
     "type:phase;5319E7;Phase tracking issue"
-    "type:task;0075CA;Concrete pullable work unit"
     "type:bug;D73A4A;Defect"
     "type:enhancement;A2EEEF;Feature or improvement"
     "type:audit-finding;E4E669;Promoted from audit pipeline"
