@@ -1,0 +1,26 @@
+# {{PROJECT_NAME}} — Project CLAUDE.md
+
+## About
+{{PROJECT_NAME}} — shared library for the rfxn ecosystem.
+Version: {{VERSION}}
+
+## Development
+- Canonical project: develop and test here first
+- Zero project-specific references in library code
+- Update version variable on every API change
+- Portable defaults: `VAR="${VAR:-/tmp}"` (not for security-sensitive paths)
+
+## Shell Standards
+See systems-engineering governance for full shell conventions.
+- Shebang: `#!/usr/bin/env bash`
+- Bash 4.1+ floor (CentOS 6 compatibility)
+- No `declare -A` for global state — breaks when sourced from functions
+
+## Commit Protocol
+- See core governance for full commit protocol
+- Both CHANGELOG and CHANGELOG.RELEASE updated on code-changing commits
+
+## Testing
+- Framework: {{TEST_FRAMEWORK}} at `tests/infra/`
+- Run: `make -C tests test`
+- Consumers: test integration after library changes

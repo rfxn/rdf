@@ -1,0 +1,39 @@
+# {{PROJECT_NAME}} — Project CLAUDE.md
+
+## About
+{{PROJECT_NAME}} ({{PROJECT_SHORT}}) — [one-line description].
+
+## Development
+- Shebang: `{{SHEBANG}}`
+- Main CLI: `{{CLI_BINARY}}`
+- Install prefix: `{{INSTALL_PREFIX}}`
+- Version variable: `VERSION="{{VERSION}}"` in `{{CLI_BINARY}}`
+
+## Shell Standards
+See systems-engineering governance for full shell conventions.
+- Bash 4.1+ floor (CentOS 6 compatibility)
+- All variables double-quoted in command context
+- `command -v` for binary discovery, never hardcoded paths
+- `command cp`/`command mv`/`command rm` in project source
+
+## Commit Protocol
+- Message format: `{{VERSION}} | Description`
+- Tag body lines: [New] [Change] [Fix]
+- See core governance for full commit protocol
+
+## Testing
+- Framework: {{TEST_FRAMEWORK}} at `tests/infra/`
+- Run: `make -C tests test` (Debian 12) | `make -C tests test-rocky9`
+- Always tee output: `make -C tests test 2>&1 | tee /tmp/test-{{PROJECT_SHORT}}-<os>.log`
+
+## Verification Before Commit
+```bash
+bash -n <all-shell-files>
+shellcheck <all-shell-files>
+```
+See systems-engineering governance for full verification checklist.
+
+## Naming Convention
+- Agents/commands: `{domain}-{role}` for domain-specific, `{role}` for core
+- Domain shortcodes: sys, sec, fe
+- CC agent names: `rfxn-{file-stem}`
