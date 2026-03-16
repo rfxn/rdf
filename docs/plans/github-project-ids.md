@@ -56,14 +56,16 @@ Field ID: `PVTSSF_lAHOAB1a8s4BR4IBzg_kwWQ`
 
 Use with `gh project item-edit --project-id PVT_kwHOAB1a8s4BR4I_`
 
-## Status Field (Ecosystem)
+## Status Field (Ecosystem) — 5-State
 Field ID: `PVTSSF_lAHOAB1a8s4BR4I_zg_kw-E`
 
-| Status | Option ID |
-|--------|-----------|
-| Todo | `f75ad846` |
-| In Progress | `47fc9ee4` |
-| Done | `98236657` |
+| Status | Option ID | Use |
+|--------|-----------|-----|
+| Backlog | `949aba53` | Captured but not yet planned |
+| Ready | `52a183fc` | Specced, plan exists, ready to start |
+| In Progress | `f9ab04b3` | Actively executing |
+| In Review | `92856676` | In QA/UAT gate |
+| Done | `b0f7a623` | Complete |
 
 ## Project Field
 Field ID: `PVTSSF_lAHOAB1a8s4BR4I_zg_kxBo`
@@ -124,7 +126,7 @@ set ALL of these fields:
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| **Status** | Yes | Todo → In Progress → Done |
+| **Status** | Yes | Backlog → Ready → In Progress → In Review → Done |
 | **Project** | Yes | Which rfxn project (RDF, APF, BFD, LMD, etc.) |
 | **Priority** | Yes | P1 (critical), P2 (important), P3 (backlog) |
 | **Effort** | Yes | XS/S/M/L/XL — aggregate for the initiative/release/phase |
@@ -133,6 +135,19 @@ set ALL of these fields:
 
 Items missing Start Date or Target Date will not appear on the Roadmap view.
 Items missing Project will not group correctly on Cross-Project Board.
+
+## Ecosystem Board Admission
+
+The ecosystem board is a curated planning surface. Only add:
+- `type:initiative` — always (stays after Done as historical anchor)
+- `type:release` — when committed (remove after Done)
+- `type:phase` — when release starts (remove after Done)
+- `type:debt` — only if P1/P2 with cross-project impact
+
+Do NOT add community bug reports, feature requests, unlabeled issues, or
+`type:task` items. These stay on per-repo boards only.
+
+After a release ships, remove its Done phase issues. Keep Done initiatives.
 
 ---
 

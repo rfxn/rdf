@@ -304,6 +304,43 @@ The per-project Development board (#3) views are unchanged — it only shows
 phase issues for the current release. Initiatives and releases live on the
 ecosystem board.
 
+### 3.7 Ecosystem Board Admission Convention
+
+The ecosystem board is a **curated planning surface**, not a dump of all open
+issues. Only items that represent planned organizational work belong here.
+
+**Admitted (add to ecosystem board):**
+
+| Type | When | Remove When |
+|------|------|-------------|
+| `type:initiative` | Always — initiatives are roadmap items | Never (stays as historical anchor after Done) |
+| `type:release` | When release is committed | After release ships and is Done |
+| `type:phase` | When release starts executing | After phase is Done and release ships |
+| `type:debt` | Only if P1/P2 and cross-project impact | When resolved |
+
+**NOT admitted (stays on per-repo board only):**
+
+- Community bug reports and feature requests (no `type:initiative/release/phase` label)
+- Unlabeled issues
+- `type:task` issues (v1 model, deprecated)
+- Closed phase issues from past releases
+
+**Lifecycle cleanup:** After a release ships, remove its Done phase issues from
+the ecosystem board. The release issue stays as a historical marker. Done
+initiatives stay permanently — they anchor the roadmap timeline.
+
+### 3.8 Ecosystem Status Field (5-State)
+
+The ecosystem project uses a 5-state workflow matching the per-project boards:
+
+| Status | Color | Use | Initiative Mapping |
+|--------|-------|-----|-------------------|
+| Backlog | Gray | Captured but not yet planned | Planning |
+| Ready | Blue | Specced, plan exists, ready to start | Specced |
+| In Progress | Yellow | Actively executing | Executing |
+| In Review | Orange | In QA/UAT gate | — |
+| Done | Green | Complete | Complete |
+
 ---
 
 ## 4. Agent Workflow
