@@ -19,12 +19,13 @@
     "shell-only": "Bash"
   },
   "hooks": {
-    "TaskCompleted": {
+    "_comment": "DEFERRED: hook scripts not yet implemented. Uncomment when scripts exist in canonical/scripts/.",
+    "_TaskCompleted": {
       "command": "scripts/task-completed-gate.sh",
       "description": "Verify lint + test pass before task completion",
       "exit_code_reject": 2
     },
-    "TeammateIdle": {
+    "_TeammateIdle": {
       "command": "scripts/teammate-idle-handler.sh",
       "description": "Auto-assign next unblocked task or graceful shutdown",
       "exit_code_redirect": 2

@@ -39,8 +39,14 @@ _dispatch_subst() {
 _dispatch_agent_field() {
     local agent="$1"
     local field="$2"
+    # Validate field contains only safe characters (defense against jq injection)
+    local field_re='^[a-z_]+$'
+    if [[ ! "$field" =~ $field_re ]]; then
+        rdf_warn "invalid dispatch field name: ${field}"
+        return 1
+    fi
     rdf_require_file "$RDF_DISPATCH_AGENTS" "dispatch agent registry"
-    jq -r ".agents[\"${agent}\"].${field} // empty" "$RDF_DISPATCH_AGENTS"
+    jq -r --arg a "$agent" ".agents[\$a].${field} // empty" "$RDF_DISPATCH_AGENTS"
 }
 
 # Read a field from a task template
@@ -48,8 +54,14 @@ _dispatch_agent_field() {
 _dispatch_task_field() {
     local tmpl="$1"
     local field="$2"
+    # Validate field contains only safe characters (defense against jq injection)
+    local field_re='^[a-z_]+$'
+    if [[ ! "$field" =~ $field_re ]]; then
+        rdf_warn "invalid dispatch field name: ${field}"
+        return 1
+    fi
     rdf_require_file "$RDF_DISPATCH_TASKS" "dispatch task templates"
-    jq -r ".templates[\"${tmpl}\"].${field} // empty" "$RDF_DISPATCH_TASKS"
+    jq -r --arg t "$tmpl" ".templates[\$t].${field} // empty" "$RDF_DISPATCH_TASKS"
 }
 
 # Read the pipeline definition for a tier
