@@ -201,8 +201,10 @@ _check_plan() {
         local fname
         fname="$(basename "$f")"
         local in_progress
-        # grep -c exits 1 when count is 0 — safe to default
-        in_progress="$(grep -ciE 'IN.PROGRESS|ACTIVE|STARTED' "$f" 2>/dev/null || echo "0")"
+        # grep -c always outputs a count; exits 1 when count is 0 — suppress exit code
+        in_progress="$(grep -ciE 'IN.PROGRESS|ACTIVE|STARTED' "$f" 2>/dev/null || true)"
+        # Guard against empty result (e.g., binary file)
+        in_progress="${in_progress:-0}"
         if [[ "$in_progress" -gt 0 ]]; then
             # Check file age — if PLAN has active phases but hasn't been touched in >7d
             local plan_mtime
