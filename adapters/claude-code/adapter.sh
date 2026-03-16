@@ -70,6 +70,13 @@ cc_generate_agents() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file" .md)"
+
+        # Profile filter: skip if not in any active profile
+        if ! rdf_profile_includes "agents" "$basename_f"; then
+            rdf_log "  skipped (inactive profile): ${basename_f}"
+            continue
+        fi
+
         local dst_file="${dst_dir}/${basename_f}.md"
 
         # Generate frontmatter + canonical body
@@ -101,6 +108,12 @@ cc_generate_commands() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
+        local cmd_name="${basename_f%.md}"
+        # Profile filter
+        if ! rdf_profile_includes "commands" "$cmd_name"; then
+            rdf_log "  skipped (inactive profile): ${cmd_name}"
+            continue
+        fi
         command cp "$src_file" "${dst_dir}/${basename_f}"
         count=$((count + 1))
     done
@@ -120,6 +133,11 @@ cc_generate_scripts() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
+        # Profile filter
+        if ! rdf_profile_includes "scripts" "$basename_f"; then
+            rdf_log "  skipped (inactive profile): ${basename_f}"
+            continue
+        fi
         command cp "$src_file" "${dst_dir}/${basename_f}"
         chmod +x "${dst_dir}/${basename_f}"
         count=$((count + 1))
@@ -140,6 +158,27 @@ cc_generate_hooks() {
     fi
 }
 
+# Copy active profile governance docs to output
+cc_generate_governance() {
+    local dst_dir="${_CC_OUTPUT_DIR}/governance"
+    command mkdir -p "$dst_dir"
+    local count=0
+
+    local active
+    active="$(rdf_get_active_profiles)"
+
+    while IFS= read -r profile; do
+        [[ -z "$profile" ]] && continue
+        local gov_file="${RDF_HOME}/profiles/${profile}/governance.md"
+        if [[ -f "$gov_file" ]]; then
+            command cp "$gov_file" "${dst_dir}/${profile}-governance.md"
+            count=$((count + 1))
+        fi
+    done <<< "$active"
+
+    rdf_log "generated ${count} governance files"
+}
+
 # Full CC generation pipeline
 cc_generate_all() {
     rdf_log "generating Claude Code adapter output..."
@@ -155,6 +194,7 @@ cc_generate_all() {
     cc_generate_commands
     cc_generate_scripts
     cc_generate_hooks
+    cc_generate_governance
 
     local agent_count command_count script_count
     agent_count="$(find "${_CC_OUTPUT_DIR}/agents" -name '*.md' 2>/dev/null | wc -l)"

@@ -23,9 +23,9 @@ Commands:
   state      Deterministic project state snapshot (JSON)
   github     GitHub Issues + Projects integration
   dispatch   Generate mode-aware agent dispatch instructions
+  profile    Manage active domain profiles
 
 Future commands (not yet implemented):
-  profile    Manage active domain profiles (Phase 3)
   refresh    Agent-driven state file updates (Phase 4)
   init       Initialize projects with RDF conventions (Phase 7)
   doctor     Check project health and convention drift (Phase 7)
@@ -45,9 +45,10 @@ case "${1:-}" in
     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
     dispatch) shift; source "${RDF_LIBDIR}/cmd/dispatch.sh"; cmd_dispatch "$@" ;;
+    profile)  shift; source "${RDF_LIBDIR}/cmd/profile.sh";  cmd_profile "$@" ;;
     help|--help|-h|"") _rdf_usage ;;
     version|--version|-V) echo "rdf ${RDF_VERSION}" ;;
-    profile|init|doctor|refresh)
+    init|doctor|refresh)
         rdf_die "$1 is not yet implemented — see 'rdf help' for phase info" ;;
     *) rdf_die "unknown command: $1 — run 'rdf help' for usage" ;;
 esac

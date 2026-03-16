@@ -25,6 +25,7 @@ USAGE
 }
 
 cmd_generate() {
+    rdf_profile_init
     case "${1:-}" in
         claude-code)
             # shellcheck disable=SC1091

@@ -96,3 +96,45 @@ rdf_json_get() {
     rdf_require_file "$file" "JSON file"
     jq -r "$query" "$file"
 }
+
+# Profile helpers — used by profile.sh and adapter.sh
+RDF_PROFILES_DIR=""
+RDF_PROFILES_STATE=""
+
+rdf_profile_init() {
+    RDF_PROFILES_DIR="${RDF_HOME}/profiles"
+    RDF_PROFILES_STATE="${RDF_HOME}/.rdf-profiles"
+}
+
+# Get list of active profile names (one per line, core always included)
+rdf_get_active_profiles() {
+    rdf_profile_init
+    echo "core"
+    if [[ -f "$RDF_PROFILES_STATE" ]]; then
+        while IFS= read -r line; do
+            [[ -z "$line" || "$line" == \#* || "$line" == "core" ]] && continue
+            echo "$line"
+        done < "$RDF_PROFILES_STATE"
+    fi
+}
+
+# Check if a component belongs to any active profile
+# Args: $1=component type (agents|commands|scripts), $2=component name
+# Returns: 0 if included, 1 if excluded
+rdf_profile_includes() {
+    local comp_type="$1"
+    local comp_name="$2"
+    local active
+    active="$(rdf_get_active_profiles)"
+
+    while IFS= read -r profile; do
+        [[ -z "$profile" ]] && continue
+        local pf_file="${RDF_PROFILES_DIR}/${profile}/profile.json"
+        [[ -f "$pf_file" ]] || continue
+        if jq -e --arg n "$comp_name" --arg t "$comp_type" '.[$t] // [] | index($n)' "$pf_file" > /dev/null 2>&1; then
+            return 0
+        fi
+    done <<< "$active"
+
+    return 1
+}
