@@ -5,6 +5,60 @@ progress, and enforce quality gates.
 
 Read CLAUDE.md before taking any action.
 
+## State Bootstrap Protocol
+
+At the start of EVERY mode (Session Startup, single-project, phase dispatch),
+run `rdf state` to get deterministic project state before any other tool calls.
+
+### Multi-project state collection (Session Startup)
+
+For each project directory under `/root/admin/work/proj/`:
+
+```bash
+rdf state /root/admin/work/proj/<project-dir> 2>/dev/null
+```
+
+Parse the JSON output for: `project`, `version`, `branch`, `dirty`,
+`uncommitted_files`, `last_commit_hash`, `last_commit_age_hours`,
+`memory_exists`, `plan_exists`, `audit_exists`, `plan_phases`.
+
+Use these values directly in the dashboard table — do NOT redundantly run
+`git branch --show-current`, `grep VERSION`, or check file existence manually.
+The rdf-state JSON is authoritative.
+
+**If rdf state is not available** (Phase 2 not yet deployed), fall back to
+the manual git/grep collection described in Step 1 below. This ensures backward
+compatibility during the Phase 2 to Phase 4 transition.
+
+**Token savings:** ~5-7 tool calls per project replaced by 1 JSON parse.
+For 8 projects, this saves ~40-56 tool calls (~4000-8000 tokens) at startup.
+
+### Single-project state (Mode: <project-name>)
+
+```bash
+rdf state <project-path> 2>/dev/null
+```
+
+Use the JSON output to populate the single-project briefing header:
+- `version` -> version string
+- `branch` -> current branch
+- `dirty` -> dirty indicator
+- `last_commit_hash` -> HEAD reference
+- `plan_phases` -> phase progress table source
+
+### Phase dispatch state (Mode: phase <N>)
+
+Before creating the work order, run:
+
+```bash
+rdf state <project-path> 2>/dev/null
+```
+
+Populate the work order header fields from JSON:
+- `PROJECT_NAME` <- `.project`
+- `VERSION` <- `.version`
+- `BRANCH` <- `.branch`
+
 ## Status Output Protocol
 
 Between dispatches, output formatted status blocks so the user can track progress:
@@ -139,6 +193,21 @@ the first token against the modes below.
 
 ### 1. Read all state
 
+**Preferred path (Phase 4+):** Before reading individual state files, run
+`rdf state` against each active project. If the `rdf` CLI is available and
+returns valid JSON, use the state JSON as the primary source for version,
+branch, dirty status, and file existence. Only fall through to manual file
+reading for MEMORY.md content, PLAN.md details, and AUDIT.md findings — these
+require full text, not just existence checks.
+
+```bash
+# Collect state for all projects in one pass
+for project_dir in /root/admin/work/proj/*/; do
+    [[ -d "${project_dir}/.git" ]] || continue
+    rdf state "$project_dir" 2>/dev/null
+done
+```
+
 Read these files (skip any that do not exist):
 
 **Parent level:**
@@ -167,7 +236,22 @@ Read these files (skip any that do not exist):
 
 ### 2. Cross-project dashboard
 
-Run `/proj-status` from `/root/admin/work/proj/` for the cross-project view.
+**Preferred path (Phase 4+):** Assemble the dashboard from `rdf state` JSON
+collected in Step 1. This is faster and more accurate than `/proj-status`
+(which runs its own git/grep discovery). Map JSON fields to table columns:
+
+| Field | Column |
+|-------|--------|
+| `.project` | Project |
+| `.version` | Version |
+| `.branch` | Branch |
+| `.plan_phases.active` > 0 | Phase Status (IN PROGRESS) |
+| `.plan_phases.completed` / `.plan_phases.total` | Phase Status (fraction) |
+| `.audit_exists` | Audit |
+| from test count in memory | Tests |
+
+**Fallback:** If `rdf state` is not available, run `/proj-status` from
+`/root/admin/work/proj/` for the cross-project view.
 
 ### 3. Stale worktree detection
 
@@ -271,6 +355,10 @@ Switch to single-project context. Recognized aliases and their directories:
 | `elog_lib`  | `/root/admin/work/proj/elog_lib`                 |
 | `pkg_lib`   | `/root/admin/work/proj/pkg_lib`                  |
 | `batsman`   | `/root/admin/work/proj/batsman`                  |
+
+**State bootstrap:** Run `rdf state <project-dir>` first. Use JSON values for
+the briefing header (version, branch, dirty, phase counts). Then read PLAN.md,
+MEMORY.md, AUDIT.md for content details that JSON does not cover.
 
 Steps:
 1. Read the project's CLAUDE.md, PLAN.md, MEMORY.md, AUDIT.md
