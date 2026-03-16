@@ -10,39 +10,42 @@ R-FX NETWORKS — AGENT WORKFORCE
 
 USER
  │
- ├─► PO  (sonnet)          Product Owner
- │                         Intake, requirements, scope gating
+ ├─► po  (sonnet)              Product Owner
+ │                              Intake, requirements, scope gating
  │
- └─► EM  (sonnet)          Engineering Manager
-      │                    Prioritize, delegate, quality gates
+ └─► mgr  (sonnet)             Engineering Manager
+      │                         Prioritize, delegate, quality gates
       │
-      ├─► SCOPE  (sonnet)  Scoping & Research
-      │    │               Impact analysis, phase validation
+      ├─► scope  (sonnet)       Scoping & Research
+      │    │                    Impact analysis, phase validation
       │    │
-      │    └─► CHALLENGER  (sonnet)  Pre-Implementation Adversary
-      │                              Design flaws, edge cases, risks
+      │    └─► sys-challenger  (sonnet)  Pre-Implementation Adversary
+      │                                  Design flaws, edge cases, risks
       │
-      ├─► SE  (opus)       Senior Engineer
-      │    │               Implement phases, 7-step protocol
+      ├─► sys-eng  (opus)       Senior Engineer
+      │    │                    Implement phases, 7-step protocol
       │    │
-      │    ├─── QA  (sonnet)         QA Engineer — read-only
-      │    │                         Verify SE work, anti-patterns
+      │    ├─── sys-qa  (sonnet)         QA Engineer — read-only
+      │    │                              Verify sys-eng work, anti-patterns
       │    │
-      │    └─── SENTINEL  (opus)     Post-Impl Adversary — parallel w/ QA
-      │                              4-pass: anti-slop, regression,
-      │                              security, performance
+      │    └─── sys-sentinel  (opus)     Post-Impl Adversary — parallel w/ sys-qa
+      │                                  4-pass: anti-slop, regression,
+      │                                  security, performance
       │
-      ├─► UX REVIEWER  (sonnet)      UX & Output Design
-      │                              CLI, help text, email, man pages
+      ├─► sys-ux  (sonnet)              UX & Output Design
+      │                                 CLI, help text, email, man pages
       │
-      ├─► UAT  (sonnet)   User Acceptance Testing
-      │                   Sysadmin persona, Docker, real workflows
+      ├─► sys-uat  (sonnet)    User Acceptance Testing
+      │                        Sysadmin persona, Docker, real workflows
       │
-      ├─► FRONTEND QA   (sonnet)     Overwatch only
-      │                              API contracts, DOM, CSS, JS
+      ├─► sec-eng  (opus)      Security Engineer
+      │                        Offensive/defensive assessment
       │
-      ├─► FRONTEND UAT  (sonnet)     Overwatch only
-      │                              Playwright, headless Chromium
+      ├─► fe-qa   (sonnet)     Frontend QA
+      │                        API contracts, DOM, CSS, JS
+      │
+      ├─► fe-uat  (sonnet)     Frontend UAT
+      │                        Playwright, headless Chromium
       │
       └─► AUDIT PIPELINE  (orchestrator: sonnet)
            │
@@ -54,19 +57,20 @@ USER
 
 ════════════════════════════════════════════════════════════════════
 PIPELINE FLOW
-  USER → [PO] → EM → [Scope → SE plan-only → Challenger] → SE
-       → [Sentinel ∥ QA] → [UX Reviewer] → UAT → MERGE
+  USER → [po] → mgr → [scope → sys-eng plan-only → sys-challenger]
+       → sys-eng → [sys-sentinel ∥ sys-qa] → [sys-ux] → sys-uat
+       → MERGE
 ════════════════════════════════════════════════════════════════════
 ```
 
 ### Model Summary
 
-| Model  | Agents                                                                   |
-|--------|--------------------------------------------------------------------------|
-| opus   | SE, Sentinel, audit: regression, latent, security, modernize             |
-| sonnet | PO, EM, Scope, Challenger, QA, UX Reviewer, UAT, Frontend QA/UAT,       |
-|        | audit orchestrator + 11 domain agents                                    |
-| haiku  | audit: standards, version                                                |
+| Model  | Agents                                                                          |
+|--------|---------------------------------------------------------------------------------|
+| opus   | sys-eng, sys-sentinel, sec-eng, audit: regression, latent, security, modernize  |
+| sonnet | po, mgr, scope, sys-challenger, sys-qa, sys-ux, sys-uat, fe-qa, fe-uat,        |
+|        | audit orchestrator + 11 domain agents                                           |
+| haiku  | audit: standards, version                                                       |
 
 ---
 
@@ -79,37 +83,37 @@ PIPELINE FLOW
       │
       ▼
  ┌─────────────────────────────────────────────────────────────────┐
- │ PO  (optional — ambiguous/strategic requests only)  [sonnet]   │
+ │ po  (optional — ambiguous/strategic requests only)  [sonnet]    │
  │  1. Challenge user assumptions                                  │
  │  2. Identify hidden dependencies / cross-project impact         │
  │  3. Write acceptance criteria                                   │
- │  4. Output: scoped problem statement  → EM                      │
+ │  4. Output: scoped problem statement  → mgr                     │
  └───────────────────────────────┬─────────────────────────────────┘
                                  │  bypass with --no-po
                                  ▼
  ┌─────────────────────────────────────────────────────────────────┐
- │ EM  Engineering Manager  [sonnet]                               │
+ │ mgr  Engineering Manager  [sonnet]                              │
  │  1. Read all state (CLAUDE.md, MEMORY.md, PLAN.md, AUDIT.md)   │
  │  2. Cross-project dashboard                                     │
  │  3. Stale worktree detection                                    │
  │  4. Build priority queue                                        │
- │  5. Dispatch Scope → SE plan-only → Challenger (tier 2+)        │
- │  6. Dispatch SE with work order                                 │
- │  7. Tiered verification gate → QA [+ UAT]                       │
+ │  5. Dispatch scope → sys-eng plan-only → sys-challenger (tier 2+)│
+ │  6. Dispatch sys-eng with work order                            │
+ │  7. Tiered verification gate → sys-qa [+ sys-uat]               │
  │  8. Merge decision + post-merge actions                         │
  └─────┬───────────────────────────────────────────────────────────┘
        │
        ▼  [tier 2+ only]
  ┌──────────────────┐
- │ SCOPE  [sonnet]  │
+ │ scope  [sonnet]  │
  │  Work order      │
  │  assembly +      │
  │  context harvest │
  └────────┬─────────┘
-          │  scope-workorder → EM
+          │  scope-workorder → mgr
           ▼
  ┌──────────────────┐    ┌──────────────────────────────┐
- │ SE  [opus]       │───►│ CHALLENGER  [sonnet]          │
+ │ sys-eng  [opus]  │───►│ sys-challenger  [sonnet]      │
  │  plan-only mode  │    │  1. Read implementation plan  │
  │  Steps 1-2 only  │    │  2. Design flaw analysis      │
  │  Output:         │    │  3. Edge case / regression    │
@@ -117,24 +121,24 @@ PIPELINE FLOW
  │  plan.md         │    │  4. Simpler-alternative check │
  └──────────────────┘    │  5. Output: CHALLENGE_FINDINGS │
                          └──────────────────────────────┘
-                              │  findings injected into SE work order
+                              │  findings injected into sys-eng work order
                               ▼
  ┌─────────────────────────────────────────────────────────────────┐
- │ SE  Senior Engineer  [opus]   ← see Pipeline 2 (7-step)        │
+ │ sys-eng  Senior Engineer  [opus]   ← see Pipeline 2 (7-step)   │
  │  Executes phase. Writes work-output/phase-N-{status,result}.md │
  └─────────────────────────────────────────────────────────────────┘
       │                                 │
       ▼                                 │  [tier 2+ only, parallel]
  ┌──────────────────┐                   ▼
- │ QA  [sonnet]     │         ┌────────────────────────┐
- │ ← Pipeline 3     │         │ SENTINEL  [opus]        │
+ │ sys-qa  [sonnet] │         ┌────────────────────────┐
+ │ ← Pipeline 3     │         │ sys-sentinel  [opus]    │
  └────────┬─────────┘         │ ← Pipeline 4 (4-pass)  │
           │                   └────────────────────────┘
           │◄──────────────────────────────┘
-          │  findings merged into QA Step 5.5
+          │  findings merged into sys-qa Step 5.5
           ▼
  ┌─────────────────────────────────────────────────────────────────┐
- │ UX REVIEWER  (trigger-based)  [sonnet]                          │
+ │ sys-ux  (trigger-based)  [sonnet]                               │
  │  Triggers when: CLI output / help text / email / man page changed│
  │  Modes: DESIGN_REVIEW (pre-impl) | OUTPUT_REVIEW (post-impl)    │
  │  bypass with --no-ux                                            │
@@ -142,7 +146,7 @@ PIPELINE FLOW
                            │
                            ▼  [tier 2+ only]
               ┌────────────────────────────┐
-              │ UAT  [sonnet]               │
+              │ sys-uat  [sonnet]           │
               │  Sysadmin persona           │
               │  Docker install + scenarios │
               │  Writes uat-phase-N-verdict │
@@ -150,17 +154,17 @@ PIPELINE FLOW
                            │
                            ▼
               ┌────────────────────────────┐
-              │ EM MERGE DECISION          │
+              │ mgr MERGE DECISION         │
               │  See Pipeline 5            │
               └────────────────────────────┘
 ```
 
 ---
 
-### Pipeline 2 — SE 7-Step Protocol
+### Pipeline 2 — sys-eng 7-Step Protocol
 
 ```
- WORK ORDER (from EM)
+ WORK ORDER (from mgr)
       │
       ▼
  Step 1  UNDERSTAND CONTEXT  (MANDATORY)
@@ -206,19 +210,19 @@ PIPELINE FLOW
          Update phase-N-status.md [STATUS: COMPLETE]
       │
       ▼
- back to EM
+ back to mgr
 ```
 
 ---
 
-### Pipeline 3 — QA 6-Step Protocol
+### Pipeline 3 — sys-qa 6-Step Protocol
 
 ```
- SE result (work-output/phase-N-result.md)
+ sys-eng result (work-output/phase-N-result.md)
       │
       ▼
  Step 1  GATHER CONTEXT
-         Read CLAUDE.md, MEMORY.md, SE result file
+         Read CLAUDE.md, MEMORY.md, sys-eng result file
          Get full git diff. Read all modified files.
          ─────────────────────────────────────────────
  Step 2  STRUCTURAL REVIEW
@@ -227,7 +231,7 @@ PIPELINE FLOW
          Code quality: dead code, path validation,
          missing quotes, hardcoded paths
          ─────────────────────────────────────────────
- Step 2.5  BASH 4.1 COMPLIANCE  (MANDATORY — grep, don't trust SE)
+ Step 2.5  BASH 4.1 COMPLIANCE  (MANDATORY — grep, don't trust sys-eng)
          Grep for: ${var,,} mapfile -d declare -n
                    $EPOCHSECONDS declare -A (global)
          Include grep output as evidence.
@@ -249,7 +253,7 @@ PIPELINE FLOW
  Step 5.5  SENTINEL INTEGRATION
          If sentinel-N.md exists in work-output/:
            Read all findings
-           Verify SE's SENTINEL_RESPONSE is adequate
+           Verify sys-eng's SENTINEL_RESPONSE is adequate
            Elevate unaddressed MUST-FIX items
          ─────────────────────────────────────────────
  Step 6  VERDICT
@@ -259,19 +263,19 @@ PIPELINE FLOW
          Note ESCALATION_RECOMMENDED if complexity exceeded
       │
       ▼
- back to EM
+ back to mgr
 ```
 
 ---
 
-### Pipeline 4 — Sentinel 4-Pass Protocol  [opus, parallel with QA]
+### Pipeline 4 — sys-sentinel 4-Pass Protocol  [opus, parallel with sys-qa]
 
 ```
- SE result (work-output/phase-N-result.md)
+ sys-eng result (work-output/phase-N-result.md)
       │
       ▼
  Gather Context
-   Read CLAUDE.md, MEMORY.md, SE result
+   Read CLAUDE.md, MEMORY.md, sys-eng result
    Full git diff. Read every modified file (whole file).
    Grep callers/consumers of modified functions.
    Read MEMORY.md for past failures on similar changes.
@@ -319,8 +323,8 @@ PIPELINE FLOW
                EVIDENCE / RECOMMENDATION / VERIFIED
       │
       ▼
- QA reads sentinel-N.md at Step 5.5
- SE must respond to all BLOCKING_CONCERN + MUST-FIX in result file
+ sys-qa reads sentinel-N.md at Step 5.5
+ sys-eng must respond to all BLOCKING_CONCERN + MUST-FIX in result file
 ```
 
 ---
@@ -328,7 +332,7 @@ PIPELINE FLOW
 ### Pipeline 5 — Verification Gate & Merge Decision
 
 ```
- SE result classified by test-strategy tier
+ sys-eng result classified by test-strategy tier
       │
       ├── Tier 0 (docs only)
       │   CHANGELOG, README, man pages, comments       ──────────────┐
@@ -340,21 +344,22 @@ PIPELINE FLOW
                                                                       │
           ┌──────────────────────────────────────────┐               │
           │  FULL GATE  [parallel]                    │               │
-          │  QA (gate mode)  ∥  UAT                   │               │
-          │  Sentinel already ran during SE phase     │     LITE GATE │
-          └──────────────────┬───────────────────────┘    QA only ◄──┘
-                             │                             No UAT
+          │  sys-qa (gate mode)  ∥  sys-uat           │               │
+          │  sys-sentinel already ran during           │     LITE GATE │
+          │  sys-eng phase                            │    sys-qa ◄──┘
+          └──────────────────┬───────────────────────┘    only
+                             │                             No sys-uat
                              │
                              ▼
- ┌─────────────────────────────────┐   ┌────────────────────────────┐
- │ QA      │ UAT      │ Action     │   │ QA-lite     │ Action       │
- │─────────┼──────────┼────────────│   │─────────────┼──────────────│
- │APPROVED │APPROVED  │ MERGE ✓    │   │APPROVED     │ MERGE ✓      │
- │APPROVED │CONCERNS  │ MERGE+note │   │CHG_REQ      │ SE fix (×3)  │
- │APPROVED │REJECTED  │ SE fix (×3)│   │ESCALATION   │ → FULL GATE  │
- │CHG_REQ  │any       │ SE fix (×3)│   └────────────────────────────┘
- │REJECTED │any       │ BLOCKED    │
- └─────────────────────────────────┘
+ ┌──────────────────────────────────┐   ┌────────────────────────────┐
+ │ sys-qa  │ sys-uat │ Action       │   │ sys-qa-lite │ Action       │
+ │─────────┼─────────┼──────────────│   │─────────────┼──────────────│
+ │APPROVED │APPROVED │ MERGE        │   │APPROVED     │ MERGE        │
+ │APPROVED │CONCERNS │ MERGE+note   │   │CHG_REQ      │ sys-eng fix  │
+ │APPROVED │REJECTED │ sys-eng fix  │   │ESCALATION   │ → FULL GATE  │
+ │CHG_REQ  │any      │ sys-eng fix  │   └────────────────────────────┘
+ │REJECTED │any      │ BLOCKED      │
+ └──────────────────────────────────┘
       │ MERGE_READY
       ▼
  Post-merge: /mem-save + mark PLAN.md DONE + recommend next phase
@@ -368,16 +373,16 @@ PIPELINE FLOW
  Eligibility:
    ✓ N+1 prereqs met (N in-progress OK if N+1 doesn't depend on N's output)
    ✓ Planner validated: PARALLEL_SAFE true for N and N+1
-   ✓ SE(N) STATUS: COMPLETE
+   ✓ sys-eng(N) STATUS: COMPLETE
 
- Standard:  SE(N)──QA(N)──────────────SE(N+1)──QA(N+1)   4 time units
- Pipeline:  SE(N)──QA(N)──────────────────────────────
-                   SE(N+1, worktree)───QA(N+1)──────────  3 time units
+ Standard:  sys-eng(N)──sys-qa(N)──────────────sys-eng(N+1)──sys-qa(N+1)   4 time units
+ Pipeline:  sys-eng(N)──sys-qa(N)──────────────────────────────────────
+                        sys-eng(N+1, worktree)───sys-qa(N+1)──────────     3 time units
 
  Safety rules:
-   QA(N) APPROVED      → merge N, then merge N+1 after its QA passes
-   QA(N) CHG_REQUESTED → hold N+1 worktree until N is re-approved
-   QA(N) REJECTED      → discard N+1 worktree, resolve N first
+   sys-qa(N) APPROVED      → merge N, then merge N+1 after its sys-qa passes
+   sys-qa(N) CHG_REQUESTED → hold N+1 worktree until N is re-approved
+   sys-qa(N) REJECTED      → discard N+1 worktree, resolve N first
 ```
 
 ---
@@ -460,20 +465,21 @@ Full mode  (/audit):       All 15 agents + test execution
 
 | Command | What It Does | When To Use |
 |---------|-------------|-------------|
-| `/em` | EM briefing — assess state, prioritize, delegate | Start of session, project planning |
-| `/em status` | Cross-project status snapshot | Quick overview of all projects |
-| `/em health` | Live health dashboard | Pre-release sanity check |
-| `/em <project>` | Focus on one project | Deep-dive on APF, BFD, LMD, etc. |
-| `/em phase N` | Dispatch SE for phase N | Execute a specific plan phase |
-| `/em batch` | Batch same-class changes | Cross-project consistency work |
-| `/em release` | Release coordination mode | Ship a version |
-| `/em audit` | Full audit pipeline | Comprehensive code review |
+| `/mgr` | mgr briefing — assess state, prioritize, delegate | Start of session, project planning |
+| `/mgr status` | Cross-project status snapshot | Quick overview of all projects |
+| `/mgr health` | Live health dashboard | Pre-release sanity check |
+| `/mgr <project>` | Focus on one project | Deep-dive on APF, BFD, LMD, etc. |
+| `/mgr phase N` | Dispatch sys-eng for phase N | Execute a specific plan phase |
+| `/mgr batch` | Batch same-class changes | Cross-project consistency work |
+| `/mgr release` | Release coordination mode | Ship a version |
+| `/mgr audit` | Full audit pipeline | Comprehensive code review |
 | `/po` | Product Owner intake | Ambiguous or strategic requests |
-| `/se` | SE picks next pending phase | Hands-free execution |
-| `/se N` | SE executes phase N | Targeted phase work |
-| `/se <text>` | SE executes freeform task | Ad-hoc engineering work |
-| `/qa` | QA reviews latest SE work (full 6-step or lite 3-step) | Post-implementation gate |
-| `/uat` | UAT validates from user POV (tier 2+ only) | Operational readiness check |
+| `/sys-eng` | sys-eng picks next pending phase | Hands-free execution |
+| `/sys-eng N` | sys-eng executes phase N | Targeted phase work |
+| `/sys-eng <text>` | sys-eng executes freeform task | Ad-hoc engineering work |
+| `/sys-qa` | sys-qa reviews latest sys-eng work (full 6-step or lite 3-step) | Post-implementation gate |
+| `/sys-uat` | sys-uat validates from user POV (tier 2+ only) | Operational readiness check |
+| `/sec-eng` | Security engineer assessment | Offensive/defensive review |
 
 ### Audit Commands
 
@@ -535,6 +541,8 @@ Full mode  (/audit):       All 15 agents + test execution
 | `/onboard` | Lightweight project intake | First time in unfamiliar project |
 | `/reload` | Re-read all context files | Start of session |
 | `/modernize` | Assess modernization maturity | Identify technical debt |
+| `/doc-author` | Technical documentation drafting | README, man pages, guides |
+| `/status` | Quick project state display | Session orientation |
 
 ---
 
@@ -543,26 +551,26 @@ Full mode  (/audit):       All 15 agents + test execution
 ### Start a New Session
 ```
 /reload                          # Load context
-/em status                       # See all projects
+/mgr status                      # See all projects
 /proj-health                     # Live health check
 ```
 
 ### Execute Plan Phases (Orchestrated)
 ```
-/em bfd                          # EM assesses BFD state
-/em phase 3                      # EM dispatches SE for phase 3
-                                 # Scope validates refs
-                                 # Challenger reviews plan (tier 2+)
-                                 # SE implements, commits, reports
-                                 # Sentinel runs adversarial review (tier 2+)
-                                 # EM classifies tier → routes QA-lite or QA+UAT
-                                 # QA approves or requests changes
+/mgr bfd                         # mgr assesses BFD state
+/mgr phase 3                     # mgr dispatches sys-eng for phase 3
+                                 # scope validates refs
+                                 # sys-challenger reviews plan (tier 2+)
+                                 # sys-eng implements, commits, reports
+                                 # sys-sentinel runs adversarial review (tier 2+)
+                                 # mgr classifies tier → routes sys-qa-lite or sys-qa+sys-uat
+                                 # sys-qa approves or requests changes
 ```
 
 ### Execute Plan Phases (Direct)
 ```
-/se 3                            # SE executes phase 3 directly
-/qa                              # QA reviews the work
+/sys-eng 3                       # sys-eng executes phase 3 directly
+/sys-qa                          # sys-qa reviews the work
 ```
 
 ### Pre-Commit Verification
@@ -586,8 +594,8 @@ make -C tests test 2>&1 | tee /tmp/test-<project>.log | tail -30
 ```
 /audit                           # Run all 15 agents
 /audit-plan                      # Generate remediation plan
-/em                              # EM prioritizes findings
-/se                              # SE fixes phase by phase
+/mgr                             # mgr prioritizes findings
+/sys-eng                         # sys-eng fixes phase by phase
 ```
 
 ### Quick Post-Commit Check
@@ -600,13 +608,13 @@ make -C tests test 2>&1 | tee /tmp/test-<project>.log | tail -30
 /proj-cross                      # Find patterns across projects
 /proj-lib-sync                   # Check shared library drift
 /proj-cross-audit                # Batch audit findings
-/em batch                        # EM coordinates batch fixes
+/mgr batch                       # mgr coordinates batch fixes
 ```
 
 ### Shared Library Update
 ```
 cd <canonical-lib>               # Work in canonical repo
-/se                              # Implement changes
+/sys-eng                         # Implement changes
 /lib-release                     # Release new version
 /proj-lib-sync                   # Update all consumers
 ```
@@ -638,13 +646,13 @@ cd <canonical-lib>               # Work in canonical repo
 |                                      | v1.2.0      |                      |
 |  +-------------+                     +-------------+                      |
 |  | Sigforge    |                     +-------------+                      |
-|  | 1.0.0       |                     | pkg_lib     |                      |
-|  +-------------+                     | v1.0.2      |                      |
+|  | 1.1.3       |                     | pkg_lib     |                      |
+|  +-------------+                     | v1.0.4      |                      |
 |                                      +-------------+                      |
-|  +-------------+                                                          |
-|  | Overwatch   |  Vue 3 dashboard — monitors all projects                 |
-|  | 1.5         |                                                          |
-|  +-------------+                                                          |
+|  +-------------+                     +-------------+                      |
+|  | geoip_lib   |                     | GPUBench    |                      |
+|  | v1.0.2      |                     |             |                      |
+|  +-------------+                     +-------------+                      |
 +===========================================================================+
 ```
 
@@ -654,22 +662,22 @@ cd <canonical-lib>               # Work in canonical repo
 
 ```
 work-output/
-├── current-phase.md          # EM -> SE: work order with phase details
-├── implementation-plan.md    # SE -> Challenger: plan-only mode output
-├── plan-validation-N.md      # Planner -> EM: ref validation (or skipped)
-├── scope-workorder-P<N>.md   # Scope -> EM: work order draft + context
-├── challenge-N.md            # Challenger -> SE: pre-impl findings
-├── phase-N-status.md         # SE -> EM: progress updates (in-flight)
-├── phase-N-result.md         # SE -> EM: completion report
-├── test-registry-P<N>.md     # SE -> QA: test results (commit, counts, Docker ID)
-├── test-lock-P<N>.md         # SE/QA/UAT: test execution state coordination
-├── sentinel-N.md             # Sentinel -> QA: 4-pass findings
-├── sentinel-lib-N.md         # Sentinel -> QA: 2-pass library integration findings
-├── ux-review-N.md            # UX Reviewer -> SE: design/output review
-├── qa-phase-N-status.md      # QA -> EM: review progress (LITE or FULL mode)
-├── qa-phase-N-verdict.md     # QA -> EM: verdict (QA_MODE: LITE|FULL)
-├── uat-phase-N-verdict.md    # UAT -> EM: acceptance (tier 2+ only)
-└── pipeline-metrics.jsonl    # EM: append-only phase completion metrics
+├── current-phase.md          # mgr -> sys-eng: work order with phase details
+├── implementation-plan.md    # sys-eng -> sys-challenger: plan-only mode output
+├── plan-validation-N.md      # Planner -> mgr: ref validation (or skipped)
+├── scope-workorder-P<N>.md   # scope -> mgr: work order draft + context
+├── challenge-N.md            # sys-challenger -> sys-eng: pre-impl findings
+├── phase-N-status.md         # sys-eng -> mgr: progress updates (in-flight)
+├── phase-N-result.md         # sys-eng -> mgr: completion report
+├── test-registry-P<N>.md     # sys-eng -> sys-qa: test results (commit, counts, Docker ID)
+├── test-lock-P<N>.md         # sys-eng/sys-qa/sys-uat: test execution state coordination
+├── sentinel-N.md             # sys-sentinel -> sys-qa: 4-pass findings
+├── sentinel-lib-N.md         # sys-sentinel -> sys-qa: 2-pass library integration findings
+├── ux-review-N.md            # sys-ux -> sys-eng: design/output review
+├── qa-phase-N-status.md      # sys-qa -> mgr: review progress (LITE or FULL mode)
+├── qa-phase-N-verdict.md     # sys-qa -> mgr: verdict (QA_MODE: LITE|FULL)
+├── uat-phase-N-verdict.md    # sys-uat -> mgr: acceptance (tier 2+ only)
+└── pipeline-metrics.jsonl    # mgr: append-only phase completion metrics
 
 audit-output/
 ├── agent1.md ... agent15.md  # Domain agent raw findings
@@ -685,19 +693,19 @@ audit-output/
 
 ### Tiered Verification Gate
 
-EM classifies each SE result by test-strategy tier and routes accordingly:
+mgr classifies each sys-eng result by test-strategy tier and routes accordingly:
 
 ```
-+--------+-------------------+-----------+-----+-------------------------+
-| Tier   | Change Scope      | QA Mode   | UAT | Time Saved              |
-+--------+-------------------+-----------+-----+-------------------------+
-|  0     | Docs only         | gate-lite | no  | ~3-4 min (skip 3 steps) |
-|  1     | Single scope      | gate-lite | no  | ~3-4 min (skip 3 steps) |
-|  2     | Multi-file core   | gate full | yes | baseline                |
-|  3-4   | Cross-OS / legacy | gate full | yes | baseline                |
-+--------+-------------------+-----------+-----+-------------------------+
++--------+-------------------+-----------+---------+-------------------------+
+| Tier   | Change Scope      | QA Mode   | sys-uat | Time Saved              |
++--------+-------------------+-----------+---------+-------------------------+
+|  0     | Docs only         | gate-lite | no      | ~3-4 min (skip 3 steps) |
+|  1     | Single scope      | gate-lite | no      | ~3-4 min (skip 3 steps) |
+|  2     | Multi-file core   | gate full | yes     | baseline                |
+|  3-4   | Cross-OS / legacy | gate full | yes     | baseline                |
++--------+-------------------+-----------+---------+-------------------------+
 
-Override to full gate: Planner STALE, shared lib files, SE flagged concerns
+Override to full gate: Planner STALE, shared lib files, sys-eng flagged concerns
 ```
 
 ### Planner Skip Conditions
@@ -711,65 +719,65 @@ Always runs for: core logic mods, cross-project deps, stale PLANs.
 
 ### Pipeline Look-Ahead
 
-When consecutive phases have zero file overlap, SE(N+1) starts in a worktree
-while QA(N) reviews phase N. QA rejection holds N+1 until resolved.
+When consecutive phases have zero file overlap, sys-eng(N+1) starts in a worktree
+while sys-qa(N) reviews phase N. sys-qa rejection holds N+1 until resolved.
 
 ```
-Without:  SE(4) ── QA(4) ── SE(5) ── QA(5)                    4 time units
-With:     SE(4) ── QA(4) ──────────────────                    3 time units
-                   SE(5) ── QA(5) ─────────
+Without:  sys-eng(4) ── sys-qa(4) ── sys-eng(5) ── sys-qa(5)      4 time units
+With:     sys-eng(4) ── sys-qa(4) ──────────────────               3 time units
+                        sys-eng(5) ── sys-qa(5) ─────────
 ```
 
 ### Test Result Registry
 
-SE writes `test-registry-P<N>.md` after test execution with commit hash, tier,
-pass/fail counts, Docker image ID. QA reads this before running tests:
-- **Tier 0-1:** QA may trust registry if COMMIT matches, TIER >=, FAILED == 0
-- **Tier 2+:** QA always runs independently but reuses Docker images and
+sys-eng writes `test-registry-P<N>.md` after test execution with commit hash, tier,
+pass/fail counts, Docker image ID. sys-qa reads this before running tests:
+- **Tier 0-1:** sys-qa may trust registry if COMMIT matches, TIER >=, FAILED == 0
+- **Tier 2+:** sys-qa always runs independently but reuses Docker images and
   compares baseline counts from the registry
 
 ### Agent Test Lock Protocol
 
 `test-lock-P<N>.md` with STATE (IDLE/RUNNING/COMPLETE) enables passive
-coordination between SE, QA, and UAT. Single-read, no polling — agents read
+coordination between sys-eng, sys-qa, and sys-uat. Single-read, no polling — agents read
 the lock once, decide whether to proceed or reuse results, and act. Primary
 savings come from Docker image reuse, not from skipping test execution.
 
 ### Challenger Gate (Two-Dispatch Pattern)
 
-For tier 2+ changes, EM dispatches SE in `plan-only` mode (Steps 1-2 only),
-then dispatches Challenger to review the implementation plan, then re-dispatches
-SE from Step 3 with challenge findings. Mandatory checkpoint in work orders:
+For tier 2+ changes, mgr dispatches sys-eng in `plan-only` mode (Steps 1-2 only),
+then dispatches sys-challenger to review the implementation plan, then re-dispatches
+sys-eng from Step 3 with challenge findings. Mandatory checkpoint in work orders:
 `CHALLENGER: DISPATCHED | SKIPPED (<code>)`.
 
 ### Library Integration Sentinel
 
 When a shared library sync introduces updated files in a consumer project,
-EM dispatches Sentinel in LIBRARY_INTEGRATION mode — a lightweight 2-pass
+mgr dispatches sys-sentinel in LIBRARY_INTEGRATION mode — a lightweight 2-pass
 review (Regression + Security) focused on sourcing/init patterns, API
 mapping, and credential handling. Skips Anti-Slop and Performance (already
 done on the canonical library release).
 
 ### UX Reviewer Expanded Triggers
 
-UX Reviewer dispatches automatically in DESIGN_REVIEW mode (pre-implementation)
+sys-ux dispatches automatically in DESIGN_REVIEW mode (pre-implementation)
 when phases touch: alert templates, display formatting, machine-readable output,
 or when PLAN description mentions display/format/template/output/email keywords.
 Shifts template iteration from post-impl (3-5 commits) to pre-impl (1-2).
 
 ### Pipeline Metrics
 
-EM appends one JSONL line to `pipeline-metrics.jsonl` at each successful merge.
+mgr appends one JSONL line to `pipeline-metrics.jsonl` at each successful merge.
 `/mem-save` harvests the JSONL into rolling averages stored in the project's
-`pipeline-metrics.md` memory file. Tracks: fix cycle rate, Challenger dispatch
-rate, Sentinel effectiveness, test registry trust rate, UX dispatch rate.
+`pipeline-metrics.md` memory file. Tracks: fix cycle rate, sys-challenger dispatch
+rate, sys-sentinel effectiveness, test registry trust rate, sys-ux dispatch rate.
 
-### EM Context Delegation
+### mgr Context Delegation
 
-Scope agent assembles work order drafts (`scope-workorder-P<N>.md`) as the
-default path for standard phases. EM reads the ~2-3K token structured summary
+scope agent assembles work order drafts (`scope-workorder-P<N>.md`) as the
+default path for standard phases. mgr reads the ~2-3K token structured summary
 instead of doing ~15-20K tokens of raw code search, sustaining 5-8 phases per
-session vs 2-3. EM retains full IC authority and steps in directly when
+session vs 2-3. mgr retains full IC authority and steps in directly when
 judgment, speed, or authority is needed.
 
 ---
@@ -777,23 +785,24 @@ judgment, speed, or authority is needed.
 ## 8. Quick Reference Card
 
 ```
-PERSONAS         AUDIT            RELEASE          PROJECT          MEMORY
-─────────        ─────            ───────          ───────          ──────
-/em              /audit           /rel-prep        /proj-status     /mem-save
-/po              /audit-quick     /rel-chg-dedup   /proj-cross      /mem-audit
-/se              /audit-delta     /rel-chg-diff    /proj-cross-aud  /mem-compact
-/qa              /audit-plan      /rel-scrub       /proj-lib-sync
-/uat             /audit-feedback  /rel-merge       /proj-scaffold   CODE
-/scope                            /rel-ship        /proj-health     ────
-/modernize                        /rel-notes                        /code-validate
-                                                                    /code-grep
-INFRA                                              TESTING
-─────                                              ───────
-/ci-setup                                          /test-strategy
-/lib-release                                       /test-impact
-                                                   /test-dedup
-/onboard
-/reload
+PERSONAS           AUDIT            RELEASE          PROJECT          MEMORY
+─────────          ─────            ───────          ───────          ──────
+/mgr               /audit           /rel-prep        /proj-status     /mem-save
+/po                /audit-quick     /rel-chg-dedup   /proj-cross      /mem-audit
+/sys-eng           /audit-delta     /rel-chg-diff    /proj-cross-aud  /mem-compact
+/sys-qa            /audit-plan      /rel-scrub       /proj-lib-sync
+/sys-uat           /audit-feedback  /rel-merge       /proj-scaffold   CODE
+/scope                              /rel-ship        /proj-health     ────
+/sys-challenger                     /rel-notes                        /code-validate
+/sys-sentinel                                                         /code-grep
+/sys-ux            INFRA            TESTING
+/sec-eng           ─────            ───────          OTHER
+/fe-qa             /ci-setup        /test-strategy   ─────
+/fe-uat            /lib-release     /test-impact     /modernize
+                                    /test-dedup      /onboard
+                                                     /reload
+                                                     /status
+                                                     /doc-author
 ```
 
-**Total: 10 agents + 65 commands + 11 scripts = 86 primitives + pipeline optimization protocols**
+**Total: 12 agents + ~66 commands + 10 scripts = ~88 primitives + pipeline optimization protocols**
