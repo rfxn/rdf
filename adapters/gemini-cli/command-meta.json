@@ -1,0 +1,20 @@
+{
+  "_comment": "Maps canonical command basename to Gemini TOML description. Unlisted commands get first-sentence extraction.",
+  "mgr": "Dispatch the Engineering Manager to orchestrate work",
+  "sys-eng": "Dispatch the Senior Engineer for implementation work",
+  "sys-qa": "Dispatch QA Engineer for verification",
+  "sys-uat": "Dispatch UAT for user acceptance testing",
+  "sys-sentinel": "Dispatch Sentinel for post-implementation review",
+  "sys-challenger": "Dispatch Challenger for pre-implementation review",
+  "sys-ux": "Dispatch UX Reviewer for output surface review",
+  "po": "Dispatch Product Owner for requirements intake",
+  "scope": "Dispatch Scope agent for impact analysis",
+  "sec-eng": "Dispatch Security Engineer for security assessment",
+  "fe-qa": "Dispatch Frontend QA for web quality verification",
+  "fe-uat": "Dispatch Frontend UAT for Playwright testing",
+  "audit": "Run full audit pipeline across all domains",
+  "audit-quick": "Run static-only audit (no test execution)",
+  "mem-save": "Save current session state to MEMORY.md",
+  "mem-compact": "Archive stale MEMORY.md entries",
+  "refresh": "Refresh project state files"
+}

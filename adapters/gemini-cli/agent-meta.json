@@ -1,0 +1,50 @@
+{
+  "mgr": {
+    "name": "rfxn-mgr",
+    "description": "Engineering Manager for rfxn projects. Orchestrates work, delegates to engineers, tracks progress, enforces quality gates. Shell-native Linux DevOps leader. Use when coordinating multi-phase work, prioritizing tasks, or managing agent dispatch."
+  },
+  "po": {
+    "name": "rfxn-po",
+    "description": "Product Owner intake and requirements translation for rfxn projects. Translates ambiguous requests into scoped problem statements with acceptance criteria. Use when receiving new feature requests or scoping unclear work."
+  },
+  "scope": {
+    "name": "rfxn-scope",
+    "description": "Scoping and research agent for rfxn projects. Validates phase references against actual codebase state, performs impact analysis and complexity assessment, decomposes feature requests into phased plans. Use for pre-implementation analysis."
+  },
+  "sys-eng": {
+    "name": "rfxn-sys-eng",
+    "description": "Senior Engineer for rfxn bash/shell projects. Executes plan phases via 7-step protocol. Expert in bash 4.1+, Linux systems, rfxn conventions. Use for all code implementation work on shell projects."
+  },
+  "sys-qa": {
+    "name": "rfxn-sys-qa",
+    "description": "QA Engineer for rfxn projects. Mandatory verification gate for all SE work. Reviews code for defects, regressions, anti-patterns. Use after sys-eng completes implementation for quality verification."
+  },
+  "sys-uat": {
+    "name": "rfxn-sys-uat",
+    "description": "User Acceptance Testing agent. Sysadmin persona that runs real-world scenarios against installed tools in Docker containers. Use for end-to-end validation of installed software behavior."
+  },
+  "sys-sentinel": {
+    "name": "rfxn-sys-sentinel",
+    "description": "Post-implementation adversarial reviewer for rfxn projects. Runs four passes: Anti-Slop, Regression, Security, Performance. Use after sys-eng work for adversarial code review."
+  },
+  "sys-challenger": {
+    "name": "rfxn-sys-challenger",
+    "description": "Pre-implementation adversary for rfxn projects. Challenges implementation plans before code is written. Finds design flaws, behavioral regressions, missed edge cases. Use before sys-eng starts tier 2+ work."
+  },
+  "sys-ux": {
+    "name": "rfxn-sys-ux",
+    "description": "UX and output surface design reviewer for rfxn projects. Reviews CLI output, email templates, help text, man pages, error messages. Use when changes affect user-facing output surfaces."
+  },
+  "sec-eng": {
+    "name": "rfxn-sec-eng",
+    "description": "Senior security engineer for infrastructure and codebase security assessments. Offensive security background with deep systems engineering expertise. Use for security audits, vulnerability analysis, and threat modeling."
+  },
+  "fe-qa": {
+    "name": "rfxn-fe-qa",
+    "description": "Frontend QA agent. Reviews API response contracts, DOM structural correctness, CSS design system consistency, and JS patterns. Use for frontend code quality verification."
+  },
+  "fe-uat": {
+    "name": "rfxn-fe-uat",
+    "description": "Frontend UAT agent. Runs real-world scenarios via Playwright in headless Chromium. Tests UX, workflows, visual regression. Use for end-to-end frontend validation."
+  }
+}
