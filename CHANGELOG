@@ -1,15 +1,27 @@
 # RDF Changelog
 
 ## 2.0.0 (unreleased)
+
+### Phase 2 — CC Adapter + State Helper + CLI + GitHub
+[New] bin/rdf CLI dispatcher — Sigforge sf pattern with lazy-sourced subcommands
+[New] lib/rdf_common.sh — shared init, version, path helpers, require guards
+[New] rdf generate claude-code — canonical + metadata -> CC output with YAML frontmatter
+[New] rdf sync — reverse flow strips frontmatter, detects drift, supports --dry-run
+[New] rdf state — deterministic project state JSON in <1s (no LLM)
+[New] rdf github — setup, sync-labels, ecosystem-init, ecosystem-add
+[New] adapters/claude-code/agent-meta.json — CC frontmatter for all 12 agents
+[New] adapters/claude-code/hooks/hooks.json — hook event definitions
+[New] .claude-plugin/plugin.json — CC plugin manifest
+[Change] /root/.claude/{commands,agents,scripts} now symlinked to adapter output
+[Fix] Version detection handles rfxn patterns (V=, VER=, VERSION=, *_version=)
+[Fix] grep -c fallback avoids doubled output (anti-pattern #29)
+[Remove] overwatch-hook.sh reference from settings.json SubagentStop hooks
+
+### Phase 1 — Canonical Migration + Naming Overhaul
 [New] Canonical-first architecture — tool-agnostic storage
 [New] {domain}-{role} naming convention for all agents/commands
-[New] Unified 'rdf' CLI (generate, profile, init, doctor, state, refresh, sync, github)
-[New] Profile system — core, systems-engineering, security, frontend
-[New] Claude Code adapter with metadata-driven generation
-[New] GitHub Issues + Projects v2 integration
 [New] Self-verification gates in QA and Sentinel agents
 [New] Scope confirmation protocol in EM/mgr command
-[New] rdf-state.sh deterministic state helper
 [New] sec-eng agent and command
 [New] mgr agent definition (for Agent Teams delegate mode)
 [Change] workforce/ renamed to rdf/

@@ -38,7 +38,7 @@ else
             [[ -f "$_vf" ]] || continue
             # Match common rfxn version patterns with semver-like values
             # Requires at least N.N to avoid matching config toggles like ="1"
-            _v_line="$(grep -m1 -E '^(VERSION|VER|V|[a-z_]*_version)="?[0-9]+\.[0-9]' "$_vf" 2>/dev/null || true)"
+            _v_line="$(grep -m1 -E '^(VERSION|VER|V|[a-z_]*_version)="?[0-9]+\.[0-9]' "$_vf" 2>/dev/null || true)"  # file may not be text
             if [[ -n "$_v_line" ]]; then
                 # Strip key name up to first =
                 _version="${_v_line#*=}"

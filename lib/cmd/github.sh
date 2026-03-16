@@ -233,7 +233,7 @@ _github_ecosystem_add() {
     local count=0
     while IFS= read -r issue_url; do
         [[ -z "$issue_url" ]] && continue
-        gh project item-add "$project_number" --owner "$org" --url "$issue_url" 2>/dev/null || true
+        gh project item-add "$project_number" --owner "$org" --url "$issue_url" 2>/dev/null || true  # may already be added
         count=$((count + 1))
     done <<< "$issues"
 

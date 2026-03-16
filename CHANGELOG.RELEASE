@@ -3,19 +3,25 @@
 ## What's New
 - Canonical-first architecture — all content is tool-agnostic markdown
 - {domain}-{role} naming convention across all agents and commands
-- Unified 'rdf' CLI replacing install.sh/sync.sh
+- Unified `rdf` CLI with generate, sync, state, and github subcommands
+- Claude Code adapter: canonical + metadata-driven YAML frontmatter generation
+- Deterministic `rdf state` helper — project JSON in <1s, no LLM
+- GitHub Issues + Projects v2 integration (labels, projects, custom fields)
 - 4-profile system: core, systems-engineering, security, frontend
-- GitHub Issues + Projects v2 as durable work tracking layer
 - Self-verification gates in QA and Sentinel (addresses false-positive friction)
 - Scope confirmation in EM/mgr (addresses wrong-scope friction)
-- Deterministic state helper (rdf state) for context anchoring
+- Plugin manifest (.claude-plugin/plugin.json)
 
 ## Breaking Changes
 - workforce/ directory renamed to rdf/
 - All agent CC names changed (rfxn-se -> rfxn-sys-eng, etc.)
 - All persona slash commands changed (/se -> /sys-eng, etc.)
+- /root/.claude/{commands,agents,scripts} are now symlinks to adapter output
 - /root/.claude/ is now a deployment target — develop in rdf/canonical/
 
 ## Migration
-Run `rdf generate claude-code` then symlink output to /root/.claude/.
+1. Run `bin/rdf generate claude-code`
+2. Back up existing /root/.claude/{commands,agents,scripts}
+3. Create symlinks: `ln -sf .../adapters/claude-code/output/{dir} /root/.claude/{dir}`
+4. Remove overwatch-hook.sh from settings.json SubagentStop hooks
 See README.md for full migration instructions.
