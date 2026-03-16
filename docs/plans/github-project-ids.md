@@ -50,10 +50,89 @@ Field ID: `PVTSSF_lAHOAB1a8s4BR4IBzg_kwWQ`
 | sec-eng | `16af954c` |
 | fe-qa | `e9c06d6f` |
 
-## Target Date Field (Ecosystem Project #4)
+---
+
+# Ecosystem Project (#4)
+
+Use with `gh project item-edit --project-id PVT_kwHOAB1a8s4BR4I_`
+
+## Status Field (Ecosystem)
+Field ID: `PVTSSF_lAHOAB1a8s4BR4I_zg_kw-E`
+
+| Status | Option ID |
+|--------|-----------|
+| Todo | `f75ad846` |
+| In Progress | `47fc9ee4` |
+| Done | `98236657` |
+
+## Project Field
+Field ID: `PVTSSF_lAHOAB1a8s4BR4I_zg_kxBo`
+
+| Project | Option ID |
+|---------|-----------|
+| RDF | `70a28736` |
+| APF | `8cb0d846` |
+| BFD | `ca58a0a3` |
+| LMD | `e179148d` |
+| Sigforge | `5f9fdb2b` |
+| Libraries | `9d8116bc` |
+| geoscope | `206f359a` |
+
+## Priority Field (Ecosystem)
+Field ID: `PVTSSF_lAHOAB1a8s4BR4I_zg_kxBs`
+
+| Priority | Option ID |
+|----------|-----------|
+| P1 | `c7cc2ebf` |
+| P2 | `fd91b4cb` |
+| P3 | `8561d480` |
+
+## Effort Field (Ecosystem)
+Field ID: `PVTSSF_lAHOAB1a8s4BR4I_zg_kxDA`
+
+| Effort | Option ID |
+|--------|-----------|
+| XS | `c62a87ce` |
+| S | `07e1f61e` |
+| M | `2c5fa499` |
+| L | `8f23b79b` |
+| XL | `a9cb09ca` |
+
+## Start Date Field
+Field ID: `PVTF_lAHOAB1a8s4BR4I_zg_nQjk`
+
+Type: DATE — set to initiative/release start date.
+
+## Target Date Field
 Field ID: `PVTF_lAHOAB1a8s4BR4I_zg_nDqM`
 
-Type: DATE — no options. Set to end-of-quarter for initiatives (e.g., 2026-06-30 for Q2).
+Type: DATE — set to initiative/release end date.
+
+## Roadmap View Configuration
+
+The **Planning Roadmap** view uses:
+- **Start date field:** Start Date
+- **Target date field:** Target Date
+- **Group by:** Project
+
+---
+
+## v2 Field Checklist — Required on Every Ecosystem Item
+
+When adding an initiative, release, or phase issue to the ecosystem board,
+set ALL of these fields:
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| **Status** | Yes | Todo → In Progress → Done |
+| **Project** | Yes | Which rfxn project (RDF, APF, BFD, LMD, etc.) |
+| **Priority** | Yes | P1 (critical), P2 (important), P3 (backlog) |
+| **Effort** | Yes | XS/S/M/L/XL — aggregate for the initiative/release/phase |
+| **Start Date** | Yes for roadmap | When work begins (Roadmap bar start) |
+| **Target Date** | Yes for roadmap | When work ends (Roadmap bar end) |
+
+Items missing Start Date or Target Date will not appear on the Roadmap view.
+Items missing Project will not group correctly on Cross-Project Board.
 
 ---
 

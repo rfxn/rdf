@@ -200,6 +200,7 @@ _github_ecosystem_init() {
         "Project;SINGLE_SELECT;RDF,APF,BFD,LMD,Sigforge,Libraries,geoscope"
         "Priority;SINGLE_SELECT;P1,P2,P3"
         "Effort;SINGLE_SELECT;XS,S,M,L,XL"
+        "Start Date;DATE;"
         "Target Date;DATE;"
     )
 
