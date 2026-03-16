@@ -461,7 +461,7 @@ Full codebase quality sweep — lighter weight than a full audit, focused on
 actionable items rather than comprehensive cataloging.
 
 ### 1. Resolve project
-- If `[project]` provided, use alias table (same as em.md)
+- If `[project]` provided, use alias table (same as mgr.md)
 - If CWD has a CLAUDE.md, use that project
 - Otherwise, ask user to specify
 
