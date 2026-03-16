@@ -1,6 +1,15 @@
 # RDF Changelog
 
-## 2.0.0 (unreleased)
+## 2.0.0 (2026-03-16)
+
+### Phase 8 — Documentation, Archive, Cutover
+[Change] Complete README.md rewrite for public release
+[Change] Archive all workforce/ references to rdf/
+[Change] Update parent CLAUDE.md sync rules for RDF-authoritative flow
+[Change] RDF.md version target updated to release version
+[New] GitHub Issues + Projects bootstrapped for RDF and ecosystem
+[New] Label taxonomy synced across all rfxn repos
+[New] Fresh install cutover verified — full regeneration from canonical
 
 ### Phase 7 — Project Init + Health Checker
 [New] rdf init — project initialization from profile templates

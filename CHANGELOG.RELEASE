@@ -1,6 +1,10 @@
 # RDF 2.0.0 Release Notes
 
 ## What's New
+- Comprehensive README.md with architecture overview, CLI reference, profile
+  system docs, how-to guides, and contributing guidelines
+- GitHub label taxonomy synced across all rfxn ecosystem repos
+- Fresh install cutover verified — clone, generate, symlink, verify
 - `rdf init` — project initialization with type detection, profile templates,
   batch mode, GitHub scaffolding, and dry-run preview
 - `rdf doctor` — 6-category health checker (artifacts, drift, memory, plan,
