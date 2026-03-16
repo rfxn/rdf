@@ -326,32 +326,36 @@ flowchart LR
         APF[APF 2.0.2\nFirewall]
         BFD[BFD 2.0.1\nBrute Force Detection]
         LMD[LMD 2.0.1\nMalware Detection]
-        Sig[Sigforge 1.0.0\nSignature Engine]
-        OW[Overwatch 1.5\nDashboard]
+        Sig[Sigforge 1.1.3\nSignature Engine]
+        Geo[geoscope 0.1.0\nGeoIP Pipeline]
     end
 
     subgraph Libraries["Shared Libraries"]
         tlog[tlog_lib v2.0.3]
         alert[alert_lib v1.0.4]
         elog[elog_lib v1.0.3]
-        pkg[pkg_lib v1.0.2]
+        pkg[pkg_lib v1.0.4]
+        geoip[geoip_lib v1.0.2]
         bats[batsman v1.2.0]
     end
 
     tlog --> APF & BFD & LMD
     alert --> BFD & LMD
     elog --> BFD & LMD
-    bats --> APF & BFD & LMD & Sig & OW
+    pkg --> APF & BFD & LMD
+    geoip --> APF & BFD
+    bats --> APF & BFD & LMD & Sig & Geo
 
     style APF fill:#2b6cb0,color:#fff
     style BFD fill:#2b6cb0,color:#fff
     style LMD fill:#2b6cb0,color:#fff
     style Sig fill:#553c9a,color:#fff
-    style OW fill:#553c9a,color:#fff
+    style Geo fill:#553c9a,color:#fff
     style tlog fill:#276749,color:#fff
     style alert fill:#276749,color:#fff
     style elog fill:#276749,color:#fff
     style pkg fill:#276749,color:#fff
+    style geoip fill:#276749,color:#fff
     style bats fill:#276749,color:#fff
 ```
 
@@ -365,6 +369,7 @@ sequenceDiagram
     participant Scope
     participant Challenger
     participant SE
+    participant GitHub
     participant Sentinel
     participant QA
     participant UAT
@@ -388,6 +393,7 @@ sequenceDiagram
     EM->>SE: current-phase.md (work order)
     activate SE
     SE-->>SE: phase-N-status.md (progress)
+    SE-->>GitHub: gh issue comment (task N.M complete)
     SE-->>SE: test-registry-P<N>.md (after tests)
     SE->>EM: phase-N-result.md
     deactivate SE
@@ -414,4 +420,56 @@ sequenceDiagram
 
     EM-->>EM: merge decision
     EM-->>EM: append pipeline-metrics.jsonl
+```
+
+---
+
+## 9. Issue Hierarchy (v2)
+
+GitHub issue granularity: initiatives for planning, releases for versions,
+phases for execution, and task-completion comments for progress tracking.
+
+```mermaid
+flowchart TD
+    Init([type:initiative\nPlanning Roadmap]) -->|matures into| Rel([type:release\nPlanning + Execution Roadmap])
+    Rel -->|contains| Phase([type:phase\nPer-project board + Execution Roadmap])
+    Phase -->|progress via| Comments([Task comments\nAppend-only on phase issue])
+
+    style Init fill:#7057FF,color:#fff
+    style Rel fill:#1D76DB,color:#fff
+    style Phase fill:#5319E7,color:#fff
+    style Comments fill:#276749,color:#fff
+```
+
+---
+
+## 10. Two-Horizon Roadmap
+
+The ecosystem project provides two roadmap views: Planning (big-picture
+timeline by Target Date) and Execution (active work by Release iteration).
+
+```mermaid
+flowchart LR
+    subgraph Ecosystem["Ecosystem Project (#4)"]
+        subgraph PlanView["Planning Roadmap\n(Target Date field)"]
+            I1[Initiative:\nMessenger Service\nQ3 2026]
+            I2[Initiative:\ngeoscope v1.0\nQ2 2026]
+            R1[Release:\nAPF 2.1.0\nApril 2026]
+        end
+        subgraph ExecView["Execution Roadmap\n(Release iteration)"]
+            P1[Phase 1: NAT plumbing\nIn Progress]
+            P2[Phase 2: Config\nReady]
+            P3[Phase 3: Tests\nBacklog]
+        end
+    end
+
+    I1 -.->|spawns| R1
+    R1 -->|contains| P1 & P2 & P3
+
+    style I1 fill:#7057FF,color:#fff
+    style I2 fill:#7057FF,color:#fff
+    style R1 fill:#1D76DB,color:#fff
+    style P1 fill:#5319E7,color:#fff
+    style P2 fill:#5319E7,color:#fff
+    style P3 fill:#5319E7,color:#fff
 ```
