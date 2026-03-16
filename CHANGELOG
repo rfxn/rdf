@@ -2,6 +2,13 @@
 
 ## 2.0.0 (unreleased)
 
+### Phase 4 — State Refresh + Context Anchoring
+[New] lib/cmd/refresh.sh — rdf refresh command (memory/plan/github scopes)
+[New] canonical/commands/refresh.md — agent-driven /refresh slash command
+[Change] canonical/commands/mgr.md — consume rdf-state JSON at startup
+[Change] canonical/commands/reload.md — context anchoring with rdf state
+[Change] bin/rdf — activate refresh command
+
 ### Phase 5 — Agent Teams Architecture
 [New] lib/dispatch.sh — mode-aware agent dispatch abstraction (subagent vs Agent Teams)
 [New] lib/dispatch-agents.json — centralized agent registry (11 agents)

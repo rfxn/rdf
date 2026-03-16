@@ -1,6 +1,10 @@
 # RDF 2.0.0 Release Notes
 
 ## What's New
+- `rdf refresh` command with memory, plan, and github scopes
+- EM (mgr.md) uses rdf-state JSON for 60-78% token savings at startup
+- `/reload` displays context anchor block (project/branch/version/dirty)
+- Cross-project context drift fix at session start (Friction Fix 4)
 - Canonical-first architecture — all content is tool-agnostic markdown
 - {domain}-{role} naming convention across all agents and commands
 - Unified `rdf` CLI with generate, sync, state, and github subcommands
