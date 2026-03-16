@@ -1,0 +1,38 @@
+{
+  "max_lines": 150,
+  "sections": [
+    {
+      "heading": "Project Context",
+      "source": "static",
+      "content": "rfxn Development Framework (RDF) — convention governance, agent pipelines, and project orchestration for the rfxn ecosystem (APF, BFD, LMD, Sigforge, shared libraries). All projects are Bash 4.1+ targeting CentOS 6 through modern distros."
+    },
+    {
+      "heading": "Build & Test",
+      "source": "governance",
+      "profile": "systems-engineering",
+      "extract": "testing"
+    },
+    {
+      "heading": "Code Style & Conventions",
+      "source": "governance",
+      "profile": "systems-engineering",
+      "extract": "shell-standards"
+    },
+    {
+      "heading": "Git Workflows",
+      "source": "governance",
+      "profile": "core",
+      "extract": "commit-protocol"
+    },
+    {
+      "heading": "Agent Roster",
+      "source": "agents",
+      "format": "bullet-list"
+    },
+    {
+      "heading": "Constraints & Boundaries",
+      "source": "static",
+      "content": "Bash 4.1+ floor (CentOS 6). No ${var,,}, mapfile -d, declare -n, $EPOCHSECONDS. No global declare -A. command cp/mv/rm in source (not bare, not /usr/bin/). Double-quote all variables. Guard all cd with || exit 1."
+    }
+  ]
+}
