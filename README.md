@@ -3,7 +3,7 @@
 Convention governance, agent pipelines, and project orchestration for the
 rfxn ecosystem. Tool-agnostic by design, currently delivered via Claude Code.
 
-**Version:** 2.0.0 | **License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
+**Version:** 2.1.0 | **License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
 
 > **This is not a drop-in framework.** RDF is purpose-built for the rfxn
 > ecosystem and shared as a reference for what disciplined AI-assisted
@@ -362,7 +362,7 @@ Single `rdf` dispatcher with lazy-sourced subcommand modules.
 ```
 Usage: rdf <command> [subcommand] [options]
 
-RDF 2.0.0 -- rfxn Development Framework
+RDF 2.1.0 -- rfxn Development Framework
 
 Commands:
   generate   Build tool-specific files from canonical sources

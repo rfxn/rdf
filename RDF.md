@@ -9,7 +9,7 @@ adapter generation. RDF is the single source of truth for all agent definitions,
 commands, scripts, and governance deployed into Claude Code, Gemini CLI,
 Codex, or AGENTS.md environments.
 
-**Version:** 2.0.0
+**Version:** 2.1.0
 **License:** GNU GPL v2
 
 ---
@@ -228,7 +228,7 @@ rdf/                                 # Repository root
 |   +-- specs/                       # Architecture and design documents
 |
 |-- CLAUDE.md                        # RDF project's own instructions
-|-- VERSION                          # "2.0.0"
+|-- VERSION                          # "2.1.0"
 |-- CHANGELOG
 |-- CHANGELOG.RELEASE
 |-- RDF.md                           # Architecture doc (this file)

@@ -1,5 +1,27 @@
 # RDF Changelog
 
+## 2.1.0 (2026-03-16)
+
+### GitHub Issue Model v2 — Phase-Level Tracking + Roadmap Planning
+[New] type:initiative and type:release labels in label taxonomy
+[New] Target Date field (DATE) in ecosystem project setup
+[New] Initiative issue type for roadmap planning (directional time-boxed)
+[New] Release issue type for versioned release tracking
+[New] Two-horizon roadmap: Planning Roadmap (Target Date) + Execution Roadmap (Release)
+[New] Diagram 9: Issue Hierarchy (initiative → release → phase → comments)
+[New] Diagram 10: Two-Horizon Roadmap visualization
+[Change] Issue tracking granularity from per-task to per-phase (~72% API call reduction)
+[Change] Task progress tracked via phase issue comments, not separate issues
+[Change] mgr command: phase-level issue management, initiative awareness
+[Change] sys-eng command: task-completion comments, phase issue commit refs
+[Change] sys-qa command: QA verdict comments on phase issues
+[Change] sys-sentinel agent: findings posted as phase issue comments
+[Change] refresh command: removed task issue sync, added initiative/release sync
+[Change] rel-prep/rel-ship/rel-merge: type:release labels, initiative lifecycle
+[Change] ecosystem-init: idempotent field updates, DATE type support
+[Change] README, RDF.md, WORKFORCE.md, diagrams updated for v2 model
+[Change] Core governance: issue conventions rewritten for v2
+
 ## 2.0.0 (2026-03-16)
 
 ### Phase 8 — Documentation, Archive, Cutover
