@@ -1,0 +1,46 @@
+{
+  "_comment": "Claude Code Agent Teams configuration — used by rdf generate when RDF_AGENT_TEAMS=true",
+  "_version": "1.0.0",
+  "enable_setting": {
+    "key": "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
+    "value": "1",
+    "location": "settings.json env block"
+  },
+  "team_defaults": {
+    "name_prefix": "rfxn",
+    "delegate_mode": true,
+    "teammate_mode": "in-process"
+  },
+  "agent_type_mapping": {
+    "_comment": "Maps RDF agent types to CC Agent Teams agent types",
+    "general-purpose": "general-purpose",
+    "read-only": "Explore",
+    "plan-only": "Plan",
+    "shell-only": "Bash"
+  },
+  "hooks": {
+    "TaskCompleted": {
+      "command": "scripts/task-completed-gate.sh",
+      "description": "Verify lint + test pass before task completion",
+      "exit_code_reject": 2
+    },
+    "TeammateIdle": {
+      "command": "scripts/teammate-idle-handler.sh",
+      "description": "Auto-assign next unblocked task or graceful shutdown",
+      "exit_code_redirect": 2
+    }
+  },
+  "model_preferences": {
+    "_comment": "Cost-optimized model assignment for Agent Teams mode",
+    "lead": "sonnet",
+    "semantic_depth": "opus",
+    "focused_work": "sonnet",
+    "checklist": "haiku"
+  },
+  "settings_fragment": {
+    "env": {
+      "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    },
+    "teammateMode": "in-process"
+  }
+}
