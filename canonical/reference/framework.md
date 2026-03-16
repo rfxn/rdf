@@ -31,7 +31,7 @@ framework itself evolves. Never contains volatile data (counts, hashes, dates).
 - Parent CLAUDE.md is authoritative; project CLAUDE.md inherits, never repeats
 - Reference files are factual and version-independent
 - Project reference/ is optional but recommended for projects with API contracts
-  or complex internal architecture (e.g., Overwatch data schemas)
+  or complex internal architecture (e.g., monitoring dashboard data schemas)
 - All governance artifacts are excluded from git via `.git/info/exclude`
   (CLAUDE.md, PLAN*.md) or committed as project documentation (reference/, data/)
 
@@ -88,16 +88,16 @@ expected to be stale after a crash — recovery uses them forensically.
 |----------|----------|--------|--------|-----------|
 | Work order | `work-output/current-phase.md` | EM | SE | Overwritten per dispatch |
 | Parallel work order | `work-output/phase-N-workorder.md` | EM | SE | Per parallel dispatch |
-| SE status | `work-output/phase-N-status.md` | SE | Overwatch, EM | Written at each of 7 steps |
+| SE status | `work-output/phase-N-status.md` | SE | monitoring system, EM | Written at each of 7 steps |
 | SE result | `work-output/phase-N-result.md` | SE | QA, EM | Final deliverable |
-| QA status | `work-output/qa-phase-N-status.md` | QA | Overwatch | Written at each of 6 steps |
+| QA status | `work-output/qa-phase-N-status.md` | QA | monitoring system | Written at each of 6 steps |
 | QA verdict | `work-output/qa-phase-N-verdict.md` | QA | EM | Gate decision |
 | UAT verdict | `work-output/uat-phase-N-verdict.md` | UAT | EM | Advisory gate |
 | Scope validation | `work-output/scope-validation-N.md` | Planner | EM, SE | Pre-dispatch check |
-| Session manifest | `work-output/session.md` | EM | EM (recovery), Overwatch | Per session |
-| In-flight registry | `work-output/in-flight.md` | EM | EM (recovery), Overwatch | Per session |
+| Session manifest | `work-output/session.md` | EM | EM (recovery), monitoring system | Per session |
+| In-flight registry | `work-output/in-flight.md` | EM | EM (recovery), monitoring system | Per session |
 | Agent feed | `work-output/agent-feed.log` | SubagentStop hook | Forensic review | Append-only |
-| Spool events | `work-output/spool/<agent-id>.jsonl` | Overwatch hook | Overwatch collectors | Append-only |
+| Spool events | `work-output/spool/<agent-id>.jsonl` | monitoring hook | collectors | Append-only |
 
 **Work order schema:**
 ```
@@ -177,16 +177,16 @@ model: opus | sonnet
 - `dx:*.md` — developer experience utilities
 - `code-*.md` — code quality commands
 - `test-*.md` — test utilities
-- Standalone names for major personas: `em.md`, `se.md`, `qa.md`, `uat.md`
+- Standalone names for major personas: `mgr.md`, `sys-eng.md`, `sys-qa.md`, `sys-uat.md`
 
-### Category 5: Integration (Overwatch contracts)
+### Category 5: Integration (Monitoring Contracts)
 
-Contracts between the filesystem-based framework and Overwatch's collection
-and display pipeline. These define what Overwatch expects to find and in
-what shape.
+Contracts between the filesystem-based framework and the monitoring system's
+collection and display pipeline. These define what the dashboard expects to
+find and in what shape.
 
 **Collector protocol:**
-- Collectors receive env vars: `OVERWATCH_PROJ_ROOT`, optional `COLLECT_PROJECT`,
+- Collectors receive env vars: `PROJ_ROOT`, optional `COLLECT_PROJECT`,
   `COLLECT_LIMIT`
 - Output: valid JSON (array or object) to stdout
 - Errors: stderr only (not parsed)
@@ -212,7 +212,7 @@ what shape.
   "ts": "<ISO 8601>",
   "event": "subagent_stop",
   "agent_id": "<id>",
-  "agent_type": "<rfxn-se|rfxn-qa|...>",
+  "agent_type": "<rfxn-sys-eng|rfxn-sys-qa|...>",
   "agent_role": "<SE|QA|UAT|...>",
   "session_id": "<uuid>",
   "project": "<name>",
@@ -223,9 +223,9 @@ what shape.
 ```
 
 **Event gap:** Only `subagent_stop` events are captured. There is no
-`subagent_start` event. Overwatch approximates "running" state by scanning
-transcript files (`collect-running.sh`), which is fragile. A future
-`SubagentStart` hook would close this gap.
+`subagent_start` event. The monitoring system approximates "running" state
+by scanning transcript files (`collect-running.sh`), which is fragile. A
+future `SubagentStart` hook would close this gap.
 
 ### Category 6: Archive (historical)
 
@@ -272,7 +272,7 @@ EM ──[work order]──→ Planner ──[scope validation]──→ EM
 
 ### Intra-Session: Live Status
 
-During execution, agents write status files that Overwatch polls:
+During execution, agents write status files that the monitoring system polls:
 
 ```
 SE writes phase-N-status.md ──→ collect-agents.sh reads it (3s poll)
@@ -330,13 +330,13 @@ PENDING: [7, 8]
 ```
 
 **Who writes:** EM (on dispatch and on reading agent results)
-**Who reads:** EM on next session startup (crash recovery), Overwatch
+**Who reads:** EM on next session startup (crash recovery), monitoring system
 (`collect-agents.sh`)
 
 ### In-Flight Registry (new artifact)
 
 Tracks what agents are currently dispatched. Enables crash detection
-and Overwatch live status without scanning transcript files.
+and live status visibility without scanning transcript files.
 
 **Location:** `work-output/in-flight.md`
 **Lifecycle:** Entries added on dispatch, removed on completion. Stale
@@ -347,7 +347,7 @@ entries after session restart indicate crashed agents.
 
 PHASE: 6
 AGENT_ID: agent-ghi789
-AGENT_TYPE: rfxn-se
+AGENT_TYPE: rfxn-sys-eng
 WORKTREE: /root/admin/work/proj/bfd/.git/worktrees/2.0.1-p6-se
 SCOPE_LOCK: [files/bfd, files/internals/alert.sh]
 DISPATCHED: 2026-03-08T14:50:00Z
@@ -356,7 +356,7 @@ STATUS: RUNNING
 
 **Who writes:** EM (append on dispatch, remove on completion read)
 **Who reads:** EM on startup (stale entries = crash recovery trigger),
-Overwatch (`collect-running.sh` — replaces transcript scanning)
+monitoring system (`collect-running.sh` — replaces transcript scanning)
 
 **Crash detection protocol:**
 1. EM reads `in-flight.md` on startup
@@ -372,8 +372,8 @@ Overwatch (`collect-running.sh` — replaces transcript scanning)
 
 Which artifacts MUST exist for each project type:
 
-| Artifact | Shell project | Shared library | Overwatch | Parent workspace |
-|----------|---------------|----------------|-----------|------------------|
+| Artifact | Shell project | Shared library | Monitoring dashboard | Parent workspace |
+|----------|---------------|----------------|----------------------|------------------|
 | CLAUDE.md | Required | Required | Required | Required |
 | MEMORY.md | Required | Required | Required | In auto-memory |
 | PLAN.md | When active | When active | When active | N/A |
@@ -383,9 +383,9 @@ Which artifacts MUST exist for each project type:
 | CHANGELOG | Required | Required | Required | N/A |
 | tests/ | Required | Required | Required | N/A |
 
-**Overwatch-specific:** `reference/` is mandatory because Overwatch is the
-integration layer — it must formally document what it consumes (data schemas,
-collector protocol, API contracts).
+**Monitoring dashboard note:** `reference/` is mandatory for the monitoring
+dashboard because it is the integration layer — it must formally document
+what it consumes (data schemas, collector protocol, API contracts).
 
 ---
 
@@ -420,5 +420,5 @@ Current version: **RDF v1.0**
 When adding a new artifact type:
 1. Define it in this file (category, location, format, lifecycle, ownership)
 2. Update project presence requirements if mandatory
-3. Update Overwatch collectors if the artifact should be visible
+3. Update monitoring collectors if the artifact should be visible
 4. Update parent CLAUDE.md if the artifact has commit or workflow implications
