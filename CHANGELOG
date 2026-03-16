@@ -1,0 +1,25 @@
+# RDF Changelog
+
+## 2.0.0 (unreleased)
+[New] Canonical-first architecture — tool-agnostic storage
+[New] {domain}-{role} naming convention for all agents/commands
+[New] Unified 'rdf' CLI (generate, profile, init, doctor, state, refresh, sync, github)
+[New] Profile system — core, systems-engineering, security, frontend
+[New] Claude Code adapter with metadata-driven generation
+[New] GitHub Issues + Projects v2 integration
+[New] Self-verification gates in QA and Sentinel agents
+[New] Scope confirmation protocol in EM/mgr command
+[New] rdf-state.sh deterministic state helper
+[New] sec-eng agent and command
+[New] mgr agent definition (for Agent Teams delegate mode)
+[Change] workforce/ renamed to rdf/
+[Change] RDF is authoritative — /root/.claude/ is deployment target, not source
+[Change] All agent/command cross-references updated for new naming
+[Remove] overwatch-hook.sh (Overwatch project dead)
+[Remove] sync.sh and install.sh (replaced by rdf generate + rdf sync)
+
+## 1.0.1
+Documentation accuracy pass. See git log for details.
+
+## 1.0.0
+Initial release. Workforce reference framework.
