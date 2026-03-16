@@ -12,32 +12,81 @@ Build tool-specific output from canonical sources.
 
 Targets:
   claude-code    Generate Claude Code adapter output
+  gemini-cli     Generate Gemini CLI adapter output
+  codex          Generate Codex adapter output (AGENTS.md + config)
+  agents-md      Generate cross-tool AGENTS.md
   all            Generate all available adapters
 
 The generated output is written to adapters/<target>/output/.
-After generation, symlink /root/.claude/{commands,agents,scripts}
-to the output directories to activate.
 
 Examples:
   rdf generate claude-code
+  rdf generate gemini-cli
+  rdf generate codex
+  rdf generate agents-md
   rdf generate all
 USAGE
+}
+
+# Source and run a single adapter
+# Args: $1 = adapter script relative to RDF_ADAPTERS, $2 = generation function name
+_generate_adapter() {
+    local script="${RDF_ADAPTERS}/$1"
+    local func="$2"
+
+    if [[ ! -f "$script" ]]; then
+        rdf_die "adapter not found: ${script}"
+    fi
+
+    # shellcheck disable=SC1090
+    source "$script"
+    "$func"
 }
 
 cmd_generate() {
     rdf_profile_init
     case "${1:-}" in
         claude-code)
-            # shellcheck disable=SC1091
-            source "${RDF_ADAPTERS}/claude-code/adapter.sh"
-            cc_generate_all
+            _generate_adapter "claude-code/adapter.sh" "cc_generate_all"
+            ;;
+        gemini-cli)
+            _generate_adapter "gemini-cli/adapter.sh" "gem_generate_all"
+            ;;
+        codex)
+            _generate_adapter "codex/adapter.sh" "cdx_generate_all"
+            ;;
+        agents-md)
+            _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
             ;;
         all)
-            # Phase 2: only claude-code available
-            # shellcheck disable=SC1091
-            source "${RDF_ADAPTERS}/claude-code/adapter.sh"
-            cc_generate_all
-            # Future: gemini-cli, codex, agents-md adapters
+            rdf_log "generating all adapters..."
+            local failed=0
+
+            # Claude Code
+            if [[ -f "${RDF_ADAPTERS}/claude-code/adapter.sh" ]]; then
+                _generate_adapter "claude-code/adapter.sh" "cc_generate_all" || failed=$((failed + 1))
+            fi
+
+            # Gemini CLI
+            if [[ -f "${RDF_ADAPTERS}/gemini-cli/adapter.sh" ]]; then
+                _generate_adapter "gemini-cli/adapter.sh" "gem_generate_all" || failed=$((failed + 1))
+            fi
+
+            # Codex
+            if [[ -f "${RDF_ADAPTERS}/codex/adapter.sh" ]]; then
+                _generate_adapter "codex/adapter.sh" "cdx_generate_all" || failed=$((failed + 1))
+            fi
+
+            # AGENTS.md
+            if [[ -f "${RDF_ADAPTERS}/agents-md/adapter.sh" ]]; then
+                _generate_adapter "agents-md/adapter.sh" "amd_generate_all" || failed=$((failed + 1))
+            fi
+
+            if [[ $failed -gt 0 ]]; then
+                rdf_warn "${failed} adapter(s) failed"
+            else
+                rdf_log "all adapters generated successfully"
+            fi
             ;;
         help|--help|-h)
             _generate_usage
