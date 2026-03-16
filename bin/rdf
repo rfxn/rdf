@@ -22,6 +22,7 @@ Commands:
   sync       Pull /root/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
   github     GitHub Issues + Projects integration
+  dispatch   Generate mode-aware agent dispatch instructions
 
 Future commands (not yet implemented):
   profile    Manage active domain profiles (Phase 3)
@@ -43,6 +44,7 @@ case "${1:-}" in
     sync)     shift; source "${RDF_LIBDIR}/cmd/sync.sh";     cmd_sync "$@" ;;
     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
+    dispatch) shift; source "${RDF_LIBDIR}/cmd/dispatch.sh"; cmd_dispatch "$@" ;;
     help|--help|-h|"") _rdf_usage ;;
     version|--version|-V) echo "rdf ${RDF_VERSION}" ;;
     profile|init|doctor|refresh)

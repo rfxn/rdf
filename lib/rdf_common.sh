@@ -80,6 +80,14 @@ rdf_require_dir() {
     fi
 }
 
+# Feature flags — environment-based
+rdf_feature_enabled() {
+    local flag="$1"
+    local val
+    val="${!flag:-false}"
+    [[ "$val" == "true" || "$val" == "1" ]]
+}
+
 # Read a JSON value using jq — dies if jq not available
 rdf_json_get() {
     local file="$1"
