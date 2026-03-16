@@ -1,6 +1,10 @@
 # RDF 2.0.0 Release Notes
 
 ## What's New
+- `rdf init` — project initialization with type detection, profile templates,
+  batch mode, GitHub scaffolding, and dry-run preview
+- `rdf doctor` — 6-category health checker (artifacts, drift, memory, plan,
+  github, sync) with --all cross-project scan, --json output, --scope filtering
 - Multi-tool adapter architecture: Gemini CLI, Codex, and cross-tool AGENTS.md
 - `rdf generate gemini-cli` produces .gemini/agents/*.md + .gemini/commands/*.toml
 - `rdf generate codex` produces AGENTS.md + .codex/config.toml for Codex CLI

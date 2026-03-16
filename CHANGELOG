@@ -2,6 +2,18 @@
 
 ## 2.0.0 (unreleased)
 
+### Phase 7 — Project Init + Health Checker
+[New] rdf init — project initialization from profile templates
+[New] rdf init --batch — batch initialization for multiple projects
+[New] rdf init --github — GitHub scaffolding during init
+[New] rdf init --dry-run — preview mode
+[New] rdf doctor — 6-category project health checker
+[New] rdf doctor --all — cross-project workspace scan
+[New] rdf doctor --scope — per-category filtering
+[New] rdf doctor --json — machine-readable output
+[Change] bin/rdf — init and doctor wired as active commands
+[Fix] grep -c exit-code double-output in doctor plan check
+
 ### Phase 6 — Gemini CLI + Codex Adapters + AGENTS.md
 [New] adapters/gemini-cli/adapter.sh — Gemini CLI generation
 [New] adapters/gemini-cli/agent-meta.json — agent metadata for Gemini
