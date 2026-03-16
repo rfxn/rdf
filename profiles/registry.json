@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "description": "RDF profile registry — defines available profiles and dependency graph",
+  "profiles": {
+    "core": {
+      "description": "Framework primitives — orchestration, governance, session management",
+      "version": "1.0.0",
+      "requires": [],
+      "default": true,
+      "removable": false,
+      "domain_shortcodes": [],
+      "agents": ["mgr", "po", "scope"],
+      "summary": "3 agents, ~12 commands, 8 scripts"
+    },
+    "systems-engineering": {
+      "description": "Bash/shell project development — full engineering pipeline with adversarial review",
+      "version": "1.0.0",
+      "requires": ["core"],
+      "default": true,
+      "removable": true,
+      "domain_shortcodes": ["sys"],
+      "agents": ["sys-eng", "sys-qa", "sys-uat", "sys-sentinel", "sys-challenger", "sys-ux"],
+      "summary": "6 agents, ~45 commands, 2 scripts"
+    },
+    "security": {
+      "description": "Security assessment — offensive/defensive infrastructure and codebase analysis",
+      "version": "1.0.0",
+      "requires": ["core"],
+      "default": false,
+      "removable": true,
+      "domain_shortcodes": ["sec"],
+      "agents": ["sec-eng"],
+      "summary": "1 agent, 1 command"
+    },
+    "frontend": {
+      "description": "Web/frontend development — API contracts, DOM, CSS, Playwright UAT",
+      "version": "1.0.0",
+      "requires": ["core"],
+      "default": false,
+      "removable": true,
+      "domain_shortcodes": ["fe"],
+      "agents": ["fe-qa", "fe-uat"],
+      "summary": "2 agents, 2 commands"
+    }
+  },
+  "active_profiles_file": ".rdf-profiles"
+}

@@ -1,0 +1,20 @@
+{
+  "profile": "frontend",
+  "version": "1.0.0",
+  "description": "Web/frontend development — API contracts, DOM, CSS, Playwright UAT",
+  "requires": ["core"],
+  "agents": [
+    "fe-qa",
+    "fe-uat"
+  ],
+  "commands": [
+    "fe-qa",
+    "fe-uat"
+  ],
+  "scripts": [],
+  "reference": [],
+  "templates": [
+    "profiles/frontend/templates/claude-frontend.md.tmpl"
+  ],
+  "governance": "profiles/frontend/governance.md"
+}
