@@ -138,14 +138,17 @@ Items missing Project will not group correctly on Cross-Project Board.
 
 ## Ecosystem Board Admission
 
-The ecosystem board is a curated planning surface. Only add:
-- `type:initiative` — always (stays after Done as historical anchor)
-- `type:release` — when committed (remove after Done)
-- `type:phase` — when release starts (remove after Done)
-- `type:debt` — only if P1/P2 with cross-project impact
+All open issues from rfxn repos are admitted to the ecosystem board.
+View filtering separates planned work from community triage:
 
-Do NOT add community bug reports, feature requests, unlabeled issues, or
-`type:task` items. These stay on per-repo boards only.
+- **Kanban/Roadmap views** — filtered to `type:initiative/release/phase/debt`
+- **Triage view** — shows community issues (bugs, enhancements, unlabeled)
+- **Cross-Project Board** — shows everything, grouped by project
+
+Use `rdf github ecosystem-sync` to sync all open issues across repos.
+
+Set **Project** and **Status=Backlog** on every new item. Set Priority
+during triage. Start/Target Date and Effort required only for planned work.
 
 After a release ships, remove its Done phase issues. Keep Done initiatives.
 

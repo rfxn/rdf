@@ -15,6 +15,7 @@ Subcommands:
   sync-labels [--org org]            Sync label taxonomy across repos
   ecosystem-init [--org org]         Create org-level ecosystem project
   ecosystem-add <owner/repo>         Add repo to ecosystem project
+  ecosystem-sync [--org org]         Sync all open issues into ecosystem project
 
 Examples:
   rdf github setup --repo rfxn/rdf
@@ -239,6 +240,7 @@ _github_ecosystem_add() {
     [[ -z "$project_number" ]] && rdf_die "ecosystem project not found — run 'rdf github ecosystem-init' first"
 
     # Add all open issues from repo to ecosystem project
+    # v2: all open issues admitted (planned work on Kanban/Roadmap, community on Triage view)
     local issues
     issues="$(gh issue list --repo "$repo" --state open --json url --jq '.[].url' 2>/dev/null)"
 
@@ -250,6 +252,57 @@ _github_ecosystem_add() {
     done <<< "$issues"
 
     rdf_log "added ${count} issues from ${repo} to ecosystem project"
+    rdf_log "NOTE: set Project + Status fields on new items, then configure Triage view filter"
+}
+
+# Subcommand: ecosystem-sync
+# Syncs all open issues from all rfxn repos into the ecosystem project.
+# Idempotent — already-added issues are silently skipped.
+_github_ecosystem_sync() {
+    local org="rfxn"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --org) org="$2"; shift 2 ;;
+            *) rdf_die "unknown option: $1" ;;
+        esac
+    done
+
+    rdf_require_bin gh
+
+    local title="rfxn Ecosystem"
+    local project_number
+    project_number="$(gh project list --owner "$org" --format json 2>/dev/null | jq -r ".projects[] | select(.title == \"${title}\") | .number" || echo "")"
+
+    [[ -z "$project_number" ]] && rdf_die "ecosystem project not found — run 'rdf github ecosystem-init' first"
+
+    # Get all repos in org
+    local repos
+    repos="$(gh repo list "$org" --json name --jq '.[].name' 2>/dev/null)"
+    if [[ -z "$repos" ]]; then
+        rdf_die "no repos found for org: $org"
+    fi
+
+    local total=0
+    while IFS= read -r repo_name; do
+        local issues
+        issues="$(gh issue list --repo "${org}/${repo_name}" --state open --json url --jq '.[].url' 2>/dev/null)"
+        [[ -z "$issues" ]] && continue
+
+        local count=0
+        while IFS= read -r issue_url; do
+            [[ -z "$issue_url" ]] && continue
+            gh project item-add "$project_number" --owner "$org" --url "$issue_url" 2>/dev/null || true
+            count=$((count + 1))
+        done <<< "$issues"
+
+        if [[ "$count" -gt 0 ]]; then
+            rdf_log "  ${org}/${repo_name}: ${count} issues synced"
+            total=$((total + count))
+        fi
+    done <<< "$repos"
+
+    rdf_log "ecosystem sync complete: ${total} issues across ${org} repos"
+    rdf_log "NOTE: new items need Project + Status fields set manually or via rdf github field-set"
 }
 
 cmd_github() {
@@ -258,6 +311,7 @@ cmd_github() {
         sync-labels)    shift; _github_sync_labels "$@" ;;
         ecosystem-init) shift; _github_ecosystem_init "$@" ;;
         ecosystem-add)  shift; _github_ecosystem_add "$@" ;;
+        ecosystem-sync) shift; _github_ecosystem_sync "$@" ;;
         help|--help|-h) _github_usage ;;
         "")             rdf_die "missing subcommand — run 'rdf github help'" ;;
         *)              rdf_die "unknown subcommand: $1 — run 'rdf github help'" ;;

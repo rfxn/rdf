@@ -294,10 +294,11 @@ with two specialized views and adds initiative-aware filtering:
 
 | View | Layout | Field/Filter | Purpose |
 |------|--------|-------------|---------|
-| **Kanban** | Board | Status | **DEFAULT** — cross-project working view |
-| Cross-Project Board | Board | Project | Work grouped by project |
-| **Planning Roadmap** | Roadmap | Target Date, grouped by Project | Big-picture: initiatives + releases on a timeline |
-| **Execution Roadmap** | Roadmap | Release (Iteration), grouped by Project | Active work: phase issues in committed releases |
+| **Kanban** | Board | Status, filtered to `type:initiative/release/phase/debt` | **DEFAULT** — planned work only |
+| Cross-Project Board | Board | Project | All items grouped by project |
+| **Planning Roadmap** | Roadmap | Start Date → Target Date, grouped by Project | Gantt bars for initiatives + releases |
+| **Execution Roadmap** | Roadmap | Release (Iteration), grouped by Project | Active phase issues in committed releases |
+| **Triage** | Table | Exclude `type:initiative/release/phase`; sort by repo | Community issues needing attention |
 | Release Gate | Table | filtered by `release-gate` label | Blockers per project |
 
 The per-project Development board (#3) views are unchanged — it only shows
@@ -306,28 +307,44 @@ ecosystem board.
 
 ### 3.7 Ecosystem Board Admission Convention
 
-The ecosystem board is a **curated planning surface**, not a dump of all open
-issues. Only items that represent planned organizational work belong here.
+The ecosystem board serves two purposes: **roadmap planning** and **cross-project
+triage**. All open issues from rfxn repos are admitted. View filtering separates
+planned work from incoming community issues.
 
-**Admitted (add to ecosystem board):**
+**Admission: all open issues from rfxn repos.** Use `rdf github ecosystem-sync`
+to add them. Closed issues are not added. When an issue is closed on GitHub,
+it naturally moves to Done on the board.
 
-| Type | When | Remove When |
-|------|------|-------------|
-| `type:initiative` | Always — initiatives are roadmap items | Never (stays as historical anchor after Done) |
-| `type:release` | When release is committed | After release ships and is Done |
-| `type:phase` | When release starts executing | After phase is Done and release ships |
-| `type:debt` | Only if P1/P2 and cross-project impact | When resolved |
+**View separation is the convention, not admission filtering:**
 
-**NOT admitted (stays on per-repo board only):**
+| View | Shows | Filter |
+|------|-------|--------|
+| **Kanban** | Planned work only | `type:initiative`, `type:release`, `type:phase`, `type:debt` |
+| **Planning Roadmap** | Initiatives + releases with dates | Items with Start Date + Target Date set |
+| **Execution Roadmap** | Active phase issues | Items with Release iteration |
+| **Cross-Project Board** | All items grouped by project | No filter (full board) |
+| **Triage** | Community issues needing attention | Exclude `type:initiative`, `type:release`, `type:phase`; include unlabeled, `type:bug`, `type:enhancement` |
+| **Release Gate** | Blockers | `release-gate` label |
 
-- Community bug reports and feature requests (no `type:initiative/release/phase` label)
-- Unlabeled issues
-- `type:task` issues (v1 model, deprecated)
-- Closed phase issues from past releases
+**Triage view** is a Table layout sorted by repository, showing community bug
+reports, feature requests, and unlabeled issues. This gives cross-project
+visibility into incoming issues without polluting the Kanban or Roadmap views.
+
+**Required fields on every item:**
+
+| Field | Planned work | Triage items |
+|-------|-------------|-------------|
+| **Status** | Required | Set to Backlog on admission |
+| **Project** | Required | Required (auto-derived from repo) |
+| **Priority** | Required | Set during triage |
+| **Effort** | Required | Optional until promoted |
+| **Start Date** | Required for roadmap | Not set |
+| **Target Date** | Required for roadmap | Not set |
 
 **Lifecycle cleanup:** After a release ships, remove its Done phase issues from
-the ecosystem board. The release issue stays as a historical marker. Done
-initiatives stay permanently — they anchor the roadmap timeline.
+the ecosystem board. Done initiatives stay permanently — they anchor the
+roadmap timeline. Community issues that are closed naturally move to Done and
+can be archived periodically.
 
 ### 3.8 Ecosystem Status Field (5-State)
 
