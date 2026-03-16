@@ -49,3 +49,39 @@ Dispatch domain agents using the appropriate slash command:
 - `/sec-eng` for security assessment
 - `/fe-qa` for frontend QA
 - `/fe-uat` for frontend UAT
+
+## Dispatch Modes
+
+RDF supports two agent dispatch modes, controlled by the `RDF_AGENT_TEAMS`
+environment variable:
+
+### Subagent Mode (default, RDF_AGENT_TEAMS=false)
+- Each agent is spawned via the Agent tool as an isolated subagent
+- Results return to EM's context via work-output/ files
+- Agents cannot communicate with each other
+- Lower token cost, simpler coordination
+- This is the current production mode
+
+### Agent Teams Mode (RDF_AGENT_TEAMS=true)
+- EM operates as team lead in delegate mode (coordination only)
+- Agents are spawned as teammates with shared task list
+- Teammates can message each other directly
+- Dependencies are managed via task blocking
+- Higher token cost, better for parallel exploration
+- Requires Claude Code v2.1.32+ with CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+
+### Dispatch Instructions
+When dispatching agents, use the instructions from `rdf dispatch pipeline`
+or `rdf dispatch agent` for the current mode. The dispatch abstraction
+generates mode-appropriate tool call parameters.
+
+Run `rdf dispatch status` to check the current mode.
+
+### Mode-Specific Behavior
+- **Subagent mode:** Dispatch agents sequentially or in parallel via
+  multiple Agent tool calls in the same message. Read work-output/ files
+  for results.
+- **Agent Teams mode:** Create team via TeamCreate, define tasks via
+  TaskCreate with dependency chains, spawn teammates via Task. Teammates
+  self-claim unblocked tasks. Use SendMessage for coordination. Read
+  work-output/ files AND inbox messages for results.

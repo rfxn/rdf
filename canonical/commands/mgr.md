@@ -102,6 +102,32 @@ When multiple SEs are running, maintain a progress table:
 
 ---
 
+## Dispatch Abstraction
+
+This command supports two dispatch modes. The default (subagent) mode uses
+the hardcoded dispatch instructions below. When `RDF_AGENT_TEAMS=true`, use
+the dispatch abstraction instead:
+
+```
+# Check current mode
+rdf dispatch status
+
+# Generate single agent dispatch
+rdf dispatch agent <name> <template> <phase> <project-path> [plan-path]
+
+# Generate complete pipeline
+rdf dispatch pipeline <tier> <phase> <project-path> <plan-path> [flags]
+```
+
+The dispatch abstraction produces mode-appropriate instructions. In subagent
+mode, its output matches the hardcoded instructions below. In Agent Teams
+mode, it produces TeamCreate/TaskCreate/Task instructions with dependency
+chains.
+
+**Current mode:** Subagent (default). The hardcoded instructions below are
+the authoritative dispatch protocol. The dispatch abstraction is available
+for Agent Teams mode or for tooling that consumes structured dispatch data.
+
 ## Arguments
 
 `$ARGUMENTS` determines mode. If empty, run Session Startup. Otherwise match
