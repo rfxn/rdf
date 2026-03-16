@@ -25,10 +25,8 @@ Commands:
   dispatch   Generate mode-aware agent dispatch instructions
   profile    Manage active domain profiles
   refresh    Agent-driven state file updates
-
-Future commands (not yet implemented):
-  init       Initialize projects with RDF conventions (Phase 7)
-  doctor     Check project health and convention drift (Phase 7)
+  init       Initialize projects with RDF conventions
+  doctor     Check project health and convention drift
 
 Options:
   help       Show this help
@@ -49,7 +47,7 @@ case "${1:-}" in
     help|--help|-h|"") _rdf_usage ;;
     version|--version|-V) echo "rdf ${RDF_VERSION}" ;;
     refresh)  shift; source "${RDF_LIBDIR}/cmd/refresh.sh";  cmd_refresh "$@" ;;
-    init|doctor)
-        rdf_die "$1 is not yet implemented — see 'rdf help' for phase info" ;;
+    init)     shift; source "${RDF_LIBDIR}/cmd/init.sh";     cmd_init "$@" ;;
+    doctor)   shift; source "${RDF_LIBDIR}/cmd/doctor.sh";   cmd_doctor "$@" ;;
     *) rdf_die "unknown command: $1 — run 'rdf help' for usage" ;;
 esac
