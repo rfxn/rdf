@@ -2,6 +2,15 @@
 
 ## 2.0.0 (unreleased)
 
+### Phase 6 — Gemini CLI + Codex Adapters + AGENTS.md
+[New] adapters/gemini-cli/adapter.sh — Gemini CLI generation
+[New] adapters/gemini-cli/agent-meta.json — agent metadata for Gemini
+[New] adapters/gemini-cli/command-meta.json — command descriptions for Gemini
+[New] adapters/codex/adapter.sh — Codex generation (AGENTS.md + config)
+[New] adapters/agents-md/adapter.sh — cross-tool AGENTS.md generation
+[New] adapters/agents-md/sections.json — section definitions
+[Change] lib/cmd/generate.sh — multi-adapter support (gemini-cli, codex, agents-md, all)
+
 ### Phase 4 — State Refresh + Context Anchoring
 [New] lib/cmd/refresh.sh — rdf refresh command (memory/plan/github scopes)
 [New] canonical/commands/refresh.md — agent-driven /refresh slash command

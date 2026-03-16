@@ -1,6 +1,11 @@
 # RDF 2.0.0 Release Notes
 
 ## What's New
+- Multi-tool adapter architecture: Gemini CLI, Codex, and cross-tool AGENTS.md
+- `rdf generate gemini-cli` produces .gemini/agents/*.md + .gemini/commands/*.toml
+- `rdf generate codex` produces AGENTS.md + .codex/config.toml for Codex CLI
+- `rdf generate agents-md` produces cross-tool AGENTS.md (<150 lines)
+- `rdf generate all` invokes all four adapters in sequence
 - `rdf refresh` command with memory, plan, and github scopes
 - EM (mgr.md) uses rdf-state JSON for 60-78% token savings at startup
 - `/reload` displays context anchor block (project/branch/version/dirty)
