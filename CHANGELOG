@@ -2,6 +2,21 @@
 
 ## 2.0.0 (unreleased)
 
+### Phase 5 — Agent Teams Architecture
+[New] lib/dispatch.sh — mode-aware agent dispatch abstraction (subagent vs Agent Teams)
+[New] lib/dispatch-agents.json — centralized agent registry (11 agents)
+[New] lib/dispatch-tasks.json — pipeline task templates with dependency chains
+[New] lib/cmd/dispatch.sh — rdf dispatch subcommand (agent/pipeline/status)
+[New] adapters/claude-code/teams-meta.json — CC Agent Teams configuration
+[New] docs/specs/agent-teams-research.md — Agent Teams API research
+[New] docs/specs/dispatch-abstraction.md — dispatch interface specification
+[New] docs/specs/task-based-coordination.md — file-based to task-based mapping
+[Change] lib/rdf_common.sh — add rdf_feature_enabled() feature flag helper
+[Change] bin/rdf — register dispatch subcommand
+[Change] canonical/agents/mgr.md — dispatch modes awareness
+[Change] canonical/commands/mgr.md — dispatch abstraction reference
+[New] RDF_AGENT_TEAMS feature flag (default: false, opt-in for Agent Teams)
+
 ### Phase 2 — CC Adapter + State Helper + CLI + GitHub
 [New] bin/rdf CLI dispatcher — Sigforge sf pattern with lazy-sourced subcommands
 [New] lib/rdf_common.sh — shared init, version, path helpers, require guards

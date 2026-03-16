@@ -11,6 +11,10 @@
 - Self-verification gates in QA and Sentinel (addresses false-positive friction)
 - Scope confirmation in EM/mgr (addresses wrong-scope friction)
 - Plugin manifest (.claude-plugin/plugin.json)
+- Agent Teams dispatch abstraction (`rdf dispatch`) with dual-mode support
+  (subagent default, Agent Teams opt-in via RDF_AGENT_TEAMS=true)
+- Centralized agent registry and pipeline task templates with dependency chains
+- Agent Teams research, dispatch specification, and coordination mapping docs
 
 ## Breaking Changes
 - workforce/ directory renamed to rdf/
