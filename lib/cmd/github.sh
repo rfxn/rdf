@@ -34,6 +34,8 @@ _LABEL_TAXONOMY=(
     "type:audit-finding;E4E669;Promoted from audit pipeline"
     "type:docs;0E8A16;Documentation only"
     "type:debt;FBCA04;Tech debt / modernization"
+    "type:initiative;7057FF;Roadmap planning item — directional time-boxed"
+    "type:release;1D76DB;Versioned release tracking — parent for phase issues"
     "domain:core;C5DEF5;Framework core"
     "domain:sys;BFD4F2;Systems engineering"
     "domain:sec;F9D0C4;Security"
@@ -117,6 +119,7 @@ _github_create_project() {
     rdf_log "project setup complete for ${repo}"
     rdf_log "NOTE: Board views must be created manually in GitHub web UI"
     rdf_log "  Required views: Kanban (default), Phase Board, Active Work, Roadmap, Backlog"
+    rdf_log "  Ecosystem views: Kanban, Cross-Project Board, Planning Roadmap (Target Date), Execution Roadmap (Release), Release Gate"
 }
 
 # Subcommand: setup
@@ -182,34 +185,42 @@ _github_ecosystem_init() {
     local existing
     existing="$(gh project list --owner "$org" --format json 2>/dev/null | jq -r ".projects[] | select(.title == \"${title}\") | .number" || echo "")"
 
+    local project_number
     if [[ -n "$existing" ]]; then
         rdf_log "ecosystem project already exists: #${existing}"
-        return 0
+        project_number="$existing"
+    else
+        project_number="$(gh project create --title "$title" --owner "$org" --format json 2>/dev/null | jq -r '.number')"
+        rdf_log "created ecosystem project #${project_number}"
     fi
 
-    local project_number
-    project_number="$(gh project create --title "$title" --owner "$org" --format json 2>/dev/null | jq -r '.number')"
-    rdf_log "created ecosystem project #${project_number}"
-
-    # Ecosystem-specific fields
+    # Ecosystem-specific fields (idempotent — field-create fails silently if exists)
     local eco_fields=(
         "Status;SINGLE_SELECT;Backlog,Ready,In Progress,In Review,Done"
-        "Project;SINGLE_SELECT;RDF,APF,BFD,LMD,Sigforge,Libraries"
+        "Project;SINGLE_SELECT;RDF,APF,BFD,LMD,Sigforge,Libraries,geoscope"
         "Priority;SINGLE_SELECT;P1,P2,P3"
         "Effort;SINGLE_SELECT;XS,S,M,L,XL"
+        "Target Date;DATE;"
     )
 
     for entry in "${eco_fields[@]}"; do
         IFS=';' read -r name type options <<< "$entry"
-        local opts_json
-        opts_json="$(echo "$options" | tr ',' '\n' | jq -R . | jq -sc 'map({name: .})')"
-        gh project field-create "$project_number" --owner "$org" \
-            --name "$name" --data-type "SINGLE_SELECT" \
-            --single-select-options "$opts_json" 2>/dev/null || \
-            rdf_log "  field exists or error: ${name}"
+        if [[ "$type" == "SINGLE_SELECT" ]]; then
+            local opts_json
+            opts_json="$(echo "$options" | tr ',' '\n' | jq -R . | jq -sc 'map({name: .})')"
+            gh project field-create "$project_number" --owner "$org" \
+                --name "$name" --data-type "SINGLE_SELECT" \
+                --single-select-options "$opts_json" 2>/dev/null || \
+                rdf_log "  field exists or error: ${name}"
+        else
+            gh project field-create "$project_number" --owner "$org" \
+                --name "$name" --data-type "$type" 2>/dev/null || \
+                rdf_log "  field exists or error: ${name}"
+        fi
     done
 
     rdf_log "ecosystem project setup complete"
+    rdf_log "  Ecosystem views (web UI): Kanban, Cross-Project Board, Planning Roadmap (Target Date), Execution Roadmap (Release), Release Gate"
 }
 
 # Subcommand: ecosystem-add

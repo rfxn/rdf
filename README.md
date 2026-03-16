@@ -3,7 +3,7 @@
 Convention governance, agent pipelines, and project orchestration for the
 rfxn ecosystem. Tool-agnostic by design, currently delivered via Claude Code.
 
-**Version:** 2.0.0 | **License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
+**Version:** 2.1.0 | **License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
 
 > **This is not a drop-in framework.** RDF is purpose-built for the rfxn
 > ecosystem and shared as a reference for what disciplined AI-assisted
@@ -149,9 +149,12 @@ RDF is built on five principles:
    init, doctor, state, refresh, sync, github.
 
 4. **GitHub-native project management.** GitHub Issues + Projects v2 is
-   the durable work tracking layer. PLAN.md and MEMORY.md remain as
-   session-local agent context but GitHub Issues is the source of truth
-   for queue state.
+   the durable work tracking layer with phase-level tracking: one issue
+   per phase (not per task), initiative issues for roadmap planning, and
+   release issues for version tracking. A two-horizon roadmap provides
+   both planning visibility (Target Date) and execution status (Release
+   iteration). PLAN.md and MEMORY.md remain as session-local agent
+   context but GitHub Issues is the source of truth for queue state.
 
 5. **Not a runtime.** Claude Code / Gemini CLI / Codex IS the runtime.
    RDF is the governance layer that tells the runtime how to behave.
@@ -359,7 +362,7 @@ Single `rdf` dispatcher with lazy-sourced subcommand modules.
 ```
 Usage: rdf <command> [subcommand] [options]
 
-RDF 2.0.0 -- rfxn Development Framework
+RDF 2.1.0 -- rfxn Development Framework
 
 Commands:
   generate   Build tool-specific files from canonical sources
@@ -484,15 +487,36 @@ rdf sync [options]
 
 ### rdf github
 
-GitHub Issues + Projects v2 integration. Standardized label taxonomy,
-repo-level project boards, and org-level ecosystem project.
+GitHub Issues + Projects v2 integration with phase-level tracking and
+two-horizon roadmap planning.
+
+**Issue hierarchy (v2 model):**
+
+```
+Initiative (type:initiative)  -- planning horizon, directional timing
+  +-- Release (type:release)  -- committed version, specific timeline
+       +-- Phase (type:phase) -- execution unit, tracked on boards
+            +-- Tasks (comments) -- progress trail, async visibility
+```
+
+Phases are the unit of work on GitHub -- one issue per phase, not per
+task. Task progress is tracked via comments on the phase issue.
+Initiatives provide roadmap planning; releases track versioned
+deliverables.
+
+**Two-horizon roadmap** on the ecosystem project:
+- **Planning Roadmap** -- initiatives and releases on a Target Date timeline
+- **Execution Roadmap** -- phase issues in active releases by iteration
 
 ```bash
 rdf github setup [--repo <owner/repo>]       # labels + repo project
 rdf github sync-labels [--org <org>]         # sync taxonomy across repos
-rdf github ecosystem-init [--org <org>]      # org-level project
+rdf github ecosystem-init [--org <org>]      # org-level project + fields
 rdf github ecosystem-add <owner/repo>        # add repo to ecosystem project
 ```
+
+See [docs/specs/2026-03-16-github-issue-model-v2-design.md](docs/specs/2026-03-16-github-issue-model-v2-design.md)
+for the full specification.
 
 ---
 

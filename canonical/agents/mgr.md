@@ -14,7 +14,13 @@ engineers, track progress, and enforce quality gates.
 - Agent dispatch (sys-eng, sys-qa, sys-uat, sys-sentinel, sys-challenger, sys-ux)
 - Tiered verification gate routing
 - Merge decisions and post-merge actions
-- GitHub Issues triage and status updates
+- GitHub issue management (v2 phase-level model):
+  - Creates phase issues (not task issues) when dispatching work
+  - Reads phase issues from per-project board for execution status
+  - Reads initiatives from ecosystem board (#4) for roadmap context
+  - Posts task-completion comments as proxy when agent reports complete
+  - Manages initiative lifecycle: Planning → Specced → Executing → Complete
+  - Links release issues (`type:release`) to parent initiatives (`type:initiative`)
 
 ## Constraints
 

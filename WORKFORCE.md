@@ -15,6 +15,7 @@ USER
  │
  └─► mgr  (sonnet)             Engineering Manager
       │                         Prioritize, delegate, quality gates
+      │                         Phase issues, initiative lifecycle
       │
       ├─► scope  (sonnet)       Scoping & Research
       │    │                    Impact analysis, phase validation
@@ -200,7 +201,11 @@ PIPELINE FLOW
          Stage files by name (never git add -A)
          Message format: VERSION | Description
          Tag every body line: [New] [Change] [Fix]
+         Include Ref #<phase-issue> in commit body
          No Co-Authored-By / no AI attribution
+         ─────────────────────────────────────────────
+ Step 6b POST TASK-COMPLETION COMMENT
+         gh issue comment <phase-issue> (Task N.M complete)
          ─────────────────────────────────────────────
  Step 7  REPORT RESULTS
          Write work-output/phase-N-result.md
@@ -257,6 +262,7 @@ PIPELINE FLOW
            Elevate unaddressed MUST-FIX items
          ─────────────────────────────────────────────
  Step 6  VERDICT
+         Post QA verdict as comment on phase issue
          Write qa-phase-N-verdict.md
          Findings: MUST-FIX / SHOULD-FIX / INFORMATIONAL
          Verdict: APPROVED | CHANGES_REQUESTED | REJECTED
@@ -321,6 +327,7 @@ PIPELINE FLOW
  Write sentinel-N.md (max 20 findings total across all passes)
  Each finding: PASS / SEVERITY / FILE:LINE / DESCRIPTION /
                EVIDENCE / RECOMMENDATION / VERIFIED
+ Post summary comment on phase issue (PASS/PASS WITH NOTES/FAIL)
       │
       ▼
  sys-qa reads sentinel-N.md at Step 5.5
@@ -362,7 +369,7 @@ PIPELINE FLOW
  └──────────────────────────────────┘
       │ MERGE_READY
       ▼
- Post-merge: /mem-save + mark PLAN.md DONE + recommend next phase
+ Post-merge: /mem-save + mark PLAN.md DONE + close phase issue + recommend next phase
 ```
 
 ---

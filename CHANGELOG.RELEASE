@@ -1,48 +1,41 @@
-# RDF 2.0.0 Release Notes
+# RDF 2.1.0 Release Notes
 
 ## What's New
-- Comprehensive README.md with architecture overview, CLI reference, profile
-  system docs, how-to guides, and contributing guidelines
-- GitHub label taxonomy synced across all rfxn ecosystem repos
-- Fresh install cutover verified — clone, generate, symlink, verify
-- `rdf init` — project initialization with type detection, profile templates,
-  batch mode, GitHub scaffolding, and dry-run preview
-- `rdf doctor` — 6-category health checker (artifacts, drift, memory, plan,
-  github, sync) with --all cross-project scan, --json output, --scope filtering
-- Multi-tool adapter architecture: Gemini CLI, Codex, and cross-tool AGENTS.md
-- `rdf generate gemini-cli` produces .gemini/agents/*.md + .gemini/commands/*.toml
-- `rdf generate codex` produces AGENTS.md + .codex/config.toml for Codex CLI
-- `rdf generate agents-md` produces cross-tool AGENTS.md (<150 lines)
-- `rdf generate all` invokes all four adapters in sequence
-- `rdf refresh` command with memory, plan, and github scopes
-- EM (mgr.md) uses rdf-state JSON for 60-78% token savings at startup
-- `/reload` displays context anchor block (project/branch/version/dirty)
-- Cross-project context drift fix at session start (Friction Fix 4)
-- Canonical-first architecture — all content is tool-agnostic markdown
-- {domain}-{role} naming convention across all agents and commands
-- Unified `rdf` CLI with generate, sync, state, and github subcommands
-- Claude Code adapter: canonical + metadata-driven YAML frontmatter generation
-- Deterministic `rdf state` helper — project JSON in <1s, no LLM
-- GitHub Issues + Projects v2 integration (labels, projects, custom fields)
-- 4-profile system: core, systems-engineering, security, frontend
-- Self-verification gates in QA and Sentinel (addresses false-positive friction)
-- Scope confirmation in EM/mgr (addresses wrong-scope friction)
-- Plugin manifest (.claude-plugin/plugin.json)
-- Agent Teams dispatch abstraction (`rdf dispatch`) with dual-mode support
-  (subagent default, Agent Teams opt-in via RDF_AGENT_TEAMS=true)
-- Centralized agent registry and pipeline task templates with dependency chains
-- Agent Teams research, dispatch specification, and coordination mapping docs
+- **GitHub Issue Model v2** — phase-level tracking replaces per-task issue management,
+  reducing API calls by ~72% per release cycle
+- **Roadmap Planning** — new `type:initiative` issues for directional time-boxed planning,
+  `type:release` issues for versioned release tracking
+- **Two-Horizon Roadmap** — Planning Roadmap (Target Date) for big-picture initiatives,
+  Execution Roadmap (Release iteration) for active work
+- **Task Progress via Comments** — agents post one comment per completed task on the phase
+  issue, providing async visibility from any terminal
+- **Initiative Lifecycle** — Planning → Specced → Executing → Complete, with cross-project
+  initiative support
+- **Ecosystem Board Cleanup** — task-level items removed, board now shows phase-level signal
+  plus initiative roadmap items
+- New Mermaid diagrams: Issue Hierarchy and Two-Horizon Roadmap
 
-## Breaking Changes
-- workforce/ directory renamed to rdf/
-- All agent CC names changed (rfxn-se -> rfxn-sys-eng, etc.)
-- All persona slash commands changed (/se -> /sys-eng, etc.)
-- /root/.claude/{commands,agents,scripts} are now symlinks to adapter output
-- /root/.claude/ is now a deployment target — develop in rdf/canonical/
+## Agent/Command Updates
+- `mgr` command gains GitHub integration section for v2 workflow
+- `sys-eng` command posts task-completion comments, references phase issues in commits
+- `sys-qa` command posts QA verdicts as phase issue comments
+- `sys-sentinel` agent posts findings summary on phase issues
+- `refresh` command syncs initiative and release issues (removed task issue sync)
+- `rel-prep`, `rel-ship`, `rel-merge` updated for type:release lifecycle
+- `ecosystem-init` now idempotent (updates fields on existing projects)
 
-## Migration
-1. Run `bin/rdf generate claude-code`
-2. Back up existing /root/.claude/{commands,agents,scripts}
-3. Create symlinks: `ln -sf .../adapters/claude-code/output/{dir} /root/.claude/{dir}`
-4. Remove overwatch-hook.sh from settings.json SubagentStop hooks
-See README.md for full migration instructions.
+## CLI Changes
+- `_LABEL_TAXONOMY` gains `type:initiative` and `type:release`
+- `_github_ecosystem_init()` adds `Target Date` (DATE) field, `geoscope` project option
+- `_github_ecosystem_init()` no longer early-returns on existing project
+- Field creation loop handles DATE type (not just SINGLE_SELECT)
+
+## Documentation
+- README, RDF.md, WORKFORCE.md updated for v2 model
+- Core governance issue conventions rewritten
+- Diagrams 7-10 updated/added
+- v1 spec Section 5 marked as superseded
+
+## Migration from 2.0.0
+No breaking changes. Run `rdf generate claude-code` to pick up canonical updates.
+Board cleanup (removing task items) was performed during this release.

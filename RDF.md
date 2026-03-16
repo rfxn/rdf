@@ -3,12 +3,13 @@
 ## Overview
 
 Canonical-first convention governance with profile-based discipline selection,
-unified CLI, GitHub-native project management, and tool-specific adapter
-generation. RDF is the single source of truth for all agent definitions,
+unified CLI, GitHub-native project management (phase-level tracking with
+initiative/release/phase hierarchy and two-horizon roadmap), and tool-specific
+adapter generation. RDF is the single source of truth for all agent definitions,
 commands, scripts, and governance deployed into Claude Code, Gemini CLI,
 Codex, or AGENTS.md environments.
 
-**Version:** 2.0.0
+**Version:** 2.1.0
 **License:** GNU GPL v2
 
 ---
@@ -37,8 +38,14 @@ Codex, or AGENTS.md environments.
 - **Plugin is an adapter, not the architecture:** Claude Code plugin structure
   is one delivery mechanism. The canonical source works regardless of tool.
 - **GitHub-native project management:** GitHub Issues + Projects v2 is the durable
-  work tracking layer. PLAN.md and MEMORY.md remain as session-local agent context
-  but GitHub Issues is the source of truth for queue state.
+  work tracking layer using phase-level tracking (v2 issue model). The issue
+  hierarchy is: initiative (planning horizon) -> release (committed version) ->
+  phase (execution unit) -> task comments (progress trail). Two roadmap views
+  on the ecosystem project provide planning visibility (Target Date) and
+  execution status (Release iteration). PLAN.md and MEMORY.md remain as
+  session-local agent context but GitHub Issues is the source of truth for
+  queue state. See `docs/specs/2026-03-16-github-issue-model-v2-design.md`
+  for the full specification.
 
 ### Naming Convention
 
@@ -221,7 +228,7 @@ rdf/                                 # Repository root
 |   +-- specs/                       # Architecture and design documents
 |
 |-- CLAUDE.md                        # RDF project's own instructions
-|-- VERSION                          # "2.0.0"
+|-- VERSION                          # "2.1.0"
 |-- CHANGELOG
 |-- CHANGELOG.RELEASE
 |-- RDF.md                           # Architecture doc (this file)
@@ -242,7 +249,9 @@ rdf/                                 # Repository root
   `rdf refresh`, `rdf sync`, `rdf github`)
 - Tool-specific adapters (Claude Code, Gemini CLI, Codex, AGENTS.md)
 - GitHub Issues + Projects v2 integration: standardized label taxonomy,
-  repo-level and org-level project boards, issue templates, workflow integration
+  phase-level tracking (v2 issue model), initiative/release/phase hierarchy,
+  two-horizon roadmap (Planning + Execution), repo-level and org-level
+  project boards, workflow integration
 - Project initialization (`rdf init`) with batch mode, type detection, GitHub
   scaffolding, and per-tool configuration
 - Health checking (`rdf doctor`) with drift detection across artifacts, memory,
