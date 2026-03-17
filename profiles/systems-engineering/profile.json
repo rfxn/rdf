@@ -51,6 +51,7 @@
     "rel-chg-dedup",
     "rel-chg-diff",
     "rel-scrub",
+    "rel-squash",
     "proj-lib-sync",
     "proj-scaffold",
     "code-validate",
