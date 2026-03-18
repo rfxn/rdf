@@ -77,7 +77,7 @@ Run `/code-validate` and `/code-grep` to detect:
 
 **3d. Documentation Score**
 - 25 pts: man page exists and is current
-- 25 pts: README/README.md exists and is current
+- 25 pts: README.md exists and is current
 - 25 pts: usage/help functions match actual CLI options
 - 25 pts: config file comments document all variables
 

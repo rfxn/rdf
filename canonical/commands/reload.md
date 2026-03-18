@@ -55,7 +55,7 @@ in order:
 2. `PLAN.md` — current roadmap and phase status
 3. `MEMORY.md` — session memory from `/root/.claude/projects/` for this project
 4. `AUDIT.md` — audit findings and status (if present)
-5. `README.md` or `README` — project overview
+5. `README.md` — project overview
 
 For each file found, read it fully. If a file does not exist, skip it silently.
 

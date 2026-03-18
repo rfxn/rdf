@@ -8,7 +8,7 @@ modified files. Categorize each file:
 
 | Category | File patterns | Examples |
 |----------|--------------|---------|
-| DOCS | README*, CHANGELOG*, *.md, man/*, docs/* | comment-only edits |
+| DOCS | README.md, CHANGELOG*, *.md, man/*, docs/* | comment-only edits |
 | CONFIG | conf.*, internals.conf, compat.conf, .ca.def | defaults, mappings |
 | CORE | functions*, bfd.lib.sh, maldet, apf, firewall | logic, control flow |
 | CLI | main entry point case dispatcher | arg handling, help text |

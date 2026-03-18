@@ -7,7 +7,7 @@ Recommendation, Phase fields. Max 30 findings. Evidence must be verbatim in fenc
 
 Execute:
   grep -rn 'VERSION=' files/ conf.* install.sh 2>/dev/null
-  grep -rn 'version' docs/ README* *.md 2>/dev/null
+  grep -rn 'version' docs/ README.md *.md 2>/dev/null
   grep -rn 'Version:' *.spec man/* 2>/dev/null
   grep -rn 'Copyright\|copyright' files/ conf.* install.sh docs/ 2>/dev/null
 

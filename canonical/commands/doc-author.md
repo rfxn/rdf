@@ -14,7 +14,7 @@ user review before applying changes.
 | Surface | Target File(s) | What It Covers |
 |---------|----------------|----------------|
 | `man-page` | `docs/*.1`, `man/*.8`, etc. | Full man page or specific sections |
-| `readme` | `README`, `README.md` | Project README content |
+| `readme` | `README.md` | Project README content |
 | `help-text` | `help()` / `usage()` in CLI file | CLI help output |
 | `config-comments` | `conf.*`, `internals.conf` | Inline config documentation |
 | `email-template` | `*.tpl`, alert templates | Email and notification templates |
@@ -28,7 +28,7 @@ user review before applying changes.
 
 For the specified surface, locate and read the current file:
 - `man-page`: find `*.1`, `*.5`, `*.8` files in `docs/` or `man/`
-- `readme`: find `README` or `README.md` in the project root
+- `readme`: find `README.md` in the project root
 - `help-text`: grep for `help()` or `usage()` in the main CLI file
   (APF: `files/apf`, BFD: `files/bfd`, LMD: `files/maldet`)
 - `config-comments`: read `conf.*` and `internals.conf` in `files/`

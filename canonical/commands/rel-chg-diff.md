@@ -68,7 +68,7 @@ Do NOT generate entries for:
 - Whitespace, indentation, formatting-only changes
 - Working file changes (CLAUDE.md, PLAN.md, MEMORY.md, .claude/)
 
-Merge multiple README/man-page text updates into one line unless they fix
+Merge multiple README.md/man-page text updates into one line unless they fix
 genuinely different user-facing errors.
 
 ### Never include tracking artifacts

@@ -57,7 +57,7 @@ They should be dropped entirely or merged into a single summary line:
 - Internal code style (`extract inline regex to named variables`)
 
 **Merge into one summary line** (keep but compress):
-- Multiple README/README.md updates → one `[Change] update README documentation`
+- Multiple README.md updates → one `[Change] update README.md documentation`
 - Multiple man page text corrections → one `[Change] man page corrections`
 - Multiple test infrastructure changes (Makefile, Dockerfile, CI workflow) →
   one `[Change] test infrastructure updates` (only in CHANGELOG, not CHANGELOG.RELEASE)
