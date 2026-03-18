@@ -95,6 +95,34 @@ The QA gate is the mandatory checkpoint between SE completion and merge.
 - `git log <integration-branch>..<phase-branch>` — all commits to review
 - `git diff <integration-branch>...<phase-branch>` — full diff
 
+### 1.5. FP Context Establishment (MANDATORY)
+
+Before running structural or behavioral review, build context that prevents
+false positive findings:
+
+1. **Library check**: For each modified file, answer: "Is this file part of a
+   shared library consumed by other projects?" (tlog_lib, alert_lib, elog_lib,
+   pkg_lib, geoip_lib). If yes, apply library rules for that file throughout
+   all subsequent review steps:
+   - Missing project-specific context is a FEATURE, not a gap
+   - Portable defaults (/tmp, empty registries) are expected — consuming
+     projects replace them at install time
+   - No install.sh is expected — consuming projects handle installation
+   - Empty arrays/registries are expected — consumers populate them
+
+2. **Load false-positives.md**: If `./audit-output/false-positives.md` exists,
+   read it. Hold these entries for use during Step 5.1 — NOT during Steps 2-4.
+   Steps 2-4 must produce independent findings without FP file influence to
+   preserve QA's independent assessment.
+
+3. **Catalog install-time transforms**: If `install.sh` exists:
+   ```bash
+   grep -n 'sed.*s|' install.sh 2>/dev/null | head -30
+   ```
+   Any path appearing in a sed replacement is transformed at install time and
+   is NOT a hardcoded path in production. Hold this catalog for reference
+   during Steps 2-3.
+
 ### 2. Structural review
 
 Check every item. A single failure blocks merge.
@@ -267,6 +295,56 @@ For each hit: trace whether the pattern causes observable misbehavior in this sp
 context. MUST-FIX if it causes wrong output; SHOULD-FIX if it is fragile but currently
 produces correct output.
 
+### 5.1. Counter-Hypothesis Gate (MANDATORY — every MUST-FIX and SHOULD-FIX)
+
+After completing Steps 2-5 independently, apply the counter-hypothesis
+protocol to each MUST-FIX and SHOULD-FIX finding before writing the verdict.
+INFORMATIONAL findings are exempt.
+
+**Protocol:**
+
+1. **Hypothesis**: State what QA believes is wrong: "Line N does X, which
+   violates Y"
+2. **Counter-hypothesis**: Formulate why this code might be correct: "This
+   might be intentional if Z"
+3. **Seek counter-evidence** — check ALL (do not stop at first match;
+   weigh collectively):
+   (a) Does false-positives.md list this pattern FOR THIS FILE/FUNCTION?
+       A pattern match against a different file location is not counter-
+       evidence.
+   (b) Is there an inline comment within 5 lines explaining the choice?
+   (c) Does the project CLAUDE.md document this as intentional behavior?
+   (d) Is this a shared library file where the "issue" is expected library
+       behavior? (from Step 1.5 library check)
+   (e) Is this path in the install-time transform catalog from Step 1.5?
+   (f) Does surrounding code (20+ lines) contain guards, wrappers, or
+       callers that handle the concern?
+
+   **Evidence floor**: Counter-evidence must be LOCATION-SPECIFIC — same
+   file and function (or direct caller). A project-wide pattern match is
+   not sufficient to discard.
+
+4. **Verdict** (based on weight of ALL checks, not any single check):
+   - Counter-evidence specific and compelling across multiple checks →
+     DISCARD (do not report)
+   - Counter-evidence present but single check or ambiguous →
+     DEMOTE severity one level, note ambiguity in the finding
+   - No location-specific counter-evidence → REPORT at assessed severity
+
+5. **Record in each reported finding**:
+   ```
+   CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+   CH_REASON: <one-line summary of counter-evidence evaluation>
+   ```
+
+6. **Suppression log** in verdict file before VERDICT_SUMMARY:
+   ```
+   DISCARDED_FINDINGS: <N>
+     D-001: <file:line> | <original hypothesis> | <discard reason>
+   ```
+   If DISCARDED exceeds REPORTED, note as unusual — it may indicate
+   an overly broad false-positives.md or overly cautious assessment.
+
 ### 5.5. Sentinel Integration (only when sentinel-N.md exists in work-output/)
 
 **IMPORTANT: Complete Steps 1-5 independently before reading sentinel-N.md.**
@@ -281,6 +359,13 @@ If `./work-output/sentinel-N.md` exists for this phase:
    - Elevate to QA MUST-FIX (Sentinel's concrete evidence stands — QA must acknowledge)
 4. Note findings QA independently corroborated (stronger signal — both agents found it)
 5. Note findings QA disagrees with — document justification for disagreement
+6. **Suppression disagreement resolution**: When comparing discarded findings:
+   - If both QA and Sentinel DISCARDED the same pattern, this is stronger
+     confirmation of a true false positive (independent corroboration of
+     non-issue).
+   - If Sentinel REPORTED a finding that QA DISCARDED (or vice versa), this
+     disagreement requires explicit resolution in the verdict. Document which
+     agent's reasoning is more location-specific.
 
 If no sentinel-N.md exists: mark Step 5.5 as N/A.
 
@@ -317,6 +402,11 @@ File: <path:line>
 Evidence: <code block>
 Issue: <description>
 Action: MUST-FIX | SHOULD-FIX | INFORMATIONAL
+CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+CH_REASON: <one-line counter-evidence evaluation>
+
+DISCARDED_FINDINGS: <N>
+  D-001: <file:line> | <original hypothesis> | <discard reason>
 
 SENTINEL_FINDINGS_ADDRESSED: true | false | N/A (no sentinel report)
   <if true: list how many sentinel findings were in-scope, how many elevated to QA>

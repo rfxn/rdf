@@ -190,6 +190,15 @@ Read ALL of these before writing any code:
 
 Check MEMORY.md for lessons learned and known gotchas relevant to this phase.
 
+- **Library check**: If any file to be modified is part of a shared library
+  (tlog_lib, alert_lib, elog_lib, pkg_lib, geoip_lib), note this for Step 5e.
+  Library files have different correctness criteria: no project-specific
+  references is a requirement, portable defaults are expected, and install.sh
+  is the consuming project's responsibility.
+- If `./audit-output/false-positives.md` exists, read it. Known FP patterns
+  inform self-review — avoid flagging your own code for patterns that are
+  documented intentional behavior.
+
 ### Step 2 — Plan Implementation
 
 Outline what you will do:
@@ -413,6 +422,25 @@ Skip only for trivial single-file changes (docs, comments, one-line fixes).
      prior versions encounter the missing file? Test by mentally running the
      consuming function against old-format session/state data.
 
+6. **Counter-hypothesis on self-review flags** — When self-review identifies
+   a potential issue in your own code, before flagging it in the result file:
+   - Is this an intentional pattern documented in CLAUDE.md or
+     false-positives.md for this file?
+   - Is this a library file where the "issue" is expected behavior?
+   - Does the code you wrote follow an existing pattern established
+     elsewhere in the same project?
+
+   Weigh collectively — a single check with weak or ambiguous evidence is
+   not sufficient to suppress. If multiple checks align with location-specific
+   evidence, do not flag the pattern — but DO include a one-line note in
+   the SELF_REVIEW block explaining why the pattern is correct:
+   ```
+   INTENTIONAL_PATTERNS: "/tmp default in tlog_lib.sh — install-time
+     replaced per CLAUDE.md Canonical Path Rule"
+   ```
+   This gives downstream reviewers (Sentinel, QA) context that the author
+   considered the pattern and judged it correct, reducing their FP surface.
+
 **Evidence mandate:** Every self-review item marked DONE in the result file must
 include a one-line evidence summary — not just the label. N/A is allowed but must
 include a one-line justification. Silence or a bare DONE label is not acceptable.
@@ -427,6 +455,7 @@ SELF_REVIEW: DONE | SKIPPED (<reason>)
   CALLER_UPDATE: "grep for old record_hit() — 0 hits after migration (grep output
     included in phase-result.md)"
   BASH41_GREP: "0 matches on all 4 patterns (evidence in BASH41_GREP_EVIDENCE)"
+  INTENTIONAL_PATTERNS: "<patterns noted as correct with evidence, or N/A>"
 ```
 
 If self-review finds issues, fix them and re-run from 5a.

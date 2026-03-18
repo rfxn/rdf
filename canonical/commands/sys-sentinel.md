@@ -84,6 +84,24 @@ Before running any pass:
 5. Read callers and consumers of modified functions (use Grep to find them)
 6. Read MEMORY.md for past failures on similar changes
 
+### Step 1.5 -- FP Context Establishment (MANDATORY)
+
+Before running any pass, build context that prevents false positive findings:
+
+1. **Library check**: For each modified file, answer: "Is this file part of a
+   shared library consumed by other projects?" (tlog_lib, alert_lib, elog_lib,
+   pkg_lib, geoip_lib). If yes, apply library rules for that file:
+   - Missing project-specific context is a FEATURE, not a gap
+   - Portable defaults (/tmp, empty registries) are expected — consuming
+     projects replace them at install time
+   - No install.sh is expected — consuming projects handle installation
+   - Empty arrays/registries are expected — consumers populate them
+
+2. **Load false-positives.md**: If `./audit-output/false-positives.md` exists,
+   read it. These entries are used during the per-finding counter-hypothesis —
+   NOT as a preprocessing filter. Do not suppress findings based on FP file
+   alone; use it as one input to the per-finding verdict.
+
 ### Step 2 -- Run Four Passes
 
 Run each pass sequentially. For each pass, apply the specific lens and mandate
@@ -184,6 +202,48 @@ theoretical worst-case).
 
 ### Step 3 -- Write Findings
 
+**Per-Finding Counter-Hypothesis Gate (MANDATORY — every MUST-FIX and
+SHOULD-FIX finding)**
+
+Before writing any MUST-FIX or SHOULD-FIX finding, run this protocol:
+
+1. **Hypothesis**: State what you believe is wrong: "Line N does X, which
+   causes Y"
+2. **Counter-hypothesis**: Formulate why this code might be correct: "This
+   might be intentional if Z"
+3. **Seek counter-evidence** — check ALL of the following (do not stop at
+   first match; weigh collectively):
+   (a) Does false-positives.md list this pattern FOR THIS FILE/FUNCTION?
+       A pattern match against a different file location is not counter-evidence.
+   (b) Is there an inline comment within 5 lines explaining the choice?
+   (c) Does the project CLAUDE.md document this as intentional behavior?
+   (d) Is this a shared library file where the "issue" is expected library
+       behavior? (from Step 1.5 library check)
+   (e) Does surrounding code (20+ lines) contain guards, wrappers, or
+       callers that handle the concern?
+
+   **Evidence floor**: Counter-evidence must be LOCATION-SPECIFIC — it must
+   reference the same file and function (or direct caller) as the finding.
+   A generic project-wide pattern match is not sufficient to discard a
+   finding. "CLAUDE.md says /tmp is intentional in tlog_lib.sh" does not
+   excuse /tmp in a new function in bfd.lib.sh.
+
+4. **Verdict** (based on weight of ALL checks, not any single check):
+   - Counter-evidence specific and compelling across multiple checks →
+     DISCARD (do not report)
+   - Counter-evidence present but only one check, or ambiguous →
+     DEMOTE severity one level, note the ambiguity in the finding
+   - No location-specific counter-evidence found →
+     REPORT at assessed severity
+
+5. **Record**: For REPORTED and DEMOTED findings, include in the finding:
+   ```
+   CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+   CH_REASON: <one-line summary of counter-evidence evaluation>
+   ```
+   Discarded findings have no finding record — they appear only in the
+   suppression log.
+
 **Filename discipline:** `N` in the output filename MUST be the integer phase
 number from the EM dispatch prompt or the work order's `PHASE:` field. Use ONLY
 that integer — never a descriptive label, aspect name, or free-text identifier.
@@ -207,6 +267,8 @@ PASS_1_ANTI_SLOP:
     Evidence: [code block]
     Issue: [description]
     Suggestion: [concrete alternative]
+    CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+    CH_REASON: <one-line counter-evidence evaluation>
 
 PASS_2_REGRESSION:
   FINDINGS: <N>
@@ -215,6 +277,8 @@ PASS_2_REGRESSION:
     Evidence: [code block showing old vs new behavior]
     Issue: [description of behavioral change]
     Impact: [what breaks or changes]
+    CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+    CH_REASON: <one-line counter-evidence evaluation>
 
 PASS_3_SECURITY:
   FINDINGS: <N>
@@ -223,6 +287,8 @@ PASS_3_SECURITY:
     Evidence: [code block showing vulnerability]
     Issue: [description of attack vector]
     Mitigation: [concrete fix]
+    CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+    CH_REASON: <one-line counter-evidence evaluation>
 
 PASS_4_PERFORMANCE:
   FINDINGS: <N>
@@ -232,11 +298,19 @@ PASS_4_PERFORMANCE:
     Issue: [description of complexity or waste]
     Scale: [at what N does this become a problem]
     Suggestion: [concrete alternative]
+    CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+    CH_REASON: <one-line counter-evidence evaluation>
 
 SUMMARY:
   MUST_FIX: <N total across all passes>
   SHOULD_FIX: <N total>
   QA_ATTENTION: [pass names where QA should focus independently]
+
+DISCARDED_FINDINGS: <N>
+  D-001: <file:line> | <original hypothesis> | <discard reason>
+
+If DISCARDED_FINDINGS exceeds total reported findings, add to SUMMARY:
+  FP_WARNING: Discarded (<N>) exceeds reported (<N>) — review suppression log
 ```
 
 If a pass has zero findings, write:

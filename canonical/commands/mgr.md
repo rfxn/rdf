@@ -145,6 +145,31 @@ Verdict: <MERGE_READY|NEEDS_WORK|REJECTED>
 Read `./work-output/uat-phase-N-status.md` for UAT step details if available.
 Read `./work-output/uat-phase-N-verdict.md` for the UAT verdict.
 
+### FP Calibration Check
+
+When reading Sentinel and QA output, check for suppression anomalies:
+
+- If an agent's DISCARDED_FINDINGS count exceeds REPORTED findings count,
+  flag this in the status output:
+  ```
+  WARNING: <agent> discarded more findings than it reported (<D> discarded,
+  <R> reported). Review suppression log for over-broad FP matching.
+  ```
+
+- If Sentinel and QA disagree on a finding (one REPORTED, one DISCARDED),
+  include in the Verification Gate status:
+  ```
+  FP_DISAGREEMENT: <N> findings where Sentinel and QA reached different
+  conclusions. See verdict for resolution.
+  ```
+
+- If an agent's output contains zero findings AND zero discarded findings
+  for a tier 2+ change, note as unusual:
+  ```
+  NOTE: <agent> produced 0 findings and 0 discards on a tier 2+ change.
+  Verify the agent reviewed the full diff.
+  ```
+
 ### Parallel Mode Status Table
 When multiple SEs are running, maintain a progress table:
 ```

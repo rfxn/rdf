@@ -97,6 +97,13 @@ A finding without verification is a guess — and guesses produce false positive
    file sources or calls it.
 5. **Check install-time transforms** — hardcoded paths in source trees may be
    replaced by `install.sh` sed patterns at install time. Verify before flagging.
+6. **Verify existence at definition site** — When claiming a function is
+   duplicated, dead, or misplaced, grep for the DEFINITION site (look for
+   `function name()` or `name() {`), not just the function name as a string.
+   A function name appearing in a comment, a variable, or a disabled block
+   is not evidence of duplication or existence. When claiming two functions
+   contain duplicated logic, read BOTH function bodies in full — name
+   similarity is not evidence of body similarity.
 
 ### Severity gates:
 - **Info**: May report with lighter verification (observation-level)
@@ -123,6 +130,48 @@ VERIFIED: <N>/<total> findings verified against code
 - Be selective, not comprehensive. Prioritize verified high-severity findings
   over exhaustive low-severity enumeration.
 
+## Counter-Hypothesis Protocol (MANDATORY — all agents, all findings Minor+)
+
+The verification protocol confirms a finding exists. The counter-hypothesis
+protocol confirms it is not intentional. Both must pass before reporting.
+
+Before reporting any finding at Minor severity or above:
+
+1. **Hypothesis**: "This code has [issue] because [evidence]"
+2. **Counter-hypothesis**: "This code might be correct because [alternative]"
+3. **Seek counter-evidence** — check ALL (do not stop at first match):
+   (a) Does false-positives.md list this pattern FOR THIS FILE/FUNCTION?
+       Pattern matches against different file locations are not counter-evidence.
+   (b) Is there an inline comment within 5 lines explaining the choice?
+   (c) Does the project CLAUDE.md document this as intentional behavior?
+   (d) Is this a shared library file where the "issue" is expected library
+       behavior? Libraries intentionally lack project-specific context,
+       use portable defaults, and have no install.sh.
+   (e) Is this path replaced by install.sh sed transforms at install time?
+   (f) Does surrounding code (20+ lines) contain guards, wrappers, or
+       callers that handle the concern?
+
+   **Evidence floor**: Counter-evidence must be LOCATION-SPECIFIC — same
+   file and function (or direct caller). A project-wide pattern match is
+   not sufficient to discard a finding.
+
+4. **Verdict** (based on weight of ALL checks, not any single check):
+   - Counter-evidence specific and compelling across multiple checks →
+     DISCARD silently (do not report, do not report as Info)
+   - Counter-evidence present but single check or ambiguous →
+     DEMOTE severity one level, note ambiguity in the finding
+   - No location-specific counter-evidence → REPORT at assessed severity
+
+5. **Record in each finding**:
+   ```
+   CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+   ```
+
+6. **Footer addition** (alongside existing VERIFIED footer):
+   ```
+   DISCARDED: <N> findings discarded via counter-hypothesis
+   ```
+
 ## Required Footer
 
 Every agent MUST end its output file with these exact lines:
@@ -135,6 +184,30 @@ COMPLETION: <PREFIX> DONE
 Where C=Critical, M=Major, m=Minor, I=Info. Example:
 ```
 VERIFIED: 12/12 findings verified against code
+DISCARDED: 3 findings discarded via counter-hypothesis
 SUMMARY: 12 findings (C:1 M:4 m:5 I:2)
 COMPLETION: LAT DONE
 ```
+
+## false-positives.md Entry Format
+
+Each entry in a project's `./audit-output/false-positives.md` MUST include
+a file-path scope so agents can apply the entry only when the location matches:
+
+```
+<file_path> | <pattern description> | <reason it is not a finding>
+```
+
+Examples:
+```
+files/internals/tlog_lib.sh | BASERUN /tmp default | install-time replaced by consuming projects
+files/bfd | declare -A arrays | global in production, local in test sourcing — intentional
+files/internals/bfd_alert.sh | SC2086 $rules_arg | intentional word-splitting for YARA arguments
+```
+
+Entries WITHOUT a file-path scope are treated as project-wide but carry lower
+weight in counter-hypothesis evaluation — they cannot alone justify discarding
+a finding in a file they were not written about.
+
+Entries should be reviewed at each release cycle. Remove entries for code that
+no longer exists. Update file paths after refactors.

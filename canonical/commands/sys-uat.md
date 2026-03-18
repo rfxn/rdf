@@ -431,6 +431,35 @@ immediately useful without re-reading or cross-referencing docs.
 - CSV output: proper quoting, consistent delimiters
 - Structured output (JSON/CSV) pipes cleanly to `jq`, `awk`, `sort`, `cut`
 
+### Step 4a — Intentional Behavior Verification (MANDATORY for WORKFLOW-BREAKING)
+
+Before classifying any finding as WORKFLOW-BREAKING (which EM treats as
+equivalent to QA MUST-FIX and blocks merge):
+
+1. **Check CLAUDE.md**: Does the project CLAUDE.md document this behavior
+   as intentional? Key sections to check:
+   - "Known Gotchas" or equivalent
+   - Exit code documentation
+   - Config-conditional behavior descriptions
+   - Backward compatibility notes
+
+2. **Check observed vs documented**: If the behavior you observed matches
+   what CLAUDE.md describes as expected, it is not a finding — even if it
+   looks wrong from a sysadmin perspective. Example: exit code 3 from a
+   library function may be a documented graceful fallback, not an error.
+
+3. **Check config state**: If the behavior depends on a config value, verify
+   you tested with the documented default. Behavior under non-default config
+   is a valid finding only if the config value is user-settable and the
+   behavior is undocumented.
+
+If intentional behavior is confirmed, do NOT classify as WORKFLOW-BREAKING.
+Reclassify as USER-FACING with a note:
+```
+INTENTIONAL_BEHAVIOR: <behavior> documented in CLAUDE.md section <X>.
+Reclassified from WORKFLOW-BREAKING to USER-FACING — behavior is by design.
+```
+
 ### Step 4b — Output Intelligence
 
 This is the core sysadmin-perspective assessment. For every command that
