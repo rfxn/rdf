@@ -37,5 +37,35 @@
     "tools": ["Bash", "Read", "Glob", "Grep"],
     "disallowedTools": ["Write", "Edit"],
     "model": "opus"
+  },
+  "commands": {
+    "build": {
+      "file": "commands-v3/build.md",
+      "dispatches": "dispatcher",
+      "type": "subagent-foreground",
+      "args": "[N]",
+      "description": "Execute implementation plan phase via dispatcher"
+    },
+    "verify": {
+      "file": "commands-v3/verify.md",
+      "dispatches": "qa",
+      "type": "subagent-foreground",
+      "args": "[scope]",
+      "description": "Run QA verification against diff or specified scope"
+    },
+    "test": {
+      "file": "commands-v3/test.md",
+      "dispatches": "uat",
+      "type": "subagent-foreground",
+      "args": "[scope]",
+      "description": "Run UAT acceptance tests from end-user perspective"
+    },
+    "review": {
+      "file": "commands-v3/review.md",
+      "dispatches": "reviewer",
+      "type": "subagent-foreground",
+      "args": "[--challenge <file>] [--sentinel] [scope]",
+      "description": "Adversarial review in challenge or sentinel mode"
+    }
   }
 }
