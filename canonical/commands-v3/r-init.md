@@ -230,3 +230,248 @@ An internal tooling result (not written to disk) containing:
 - Dependency management tools and lockfile status
 - Git conventions (branch naming, commit format)
 - Active development areas
+
+## Phase 4: Generate Supplementary Governance
+
+Create `.claude/governance/` directory and generate governance files.
+This phase applies the supplement model: reference existing coverage,
+generate from scan data where gaps exist, never duplicate.
+
+### Directory Setup
+
+```bash
+mkdir -p .claude/governance
+```
+
+If `.claude/governance/` already exists (from a prior /r:init or
+/r:refresh), DO NOT delete it. Each file is written only if it does
+not already exist — /r:refresh handles updates separately.
+
+### Merge Logic
+
+For each governance file, apply this decision tree:
+
+1. **Full coverage in existing .md files** — governance file contains
+   ONLY cross-references:
+   ```
+   ## Coding Style
+   See CLAUDE.md § "Shell Standards" (lines 45-92)
+   ```
+
+2. **No coverage in existing .md files** — governance file generates
+   full content from Phase 2-3 scan data:
+   ```
+   ## Coding Style
+   Detected conventions from codebase analysis:
+   - Indentation: 2-space (consistent across 47 JS files)
+   - Semicolons: absent (ESLint no-semi rule in .eslintrc)
+   - Quotes: single (Prettier singleQuote: true)
+   ```
+
+3. **Partial coverage** — governance file cross-references what exists
+   and supplements the gaps:
+   ```
+   ## Coding Style
+   See CLAUDE.md § "Shell Standards" for shell conventions.
+
+   Additional conventions detected from codebase:
+   - Python files use black formatter (pyproject.toml [tool.black])
+   - Line length: 88 (black default, confirmed in 23 files)
+   ```
+
+### Conflict Resolution
+
+When sources disagree:
+
+1. **Higher-priority source wins** per the priority cascade (Phase 1).
+   The winning value is used in the governance file.
+2. **Conflicts are flagged** with both values shown:
+   ```
+   ## Indentation
+   CONFLICT: CLAUDE.md specifies tabs, .editorconfig specifies 2-space.
+   Using CLAUDE.md value (higher priority). Review and resolve.
+   ```
+3. **Same-tier conflicts** (e.g., two linter configs disagree) —
+   document both values and flag for user resolution:
+   ```
+   ## Line Length
+   CONFLICT (same priority): .eslintrc max-len=120, .prettierrc printWidth=80.
+   Both documented — resolve by choosing one and updating the other config.
+   ```
+4. **Never silently pick a side** — every conflict appears in the
+   low-confidence report (Phase 5).
+
+### Generate: architecture.md
+
+Content sources: Phase 2 directory structure, Phase 3 container/CI
+data, Phase 1 architecture sections from existing .md files.
+
+Structure:
+```
+# Architecture
+
+## Project Overview
+{project name, primary language, framework}
+
+## Components
+{directory-to-purpose mapping from Phase 2}
+
+## Data Flow
+{inferred from framework detection — e.g., HTTP request flow for
+web frameworks, CLI argument flow for CLI tools}
+
+## Key Boundaries
+{service boundaries from docker-compose, monorepo workspace boundaries,
+module boundaries from package structure}
+
+## External Dependencies
+{frameworks, databases, external services from dependency analysis}
+```
+
+If existing .md files already describe architecture, this file
+contains cross-references and supplements only.
+
+### Generate: conventions.md
+
+Content sources: Phase 2 linter/formatter configs, Phase 1 convention
+sections from existing .md files, Phase 3 git commit patterns.
+
+Structure:
+```
+# Conventions
+
+## Coding Style
+{from linter/formatter configs and source analysis}
+
+## Naming
+{from source analysis — file naming, function naming, variable naming}
+
+## File Organization
+{from directory structure analysis}
+
+## Commit Messages
+{from git history analysis in Phase 3}
+
+## Branch Strategy
+{from git branch naming patterns in Phase 3}
+```
+
+### Generate: verification.md
+
+Content sources: Phase 2 test framework and linter detection,
+Phase 3 CI configuration, Phase 1 verification sections.
+
+Structure:
+```
+# Verification
+
+## Lint
+{linter tool, config file, run command}
+
+## Type Checks
+{type checker if detected, run command}
+
+## Tests
+{test framework, test directory, run command, test count}
+
+## CI Checks
+{CI platform, what runs in CI, how to run locally}
+
+## Pre-Commit
+{pre-commit hooks if detected, what they check}
+
+## Manual Checks
+{anything from existing .md files that requires manual verification}
+```
+
+This file is critical — it tells the QA agent exactly what checks
+to run. Be specific about commands.
+
+### Generate: constraints.md
+
+Content sources: Phase 3 platform targets, Phase 2 version detection,
+Phase 1 constraint sections from existing .md files.
+
+Structure:
+```
+# Constraints
+
+## Platform Targets
+{OS list from CI matrix, Dockerfiles, or existing docs}
+
+## Language Version
+{minimum version from configs, CI matrix, or source analysis}
+
+## Compatibility
+{backward compat requirements from existing docs or lockfiles}
+
+## Dependencies
+{pinned versions, version ranges, known conflicts}
+
+## Performance
+{performance constraints from existing docs if any}
+```
+
+### Generate: anti-patterns.md
+
+Content sources: Phase 1 anti-pattern sections from existing .md files,
+Phase 2 linter suppression comments, Phase 3 git history (reverted
+commits, frequent fix areas).
+
+Structure:
+```
+# Anti-Patterns
+
+## Project-Specific
+{from existing .md files — known pitfalls for this project}
+
+## Detected from Linter Config
+{rules that are explicitly enabled or have custom severity,
+indicating they were problems before}
+
+## Common for {language/framework}
+{well-known anti-patterns for the detected stack — but only
+include ones that are relevant based on the codebase scan}
+
+## Historical
+{from git history — files with frequent reverts or fix commits
+suggest fragile areas}
+```
+
+### Generate: index.md
+
+Generated LAST, after all other governance files. Follows the schema
+from `schemas/governance-index.md`.
+
+Structure (must stay under 50 lines / ~100-150 tokens):
+```
+# Governance Index
+
+## Project
+- Name: {detected project name from package manifest, git remote, or dirname}
+- Branch: {current git branch}
+- Mode: development
+- Plan: none
+
+## Authoritative Files
+- CLAUDE.md — {one-line description of what it covers}
+- AGENTS.md — {one-line description}
+{one line per existing .md file found in Phase 1}
+
+## Governance Files
+- architecture.md — {one-line summary of what was generated}
+- conventions.md — {one-line summary}
+- verification.md — {one-line summary}
+- constraints.md — {one-line summary}
+- anti-patterns.md — {one-line summary}
+{only list files that were actually generated with content}
+
+## Reference
+{omit this section if no reference docs exist}
+```
+
+Rules for index.md:
+- One line per file, no multi-line descriptions
+- Authoritative Files = existing project .md files (NOT in governance/)
+- Governance Files = generated supplements IN .claude/governance/
+- Must stay under 50 lines — this is the always-loaded context
