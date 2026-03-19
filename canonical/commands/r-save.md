@@ -13,6 +13,24 @@ to `/r:start` — save writes the journal, start reads it.
 - `--dry-run`: show what would change without writing
 - `--plan-only`: sync PLAN.md only (quick save)
 
+## Progress Tracking
+
+At command startup, set up progress tracking for user feedback:
+
+**If TaskCreate tool is available** (Claude Code):
+```
+TaskCreate: subject: "Sync session state"
+  activeForm: "Syncing session state"
+```
+Mark `in_progress` at start, `completed` before the report.
+
+**If TaskCreate is NOT available** (Gemini CLI, Codex):
+Output a markdown checklist at the start and update inline:
+```
+- [ ] Sync session state...
+```
+Replace with `- [x] Synced` when complete.
+
 ## Protocol
 
 Execute sections 1-7 silently — do NOT display per-section output.

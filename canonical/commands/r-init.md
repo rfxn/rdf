@@ -11,28 +11,36 @@ current working directory). Can be a subdirectory for monorepo scoping.
   from scratch. Without this flag, /r:init refuses to run when
   governance already exists (directs to `/r:refresh` instead).
 
-## Task List Protocol
+## Progress Tracking
 
-At command startup, create tasks for live progress tracking:
+At command startup, set up progress tracking for user feedback:
 
-TaskCreate: subject: "Ingest existing convention files"
-  activeForm: "Ingesting convention files"
-TaskCreate: subject: "Scan codebase: languages, frameworks, structure"
+**If TaskCreate tool is available** (Claude Code):
+```
+TaskCreate: subject: "Ingest convention files"
+  activeForm: "Ingesting conventions"
+TaskCreate: subject: "Scan codebase"
   activeForm: "Scanning codebase"
-TaskCreate: subject: "Detect tooling and infrastructure"
+TaskCreate: subject: "Detect tooling"
   activeForm: "Detecting tooling"
-TaskCreate: subject: "Generate supplementary governance"
-  activeForm: "Generating governance files"
-TaskCreate: subject: "Validate and spot-check accuracy"
-  activeForm: "Validating governance"
+TaskCreate: subject: "Generate governance"
+  activeForm: "Generating governance"
+TaskCreate: subject: "Validate accuracy"
+  activeForm: "Validating"
+```
+Mark each `in_progress` → `completed` as phases complete.
+For >30s operations, update activeForm with progress.
 
-Lifecycle: all tasks start pending. Before starting each phase,
-mark its task in_progress (shows spinner with activeForm text).
-After completing each phase, mark its task completed.
-
-For operations expected to take >30 seconds (large codebase scans,
-git history analysis), update the task's activeForm to reflect
-progress: e.g., "Scanning codebase: 2,431 files detected..."
+**If TaskCreate is NOT available** (Gemini CLI, Codex):
+Output a markdown checklist and update inline as phases complete:
+```
+- [ ] Ingest conventions
+- [ ] Scan codebase
+- [ ] Detect tooling
+- [ ] Generate governance
+- [ ] Validate
+```
+Replace each `[ ]` with `[x]` as the phase completes.
 
 ---
 
@@ -651,109 +659,56 @@ Mark task "Validate and spot-check accuracy" as completed.
 
 ## Output Report
 
-After all 5 phases complete, present the user with a structured summary.
-This is the first thing the user sees after initialization — it must
-be informative, scannable, and elegant.
+After all 5 phases complete, present one clean, compact summary. This
+is the user's first impression of RDF — it must feel like a superpower.
 
-**All output uses markdown.** No ASCII box drawing. Tables, headers,
-and lists render cleanly across terminals and tools.
-
-**Every field must be populated.** If a field cannot be determined,
-show `(not detected)` rather than omitting the row.
+**Target: under 25 lines.** Drop rows where the value is `(not detected)`.
+Only show what was actually found — absence is not information.
 
 ```markdown
-## /r:init Complete
+## {Project} initialized — {N} governance files from {N} sources
 
-| Property | Value |
-|----------|-------|
-| **Target** | {absolute path} |
-| **Duration** | {elapsed time} |
-| **Codebase** | {N} tracked files, ~{N}k lines |
-| **Scan mode** | {small/medium/large/monorepo} |
+| Codebase | Governance | Confidence |
+|----------|-----------|------------|
+| {lang} {pct}%, {N} files, ~{N}k lines | {N} files ingested, {N} generated | {N} HIGH / {N} MED / {N} LOW |
 
-### Ingested (Phase 1)
+**Stack**: {language} {version} · {framework} · {test framework} ({N} tests) · {linters} · {CI platform}
 
-| File | Lines | Categories |
-|------|-------|------------|
-| CLAUDE.md (project) | {N} | arch, conventions, verify, security |
-| CLAUDE.md (parent) | {N} | shell, commit, quality, compat |
-| MEMORY.md | {N} | state, lessons, advisories |
-| PLAN.md | {N} | {brief description} |
-| {other files...} | {N} | {categories} |
+**Governance** ({N} files, {total_lines} lines):
+- [x] `index.md` — project identity, always loaded
+- [x] `architecture.md` — {source: scan / refs / mixed}
+- [x] `conventions.md` — {source}
+- [x] `verification.md` — {source}
+- [x] `constraints.md` — {source}
+- [x] `anti-patterns.md` — {source}
 
-### Detected (Phases 2-3)
+{only if LOW > 0 or conflicts:}
+> **Review**: {N} low-confidence items — {1-line summary of top concern}
 
-| Property | Value |
-|----------|-------|
-| **Languages** | {lang} {pct}% ({N} files, ~{N}k lines) |
-| **Version** | {version string} ({source: package.json / grep / tag}) |
-| **License** | {type} ({file}) |
-| **Tests** | {framework} ({N} unit + {N} UAT, `{run command}`) |
-| **CI** | {platform} ({workflow desc, matrix summary}) |
-| **Linters** | {tool list with flags} |
-| **Platforms** | {N} OS targets ({range summary}) |
-| **Build** | {build system, key targets} |
-| **Frameworks** | {list} |
-| **Dependencies** | {N} direct ({lockfile status}) |
-
-### Generated (Phase 4)
-
-| File | Lines | Source |
-|------|-------|--------|
-| index.md | {N} | always loaded |
-| architecture.md | {N} | {from scan / refs only / mixed} |
-| conventions.md | {N} | {source} |
-| verification.md | {N} | {source} |
-| constraints.md | {N} | {source} |
-| anti-patterns.md | {N} | {source} |
-
-### Validation (Phase 5)
-
-| Check | Result |
-|-------|--------|
-| **Spot checks** | {N}/{N} passed |
-| **Confidence** | HIGH {N} / MEDIUM {N} / LOW {N} |
-
-{if LOW > 0 or conflicts exist, add:}
-
-**Low-confidence items:**
-- {item description}
-- {item description}
-
-**Conflicts:**
-- {conflict description}
-
-### Git State
-
-| Property | Value | Property | Value |
-|----------|-------|----------|-------|
-| **Branch** | {branch} | **HEAD** | {hash} ({age}) |
-| **Dirty** | {N} files | **Last commit** | {message, truncated} |
-| **Plan** | {M/N phases or "none"} | **Tags** | {latest tag or "none"} |
-
-### Next Steps
-
-| Command | Purpose |
-|---------|---------|
-| `/r:start` | Begin working (loads governance + plan progress) |
-| `/r:status` | Full project health dashboard |
-| `/r:spec` | Design a spec for your next feature |
-| `/r:plan` | Create an implementation plan from a spec |
-| `/r:refresh` | Update governance after codebase changes |
+> **Ready** — `/r:start` to begin | `/r:spec` to design | `/r:plan` to plan
 ```
 
-### .gitignore / .git/info/exclude
+**Adaptation rules:**
+- The heading includes the project name and a count — makes the
+  output feel like a result, not a form
+- The **Stack** line is a single `·`-separated string — dense and
+  scannable. Omit fields that weren't detected rather than showing
+  empty slots.
+- The governance checklist shows what was created and where the
+  content came from — this is RDF's value prop in action
+- Low-confidence items get ONE blockquote line, not a full table.
+  Details are in the governance files themselves.
+- The **Ready** line replaces the old 5-row "Next Steps" table — the
+  user knows what commands exist, they need a nudge not a menu
+- Git state is NOT shown — the user already has their terminal, the
+  init output should be about what RDF did, not what git looks like
+- Duration is NOT shown — fast is felt, not reported
 
-After generating governance files, check whether `.claude/governance/`
-is covered by `.gitignore` or `.git/info/exclude`. If not, ASK the
-user whether they want governance files committed to the repo or
-excluded:
+### Git Exclusion
 
-- **Committed:** useful for teams — everyone gets the same governance
-- **Excluded:** useful for personal workflows — governance is local only
-
-If the user chooses to exclude, add `.claude/governance/` to
-`.git/info/exclude` (not `.gitignore`, to avoid polluting the repo).
+After generating governance, verify `.rdf/` is in `.git/info/exclude`.
+If not, add it automatically — governance is local operational state,
+not committed source. Do not prompt the user; this is the default.
 
 ---
 

@@ -4,6 +4,24 @@ Reload context and display project health. This is the recommended
 first command in any session. It gives the agent a warm handoff —
 enough context to continue where the last session left off.
 
+## Progress Tracking
+
+At command startup, set up progress tracking for user feedback:
+
+**If TaskCreate tool is available** (Claude Code):
+```
+TaskCreate: subject: "Initialize session"
+  activeForm: "Loading project context"
+```
+Mark `in_progress` at start, `completed` before the dashboard.
+
+**If TaskCreate is NOT available** (Gemini CLI, Codex):
+Output a markdown checklist at the start and update inline:
+```
+- [ ] Loading project context...
+```
+Replace with `- [x] Session loaded` when complete.
+
 ## Protocol
 
 ### 1. Clear Context
