@@ -508,14 +508,15 @@ Each profile contains:
 | uat.md | rdf-uat | sonnet | User acceptance testing |
 | reviewer.md | rdf-reviewer | opus | Adversarial review (challenge + sentinel) |
 
-### Commands (23)
+### Commands (24)
 
-**Lifecycle (13):**
+**Lifecycle (14):**
 
 | Command | Slash | Purpose |
 |---------|-------|---------|
 | r-init | /r:init | Governance initialization |
-| r-start | /r:start | Session initialization |
+| r-start | /r:start | Session initialization + warm handoff |
+| r-save | /r:save | End-of-session state sync |
 | r-plan | /r:plan | Planning workflow (dispatches planner) |
 | r-mode | /r:mode | Switch operational mode |
 | r-status | /r:status | Project health dashboard |

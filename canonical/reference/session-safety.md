@@ -5,14 +5,28 @@ See also `reference/framework.md` for the full artifact taxonomy and handoff mod
 
 ---
 
+## Session Lifecycle
+
+The recommended workflow for every session:
+
+```
+/r:start         ← warm handoff: loads plan, last session summary, warnings
+  ... work ...
+/r:save          ← state sync: updates PLAN.md, MEMORY.md, session log
+```
+
+`/r:save` writes to `work-output/session-log.jsonl` so the next `/r:start`
+can show what happened. Git is the authoritative record; `/r:save` creates
+convenience summaries.
+
 ## Checkpoint Discipline
 
 - **Commit after every completed logical unit** — do not accumulate large uncommitted diffs.
   If a crash occurs mid-session, uncommitted changes are the primary data-loss vector.
-- **Run `/mem-save` before any long-running operation** — audits, full test suites,
+- **Run `/r:save` before any long-running operation** — audits, full test suites,
   and multi-agent dispatches are crash-prone windows. Save state first.
-- **Run `/mem-save` after every commit** — ensures MEMORY.md, PLAN.md, and AUDIT.md
-  reflect the latest committed state and are recoverable independently of chat context.
+- **Run `/r:save` at session end** — ensures PLAN.md, MEMORY.md, and session-log.jsonl
+  reflect the latest state and are recoverable independently of chat context.
 
 ## Preserve Input Context
 
@@ -26,21 +40,18 @@ See also `reference/framework.md` for the full artifact taxonomy and handoff mod
 
 After a crash or new session start:
 
-1. **Assess git state:** `git status`, `git diff --stat`, `git log --oneline -5`
-2. **Check session manifest:** read `work-output/session.md` for previous session's
-   dispatch history and which phases were completed vs in-progress
-3. **Check in-flight registry:** read `work-output/in-flight.md` for stale RUNNING
-   entries — these indicate agents that were active when the session crashed
-4. **For each stale in-flight entry:**
-   - Check spool (`work-output/spool/`) for a completion event matching the agent ID
-   - If spool event exists: agent finished but EM crashed before reading the result
-     → read the result file, resume pipeline from QA dispatch
-   - If no spool event: agent crashed mid-execution
-     → check `git diff` for uncommitted changes, warn user, recommend recovery
-5. **Check for stale worktrees:** `git branch | grep -E '\-p[0-9]+-'` — stale
-   worktree branches indicate crashed parallel sessions
-6. **If uncommitted changes exist:** review and either commit or stash before resuming
-7. **If resume fails:** start fresh with `/reload` — MEMORY.md and PLAN.md provide continuity
+1. **Run `/r:start`** — displays session anchor, plan progress, last session summary,
+   agent activity, and warnings. This is the primary recovery entry point.
+2. **Assess git state:** `git status`, `git diff --stat`, `git log --oneline -5`
+3. **Check work-output/session-log.jsonl** for the last session's summary — what
+   phases were completed, what was in progress, how many commits were made.
+4. **Check work-output/agent-feed.log** for stale AGENT_STOP entries — these show
+   agents that completed but may not have been followed up on.
+5. **Check for stale status files:** `work-output/phase-*-status.md` files with
+   mtime >1 hour indicate interrupted work.
+6. **If uncommitted changes exist:** review and either commit or stash before resuming.
+7. **If resume fails:** `/r:start` + PLAN.md provide enough continuity to restart
+   from the last completed phase.
 
 ## Cross-Session State Priority
 
@@ -49,8 +60,9 @@ When reconstructing state, use these sources in priority order:
 | Source | Reliability | Tells you |
 |--------|-------------|-----------|
 | `git log` + `git diff` | Authoritative | What was committed, what's pending |
-| PLAN.md | High | Phase completion status |
-| MEMORY.md | High (if saved) | State summary, lessons, open items |
-| work-output/session.md | Forensic | Previous session's dispatch history |
-| work-output/in-flight.md | Forensic | What was running when session ended |
-| Spool JSONL | Archival | Agent completion times and outcomes |
+| PLAN.md | High | Phase completion status (synced by `/r:save`) |
+| session-log.jsonl | High | Session summaries (commits, phases, timestamps) |
+| MEMORY.md | High (if saved) | State summary, open items |
+| AUDIT.md | High | Outstanding findings |
+| agent-feed.log | Forensic | Agent completion events |
+| work-output/*.md | Forensic | In-flight state at session end |

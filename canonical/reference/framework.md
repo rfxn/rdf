@@ -38,9 +38,10 @@ commit, phase completion, or audit run.
 
 | Artifact | Location | Owner | Mandatory |
 |----------|----------|-------|-----------|
-| MEMORY.md | Auto-memory dir | `/r:util:mem-compact` | All projects |
-| PLAN.md | `<project>/PLAN.md` | `/r:plan` | When active work |
-| AUDIT.md | `<project>/AUDIT.md` | `/r:audit` | After audit run |
+| MEMORY.md | Auto-memory dir | `/r:save` | All projects |
+| PLAN.md | `<project>/PLAN.md` | `/r:plan`, `/r:save` | When active work |
+| AUDIT.md | `<project>/AUDIT.md` | `/r:audit`, `/r:save` | After audit run |
+| session-log.jsonl | `work-output/` | `/r:save` | When active work |
 
 **MEMORY.md:** 200-line hard limit. Overflow to topic files.
 
@@ -164,18 +165,26 @@ dispatcher ──[phase context]──→ engineer ──[result]──→ dispa
 
 ### Cross-Session Continuity
 
-When a session ends, the next session reconstructs state from:
+The `/r:save` → `/r:start` loop provides structured session handoff:
+
+```
+Session N:  work → /r:save (syncs PLAN.md, MEMORY.md, writes session-log)
+Session N+1: /r:start (reads session-log, shows plan progress, last session summary)
+```
+
+State sources, in order of reliability:
 
 | Source | Reliability | What it provides |
 |--------|-------------|-----------------|
 | `git log` + `git diff` | Authoritative | Committed and uncommitted state |
-| PLAN.md | High | Phase completion status |
+| PLAN.md | High | Phase completion status (synced by `/r:save`) |
+| session-log.jsonl | High | Session summaries (commits, phases completed) |
 | MEMORY.md | High (if saved) | State summary, open items |
 | AUDIT.md | High | Outstanding findings |
 | work-output/ | Forensic | In-flight state at session end |
 
-**The critical gap:** MEMORY.md depends on being saved before session end.
-Git is the true record. MEMORY.md is a convenience summary.
+Git is the true record. `/r:save` creates convenience summaries.
+`/r:start` reads them for a warm handoff.
 
 ---
 

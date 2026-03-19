@@ -31,6 +31,14 @@
     "dispatch_mode": "none",
     "reads_governance": []
   },
+  "r-save": {
+    "name": "/r:save",
+    "type": "skill",
+    "description": "End-of-session state sync — updates PLAN.md, MEMORY.md, session log",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": []
+  },
   "utility-commands": {
     "r-util-mem-compact": {
       "slash-command": "/r:util:mem-compact",
