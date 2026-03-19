@@ -68,7 +68,8 @@ that changes how agents interpret their existing governance.
 
 | Agent | Mode Effect |
 |-------|-------------|
-| **Planner** | *Methodology and brainstorming focus change* |
+| **Spec Designer** | *Research methodology and brainstorming focus change* |
+| **Planner** | *Decomposition strategy and phase risk assessment change* |
 | **Dispatcher** | *Quality gate overrides applied* |
 | **Reviewer** | *Pass weighting and blocking thresholds change* |
 | **QA** | *Additional verification requirements per mode* |

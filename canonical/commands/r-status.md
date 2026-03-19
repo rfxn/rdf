@@ -81,6 +81,38 @@ Phase styling:
 
 If no PLAN.md: `Plan: none — run /r:plan to create one.`
 
+### Pipeline
+
+Show the 4-stage spec-plan-build-ship pipeline position as a table.
+
+```
+### Pipeline
+| Stage | Status | Artifact |
+|-------|--------|----------|
+| **Spec** | *complete* | `docs/specs/2026-03-19-foo.md` |
+| **Plan** | *complete* | `PLAN.md` (8 phases) |
+| **Build** | *in-progress* | Phase 3/8 |
+| **Ship** | *pending* | — |
+```
+
+**Detection logic:**
+- **Spec**: scan `docs/specs/` for spec files. If any exist, show the
+  most recent file path as the artifact. Status: *complete* if the file
+  exists and is not referenced by `work-output/spec-progress.md`,
+  *in-progress* if `spec-progress.md` exists, *pending* otherwise.
+- **Plan**: check for `PLAN.md` in the project root. If present, show
+  total phase count as the artifact. Status: *complete* if all phases
+  are complete, *in-progress* if any phase is in-progress, *pending*
+  if no PLAN.md exists.
+- **Build**: derived from PLAN.md phase statuses. Show current phase
+  number and total as the artifact. Status: *complete* if all phases
+  are complete, *in-progress* if any phase is in-progress or has
+  commits, *pending* if no phases have started.
+- **Ship**: check for `work-output/ship-progress.md`. If present,
+  read the `STAGE` line for the current stage. Status: *complete*
+  if stage is "released", *in-progress* if the file exists with
+  an active stage, *pending* otherwise.
+
 **Phase outcomes** — table for structured gate results from `work-output/`:
 
 ```

@@ -694,7 +694,8 @@ show `(not detected)` rather than omitting the row.
 |---------|---------|
 | `/r:start` | Begin working (loads governance + plan progress) |
 | `/r:status` | Full project health dashboard |
-| `/r:plan` | Create an implementation plan |
+| `/r:spec` | Design a spec for your next feature |
+| `/r:plan` | Create an implementation plan from a spec |
 | `/r:refresh` | Update governance after codebase changes |
 ```
 

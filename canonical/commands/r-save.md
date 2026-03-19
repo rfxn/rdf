@@ -55,6 +55,11 @@ For each phase in PLAN.md:
   acceptance criteria files are present, mark the phase `complete`
   with the commit hash as evidence
 
+**Record spec path:**
+- If `work-output/spec-progress.md` exists, read the `SPEC_PATH`
+  line. If present and non-empty, record it for the session log
+  `spec_path` field.
+
 **Detect in-progress work:**
 - If files listed in a pending phase have uncommitted changes
   (`git diff --name-only` matches), mark the phase `in-progress`
@@ -169,6 +174,7 @@ Append a structured entry to `work-output/session-log.jsonl`:
   "head_after": "{current HEAD hash}",
   "commits": {N},
   "files_changed": {N},
+  "spec_path": "{path to spec file, or null if none}",
   "plan_phases_completed": [{list of phase numbers}],
   "plan_phases_in_progress": [{list of phase numbers}],
   "dirty_files": {N}

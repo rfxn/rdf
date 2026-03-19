@@ -59,6 +59,10 @@ read first lines only.
 - `HANDOFF.md` in cwd: if present, read the `# Handoff:` title line
   and `## Current Progress` section (first 3 lines after the heading)
   to extract what was interrupted and how far it got
+- `work-output/spec-progress.md`: if present, read `TOPIC` and
+  `PHASE` lines to determine spec subject and current phase
+- `work-output/ship-progress.md`: if present, read `STAGE` line
+  to determine current shipping stage
 - `work-output/current-phase.md`: if present, read `PROJECT_NAME`,
   `PHASE`, and `PHASE_TITLE` lines. Flag as stale if mtime >24h
 - `PLAN-*.md` at workspace root: for each, grep for table rows
@@ -120,6 +124,8 @@ or acknowledged. The blockquote draws the eye to this section.
 > **In Flight** — {N} signals
 
 - [ ] **Handoff**: {title} — {progress summary}
+- [ ] **Spec**: {topic} — Phase {N} *{phase name}*
+- [ ] **Ship**: {current stage}
 - [ ] **Plan**: `brute-force-detection/PLAN.md` — Phase 4 *in-progress*
 - [ ] **Plan**: `PLAN-pkglib.md` — 3 pending phases
 - [ ] **Dispatch**: `current-phase.md` — pkg_lib Phase 1 *(stale, 12d)*
@@ -127,12 +133,16 @@ or acknowledged. The blockquote draws the eye to this section.
 
 **Signal priority** (display order):
 1. **Handoff** — explicit interrupted session. Always show first.
-2. **Plan (in-progress/blocked)** — active workstreams. Show project
+2. **Spec** — active spec design. Show topic and current phase from
+   `work-output/spec-progress.md`.
+3. **Ship** — active shipping workflow. Show current stage from
+   `work-output/ship-progress.md`.
+4. **Plan (in-progress/blocked)** — active workstreams. Show project
    name, which phases are in-progress or blocked. Use *italic* for
    the status keyword.
-3. **Plan (has pending phases)** — dormant plans with unfinished work.
+5. **Plan (has pending phases)** — dormant plans with unfinished work.
    Show count of pending phases only (no per-phase detail).
-4. **Dispatch** — stale `current-phase.md`. Show project, phase, age
+6. **Dispatch** — stale `current-phase.md`. Show project, phase, age
    in *(italic parenthetical)*.
 
 **Suppression rules:**
