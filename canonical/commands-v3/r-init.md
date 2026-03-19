@@ -475,3 +475,121 @@ Rules for index.md:
 - Authoritative Files = existing project .md files (NOT in governance/)
 - Governance Files = generated supplements IN .claude/governance/
 - Must stay under 50 lines — this is the always-loaded context
+
+## Phase 5: Validate
+
+Verify generated governance accuracy and flag low-confidence inferences
+for user review.
+
+### Spot-Check Procedure
+
+For each generated governance file, perform at least 3 spot checks:
+
+1. **conventions.md** — pick 3 claimed conventions, verify each against
+   actual source files. Example: if conventions.md says "2-space indent",
+   check 3 source files to confirm.
+
+2. **verification.md** — verify that each listed command actually works:
+   - If a test command is listed, confirm the test runner is installed
+     or documented in package manifest
+   - If a lint command is listed, confirm the linter config file exists
+
+3. **architecture.md** — verify that listed components exist as actual
+   directories or files in the project.
+
+4. **constraints.md** — verify platform targets match CI matrix or
+   documentation. Cross-check version floors against actual configs.
+
+5. **anti-patterns.md** — verify that referenced linter rules exist
+   in the actual linter config files.
+
+### Confidence Scoring
+
+Assign confidence to each governance file section:
+
+- **HIGH** — derived from explicit configuration files or existing
+  .md documentation. Example: test command from CI workflow file.
+- **MEDIUM** — inferred from source code patterns with consistent
+  evidence. Example: indent style from 90%+ file consistency.
+- **LOW** — inferred from limited evidence or conflicting signals.
+  Example: platform targets guessed from Dockerfile alone.
+
+### Low-Confidence Report
+
+Collect all LOW confidence items and any conflicts into a report
+presented to the user after generation:
+
+```
+Low-confidence items (review recommended):
+- constraints.md § Platform Targets: inferred from Dockerfile only
+  (ubuntu:22.04) — no CI matrix or docs to confirm
+- conventions.md § Line Length: CONFLICT between .eslintrc (120)
+  and .prettierrc (80) — using .eslintrc value
+- anti-patterns.md § Historical: limited git history (< 20 commits)
+  — fragile area detection may be incomplete
+```
+
+### Validation Failures
+
+If a spot check reveals an inaccuracy:
+
+1. Fix the governance file content immediately
+2. Downgrade the confidence level for that section to LOW
+3. Add the item to the low-confidence report
+4. DO NOT skip generation — a partially-accurate governance file
+   with flagged uncertainties is better than no governance
+
+## Output Report
+
+After all 5 phases complete, present the user with a structured summary:
+
+```
++-- /r:init Complete -----------------------------------------------+
+| Target:     {path}                                                |
+| Duration:   {elapsed time}                                        |
++-------------------------------------------------------------------+
+|                                                                   |
+| INGESTED (Phase 1):                                               |
+|   {filename} ({line_count} lines) — {categories covered}          |
+|   ...                                                             |
+|                                                                   |
+| DETECTED (Phases 2-3):                                            |
+|   Languages: {list with percentages}                              |
+|   Frameworks: {list}                                               |
+|   Tests: {framework} ({count} tests, command: {cmd})              |
+|   CI: {platform} ({workflow count} workflows)                     |
+|   Linters: {list}                                                 |
+|                                                                   |
+| GENERATED (Phase 4):                                              |
+|   .claude/governance/index.md          (always loaded, {lines}L)  |
+|   .claude/governance/architecture.md   ({source}: {lines}L)       |
+|   .claude/governance/conventions.md    ({source}: {lines}L)       |
+|   .claude/governance/verification.md   ({source}: {lines}L)       |
+|   .claude/governance/constraints.md    ({source}: {lines}L)       |
+|   .claude/governance/anti-patterns.md  ({source}: {lines}L)       |
+|                                                                   |
+|   {source} = "from scan", "from .md refs", or "mixed"            |
+|                                                                   |
+| CONFIDENCE:                                                       |
+|   HIGH: {count} sections | MEDIUM: {count} | LOW: {count}        |
+|                                                                   |
+| LOW-CONFIDENCE ITEMS:                                             |
+|   {each item on its own line}                                     |
+|                                                                   |
++-------------------------------------------------------------------+
+
+Next: Run /r:start to begin working with this project.
+```
+
+### .gitignore / .git/info/exclude
+
+After generating governance files, check whether `.claude/governance/`
+is covered by `.gitignore` or `.git/info/exclude`. If not, ASK the
+user whether they want governance files committed to the repo or
+excluded:
+
+- **Committed:** useful for teams — everyone gets the same governance
+- **Excluded:** useful for personal workflows — governance is local only
+
+If the user chooses to exclude, add `.claude/governance/` to
+`.git/info/exclude` (not `.gitignore`, to avoid polluting the repo).
