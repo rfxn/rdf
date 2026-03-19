@@ -14,6 +14,23 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 - Load governance/conventions.md for commit/changelog format
 - Determine project name, version, and branch from governance index
 
+## Resume Detection
+
+If `work-output/ship-progress.md` exists on startup:
+
+1. Read the STAGE and STATUS fields
+2. Offer: "Found interrupted ship session at stage {stage}. Resume from here? [Y/n]"
+3. If Y: skip stages already marked complete, resume from the current stage
+4. If N: delete `ship-progress.md` and start fresh
+
+After each stage completes, write state to `work-output/ship-progress.md`:
+```
+STAGE: {preflight|verify|prep|publish|report}
+STATUS: {complete|in-progress}
+PR_URL: {if created}
+VERSION: {version string}
+```
+
 ## Stage 1: Preflight
 
 Run all three checks and display results as a task list. Each check
@@ -239,6 +256,13 @@ When the verdict is BLOCKED, list the blockers:
 > **BLOCKED** — cannot merge
 > - QA gate: *FAIL* — 3 test failures
 > - Version strings: *mismatch* in `setup.py`
+
+After presenting the final report, output the completion handoff:
+
+> **Released** — PR `{url}`
+> Merge when CI passes. Pipeline complete.
+
+Delete `work-output/ship-progress.md` after successful completion.
 
 ## Formatting Guide
 

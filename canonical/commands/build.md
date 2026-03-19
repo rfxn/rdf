@@ -32,7 +32,21 @@ dispatcher subagent to execute an implementation plan.
   - If a phase has `Status: in-progress`, warn that a phase is
     already in progress and ask for confirmation before restarting it
 
-### 3. Load Governance Context
+### 3. Create Task List
+
+Read all phases from PLAN.md and create a task for each one:
+
+```
+For each phase in PLAN.md:
+  TaskCreate:
+    subject: "Phase {N}: {description}"
+    activeForm: "Building Phase {N}: {short desc}"
+Mark already-complete phases as completed immediately.
+Mark target phase as in_progress before dispatching.
+Mark target phase as completed when dispatcher returns PASS.
+```
+
+### 4. Load Governance Context
 
 - Read `.claude/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
@@ -46,7 +60,7 @@ dispatcher subagent to execute an implementation plan.
 - Read the current operational mode (if `.claude/governance/index.md`
   has a Mode field other than "development")
 
-### 4. Assemble Dispatch Payload
+### 5. Assemble Dispatch Payload
 
 Build the dispatch prompt for the dispatcher subagent:
 
@@ -71,19 +85,24 @@ OPERATIONAL_MODE: <mode or "development">
 PROJECT_ROOT: <absolute path to project root>
 ```
 
-### 5. Dispatch Dispatcher Subagent
+### 6. Dispatch Dispatcher Subagent
 
 Dispatch the `rdf-dispatcher` subagent with the assembled payload.
 The dispatcher handles all execution from here: TDD cycles, engineer
 dispatches, quality gates, commit strategy.
 
-### 6. Report Result
+### 7. Report Result
 
 After the dispatcher returns:
 - Read the dispatcher's status output from work-output/
 - Report phase result to the user: PASS (phase complete) or FAIL
   (with failure context and which gate failed)
-- If PASS: note which phase is next (or "all phases complete")
+- If PASS and more phases remain:
+  > **Phase {N} complete** — {description}
+  > Next: Phase {N+1} — {description}. Run `/r:build` to continue.
+- If PASS and all phases are complete:
+  > **All {N} phases complete.**
+  > Run `/r:ship` to begin the release workflow.
 
 ## Constraints
 
