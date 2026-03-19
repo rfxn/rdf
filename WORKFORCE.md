@@ -14,7 +14,7 @@ USER
  │                                     Specs, plans, brainstorming
  │
  ├─► /r:start ─► dispatcher  (sonnet) Plan Execution
- │   /build       │                    Phase orchestration, quality gates
+ │   /r:build     │                    Phase orchestration, quality gates
  │                │
  │                ├─► engineer  (opus)  Universal Implementation
  │                │                    TDD, governance-driven protocol
@@ -35,8 +35,8 @@ USER
 ════════════════════════════════════════════════════════════════════
 LIFECYCLE PIPELINE
   USER → /r:plan (planner)
-       → [/review --challenge (reviewer)]
-       → /build [N] (dispatcher → engineer → qa/reviewer/uat gates)
+       → [/r:review --challenge (reviewer)]
+       → /r:build [N] (dispatcher → engineer → qa/reviewer/uat gates)
        → /r:ship → MERGE
 ════════════════════════════════════════════════════════════════════
 ```
@@ -62,7 +62,7 @@ Invoked via `/r:plan`.
 
 Plan execution orchestrator. Reads PLAN.md, executes phases via TDD,
 dispatches engineer/qa/uat/reviewer subagents, enforces quality gates.
-Invoked via `/r:start` or `/build`.
+Invoked via `/r:start` or `/r:build`.
 
 ### engineer (opus)
 
@@ -75,13 +75,13 @@ Dispatched by the dispatcher for plan phase execution.
 
 Verification gate. Reads governance files for project-specific checks
 (lint commands, test commands, anti-pattern patterns). Read-only -- cannot
-modify source files. Dispatched by dispatcher or invoked via `/verify`.
+modify source files. Dispatched by dispatcher or invoked via `/r:verify`.
 
 ### uat (sonnet)
 
 User acceptance testing. Runs real-world scenarios from an end-user
 persona. Read-only -- cannot modify source files. Dispatched by
-dispatcher or invoked via `/test`.
+dispatcher or invoked via `/r:test`.
 
 ### reviewer (opus)
 
@@ -92,7 +92,7 @@ Adversarial reviewer with two modes:
   regression, security, performance.
 
 Read-only -- cannot modify source files. Dispatched by planner,
-dispatcher, or invoked via `/review`.
+dispatcher, or invoked via `/r:review`.
 
 ---
 
@@ -111,10 +111,10 @@ dispatcher, or invoked via `/review`.
 | r-sync | /r:sync | -- | Canonical source sync |
 | r-audit | /r:audit | reviewer, qa | Full codebase audit |
 | r-ship | /r:ship | qa, reviewer | Release workflow |
-| build | /build | dispatcher | Execute plan phase |
-| verify | /verify | qa | QA verification |
-| test | /test | uat | UAT acceptance |
-| review | /review | reviewer | Adversarial review |
+| r-build | /r:build | dispatcher | Execute plan phase |
+| r-verify | /r:verify | qa | QA verification |
+| r-test | /r:test | uat | UAT acceptance |
+| r-review | /r:review | reviewer | Adversarial review |
 
 ### Utility Commands (10)
 
@@ -144,20 +144,20 @@ dispatcher, or invoked via `/review`.
 ### Plan and Execute
 ```
 /r:plan                          # Planner researches + writes spec/plan
-/build 1                         # Dispatcher executes phase 1
-/verify                          # QA verification
-/test                            # UAT acceptance
+/r:build 1                       # Dispatcher executes phase 1
+/r:verify                        # QA verification
+/r:test                          # UAT acceptance
 ```
 
 ### Pre-Commit Verification
 ```
-/verify                          # QA lint + anti-pattern check
+/r:verify                        # QA lint + anti-pattern check
 ```
 
 ### Adversarial Review
 ```
-/review --challenge PLAN.md      # Pre-implementation challenge
-/review --sentinel               # Post-implementation 4-pass review
+/r:review --challenge PLAN.md    # Pre-implementation challenge
+/r:review --sentinel             # Post-implementation 4-pass review
 ```
 
 ### Release a Project
@@ -197,14 +197,14 @@ dispatcher, or invoked via `/review`.
 
 | v2 Command | v3 Equivalent |
 |------------|---------------|
-| /mgr | /r:start, /build |
+| /mgr | /r:start, /r:build |
 | /po | /r:plan |
 | /scope | /r:plan |
-| /sys-eng | /build |
-| /sys-qa | /verify |
-| /sys-uat | /test |
-| /sys-sentinel | /review --sentinel |
-| /sys-challenger | /review --challenge |
+| /sys-eng | /r:build |
+| /sys-qa | /r:verify |
+| /sys-uat | /r:test |
+| /sys-sentinel | /r:review --sentinel |
+| /sys-challenger | /r:review --challenge |
 | /reload | /r:start |
 | /status, /proj-status | /r:status |
 | /audit | /r:audit |

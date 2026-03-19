@@ -125,10 +125,10 @@ The reviewer runs 4 adversarial passes: anti-slop, regression, security, perform
 |-------|---------|-------------|----------|
 | **Design** | `/r:spec` | Discover, brainstorm options, research, write spec, challenge review | `docs/specs/*.md` |
 | **Plan** | `/r:plan` | Read spec, decompose into phases with TDD steps, challenge review | `PLAN.md` |
-| **Build** | `/build [N]` | Dispatcher orchestrates: engineer implements, QA verifies, reviewer audits | Committed code |
+| **Build** | `/r:build [N]` | Dispatcher orchestrates: engineer implements, QA verifies, reviewer audits | Committed code |
 | **Ship** | `/r:ship` | Preflight checks, verification, release prep, publish, report | PR + git tag |
 
-Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Start with `/build`. Each command tells you the next step.
+Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Start with `/r:build`. Each command tells you the next step.
 
 ### Audit Pipeline
 
@@ -184,10 +184,10 @@ Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Star
 |---------|-----------|---------|
 | `/r:spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
 | `/r:plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
-| `/build [N]` | dispatcher | Execute: TDD cycle per phase with quality gates |
-| `/verify` | qa | QA verification against diff or scope |
-| `/test` | uat | User acceptance testing from end-user persona |
-| `/review` | reviewer | Adversarial review in challenge or sentinel mode |
+| `/r:build [N]` | dispatcher | Execute: TDD cycle per phase with quality gates |
+| `/r:verify` | qa | QA verification against diff or scope |
+| `/r:test` | uat | User acceptance testing from end-user persona |
+| `/r:review` | reviewer | Adversarial review in challenge or sentinel mode |
 | `/r:audit` | 3x reviewer + qa | Full codebase audit across all domains |
 | `/r:ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
 

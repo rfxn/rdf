@@ -97,10 +97,10 @@ rdf/                                 # Repository root
 |   |   |-- r-sync.md                # Canonical source sync
 |   |   |-- r-audit.md               # Full codebase audit
 |   |   |-- r-ship.md                # Release workflow
-|   |   |-- build.md                 # Plan phase execution
-|   |   |-- verify.md                # QA verification
-|   |   |-- test.md                  # UAT acceptance
-|   |   |-- review.md                # Adversarial review
+|   |   |-- r-build.md               # Plan phase execution
+|   |   |-- r-verify.md              # QA verification
+|   |   |-- r-test.md                # UAT acceptance
+|   |   |-- r-review.md              # Adversarial review
 |   |   |-- r-util-*.md              # 10 utility commands
 |   |   +-- templates/               # Governance template docs
 |   |

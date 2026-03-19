@@ -15,8 +15,8 @@
     "dispatch_mode": "sequential",
     "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md"]
   },
-  "build": {
-    "name": "/build",
+  "r-build": {
+    "name": "/r:build",
     "type": "subagent-foreground",
     "description": "Execute implementation plan phase via dispatcher subagent",
     "dispatches": ["dispatcher"],
