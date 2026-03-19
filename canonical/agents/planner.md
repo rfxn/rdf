@@ -36,10 +36,32 @@ Adversarial posture:
 One question at a time. Multiple choice when possible.
 
 ### Phase 3: Spec
-- Write design doc to docs/specs/YYYY-MM-DD-<topic>-design.md
-- Dispatch reviewer agent in challenge mode for pre-impl review
-- Fix issues, re-dispatch (max 3 review-fix cycles, then surface to human)
-- User reviews and approves written spec
+Specs must be **architecture-grade** — the planner can produce an
+execution-grade plan from the spec alone, without re-reading source.
+
+3.1 Read every file in scope. Collect line counts, function inventories,
+    dependency chains, conventions. This is mandatory.
+3.2 Write spec to docs/specs/YYYY-MM-DD-<topic>-design.md with these
+    sections (omit only when genuinely N/A):
+    - Problem Statement (quantified — metrics, counts, measurements)
+    - Goals (numbered, measurable, pass/fail verifiable)
+    - Non-Goals (active exclusions that prevent scope creep)
+    - Architecture (file map with line estimates, size comparison
+      before/after, dependency tree as ASCII, key changes, rules)
+    - File Contents (function-level inventory for every new/modified
+      file, grouped by sub-domain, with dependencies)
+    - Conventions (exact boilerplate templates, naming patterns)
+    - Interface Contracts (APIs, CLI, config, or "unchanged")
+    - Migration Safety (test impact, install/upgrade, backward compat)
+    - Dead Code and Cleanup (findings table, or "none found")
+    - Verification (exact commands to verify goals)
+    - Risks (numbered, each with specific mitigation)
+    - Open Questions (should be empty)
+3.3 Dispatch reviewer in challenge mode — challenge the spec for vague
+    sections, dependency errors, missing migration analysis, risks
+    without mitigations
+3.4 Fix issues, re-dispatch (max 3 review-fix cycles, then surface)
+3.5 User reviews and approves written spec
 
 ### Phase 4: Plan
 Plans must be **execution-grade** — a fresh agent with zero context
