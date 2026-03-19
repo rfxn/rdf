@@ -15,21 +15,34 @@ to `/r:start` — save writes the journal, start reads it.
 
 ## Progress Tracking
 
-At command startup, set up progress tracking for user feedback:
+At command startup, set up progress tracking for each phase:
 
 **If TaskCreate tool is available** (Claude Code):
 ```
-TaskCreate: subject: "Sync session state"
-  activeForm: "Syncing session state"
+TaskCreate: subject: "Session diff"       activeForm: "Computing session diff"
+TaskCreate: subject: "Plan sync"          activeForm: "Syncing PLAN.md"
+TaskCreate: subject: "Memory sync"        activeForm: "Syncing MEMORY.md"
+TaskCreate: subject: "Audit resolve"      activeForm: "Resolving audit findings"
+TaskCreate: subject: "Session log"        activeForm: "Writing session log"
+TaskCreate: subject: "Session insight"    activeForm: "Generating insight"
 ```
-Mark `in_progress` at start, `completed` before the report.
+Mark each `in_progress` → `completed` as phases run. Skip tasks
+for phases that don't apply (no PLAN.md → skip Plan sync task,
+no AUDIT.md → skip Audit resolve task). Skipped tasks are marked
+`completed` immediately with no spinner.
 
 **If TaskCreate is NOT available** (Gemini CLI, Codex):
 Output a markdown checklist at the start and update inline:
 ```
-- [ ] Sync session state...
+- [ ] Session diff
+- [ ] Plan sync
+- [ ] Memory sync
+- [ ] Audit resolve
+- [ ] Session log
+- [ ] Insight
 ```
-Replace with `- [x] Synced` when complete.
+Replace each `[ ]` with `[x]` as phases complete, or `[-]` for
+phases skipped (no PLAN.md, no AUDIT.md).
 
 ## Protocol
 
@@ -54,9 +67,36 @@ Identify:
   fall back to the last 10 commits)
 - Uncommitted changes (staged + unstaged)
 - Files modified across all new commits
+- Upstream status: `git rev-list --count HEAD...@{u}` (ahead/behind)
 
-Record values for the report: commit count, start hash, end hash,
-files changed count, dirty count, branch name.
+**Diff characterization:** Classify changed files into categories
+by path prefix or extension:
+- `canonical/commands/` → commands
+- `canonical/agents/` → agents
+- `canonical/scripts/` → scripts
+- `canonical/reference/` → reference
+- `lib/cmd/` or `bin/` → CLI
+- `adapters/` → adapters
+- `profiles/` or `modes/` → profiles
+- `*.md` at root → docs
+- `docs/specs/` → specs
+- everything else → other
+
+Produce a one-line summary: `"3 commands, 1 spec, 2 docs"` (ordered
+by count descending, top 3 categories, remainders grouped as "other").
+
+**Dirty file names:** If dirty count > 0, collect the actual file
+names (max 5) for the report.
+
+**Pipeline position:** Determine where in the spec→plan→build→ship
+arc the project is:
+- `docs/specs/` has files + no PLAN.md → `spec` (design complete, plan next)
+- PLAN.md exists with pending phases → `plan` (plan ready, build next)
+- PLAN.md exists with in-progress phases → `build` (building phase N)
+- PLAN.md exists with all phases complete → `ship` (ready to ship)
+- None of the above → `idle`
+
+Record all values for the report.
 
 ### 2. Sync PLAN.md with Git
 
@@ -144,10 +184,13 @@ Append a structured entry to `work-output/session-log.jsonl`:
   "head_after": "{current HEAD hash}",
   "commits": {N},
   "files_changed": {N},
+  "diff_summary": "{categorized one-line: 3 commands, 1 spec}",
+  "pipeline": "{idle|spec|plan|build|ship}",
   "spec_path": "{path to spec file, or null if none}",
   "plan_phases_completed": [{list of phase numbers}],
   "plan_phases_in_progress": [{list of phase numbers}],
   "dirty_files": {N},
+  "unpushed": {N},
   "insight": "{punchline text, or null if skipped}"
 }
 ```
@@ -252,42 +295,68 @@ This is the ONLY visible text output from the entire save operation.
 Everything above executes silently — this section consolidates all
 results into one compact block.
 
-**Target: under 15 lines of visible output.**
+**Target: under 20 lines of visible output.**
 
 ```
-## Save: {Project} v{version} (`{branch}`)
+## Save: {Project} v{version} · `{branch}` · {pipeline_stage}
 
-| Commits | HEAD | Files | Dirty |
-|---------|------|-------|-------|
-| {N} new | `{start}` → `{end}` | {N} changed | {N} |
+`{start_hash}` → `{end_hash}` · {N} commits · {diff_summary}
 
-- [x] **Plan** — {summary: "Phase 2 complete, Phase 3 in-progress" or "7 pending, no changes" or "no PLAN.md"}
-- [x] **Memory** — HEAD `{old}` → `{new}`, {N} commits recorded
-- [x] **Log** — appended to `session-log.jsonl`
+- [x] **Plan** — {summary}
+- [x] **Memory** — HEAD updated, {N} commits recorded
+- [x] **Log** — appended
 - [ ] **Audit** — *not present*
 
 > **Insight**: {the punchline text}
 >
 > Commit as lesson learned? **y** / **n** / **auto**
-> *(auto saves future insights to `~/.rdf/lessons-learned.md`)*
 
-> **Next** — `/r:start` to resume. {context hint}
+> **Next** — {pipeline-aware hint}
 ```
+
+**The heading line** packs project identity, branch, and pipeline
+stage into one line. Pipeline stage shows where you are in the arc:
+- `idle` → no spec or plan
+- `spec` → spec exists, plan next
+- `plan` → plan ready, `/r:build` next
+- `build phase 3/7` → actively building
+- `ship` → all phases done, `/r:ship` next
+
+**The diff line** replaces the old 4-column table with a single
+dense line: hash range, commit count, and categorized diff summary.
+More informative in less space.
 
 **Adaptation rules:**
 
-- Only show action lines for sections that ran — omit lines for
-  sections that were entirely skipped (no PLAN.md = omit Plan line)
-- Exception: Audit line shows as `[ ]` with *not present* when
-  AUDIT.md does not exist (signals absence is known, not an error)
-- If auto-commit is enabled, replace the prompt block with:
+- Only show action lines for sections that ran — omit skipped
+- Audit shows as `[ ]` with *not present* (signals known absence)
+- If auto-commit enabled, replace prompt with:
   `> **Insight** *(auto-committed)*: {text}`
-- If zero-change session (no insight generated), omit the insight
-  block entirely
-- If `--dry-run`, prefix heading with `[dry-run]` and append:
-  `> **Dry run** — no files were modified.`
-- Warnings (MEMORY.md >=180 lines, behind upstream) append to the
-  Next blockquote as additional `>` lines
+- If zero-change session, omit insight block entirely
+- If `--dry-run`, prefix heading with `[dry-run]`
+
+**Warnings** — append to the Next blockquote only when triggered:
+```
+> **Next** — `/r:start` to resume.
+> ⚠ {N} unpushed commits — `git push` before switching machines
+> ⚠ {N} dirty files: `{file1}`, `{file2}`, `{file3}`
+> ⚠ MEMORY.md at {N}/200 lines — `/r:util:mem-compact`
+> ⚠ Context at ~{N}% — consider fresh session or `/half-clone`
+```
+
+Warning thresholds:
+- Unpushed: any (>0 is always shown — this is safety-critical)
+- Dirty files: >0 (show up to 5 filenames)
+- Memory: >=180 lines
+- Context: >60% estimated (rough heuristic: count conversation
+  turns × ~2000 tokens, compare to model context limit)
+
+**Pipeline-aware Next hint:**
+- `idle` → `Spec a feature with /r:spec, or plan directly with /r:plan`
+- `spec` → `Spec ready — /r:plan to create implementation plan`
+- `plan` → `/r:build to start phase 1`
+- `build phase N/M` → `/r:build {N+1} to continue` or `/r:ship if complete`
+- `ship` → `All phases done — /r:ship to release`
 
 **After displaying the report:** If the prompt is shown (not
 auto-commit), wait for the user's response:
