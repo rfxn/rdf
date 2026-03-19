@@ -41,6 +41,8 @@ commit, phase completion, or audit run.
 | MEMORY.md | Auto-memory dir | `/r:save` | All projects |
 | PLAN.md | `<project>/PLAN.md` | `/r:plan`, `/r:save` | When active work |
 | AUDIT.md | `<project>/AUDIT.md` | `/r:audit`, `/r:save` | After audit run |
+| spec-progress.md | `work-output/` | `/r:spec` | During design |
+| ship-progress.md | `work-output/` | `/r:ship` | During release |
 | session-log.jsonl | `work-output/` | `/r:save` | When active work |
 
 **MEMORY.md:** 200-line hard limit. Overflow to topic files.

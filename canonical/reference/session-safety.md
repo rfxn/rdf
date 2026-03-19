@@ -49,8 +49,13 @@ After a crash or new session start:
    agents that completed but may not have been followed up on.
 5. **Check for stale status files:** `work-output/phase-*-status.md` files with
    mtime >1 hour indicate interrupted work.
-6. **If uncommitted changes exist:** review and either commit or stash before resuming.
-7. **If resume fails:** `/r:start` + PLAN.md provide enough continuity to restart
+6. **Check for progress files** that indicate interrupted workflows:
+   - `work-output/spec-progress.md` -- design session in progress; contains topic,
+     phase, and decisions made so far. Resume with `/r:spec --resume`.
+   - `work-output/ship-progress.md` -- release workflow in progress; contains stage
+     and PR URL. Resume with `/r:ship` (auto-detects).
+7. **If uncommitted changes exist:** review and either commit or stash before resuming.
+8. **If resume fails:** `/r:start` + PLAN.md provide enough continuity to restart
    from the last completed phase.
 
 ## Cross-Session State Priority

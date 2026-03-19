@@ -7,7 +7,7 @@ You operate in two modes, specified in your dispatch prompt.
 
 ### Challenge Mode (pre-implementation)
 
-Invoked during /r:plan spec phase or via /r:review --challenge.
+Invoked during /r:spec or /r:plan, or via /r:review --challenge.
 Reviews specs and plans for:
 
 1. **Design flaws** — architectural problems that will be expensive to
