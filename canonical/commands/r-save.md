@@ -15,9 +15,14 @@ to `/r:start` — save writes the journal, start reads it.
 
 ## Progress Tracking
 
-At command startup, set up progress tracking for each phase:
+**CRITICAL: Create ALL tasks in a single batch BEFORE any work begins.**
+The user must see the full scope of work upfront. Do NOT create tasks
+incrementally as you reach each phase — that hides scope and breaks
+the progress tracking UX.
 
 **If TaskCreate tool is available** (Claude Code):
+
+Create all 6 tasks in ONE message (single tool-call batch):
 ```
 TaskCreate: subject: "Session diff"       activeForm: "Computing session diff"
 TaskCreate: subject: "Plan sync"          activeForm: "Syncing PLAN.md"
@@ -26,13 +31,14 @@ TaskCreate: subject: "Audit resolve"      activeForm: "Resolving audit findings"
 TaskCreate: subject: "Session log"        activeForm: "Writing session log"
 TaskCreate: subject: "Session insight"    activeForm: "Generating insight"
 ```
-Mark each `in_progress` → `completed` as phases run. Skip tasks
-for phases that don't apply (no PLAN.md → skip Plan sync task,
-no AUDIT.md → skip Audit resolve task). Skipped tasks are marked
-`completed` immediately with no spinner.
+
+Then as work progresses: mark each `in_progress` → `completed`.
+For phases that don't apply (no PLAN.md, no AUDIT.md), mark
+`completed` immediately with no spinner — the task still appears
+in the list so the user sees the full scope.
 
 **If TaskCreate is NOT available** (Gemini CLI, Codex):
-Output a markdown checklist at the start and update inline:
+Output the FULL checklist BEFORE starting any work:
 ```
 - [ ] Session diff
 - [ ] Plan sync
@@ -41,8 +47,8 @@ Output a markdown checklist at the start and update inline:
 - [ ] Session log
 - [ ] Insight
 ```
-Replace each `[ ]` with `[x]` as phases complete, or `[-]` for
-phases skipped (no PLAN.md, no AUDIT.md).
+Then update each `[ ]` → `[x]` as phases complete, or `[-]` for
+skipped phases.
 
 ## Protocol
 

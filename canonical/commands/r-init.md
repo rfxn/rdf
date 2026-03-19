@@ -13,9 +13,13 @@ current working directory). Can be a subdirectory for monorepo scoping.
 
 ## Progress Tracking
 
-At command startup, set up progress tracking for user feedback:
+**CRITICAL: Create ALL tasks in a single batch BEFORE any work begins.**
+The user must see the full scope of work upfront. Do NOT create tasks
+incrementally as you reach each phase.
 
 **If TaskCreate tool is available** (Claude Code):
+
+Create all 5 tasks in ONE message (single tool-call batch):
 ```
 TaskCreate: subject: "Ingest convention files"
   activeForm: "Ingesting conventions"
@@ -28,11 +32,12 @@ TaskCreate: subject: "Generate governance"
 TaskCreate: subject: "Validate accuracy"
   activeForm: "Validating"
 ```
-Mark each `in_progress` → `completed` as phases complete.
-For >30s operations, update activeForm with progress.
+
+Then as work progresses: mark each `in_progress` → `completed`.
+For >30s operations, update activeForm with progress text.
 
 **If TaskCreate is NOT available** (Gemini CLI, Codex):
-Output a markdown checklist and update inline as phases complete:
+Output the FULL checklist BEFORE starting any work:
 ```
 - [ ] Ingest conventions
 - [ ] Scan codebase
@@ -40,7 +45,7 @@ Output a markdown checklist and update inline as phases complete:
 - [ ] Generate governance
 - [ ] Validate
 ```
-Replace each `[ ]` with `[x]` as the phase completes.
+Then update each `[ ]` → `[x]` as phases complete.
 
 ---
 
