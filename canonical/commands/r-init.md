@@ -5,6 +5,12 @@ supplementary governance under `.claude/governance/`.
 `$ARGUMENTS` is the target path (optional, defaults to `.` for the
 current working directory). Can be a subdirectory for monorepo scoping.
 
+### Options
+
+- `--force` — delete existing `.claude/governance/` and regenerate
+  from scratch. Without this flag, /r:init refuses to run when
+  governance already exists (directs to `/r:refresh` instead).
+
 ---
 
 ## Prerequisites
@@ -300,8 +306,13 @@ mkdir -p .claude/governance
 ```
 
 If `.claude/governance/` already exists (from a prior /r:init or
-/r:refresh), DO NOT delete it. Each file is written only if it does
-not already exist — /r:refresh handles updates separately.
+/r:refresh):
+
+- **Without `--force`:** stop and direct the user to `/r:refresh`
+  (see Error Handling #4). DO NOT modify existing files.
+- **With `--force`:** delete the existing `.claude/governance/`
+  directory entirely, then proceed with fresh generation. Log the
+  deletion: `Removed existing governance ({N} files)`.
 
 ### Merge Logic
 
@@ -725,10 +736,12 @@ If the user chooses to exclude, add `.claude/governance/` to
    phases.
 3. If no convention files AND no source files are found, report that
    the directory appears empty and stop.
-4. If `.claude/governance/` already exists with files, warn the user:
-   - "Governance files already exist. To update, use /r:refresh instead."
-   - "To regenerate from scratch, delete .claude/governance/ first."
+4. If `.claude/governance/` already exists with files AND `--force`
+   is NOT set, warn the user:
+   - "Governance files already exist. To update, use `/r:refresh`."
+   - "To regenerate from scratch, use `/r:init --force`."
    - Stop without modifying existing governance files.
+   If `--force` IS set, delete `.claude/governance/` and continue.
 
 ### Monorepo Behavior
 
@@ -745,10 +758,11 @@ If the user chooses to exclude, add `.claude/governance/` to
 
 - `/r:init` is for first-time governance generation. It refuses to
   run if `.claude/governance/` already exists (see Error Handling #4).
+- `/r:init --force` deletes existing governance and regenerates from
+  scratch. Use when governance is stale, corrupt, or after major
+  codebase restructuring that `/r:refresh` can't handle.
 - `/r:refresh` is for updating governance after codebase changes.
   It preserves user modifications and updates scan-derived content.
-- To force a full re-init, the user must delete `.claude/governance/`
-  first.
 
 ### Performance
 
@@ -787,5 +801,7 @@ bash commands for stats over reading files into context.
 ### Idempotency
 
 If /r:init is run and produces governance files, running /r:init
-again (without deleting governance/) will NOT modify anything — it
-detects existing governance and directs the user to /r:refresh.
+again (without `--force`) will NOT modify anything — it detects
+existing governance and directs the user to `/r:refresh`.
+With `--force`, idempotency is explicitly broken — existing
+governance is deleted and regenerated from the current codebase state.
