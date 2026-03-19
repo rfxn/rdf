@@ -90,18 +90,74 @@ An internal coverage map (not written to disk) that tracks:
 Analyze the target directory to detect languages, frameworks, directory
 structure, build system, and test infrastructure.
 
+### Codebase Size Assessment
+
+Before scanning, measure the codebase to select the right strategy:
+
+```bash
+# Use git ls-files to respect .gitignore (excludes node_modules, vendor, build, etc.)
+git ls-files 2>/dev/null | wc -l
+```
+
+| Size | Files | Strategy |
+|------|-------|----------|
+| Small | <500 | Full scan — read configs, sample source files |
+| Medium | 500-5,000 | Targeted scan — configs + extension counting only |
+| Large | 5,000-50,000 | Fast scan — `git ls-files` + extension stats, no source reads |
+| Monorepo | >50,000 | Scoped scan — require `--scope` or auto-detect top-level services |
+
+For all sizes, **always use `git ls-files`** (not `find`) to avoid
+scanning build output, node_modules, vendor directories, and other
+gitignored paths. If not a git repo, use `find` with explicit
+exclusions:
+
+```bash
+find . -not -path './.git/*' -not -path '*/node_modules/*' \
+  -not -path '*/vendor/*' -not -path '*/.venv/*' \
+  -not -path '*/dist/*' -not -path '*/build/*' \
+  -not -path '*/target/*' -not -path '*/__pycache__/*' \
+  -type f
+```
+
+Report the file count and chosen strategy in the output.
+
 ### Language Detection
 
-Scan file extensions, shebangs, and package manifests:
+Use `git ls-files` with extension counting for fast, accurate results:
 
-- **File extensions:** `.py`, `.js`, `.ts`, `.go`, `.rs`, `.java`,
-  `.rb`, `.sh`, `.bash`, `.c`, `.cpp`, `.h`
-- **Shebangs:** Read first line of files without extensions —
-  `#!/bin/bash`, `#!/usr/bin/env python3`, etc.
-- **Package manifests:** `package.json`, `pyproject.toml`, `setup.py`,
-  `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle`
+```bash
+git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -20
+```
 
-Record: primary language, secondary languages, percentage breakdown.
+For extensionless files, check shebangs:
+```bash
+git ls-files | while read -r f; do
+  [[ "$f" == *.* ]] && continue
+  head -1 "$f" 2>/dev/null | grep -q '^#!' && head -1 "$f"
+done | sort | uniq -c | sort -rn
+```
+
+Supplement with package manifests: `package.json`, `pyproject.toml`,
+`Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle`.
+
+Record: primary language, secondary languages, percentage breakdown,
+total file count, approximate total lines (`git ls-files | xargs wc -l`
+for small/medium, `wc -l` on a sample for large).
+
+### Version Detection
+
+Detect the project version from (first match wins):
+- `package.json` → `.version`
+- `pyproject.toml` → `[project] version` or `[tool.poetry] version`
+- `Cargo.toml` → `[package] version`
+- `VERSION` or `VERSION.txt` file
+- Source grep: `VERSION=`, `__version__`, `APP_VERSION`
+- Git tags: `git describe --tags --abbrev=0 2>/dev/null`
+
+### License Detection
+
+Check for `LICENSE`, `LICENSE.md`, `LICENSE.txt`, `COPYING`.
+Extract the license type from the first line or SPDX identifier.
 
 ### Framework Detection
 
@@ -542,68 +598,93 @@ If a spot check reveals an inaccuracy:
 ## Output Report
 
 After all 5 phases complete, present the user with a structured summary.
-This output is the first thing the user sees after initialization —
-it must be informative, scannable, and actionable.
+This is the first thing the user sees after initialization — it must
+be informative, scannable, and elegant.
+
+**All output uses markdown.** No ASCII box drawing. Tables, headers,
+and lists render cleanly across terminals and tools.
 
 **Every field must be populated.** If a field cannot be determined,
-show `(not detected)` rather than omitting the line.
+show `(not detected)` rather than omitting the row.
 
-```
-+-- /r:init Complete -----------------------------------------------+
-| Target:     {absolute path}                                       |
-| Duration:   {elapsed time}                                        |
-+-------------------------------------------------------------------+
-|                                                                   |
-| INGESTED (Phase 1):                                               |
-|   CLAUDE.md (project)  {N}L — {categories: arch, conventions...}  |
-|   CLAUDE.md (parent)   {N}L — {categories}                        |
-|   MEMORY.md            {N}L — {categories: state, lessons...}     |
-|   PLAN.md              {N}L — {brief description}                 |
-|   {other files found, one per line}                               |
-|                                                                   |
-| DETECTED (Phases 2-3):                                            |
-|   Languages:  {lang} {pct}% ({N} files, ~{N}k lines)             |
-|   Tests:      {framework} ({N} unit + {N} UAT, {run command})     |
-|   CI:         {platform} ({workflow desc, matrix summary})        |
-|   Linters:    {tool list with flags}                              |
-|   Platforms:  {N} OS targets ({range summary})                    |
-|   Build:      {build system, key targets}                         |
-|   Frameworks: {list, or omit line if none}                        |
-|                                                                   |
-| GENERATED (Phase 4):                                              |
-|   .claude/governance/index.md          ({N}L)                     |
-|   .claude/governance/architecture.md   ({N}L, {source})           |
-|   .claude/governance/conventions.md    ({N}L, {source})           |
-|   .claude/governance/verification.md   ({N}L, {source})           |
-|   .claude/governance/constraints.md    ({N}L, {source})           |
-|   .claude/governance/anti-patterns.md  ({N}L, {source})           |
-|                                                                   |
-|   {source} = "from scan" | "refs only" | "mixed"                 |
-|                                                                   |
-| VALIDATION (Phase 5):                                             |
-|   Spot checks: {N}/{N} passed                                    |
-|   Confidence:  HIGH {N} | MEDIUM {N} | LOW {N}                   |
-|   {if LOW > 0:}                                                   |
-|   Low-confidence items:                                           |
-|     - {item description}                                          |
-|     - {item description}                                          |
-|   {if conflicts:}                                                 |
-|   Conflicts:                                                      |
-|     - {conflict description}                                      |
-|                                                                   |
-| GIT STATE:                                                        |
-|   Branch: {branch}  HEAD: {hash} ({age})                          |
-|   Dirty: {N} files  Last commit: {message, truncated}             |
-|   {if PLAN.md exists:}                                            |
-|   Plan: {M/N} phases ({status summary})                           |
-|                                                                   |
-+-------------------------------------------------------------------+
+```markdown
+## /r:init Complete
 
-Next steps:
-  /r:start    — begin working (loads governance + plan progress)
-  /r:status   — full project health dashboard
-  /r:plan     — create an implementation plan
-  /r:refresh  — update governance after codebase changes
+| | |
+|---|---|
+| **Target** | {absolute path} |
+| **Duration** | {elapsed time} |
+| **Codebase** | {N} tracked files, ~{N}k lines |
+| **Scan mode** | {small/medium/large/monorepo} |
+
+### Ingested (Phase 1)
+
+| File | Lines | Categories |
+|------|-------|------------|
+| CLAUDE.md (project) | {N} | arch, conventions, verify, security |
+| CLAUDE.md (parent) | {N} | shell, commit, quality, compat |
+| MEMORY.md | {N} | state, lessons, advisories |
+| PLAN.md | {N} | {brief description} |
+| {other files...} | {N} | {categories} |
+
+### Detected (Phases 2-3)
+
+| Property | Value |
+|----------|-------|
+| **Languages** | {lang} {pct}% ({N} files, ~{N}k lines) |
+| **Version** | {version string} ({source: package.json / grep / tag}) |
+| **License** | {type} ({file}) |
+| **Tests** | {framework} ({N} unit + {N} UAT, `{run command}`) |
+| **CI** | {platform} ({workflow desc, matrix summary}) |
+| **Linters** | {tool list with flags} |
+| **Platforms** | {N} OS targets ({range summary}) |
+| **Build** | {build system, key targets} |
+| **Frameworks** | {list} |
+| **Dependencies** | {N} direct ({lockfile status}) |
+
+### Generated (Phase 4)
+
+| File | Lines | Source |
+|------|-------|--------|
+| index.md | {N} | always loaded |
+| architecture.md | {N} | {from scan / refs only / mixed} |
+| conventions.md | {N} | {source} |
+| verification.md | {N} | {source} |
+| constraints.md | {N} | {source} |
+| anti-patterns.md | {N} | {source} |
+
+### Validation (Phase 5)
+
+| | |
+|---|---|
+| **Spot checks** | {N}/{N} passed |
+| **Confidence** | HIGH {N} / MEDIUM {N} / LOW {N} |
+
+{if LOW > 0 or conflicts exist, add:}
+
+**Low-confidence items:**
+- {item description}
+- {item description}
+
+**Conflicts:**
+- {conflict description}
+
+### Git State
+
+| | | | |
+|---|---|---|---|
+| **Branch** | {branch} | **HEAD** | {hash} ({age}) |
+| **Dirty** | {N} files | **Last commit** | {message, truncated} |
+| **Plan** | {M/N phases or "none"} | **Tags** | {latest tag or "none"} |
+
+### Next Steps
+
+| Command | Purpose |
+|---------|---------|
+| `/r:start` | Begin working (loads governance + plan progress) |
+| `/r:status` | Full project health dashboard |
+| `/r:plan` | Create an implementation plan |
+| `/r:refresh` | Update governance after codebase changes |
 ```
 
 ### .gitignore / .git/info/exclude
@@ -671,15 +752,37 @@ If the user chooses to exclude, add `.claude/governance/` to
 
 ### Performance
 
-- Phase 1 (ingest) should complete in under 30 seconds for typical
-  projects. Read files but do not load entire contents into context
-  unless they are under 500 lines. For large files, scan section
-  headers and extract the coverage map from headings.
-- Phase 2 (scan) uses file extension counting and targeted reads of
-  config files — do NOT read every source file in the project.
-- Phase 3 (tooling) reads specific config file paths — do NOT
-  traverse the entire tree.
-- Git history analysis is limited to the last 50 commits.
+**Phase 1 (ingest):**
+- Read convention files in full only if under 500 lines. For files
+  >500 lines, scan section headers (`## `) and extract the coverage
+  map from headings without reading every line.
+- Maximum 10 convention files. If more exist (e.g., many
+  `.cursor/rules/*.md`), read the 10 most recently modified.
+
+**Phase 2 (scan):**
+- Always use `git ls-files` for file enumeration — never bare `find`
+- Language detection via extension counting is O(N) on the file list,
+  no file reads needed
+- Line counting: for <5k files, use `git ls-files | xargs wc -l`.
+  For >5k files, sample 100 files per language and extrapolate.
+- Do NOT read source files for convention detection — that comes
+  from configs and linter files only
+
+**Phase 3 (tooling):**
+- Read only specific config file paths (CI workflows, Dockerfiles,
+  linter configs) — do NOT traverse the file tree
+- Git history analysis: `git log --oneline -50` (last 50 commits)
+- Contributor count: `git shortlog -sn --no-merges | wc -l`
+
+**Target wall times:**
+- Small (<500 files): under 30 seconds
+- Medium (500-5k files): under 60 seconds
+- Large (5k-50k files): under 90 seconds
+- Monorepo (>50k files): under 120 seconds (scoped mode)
+
+**Context budget:** The init command should not consume more than
+~20% of the context window. For large codebases, prefer running
+bash commands for stats over reading files into context.
 
 ### Idempotency
 
