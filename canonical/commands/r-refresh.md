@@ -10,6 +10,28 @@ $ARGUMENTS — optional scope:
 - `state`: refresh MEMORY.md and PLAN.md only (v2 behavior)
 - `github`: sync GitHub issue state with local plan (deterministic)
 
+## Task List Protocol
+
+At command startup, create tasks for live progress tracking:
+
+TaskCreate: subject: "Re-scan codebase"
+  activeForm: "Scanning codebase"
+TaskCreate: subject: "Re-ingest authoritative files"
+  activeForm: "Ingesting convention files"
+TaskCreate: subject: "Update governance files"
+  activeForm: "Updating governance"
+TaskCreate: subject: "Validate governance accuracy"
+  activeForm: "Validating governance"
+TaskCreate: subject: "Refresh state files"
+  activeForm: "Refreshing state files"
+TaskCreate: subject: "Generate output summary"
+  activeForm: "Generating summary"
+
+Lifecycle: all tasks start pending. Before starting each stage,
+mark its task in_progress. After completing, mark completed.
+
+---
+
 ## Setup
 
 - Read .claude/governance/index.md to understand current governance
@@ -19,6 +41,8 @@ $ARGUMENTS — optional scope:
   overwrite)
 
 ## Stage 1: Codebase Re-Scan (init phases 2-3)
+
+Mark task "Re-scan codebase" as in_progress.
 
 Re-run the /r:init codebase analysis against current state:
 
@@ -42,14 +66,22 @@ Re-run the /r:init codebase analysis against current state:
 - Identify: new findings, removed findings, changed findings
 - Track drift (governance says X but codebase now shows Y)
 
+Mark task "Re-scan codebase" as completed.
+
 ## Stage 2: Re-Ingest Authoritative Files (init phase 1, partial)
+
+Mark task "Re-ingest authoritative files" as in_progress.
 
 - Re-read CLAUDE.md, AGENTS.md, and other convention files
 - Compare against governance references to these files
 - If authoritative files have changed, update governance pointers
 - Do NOT modify the authoritative files themselves
 
+Mark task "Re-ingest authoritative files" as completed.
+
 ## Stage 3: Update Governance Files (init phase 4)
+
+Mark task "Update governance files" as in_progress.
 
 For each governance file in .claude/governance/:
 
@@ -74,14 +106,22 @@ For each governance file in .claude/governance/:
 - Note any new governance files needed (new framework detected, etc.)
 - Note any governance files that are now unnecessary (framework removed)
 
+Mark task "Update governance files" as completed.
+
 ## Stage 4: Validate (init phase 5)
+
+Mark task "Validate governance accuracy" as in_progress.
 
 - Spot-check updated governance against codebase
 - Verify file references in index.md still point to existing files
 - Flag low-confidence inferences for user review
 - If drift was detected in Stage 1, report it prominently
 
+Mark task "Validate governance accuracy" as completed.
+
 ## Stage 5: Refresh State Files (if scope includes state)
+
+Mark task "Refresh state files" as in_progress.
 
 ### 5a. Refresh MEMORY.md
 - Locate MEMORY.md (auto-memory path or project-local)
@@ -102,7 +142,11 @@ For each governance file in .claude/governance/:
 - Reopen issues for incomplete phases marked closed
 - Update initiative status if all children complete
 
+Mark task "Refresh state files" as completed.
+
 ## Stage 6: Output Summary
+
+Mark task "Generate output summary" as in_progress.
 
 Keep total output under 50 lines. Use tables, task lists, and
 blockquotes over prose — see the Formatting Guide section below.
@@ -239,6 +283,8 @@ Available markdown primitives and when to use them:
 
 **Do NOT use** (not rendered in Claude Code):
 HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
+
+Mark task "Generate output summary" as completed.
 
 ## Constraints
 - Never overwrite user-modified governance files without confirmation

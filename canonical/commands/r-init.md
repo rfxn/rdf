@@ -11,6 +11,29 @@ current working directory). Can be a subdirectory for monorepo scoping.
   from scratch. Without this flag, /r:init refuses to run when
   governance already exists (directs to `/r:refresh` instead).
 
+## Task List Protocol
+
+At command startup, create tasks for live progress tracking:
+
+TaskCreate: subject: "Ingest existing convention files"
+  activeForm: "Ingesting convention files"
+TaskCreate: subject: "Scan codebase: languages, frameworks, structure"
+  activeForm: "Scanning codebase"
+TaskCreate: subject: "Detect tooling and infrastructure"
+  activeForm: "Detecting tooling"
+TaskCreate: subject: "Generate supplementary governance"
+  activeForm: "Generating governance files"
+TaskCreate: subject: "Validate and spot-check accuracy"
+  activeForm: "Validating governance"
+
+Lifecycle: all tasks start pending. Before starting each phase,
+mark its task in_progress (shows spinner with activeForm text).
+After completing each phase, mark its task completed.
+
+For operations expected to take >30 seconds (large codebase scans,
+git history analysis), update the task's activeForm to reflect
+progress: e.g., "Scanning codebase: 2,431 files detected..."
+
 ---
 
 ## Prerequisites
@@ -32,6 +55,8 @@ current working directory). Can be a subdirectory for monorepo scoping.
 Output directory: `.claude/governance/` (relative to target path)
 
 ## Phase 1: Ingest Existing Convention Files
+
+Mark task "Ingest existing convention files" as in_progress.
 
 Scan the target directory for convention files in priority order.
 These files remain authoritative — they are NEVER modified or replaced.
@@ -91,7 +116,11 @@ An internal coverage map (not written to disk) that tracks:
 - Which governance categories they cover (full, partial, or none)
 - Sections within each file that map to each category
 
+Mark task "Ingest existing convention files" as completed.
+
 ## Phase 2: Codebase Scan
+
+Mark task "Scan codebase: languages, frameworks, structure" as in_progress.
 
 Analyze the target directory to detect languages, frameworks, directory
 structure, build system, and test infrastructure.
@@ -231,7 +260,11 @@ An internal scan result (not written to disk) containing:
 - Test framework, runner command, and test count
 - Linter/formatter tools and their config file paths
 
+Mark task "Scan codebase: languages, frameworks, structure" as completed.
+
 ## Phase 3: Tooling & Infrastructure Detection
+
+Mark task "Detect tooling and infrastructure" as in_progress.
 
 Detect CI/CD, containers, platform targets, dependency management,
 and git conventions.
@@ -293,7 +326,11 @@ An internal tooling result (not written to disk) containing:
 - Git conventions (branch naming, commit format)
 - Active development areas
 
+Mark task "Detect tooling and infrastructure" as completed.
+
 ## Phase 4: Generate Supplementary Governance
+
+Mark task "Generate supplementary governance" as in_progress.
 
 Create `.claude/governance/` directory and generate governance files.
 This phase applies the supplement model: reference existing coverage,
@@ -543,7 +580,11 @@ Rules for index.md:
 - Governance Files = generated supplements IN .claude/governance/
 - Must stay under 50 lines — this is the always-loaded context
 
+Mark task "Generate supplementary governance" as completed.
+
 ## Phase 5: Validate
+
+Mark task "Validate and spot-check accuracy" as in_progress.
 
 Verify generated governance accuracy and flag low-confidence inferences
 for user review.
@@ -605,6 +646,8 @@ If a spot check reveals an inaccuracy:
 3. Add the item to the low-confidence report
 4. DO NOT skip generation — a partially-accurate governance file
    with flagged uncertainties is better than no governance
+
+Mark task "Validate and spot-check accuracy" as completed.
 
 ## Output Report
 

@@ -19,7 +19,39 @@ $ARGUMENTS — optional scope:
 - Create `audit-output/` directory if it does not exist
 - Remove stale files from prior run: `rm -f audit-output/*.md`
 
+## Task List Protocol
+
+At command startup, create tasks for live progress tracking:
+
+```
+TaskCreate:
+  subject: "Load governance context and determine scope"
+  activeForm: "Loading governance context"
+TaskCreate:
+  subject: "Dispatch audit subagents"
+  activeForm: "Dispatching audit agents"
+TaskCreate:
+  subject: "Collect and deduplicate findings"
+  activeForm: "Collecting findings"
+TaskCreate:
+  subject: "Synthesize AUDIT.md"
+  activeForm: "Writing AUDIT.md"
+TaskCreate:
+  subject: "Present audit summary"
+  activeForm: "Presenting summary"
+```
+
+Lifecycle: all tasks start pending. Before starting each stage,
+mark its task in_progress. After completing, mark completed.
+
+For Stage 2 (parallel subagent dispatch), update the activeForm
+as agents complete: "Dispatching audit agents: 3/4 complete..."
+
+---
+
 ## Stage 1: Governance Context
+
+Mark task "Load governance context and determine scope" as `in_progress`.
 
 ### 1a. Build Audit Context
 - Extract from governance: language, framework, test framework,
@@ -33,7 +65,11 @@ $ARGUMENTS — optional scope:
 - Scoped audit: files matching the provided path argument
 - Quick audit: inline checks only, no subagent dispatch
 
+Mark task "Load governance context and determine scope" as `completed`.
+
 ## Stage 2: Dispatch Parallel Subagents
+
+Mark task "Dispatch audit subagents" as `in_progress`.
 
 Dispatch 4 subagents simultaneously. Each receives the audit context
 from Stage 1 plus focus-specific instructions.
@@ -77,7 +113,11 @@ Dispatch qa subagent:
 - Report progress: `Audit: N/4 agents complete`
 - Timeout after 15 minutes per agent — proceed with available results
 
+Mark task "Dispatch audit subagents" as `completed`.
+
 ## Stage 3: Collect and Deduplicate
+
+Mark task "Collect and deduplicate findings" as `in_progress`.
 
 ### 3a. Health Check
 For each expected output file:
@@ -95,7 +135,11 @@ Report: `Agent Health: N/4 complete, N partial, N failed`
 - Merge complementary details from duplicates into the kept finding
 - Track dedup count for the report
 
+Mark task "Collect and deduplicate findings" as `completed`.
+
 ## Stage 4: Synthesize AUDIT.md
+
+Mark task "Synthesize AUDIT.md" as `in_progress`.
 
 ### 4a. Classify Findings
 Assign severity to each unique finding:
@@ -148,12 +192,18 @@ Write structured audit report:
     ## Recommendations
     (prioritized action items derived from critical + major findings)
 
+Mark task "Synthesize AUDIT.md" as `completed`.
+
 ## Stage 5: Present Summary
+
+Mark task "Present audit summary" as `in_progress`.
 
 - Display the Summary and Critical Findings sections inline
 - Report the full AUDIT.md path
 - If critical findings exist, recommend immediate action
 - If only minor findings, report clean status with improvement notes
+
+Mark task "Present audit summary" as `completed`.
 
 ## Quick Mode (--quick)
 
