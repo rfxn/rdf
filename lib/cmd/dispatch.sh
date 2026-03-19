@@ -7,6 +7,8 @@
 source "${RDF_LIBDIR}/dispatch.sh"
 
 cmd_dispatch() {
+    rdf_warn "rdf dispatch is deprecated in v3 — use the dispatcher agent via /build instead"
+
     local subcmd="${1:-help}"
     shift 2>/dev/null || true  # shift may fail if no args — safe to ignore
 

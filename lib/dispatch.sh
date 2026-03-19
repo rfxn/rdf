@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# lib/dispatch.sh — Mode-aware agent dispatch abstraction
+# lib/dispatch.sh — Mode-aware agent dispatch abstraction (v2, deprecated)
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
 # Sourced by lib/cmd/dispatch.sh or adapters — do not execute directly
+#
+# DEPRECATED: v3 uses the dispatcher agent for plan execution.
+# This module is retained for backward compatibility but its JSON
+# registry files (dispatch-agents.json, dispatch-tasks.json) have been
+# removed. The rdf dispatch CLI command will emit a deprecation notice.
 
 [[ -n "${_RDF_DISPATCH_LOADED:-}" ]] && return 0 2>/dev/null  # idempotent source guard
 _RDF_DISPATCH_LOADED=1
