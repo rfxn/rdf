@@ -59,18 +59,44 @@ No audit finding codes, phase markers, or internal tracking references.
 
 ## 4. Output
 
-    ## Proposed CHANGELOG entries
+Display the proposed entries using structured formatting:
 
-    Based on: <staged diff / commit range / unstaged diff>
-    Files changed: <N>
+```
+### Proposed CHANGELOG Entries
 
-    ### Entries (<N>)
-    [Tag] entry one
-    [Tag] entry two
-    ...
+**Source**: `<staged diff / commit range / unstaged diff>`
+**Files changed**: {N}
 
-    ### Notes
-    - <ambiguities or items needing manual review>
+#### Tag Summary
+
+| Tag | Count |
+|-----|-------|
+| `[New]` | {N} |
+| `[Change]` | {N} |
+| `[Fix]` | {N} |
+
+#### Entries ({N})
+```
+
+Show the proposed entries themselves in a fenced code block so they
+are copy-pasteable without formatting artifacts:
+
+````
+```
+[Tag] entry one
+[Tag] entry two
+...
+```
+````
+
+If there are ambiguities or items needing manual review, use a
+blockquote callout:
+
+```
+> **Review Notes**
+> - {ambiguity or item needing manual attention}
+> - {additional note}
+```
 
 ## 5. Apply mode
 

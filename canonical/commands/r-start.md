@@ -112,25 +112,28 @@ the warnings section at >=180 lines.
 Show this section only if at least one signal fires. It answers:
 "Is there interrupted work I should resume or clean up?"
 
-Scan results are displayed as a compact table:
+Use a blockquote header with task list items. Task lists give
+instant visual state — unchecked = needs attention, checked = resolved
+or acknowledged. The blockquote draws the eye to this section.
 
 ```
-### In Flight
-| Signal | Source | Detail |
-|--------|--------|--------|
-| Handoff | `HANDOFF.md` | {title} — {progress summary} |
-| Plan | `PLAN-pkglib.md` | 3 pending, 0 in-progress |
-| Plan | `brute-force-detection/PLAN.md` | Phase 4 in-progress |
-| Dispatch | `work-output/current-phase.md` | pkg_lib Phase 1 (stale, 12d old) |
+> **In Flight** — {N} signals
+
+- [ ] **Handoff**: {title} — {progress summary}
+- [ ] **Plan**: `brute-force-detection/PLAN.md` — Phase 4 *in-progress*
+- [ ] **Plan**: `PLAN-pkglib.md` — 3 pending phases
+- [ ] **Dispatch**: `current-phase.md` — pkg_lib Phase 1 *(stale, 12d)*
 ```
 
 **Signal priority** (display order):
 1. **Handoff** — explicit interrupted session. Always show first.
 2. **Plan (in-progress/blocked)** — active workstreams. Show project
-   name, which phases are in-progress or blocked.
+   name, which phases are in-progress or blocked. Use *italic* for
+   the status keyword.
 3. **Plan (has pending phases)** — dormant plans with unfinished work.
    Show count of pending phases only (no per-phase detail).
-4. **Dispatch** — stale `current-phase.md`. Show project, phase, age.
+4. **Dispatch** — stale `current-phase.md`. Show project, phase, age
+   in *(italic parenthetical)*.
 
 **Suppression rules:**
 - Plans where ALL phases are `complete`: omit entirely
@@ -138,7 +141,7 @@ Scan results are displayed as a compact table:
   are `in-progress` or `blocked`: show only if the plan was modified
   within the last 7 days (recent intent, not ancient debris)
 - `current-phase.md` older than 30 days: omit (dead context)
-- If no signals fire, skip this section entirely — no empty table
+- If no signals fire, skip this section entirely
 
 **For parent workspaces:** scan both root `PLAN-*.md` files and
 `*/PLAN.md` inside sub-project directories. For single-project
@@ -146,19 +149,25 @@ workspaces: scan only `PLAN.md` in cwd.
 
 ### 5. Display Plan Status
 
-If PLAN.md exists and has phases, show a compact progress table:
+If PLAN.md exists and has phases, use task list checkboxes — they
+communicate completion state at a glance without needing a status
+column. Bold the in-progress phase to draw focus.
 
 ```
 ### Plan Progress
-| Phase | Description              | Status      |
-|-------|--------------------------|-------------|
-| 1     | {desc, truncated to 30c} | complete    |
-| 2     | {desc}                   | complete    |
-| 3     | {desc}                   | in-progress |
-| 4     | {desc}                   | pending     |
+- [x] Phase 1 — {desc, truncated to 30c}
+- [x] Phase 2 — {desc}
+- [ ] **Phase 3 — {desc}** *(in-progress)*
+- [ ] Phase 4 — {desc}
 
 Next: Phase 3 — {full description}
 ```
+
+Phase styling:
+- `[x]` + plain text = complete
+- `[ ]` + **bold** + *(in-progress)* italic = current work
+- `[ ]` + plain text = pending
+- `[ ]` + ~~strikethrough~~ + *(blocked)* italic = blocked
 
 If no PLAN.md: `Plan: none — run /r:plan to create one.`
 
@@ -196,17 +205,21 @@ last commit, show the last 3 agent completions:
 
 ### 8. Warnings
 
-Collect and display all warnings at the end:
+Collect and display warnings using a blockquote. The vertical bar
+naturally reads as "pay attention" and visually separates warnings
+from the data sections above.
 
 ```
-### Warnings
-- ⚠ Governance is {T}h old. Run /r:refresh to update.
-- ⚠ {N} uncommitted files. Consider committing or stashing.
-- ⚠ Phase {N} has stale status file (>1h old) — likely interrupted.
-- ⚠ MEMORY.md is {N} lines (limit: 200). Run /r:util:mem-compact.
+> **Warnings**
+> - Governance is {T}h old — run `/r:refresh`
+> - {N} uncommitted files across {M} repos
+> - Phase {N} status file is stale (>1h) — likely interrupted
+> - MEMORY.md at {N}/200 lines — run `/r:util:mem-compact`
 ```
 
-Only show the warnings section if there are warnings to display.
+Only show the warnings block if there are warnings to display.
+Use inline code for command references so they stand out as
+actionable.
 
 Governance stale threshold: >24 hours.
 Dirty state threshold: >5 files.
@@ -218,6 +231,26 @@ Memory size threshold: >=180 lines.
 Read the project's `CLAUDE.md` (if present) to internalize project
 instructions. Do NOT display its contents — just confirm it was loaded.
 
+## Formatting Guide
+
+Available markdown primitives and when to use them:
+
+| Primitive | Syntax | Best for |
+|-----------|--------|----------|
+| **Table** | `\| col \| col \|` | Structured data, dashboards, key-value pairs |
+| **Task list** | `- [x]` / `- [ ]` | Phase progress, in-flight items, checklists |
+| **Blockquote** | `>` | Warnings, callouts, anything needing visual separation |
+| **Bold** | `**text**` | Labels, section headers within lists |
+| **Italic** | `*text*` | Status keywords, secondary info, parentheticals |
+| **Bold+italic** | `***text***` | Urgent emphasis (use sparingly) |
+| **Inline code** | `` `text` `` | Paths, hashes, commands, values that need to pop |
+| **Strikethrough** | `~~text~~` | Blocked/suppressed items |
+| **Heading** | `##` / `###` | Major / minor section breaks |
+| **Rule** | `---` | Lightweight section divider (lighter than heading) |
+
+**Do NOT use** (not rendered in Claude Code):
+HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
+
 ## Rules
 - Do NOT load full governance file contents (architecture.md, etc.)
   — only the index. Agents load what they need just-in-time.
@@ -226,6 +259,7 @@ instructions. Do NOT display its contents — just confirm it was loaded.
 - Do NOT read MEMORY.md — it is loaded into context automatically
   and is human-facing, not operational.
 - Do NOT run tests, lint, or any expensive operations.
-- Keep total output under 40 lines. Use tables over prose.
+- Keep total output under 40 lines. Use tables, task lists, and
+  blockquotes over prose — see Formatting Guide above.
 - Target under 5 seconds wall time — all git commands can run in
   parallel.

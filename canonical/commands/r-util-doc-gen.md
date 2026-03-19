@@ -68,8 +68,106 @@ design system reference. Surface-specific standards:
 - **changelog**: project tag convention, user-visible effects not implementation
 
 ### 6. Present for review
+
 Show proposed content as a diff against existing content. Require explicit
 user approval before applying changes.
+
+Use structured formatting for the review presentation:
+
+```
+### Doc Generation — {surface} — {project}
+
+#### Gap Analysis
+
+| Area | Status | Detail |
+|------|--------|--------|
+| **Structure** | *{pass/needs work}* | {detail} |
+| **Completeness** | *{pass/needs work}* | {detail} |
+| **Examples** | *{pass/needs work}* | {detail} |
+| **Formatting** | *{pass/needs work}* | {detail} |
+| **Consistency** | *{pass/needs work}* | {detail} |
+```
+
+If cross-surface contradictions were found, use a blockquote callout:
+
+```
+> **Cross-Surface Contradictions**
+> - `{surface_a}` says X, `{surface_b}` says Y — {recommendation}
+```
+
+#### Output templates by surface type
+
+**`man-page`** — show proposed troff source in a fenced code block:
+````
+```nroff
+.TH PROJECT 1 "2026-03-18" "v{version}" "User Commands"
+.SH NAME
+project \- one-line description
+...
+```
+````
+
+**`readme`** — show proposed markdown in a fenced code block:
+````
+```markdown
+# Project Name
+
+One-sentence description.
+
+## Installation
+...
+```
+````
+
+**`help-text`** — show proposed output in a fenced code block:
+````
+```
+Usage: project [OPTIONS]
+
+Options:
+  -h, --help     Show this help and exit
+  ...
+```
+````
+
+**`config-comments`** — show proposed inline comments in a fenced code block:
+````
+```bash
+# VARIABLE_NAME
+# What: brief description
+# Why: rationale
+# Valid: value1, value2, value3
+# Default: value1
+VARIABLE_NAME="value1"
+```
+````
+
+**`email-template`** — show proposed template in a fenced code block:
+````
+```
+Subject: {project} alert — {summary}
+
+Action required: {action}
+
+Details:
+  ...
+```
+````
+
+**`changelog`** — show proposed entries in a fenced code block:
+````
+```
+[New] feature description
+[Fix] bug fix description
+```
+````
+
+End with a confirmation gate:
+
+```
+- [ ] Apply changes to `{target_file}`
+- [ ] Skip — no changes needed
+```
 
 ## Rules
 - Always consult governance documentation standards before writing

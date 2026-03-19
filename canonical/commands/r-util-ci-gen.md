@@ -57,22 +57,54 @@ If `--update` is specified:
 
 ### 4. Report
 
-    # CI Setup — <project>
+Display the results using structured formatting:
 
-    ## Detected Infrastructure
-    - Test framework: <name> v<version>
-    - Build targets: <list>
-    - Dockerfiles: <count> (<OS list>)
-    - Test files: <count>
-    - Estimated tests: <count>
+```
+### CI Setup — {project}
 
-    ## Generated
-    - `.github/workflows/ci.yml`
+#### Detected Infrastructure
 
-    ## Next Steps
-    1. Review the generated workflow
-    2. Test locally if possible
-    3. Commit when satisfied
+| Component | Value |
+|-----------|-------|
+| **Test framework** | `{name}` v`{version}` |
+| **Build targets** | `{target1}`, `{target2}`, ... |
+| **Dockerfiles** | {N} ({OS list}) |
+| **Test files** | {N} |
+| **Estimated tests** | {N} |
+
+#### Generated
+
+Workflow written to `.github/workflows/ci.yml`
+```
+
+Show workflow jobs as a table:
+
+```
+| Job | OS Target | Trigger |
+|-----|-----------|---------|
+| `lint` | — | push, PR |
+| `test-debian12` | Debian 12 | push, PR |
+| `test-rocky9` | Rocky 9 | push, PR |
+| `test-matrix` | all targets | `workflow_dispatch` |
+```
+
+If `--update` was used, show the diff summary in a blockquote:
+
+```
+> **Update Summary**
+> - Added: `{new targets}`
+> - Removed: `{removed targets}`
+> - Preserved: {N} custom additions
+```
+
+End with a task list for next steps:
+
+```
+#### Next Steps
+- [ ] Review the generated workflow
+- [ ] Test locally if possible
+- [ ] Commit when satisfied
+```
 
 ## Rules
 - Does NOT commit — generates files for user review only

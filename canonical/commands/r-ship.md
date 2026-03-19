@@ -16,6 +16,9 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 
 ## Stage 1: Preflight
 
+Run all three checks and display results as a task list. Each check
+is pass/fail — a checked box means the gate passed.
+
 ### 1a. Plan Completion Check
 - Read PLAN.md — verify ALL phases are marked complete
 - If any phases are incomplete, report which ones and STOP
@@ -33,6 +36,24 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 - Identify base branch for PR target
 - Run `git log --oneline $(git merge-base HEAD origin/{base})..HEAD`
   to summarize branch changes
+
+### Preflight Display
+
+Present results as a task list with inline code for values:
+
+```
+### Preflight
+- [x] **Plan**: all phases complete (`12`/`12`)
+- [x] **Working tree**: clean
+- [ ] **Branch**: on `main` — *expected a feature/release branch*
+```
+
+If a check fails, use an unchecked box and add an italic reason.
+If a check is skipped, use a checked box with *(skipped)* annotation.
+
+> **Blocked** — preflight failed: {reason}
+
+Use a blockquote for any blocker that halts the workflow.
 
 ## Stage 2: Verification (dispatches subagents)
 
@@ -58,6 +79,26 @@ Dispatch reviewer subagent in sentinel mode with:
   override
 - If both pass: proceed to Stage 3
 - User can override gate failures with explicit confirmation
+
+### Gate Display
+
+Present gate results as a task list — checked = passed, unchecked =
+failed or pending:
+
+```
+### Verification Gates
+- [x] **QA**: *PASS* — `672` tests, `0` failures
+- [ ] **Reviewer**: *MUST-FIX* — 2 findings (1 security, 1 regression)
+```
+
+If a gate fails, show the findings immediately below in a blockquote:
+
+> **QA Gate Failed** — 3 test failures
+> - `test/core.bats` line 42: expected `0`, got `1`
+> - `test/trust.bats` line 118: timeout after 30s
+> - `test/cli.bats` line 55: missing output line
+
+Ask user to fix or explicitly override.
 
 ## Stage 3: Release Prep (main context)
 
@@ -85,6 +126,24 @@ Dispatch reviewer subagent in sentinel mode with:
 - Commit with project's message format from governance/conventions.md
 - Push branch to origin
 
+### Release Prep Display
+
+Present release prep results as a task list:
+
+```
+### Release Prep
+- [x] **Changelog**: updated — `12` entries added to `CHANGELOG`
+- [x] **Attribution scrub**: clean — no AI references found
+- [ ] **Version strings**: *mismatch* — `VERSION` says `2.0.2`, `setup.py` says `2.0.1`
+- [x] **Commit**: `a1b2c3d` pushed to `origin/2.0.2`
+```
+
+If version mismatches are found, use a blockquote:
+
+> **Version Mismatch** — resolve before proceeding
+> - `files/apf`: `VERSION="2.0.2"`
+> - `setup.py`: `version="2.0.1"`
+
 ## Stage 4: Publish (main context, user confirmation required)
 
 ### 4a. Create PR
@@ -105,30 +164,111 @@ Dispatch reviewer subagent in sentinel mode with:
 - Present final summary and ask user to confirm merge readiness
 - Do NOT auto-merge — the user decides
 
+### Publish Display
+
+After PR creation, show a brief confirmation. Use inline code for
+the PR URL and number so they stand out:
+
+```
+### PR Created
+**PR** `#42`: {title}
+**URL**: {url}
+```
+
+For CI monitoring, use a task list that updates as checks complete:
+
+```
+### CI Status
+- [x] **lint**: *pass* (12s)
+- [x] **test-debian12**: *pass* (1m 42s)
+- [ ] **test-rocky9**: *running*
+- [ ] **test-centos7**: *pending*
+```
+
+When CI completes, collapse into a single line in the final report.
+
 ## Stage 5: Final Report
 
-Present structured summary:
+Present a structured summary using tables, task lists, and
+blockquotes. This is the final output the user sees — it must be
+scannable at a glance.
 
-    ## Ship Report: {project} {version}
+```
+## Ship Report: {project} `{version}`
 
-    **PR:** {url}
-    **Branch:** {branch} -> {base}
-    **Commits:** {count}
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
+| **PR** | {url} | **Commits** | `{count}` |
+| **Branch** | `{branch}` -> `{base}` | **HEAD** | `{hash}` |
 
-    ### Verification
-    - QA: {PASS/FAIL} — {summary}
-    - Reviewer: {APPROVE/MUST-FIX/CONCERNS} — {summary}
+---
 
-    ### Release Prep
-    - Changelog: {updated/skipped}
-    - Attribution scrub: {clean/findings removed}
-    - Version strings: {consistent/mismatches found}
+### Verification Gates
+- [x] **QA**: *PASS* — `{test_count}` tests, `{fail_count}` failures
+- [x] **Reviewer**: *APPROVE* — {summary}
 
-    ### CI
-    - Status: {pass/fail/pending/not configured}
+### Release Prep
+- [x] **Changelog**: updated — `{entry_count}` entries
+- [x] **Attribution scrub**: clean
+- [x] **Version strings**: consistent (`{version}`)
+- [x] **Commit**: `{hash}` pushed to `origin/{branch}`
 
-    ### Verdict
-    {READY TO MERGE / ACTION NEEDED / BLOCKED}
+### CI
+- [x] **Status**: *pass* — all checks green
+
+---
+
+### Verdict
+**READY TO MERGE** — all gates passed, PR awaiting review
+```
+
+**Verdict styling** — use bold for the verdict keyword and a brief
+reason. Three possible verdicts:
+
+- **READY TO MERGE** — all gates passed, no action needed
+- **ACTION NEEDED** — non-blocking findings or overridden gates
+- **BLOCKED** — unresolved gate failures
+
+When the verdict is not READY TO MERGE, use a blockquote to
+highlight what needs attention:
+
+> **ACTION NEEDED** — reviewer flagged 1 concern (overridden by user)
+
+When the verdict is BLOCKED, list the blockers:
+
+> **BLOCKED** — cannot merge
+> - QA gate: *FAIL* — 3 test failures
+> - Version strings: *mismatch* in `setup.py`
+
+## Formatting Guide
+
+All output from this workflow uses the markdown primitives below.
+Follow these consistently across every stage.
+
+| Primitive | Syntax | Use in this workflow |
+|-----------|--------|----------------------|
+| **Table** | `\| col \| col \|` | Ship report summary, PR metadata |
+| **Task list** | `- [x]` / `- [ ]` | Preflight checks, gate results, release prep, CI status |
+| **Blockquote** | `>` | Blockers, warnings, gate failures, version mismatches |
+| **Bold** | `**text**` | Labels (PR, Branch, QA), verdict keywords |
+| **Italic** | `*text*` | Status keywords (*PASS*, *FAIL*, *running*, *skipped*) |
+| **Inline code** | `` `text` `` | Versions, hashes, branch names, paths, commands, counts |
+| **Rule** | `---` | Section dividers in final report |
+
+**Do NOT use** (not rendered in Claude Code):
+HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
+
+**Conventions:**
+- Task lists give instant pass/fail state — checked = passed,
+  unchecked = failed or pending
+- Blockquotes draw the eye to blockers — use for anything that
+  halts the workflow or needs user action
+- Inline code makes values scannable — always wrap versions,
+  hashes, branch names, paths, and commands
+- Bold labels on the left, values on the right — consistent
+  across task lists and tables
+- Italic for status keywords only — keeps them visually distinct
+  from labels and values
 
 ## Constraints
 - Never auto-merge — user must confirm

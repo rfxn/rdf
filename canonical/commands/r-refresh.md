@@ -104,26 +104,134 @@ For each governance file in .claude/governance/:
 
 ## Stage 6: Output Summary
 
-    ## Refresh: {project} {version} ({branch})
+Keep total output under 50 lines. Use tables, task lists, and
+blockquotes over prose — see the Formatting Guide section below.
 
-    ### Governance
-    - index.md: {updated/unchanged}
-    - architecture.md: {updated/unchanged/user-modified merge}
-    - conventions.md: {updated/unchanged/user-modified merge}
-    - verification.md: {updated/unchanged}
-    - constraints.md: {updated/unchanged}
-    - anti-patterns.md: {updated/unchanged}
+### 6a. Refresh Anchor
 
-    ### Drift Detected
-    - {description of each drift item, or "None"}
+A 4-column key-value table identifying the project and refresh scope.
 
-    ### State Files
-    - MEMORY.md: {updated/skipped/not found} — {N} new commits
-    - PLAN.md: {updated/skipped/not found} — {N} phases updated
-    - GitHub: {synced/skipped/not configured} — {N} resolved
+```
+### Refresh: {project}
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
+| **Version** | {version} | **Branch** | `{branch}` |
+| **HEAD** | `{hash}` ({age}) | **Scope** | *{all/governance/state/github}* |
+| **Governance** | {N} files | **User-modified** | {N} files |
+```
 
-    ### Low-Confidence Items
-    - {items flagged for user review, or "None"}
+### 6b. Governance File Status
+
+Use a table with per-file rows. Status keywords in italic, paths in
+inline code.
+
+```
+### Governance
+| File | Status | Detail |
+|------|--------|--------|
+| `index.md` | *updated* | regenerated from scan |
+| `architecture.md` | *unchanged* | no drift |
+| `conventions.md` | *merged* | user-modified — 2 sections preserved |
+| `verification.md` | *updated* | added shellcheck rule |
+| `constraints.md` | *unchanged* | no drift |
+| `anti-patterns.md` | *updated* | 1 new pattern |
+```
+
+Status values: *updated*, *unchanged*, *merged* (user-modified file),
+*created* (new file), *removed* (stale file deleted).
+
+### 6c. Drift Detection
+
+Use a blockquote with bold header. Only show this section if drift
+was detected — omit entirely when clean.
+
+```
+> **Drift Detected** — {N} items
+> - `constraints.md` says Bash 4.2+ but `files/internals.conf` uses `${var,,}` (Bash 4.0+)
+> - `conventions.md` lists pytest but no Python files remain in tree
+> - `architecture.md` references `lib/legacy/` which was removed in `a3f1b2c`
+```
+
+Each drift item: inline code for file paths and commits, plain text
+for the description.
+
+### 6d. State Files
+
+Use a table for state file refresh results. Paths in inline code,
+status in italic, detail column for metrics.
+
+```
+### State Files
+| File | Status | Detail |
+|------|--------|--------|
+| `MEMORY.md` | *updated* | +3 new commits, 142/200 lines |
+| `PLAN.md` | *updated* | 2 phases marked complete |
+| GitHub | *synced* | 4 issues closed, 1 reopened |
+```
+
+Status values: *updated*, *skipped* (out of scope), *not found*,
+*synced*, *not configured*.
+
+### 6e. Completion Summary
+
+Use a task list to show what was done vs skipped. This provides an
+at-a-glance audit trail. Bold each stage label.
+
+```
+### Summary
+- [x] **Codebase scan** — 6 detectors, 2 changes found
+- [x] **Authoritative re-ingest** — `CLAUDE.md` unchanged
+- [x] **Governance update** — 3 files updated, 1 merged, 2 unchanged
+- [ ] ~~**State refresh**~~ — *skipped (scope: governance only)*
+- [ ] ~~**GitHub sync**~~ — *skipped (scope: governance only)*
+- [x] **Validation** — all references resolve, 0 low-confidence items
+```
+
+Task list styling:
+- `[x]` + **bold** = completed stage
+- `[ ]` + ~~strikethrough~~ + *italic reason* = skipped stage
+- `[ ]` + **bold** + *(in-progress)* = interrupted (partial refresh)
+
+### 6f. Low-Confidence Items
+
+Use a blockquote with bold header. Only show this section if there
+are items to review — omit entirely when clean.
+
+```
+> **Low-Confidence Items** — review recommended
+> - `conventions.md`: inferred `mawk` from Dockerfile but no `.awk` files found
+> - `constraints.md`: detected CentOS 6 in CI matrix but no CentOS 6 test target
+```
+
+### 6g. Warnings
+
+Collect and display warnings using a blockquote. Only show if there
+are warnings. Use inline code for commands and paths.
+
+```
+> **Warnings**
+> - `MEMORY.md` at 185/200 lines — run `/r:util:mem-compact`
+> - User-modified file `conventions.md` had merge conflicts — review manually
+> - Governance age was 72h before this refresh
+```
+
+## Formatting Guide
+
+Available markdown primitives and when to use them:
+
+| Primitive | Syntax | Best for |
+|-----------|--------|----------|
+| **Table** | `\| col \| col \|` | File status, dashboards, key-value pairs |
+| **Task list** | `- [x]` / `- [ ]` | Completion tracking, stage audit trail |
+| **Blockquote** | `>` | Drift, warnings, low-confidence callouts |
+| **Bold** | `**text**` | Labels, stage names, section headers in lists |
+| **Italic** | `*text*` | Status keywords, scoping reasons, parentheticals |
+| **Inline code** | `` `text` `` | Paths, hashes, commands, filenames |
+| **Strikethrough** | `~~text~~` | Skipped stages, out-of-scope items |
+| **Heading** | `##` / `###` | Major / minor section breaks |
+
+**Do NOT use** (not rendered in Claude Code):
+HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 
 ## Constraints
 - Never overwrite user-modified governance files without confirmation

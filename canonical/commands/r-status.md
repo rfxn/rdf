@@ -48,57 +48,120 @@ Run:
 
 ### 6. Render Dashboard
 
+Use the formatting guide below for all output. Target under 40 lines.
+
+**Session anchor** — 4-column table for at-a-glance project identity:
+
 ```
-## {Project} — {branch}
+### Session Anchor
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
+| **Project** | {name} | **Branch** | `{branch}` |
+| **HEAD** | `{hash}` ({age}) | **Dirty** | {N} files |
+| **Plan** | {M}/{N} phases | **Mode** | {mode} |
+| **Governance** | {N} files ({T}h old) | **Last commit** | {1-line summary} |
+```
 
+**Plan progress** — task list checkboxes communicate completion at a glance:
+
+```
 ### Plan Progress
-| Phase | Description          | Mode            | Status      |
-|-------|----------------------|-----------------|-------------|
-| 1     | {desc}               | serial-context  | complete    |
-| 2     | {desc}               | serial-agent    | in-progress |
-| 3     | {desc}               | parallel-agent  | pending     |
+- [x] Phase 1 — {desc}
+- [x] Phase 2 — {desc}
+- [ ] **Phase 3 — {desc}** *(in-progress)*
+- [ ] Phase 4 — {desc}
+- [ ] ~~Phase 5 — {desc}~~ *(blocked)*
+```
 
-Progress: {M}/{N} phases complete
+Phase styling:
+- `[x]` + plain text = *complete*
+- `[ ]` + **bold** + *(in-progress)* italic = current work
+- `[ ]` + plain text = *pending*
+- `[ ]` + ~~strikethrough~~ + *(blocked)* italic = blocked
 
-### Phase Outcomes (from work-output/)
-| Phase | Result | Gates          | Retries | Timestamp  |
-|-------|--------|----------------|---------|------------|
-| 1     | PASS   | G1+G2          | 0       | 2026-03-18 |
+If no PLAN.md: `Plan: none — run /r:plan to create one.`
 
-### Governance
-- Files: {N} governance files
-- Age: {T}h since last refresh
-- Mode: {mode}
-{if stale: "⚠ Stale — run /r:refresh"}
+**Phase outcomes** — table for structured gate results from `work-output/`:
+
+```
+### Phase Outcomes
+| Phase | Result | Gates | Retries | Timestamp |
+|-------|--------|-------|---------|-----------|
+| 1 | **PASS** | G1+G2 | 0 | 2026-03-18 |
+| 2 | **FAIL** | G1 | 1 | 2026-03-18 |
+```
+
+**Recent commits** — inline code for hashes, parenthetical age:
+
+```
+### Recent Commits
+- `{hash}` {message} ({age})
+- `{hash}` {message} ({age})
+- `{hash}` {message} ({age})
+```
+
+**Warnings** — blockquote with bold header, only shown when warnings exist:
+
+```
+> **Warnings**
+> - Governance is {T}h old — run `/r:refresh`
+> - {N} uncommitted files
+> - Phase {N} status file is stale (>1h) — likely interrupted
+> - Phase {N} **FAIL** — review `work-output/phase-{N}-status.md`
+```
+
+Thresholds:
+- Governance stale: >24 hours
+- Dirty state: >5 files
+- Status file stale: >1 hour
+
+---
+
+**Minimal dashboard** — when there is no plan and no governance:
+
+```
+### Session Anchor
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
+| **Project** | {basename} | **Branch** | `{branch}` |
+| **HEAD** | `{hash}` | **Dirty** | {N} files |
+| **Governance** | not initialized | **Plan** | none |
 
 ### Recent Commits
-- {hash} — {message}
-- {hash} — {message}
-- {hash} — {message}
+- `{hash}` {message} ({age})
 
-### Warnings
-{dirty state, stale governance, failed phases, blocked phases}
+> **Next Steps**
+> - Run `/r:init` to generate governance
+> - Run `/r:plan` to create a plan
 ```
 
-If there is no plan and no governance, display a minimal dashboard:
+## Formatting Guide
 
-```
-## {basename} — {branch}
+Available markdown primitives and when to use them:
 
-HEAD: {hash} | Dirty: {N} files
-Governance: not initialized
-Plan: none
+| Primitive | Syntax | Best for |
+|-----------|--------|----------|
+| **Table** | `\| col \| col \|` | Structured data, dashboards, key-value pairs |
+| **Task list** | `- [x]` / `- [ ]` | Phase progress, checklists |
+| **Blockquote** | `>` | Warnings, callouts, anything needing visual separation |
+| **Bold** | `**text**` | Labels, section headers within lists |
+| **Italic** | `*text*` | Status keywords, secondary info, parentheticals |
+| **Inline code** | `` `text` `` | Paths, hashes, commands, values that need to pop |
+| **Strikethrough** | `~~text~~` | Blocked/suppressed items |
+| **Heading** | `##` / `###` | Major / minor section breaks |
+| **Rule** | `---` | Lightweight section divider (lighter than heading) |
 
-Recent commits:
-- {hash} — {message}
-
-Next steps: Run /r:init to generate governance, then /r:plan.
-```
+**Do NOT use** (not rendered in Claude Code):
+HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 
 ## Rules
 - Read-only — do NOT modify any files
 - Do NOT run tests or lint — this is a status check
 - Do NOT load full governance files — index only
-- If work-output/ does not exist or is empty, skip the phase outcomes
+- If `work-output/` does not exist or is empty, skip the phase outcomes
   section silently
-- Keep output structured and scannable — tables over prose
+- Only show the warnings block if there are warnings to display
+- Keep total output under 40 lines — use tables, task lists, and
+  blockquotes over prose
+- Target under 5 seconds wall time — all git commands can run in
+  parallel

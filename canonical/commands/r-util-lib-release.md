@@ -18,24 +18,33 @@ path and attempt to identify it as a library project.
 
 ### 1. Pre-flight checks
 
-Switch to the library directory and verify readiness:
+Switch to the library directory and verify readiness. Display results
+as a task list with pass/fail state:
 
-**Branch validation:**
-- `git branch --show-current` — must be the version branch
-- `git status` — working tree must be clean
-- `git log origin/<branch>..HEAD` — check for unpushed commits
+```
+### Pre-Flight — {library} v{version}
 
-**PLAN verification:**
-- Read the library's PLAN file
-- Verify ALL phases are COMPLETED/DONE
-- If any phases are incomplete, list them and STOP
+#### Branch Validation
+- [x] Current branch is version branch (`{branch}`)
+- [x] Working tree is clean ({N} dirty files)
+- [ ] No unpushed commits ({N} ahead of `origin/{branch}`)
 
-**Release readiness:**
-- Verify version strings are consistent across files
-- Check for uncommitted changes
-- Verify tests pass
+#### PLAN Verification
+- [x] All phases *complete* ({N}/{N})
+- [ ] Phase {N} — *in-progress* (STOP)
+- [ ] Phase {N} — *pending* (STOP)
 
-Report pre-flight status with branch, PLAN, and readiness sections.
+#### Release Readiness
+- [x] Version strings consistent across files: `{version}`
+- [x] No uncommitted changes
+- [x] Tests pass ({N}/{N})
+```
+
+If any check fails, use a blockquote to halt:
+
+```
+> **Pre-flight FAILED** — {N} check(s) did not pass. Resolve before continuing.
+```
 
 ### 2. Release preparation
 
@@ -51,9 +60,30 @@ If pre-flight passes, execute in sequence (stopping on any failure):
 - Report changes made
 
 **2c. User approval gate**
-Present the final state: version, branch, commits since last release,
-CHANGELOG.RELEASE contents, and files changed. STOP and wait for user
-confirmation before proceeding.
+Present the final state as a release summary table and wait for
+confirmation before proceeding:
+
+```
+#### Release Summary
+
+| Property | Value |
+|----------|-------|
+| **Library** | `{name}` |
+| **Version** | `{version}` |
+| **Branch** | `{branch}` |
+| **Commits since last release** | {N} |
+| **Files changed** | {N} |
+| **Attribution scrub** | *{N items removed / clean}* |
+| **Changelog dedup** | *{N duplicates removed / clean}* |
+```
+
+Show `CHANGELOG.RELEASE` contents in a fenced code block, then
+present the approval gate:
+
+```
+- [ ] Approve — proceed with merge and release
+- [ ] Reject — return to editing
+```
 
 ### 3. Merge and release
 
@@ -65,9 +95,17 @@ After user approval:
 
 ### 4. Consumer notification
 
-After the release merges:
-- Run library sync check (equivalent to `/r:util:lib-sync`)
-- Report version drift for each consumer project
+After the release merges, run library sync check (equivalent to
+`/r:util:lib-sync`) and display consumer drift as a table:
+
+```
+#### Consumer Drift
+
+| Consumer | Local Version | Released Version | Status |
+|----------|---------------|------------------|--------|
+| `{project_a}` | `{old_ver}` | `{new_ver}` | *drifted* |
+| `{project_b}` | `{new_ver}` | `{new_ver}` | *synced* |
+```
 
 ### 5. Post-release updates
 
