@@ -17,19 +17,18 @@
 ```
 Task 1 (Infrastructure) ──┬──> Task 2 (Core)
                           ├──> Task 3 (Shell)
-                          ├──> Task 4 (Python)      ─── all parallel
-                          ├──> Task 5 (Frontend)
+                          ├──> Task 4 (Python)
+                          ├──> Task 5 (Frontend)     ─── all parallel
                           ├──> Task 6 (Database)
-                          └──> Task 7 (Go)
+                          ├──> Task 7 (Go)
+                          ├──> Task 8 (Security Migration)
+                          └──> Task 9 (Detection Rules)
                                     │
-                                    ▼
-                          Task 8 (Security Migration) ──> Task 9 (Detection Rules)
-                                                              │
-                                                              ▼
-                                                    Task 10 (Docs + Verify)
+                                    ▼ (all above complete)
+                          Task 10 (Docs + Verify)
 ```
 
-Tasks 2-7 are independent and can run in parallel after Task 1 completes.
+Tasks 2-9 are independent and can run in parallel after Task 1 completes. Task 10 requires all prior tasks to be done (it regenerates output and verifies the whole system).
 
 ---
 
@@ -65,7 +64,14 @@ Update the blockquote headers in both moved files from "Reference for systems-en
 git mv profiles/systems-engineering/ profiles/shell/
 ```
 
-This moves all files including governance-template.md and reference/*.md. The old reference docs (os-compat.md, test-infra.md) will be replaced by new content in Task 3.
+This moves all files including governance-template.md and reference/*.md. Then remove the files that were already copied to core:
+
+```bash
+git rm profiles/shell/reference/cross-project.md
+git rm profiles/shell/reference/audit-pipeline.md
+```
+
+The remaining old reference docs (os-compat.md, test-infra.md) will be replaced by new content in Task 3.
 
 - [ ] **Step 3: Add state file migration to rdf_common.sh**
 
@@ -75,7 +81,10 @@ In `lib/rdf_common.sh`, add inside `rdf_profile_init()` after line 106 (`RDF_PRO
 # One-time migration: systems-engineering -> shell (RDF 3.x profile rename)
 if [[ -f "$RDF_PROFILES_STATE" ]]; then
     if grep -q '^systems-engineering$' "$RDF_PROFILES_STATE"; then
-        sed -i 's/^systems-engineering$/shell/' "$RDF_PROFILES_STATE"
+        local _mig_tmp
+        _mig_tmp="$(mktemp "${RDF_PROFILES_STATE}.XXXXXX")"
+        sed 's/^systems-engineering$/shell/' "$RDF_PROFILES_STATE" > "$_mig_tmp" && \
+            command mv "$_mig_tmp" "$RDF_PROFILES_STATE"
         rdf_log "migrated profile: systems-engineering -> shell"
     fi
 fi
@@ -120,29 +129,43 @@ Create `profiles/registry.json` — machine-readable profile registry consumed b
 
 ```json
 {
-  "core": {
-    "requires": [],
-    "description": "Always active. Commit protocol, verification, security hygiene, dependency management"
-  },
-  "shell": {
-    "requires": ["core"],
-    "description": "Bash/shell projects. Quoting, portability, signal handling, BATS testing"
-  },
-  "python": {
-    "requires": ["core"],
-    "description": "Python projects. Typing, packaging, pytest, async conventions"
-  },
-  "frontend": {
-    "requires": ["core"],
-    "description": "Web frontend. Component architecture, a11y, CSS methodology, performance"
-  },
-  "database": {
-    "requires": ["core"],
-    "description": "Database engineering. Schema design, migration safety, query discipline"
-  },
-  "go": {
-    "requires": ["core"],
-    "description": "Go projects. Error handling, concurrency, interfaces, modules"
+  "profiles": {
+    "core": {
+      "requires": [],
+      "removable": false,
+      "description": "Always active. Commit protocol, verification, security hygiene, dependency management",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "shell": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Bash/shell projects. Quoting, portability, signal handling, BATS testing",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "python": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Python projects. Typing, packaging, pytest, async conventions",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "frontend": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Web frontend. Component architecture, a11y, CSS methodology, performance",
+      "summary": "governance-template + 4 reference docs"
+    },
+    "database": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Database engineering. Schema design, migration safety, query discipline",
+      "summary": "governance-template + 4 reference docs"
+    },
+    "go": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Go projects. Error handling, concurrency, interfaces, modules",
+      "summary": "governance-template + 3 reference docs"
+    }
   }
 }
 ```
@@ -833,6 +856,8 @@ git commit -m "Add go profile — error handling, concurrency, interfaces, modul
 - Read: `modes/security-assessment/context.md` (merge target)
 - Modify: `modes/security-assessment/context.md` (merge profile content)
 - Create: `modes/security-assessment/reference/threat-model-template.md` (moved)
+- Modify: `lib/cmd/init.sh` (remove/update security type mapping and usage)
+- Modify: `lib/cmd/profile.sh:25` (update example that references security)
 - Remove: `profiles/security/` (entire directory)
 
 - [ ] **Step 1: Create mode reference directory and move threat-model-template**
@@ -844,7 +869,29 @@ command cp profiles/security/reference/threat-model-template.md modes/security-a
 
 Update the blockquote header from "Reference doc for security profile" to "Reference doc for security-assessment mode".
 
-- [ ] **Step 2: Merge profile content into mode context.md**
+- [ ] **Step 2: Update init.sh and profile.sh security references**
+
+In `lib/cmd/init.sh`, remove or update the `security)` case in `_type_to_profile()` and the `--type security` option from usage text. Replace with a message suggesting mode:
+
+```bash
+# Change from:
+security) echo "security" ;;
+# Change to:
+security) rdf_warn "security profile removed — use '/r:mode security' for assessment work"; echo "core" ;;
+```
+
+Also update `--type` in the usage text to remove `security` or note the mode alternative.
+
+In `lib/cmd/profile.sh` line 25, change:
+```
+  rdf profile install security frontend
+```
+to:
+```
+  rdf profile install shell python
+```
+
+- [ ] **Step 3: Merge profile content into mode context.md**
 
 Read both `profiles/security/governance-template.md` and `modes/security-assessment/context.md`. The mode's context.md already contains most of the methodology (it was duplicated between the two). Verify the mode has all content from the profile:
 
@@ -857,20 +904,22 @@ Read both `profiles/security/governance-template.md` and `modes/security-assessm
 
 Add the missing sections (Rules of Engagement, Privilege Escalation Analysis) to the mode's `context.md`.
 
-- [ ] **Step 3: Remove security profile directory**
+- [ ] **Step 4: Remove security profile directory**
 
 ```bash
 git rm -r profiles/security/
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add modes/security-assessment/ profiles/
+git add modes/security-assessment/ profiles/ lib/cmd/init.sh lib/cmd/profile.sh
 git commit -m "Migrate security profile to security-assessment mode
 
 [Change] Merge rules of engagement and privesc methodology into mode context.md
 [New] modes/security-assessment/reference/threat-model-template.md (moved from profile)
+[Change] init.sh: security type now maps to core with mode suggestion
+[Change] profile.sh: update example to use shell python instead of security
 [Remove] profiles/security/ — content now lives in mode, security sections in all profiles"
 ```
 
@@ -984,6 +1033,7 @@ git commit -m "Update detection rules — new profiles, refined signals, mode su
 **Files:**
 - Modify: `README.md` (update systems-engineering references)
 - Modify: `RDF.md` (update systems-engineering references)
+- Modify: `reference/diagrams.md` (update systems-engineering references)
 
 - [ ] **Step 1: Update README.md**
 
@@ -993,10 +1043,12 @@ Read `README.md` first. Update all `systems-engineering` references to `shell` (
 
 Read `RDF.md` first. Update `systems-engineering` references to `shell` (lines ~114, 168). Update the roadmap mention to reflect current profile set.
 
+Also update `reference/diagrams.md` — change `systems-engineering` to `shell` in the diagram node label (line ~20).
+
 - [ ] **Step 3: Regenerate all adapter output and verify**
 
 ```bash
-cd /root/admin/work/proj/rdf
+cd /root/admin/work/proj/rdf || exit 1
 bin/rdf generate all 2>&1
 ```
 
@@ -1024,11 +1076,12 @@ grep -r 'systems-engineering' adapters/*/output/ 2>/dev/null | wc -l
 - [ ] **Step 4: Commit**
 
 ```bash
-git add README.md RDF.md
+git add README.md RDF.md reference/diagrams.md
 git commit -m "Update documentation for profile expansion
 
 [Change] README.md — directory tree, profile table, script table updated
-[Change] RDF.md — directory tree, roadmap updated"
+[Change] RDF.md — directory tree, roadmap updated
+[Change] reference/diagrams.md — profile node label updated"
 ```
 
 Do NOT commit generated adapter output (it's in .gitignore or ephemeral).

@@ -316,11 +316,15 @@ Activate when ANY of:
 - Config: package.json with frontend framework dependency
   (react, vue, svelte, next, nuxt, angular, astro, solid)
 - Config: tsconfig.json with "jsx" compiler option
-- Markers: .eslintrc* or eslint.config.* present
 - Markers: playwright.config.* or cypress.config.* present
 
+Confidence boost (not activation alone):
+- .eslintrc* or eslint.config.* present
+- src/components/ directory
+- public/ or static/ directory
+
 ### database
-Activate when ANY of:
+Activate when 2+ of:
 - File extensions: *.sql in project root, migrations/, or db/
 - Config: alembic/, alembic.ini present
 - Config: schema.prisma, drizzle.config.*, knexfile.*
