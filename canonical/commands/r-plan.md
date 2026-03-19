@@ -17,7 +17,7 @@ next begins. The user can exit at any phase boundary.
 PHASE 1: DISCOVER     — understand the project and scope the work
 PHASE 2: BRAINSTORM   — research-driven design with user collaboration
 PHASE 3: SPEC         — write formal design document, get it reviewed
-PHASE 4: PLAN         — decompose into implementation phases
+PHASE 4: PLAN         — decompose into execution-grade implementation phases
 PHASE 5: HANDOFF      — ready for /r:build
 ```
 
@@ -255,7 +255,96 @@ Wait for user approval before entering Phase 4.
 
 ## Phase 4: Plan
 
-### 4.1 Decompose Into Phases
+Plans must be **execution-grade**: a fresh agent with zero codebase
+context can execute any phase mechanically, step by step, without
+asking questions or reading the spec. This is the difference between
+an architect's outline and construction blueprints.
+
+### 4.1 Read the Codebase
+
+Before writing any phase, read every file that will be touched.
+Collect:
+- Exact line numbers for code that will be moved, modified, or deleted
+- Function signatures and their current locations
+- Existing boilerplate patterns and conventions
+- Variable names, source guard patterns, version formats
+- Test file references to files being changed
+
+This is mandatory. Plans written without reading the codebase produce
+vague phases ("extract functions to new file") that block the engineer
+with ambiguity. Plans written after reading the codebase produce
+precise phases ("cut lines 61-173 from functions.apf, paste after
+boilerplate in apf_ipt.sh").
+
+### 4.2 Write Plan Preamble
+
+Every plan starts with three sections before any phases:
+
+**Header:**
+
+```markdown
+# Implementation Plan: {topic}
+
+**Goal:** {1-2 sentence description of what is being built/changed}
+
+**Architecture:** {brief description of the approach — how components
+fit together, what the end state looks like}
+
+**Tech Stack:** {language, version floor, test framework, key tools}
+
+**Spec:** docs/specs/{filename}
+```
+
+**Conventions:**
+
+Define patterns used across multiple phases ONCE here so phases can
+reference them without repetition:
+
+```markdown
+## Conventions
+
+**Boilerplate** — every new file starts with:
+\`\`\`{language}
+{exact template with placeholders marked}
+\`\`\`
+
+**Naming pattern** — {describe naming convention for new files,
+functions, variables}
+
+**Extraction pattern** — {if applicable: the mechanical steps for
+moving code between files}
+
+**Commit message format** — {project-specific format}
+
+**CRITICAL:** {any project-specific constraints that engineers must
+not violate — e.g., "never git add -A", "never commit PLAN.md"}
+```
+
+**File Map:**
+
+One table listing ALL files across the entire plan:
+
+```markdown
+## File Map
+
+### New Files
+| File | Lines | Purpose |
+|------|-------|---------|
+
+### Renamed Files
+| Old | New |
+|-----|-----|
+
+### Deleted Files
+| File | Reason |
+|------|--------|
+
+### Modified Files
+| File | Changes |
+|------|---------|
+```
+
+### 4.3 Decompose Into Phases
 
 Break the spec into numbered implementation phases. Each phase is a
 unit of work that can be committed independently.
@@ -268,9 +357,9 @@ Guidelines for decomposition:
   come before implementation
 - **Smaller is better** — prefer 8 small phases over 4 large ones
 
-### 4.2 Tag Each Phase
+### 4.4 Tag Each Phase
 
-For each phase, determine:
+For each phase, provide orchestration metadata:
 
 **Execution mode** (how the dispatcher runs it):
 - `[serial-context]` — 1 file, simple change, stays in main session
@@ -297,43 +386,134 @@ For each phase, determine:
 - type:user-facing — Gates 1 + 2 + 4 (+ UAT)
 - risk:high, type:user-facing — All 4 gates
 
-### 4.3 Identify File Ownership Boundaries
+### 4.5 Identify File Ownership Boundaries
 
 For any `[parallel-agent]` phase, explicitly list which files belong
 to which parallel track. No file may appear in more than one track.
 
 If files cannot be cleanly separated, downgrade to `[serial-agent]`.
 
-### 4.4 Write PLAN.md
+### 4.6 Write Steps Within Each Phase
 
-Write the plan to `PLAN.md` in the project root. Format:
+This is the critical section. Each phase contains numbered steps with
+checkboxes. Each step is 2-5 minutes of work.
 
+**Every step must include:**
+
+1. **Action** — what to do (create file, modify function, delete lines)
+2. **Exact code** — the literal code to write, or the exact old→new
+   change. For new files: show the complete file content or enough to
+   be unambiguous. For modifications: show the old lines and new lines.
+3. **Location** — file path and line numbers in the CURRENT file state
+   (not the state after prior steps — use function names when line
+   numbers will shift)
+4. **Verification** — command to run after this step (bash -n, grep,
+   test command)
+
+**The final step of every phase is a commit step** with a pre-written
+commit message:
+
+```markdown
+- [ ] **Step N: Commit**
+
+\`\`\`bash
+git add {explicit file list}
+git commit -m "$(cat <<'EOF'
+{commit message in project format}
+
+[Tag] description
+[Tag] description
+EOF
+)"
+\`\`\`
 ```
-# Implementation Plan: {topic}
 
-**Spec:** docs/specs/{filename}
-**Phases:** {N}
-**Generated:** {YYYY-MM-DD}
+**Self-correction notes:** When you discover a subtlety mid-planning
+(dependency ordering, scoping issue, variable shadowing, a "wait —
+this won't work because..."), preserve the reasoning inline. These
+notes prevent the engineer from re-discovering the same gotcha:
 
+```markdown
+Wait — the ELOG_* defaults reference `$APPN` which is set by
+`internals.conf` lines above the hub source. The defaults MUST remain
+in `internals.conf` after the hub source line. Keep `ELOG_*` blocks
+in place; only move the `. elog_lib.sh` line into the hub.
+```
+
+### 4.7 Phase Format
+
+The complete format for each phase:
+
+```markdown
 ---
 
-## Phase 1: {description}
+### Phase {N}: {description}
+
+{1-2 sentence summary of what this phase does and why}
+
+**Files:**
+- Create: `path/to/new.file`
+- Modify: `path/to/existing.file` (what changes)
+- Delete: `path/to/removed.file` (why)
+
 - **Mode**: {serial-context | serial-agent | parallel-agent}
 - **Risk**: {low | medium | high}
-- **Type**: {config | feature | refactor | security | user-facing | data-migration}
-- **Gates**: {G1 | G1+G2 | G1+G2+G3 | G1+G2+G4 | G1+G2+G3+G4}
-- **Files**: {file list}
+- **Type**: {config | feature | refactor | ...}
+- **Gates**: {G1 | G1+G2 | ...}
 - **Accept**: {acceptance criteria — concrete, testable}
-- **Test**: {test strategy — what tests, where}
-- **Status**: pending
+- **Test**: {test strategy}
 
----
+- [ ] **Step 1: {action}**
 
-## Phase 2: {description}
-...
+  {exact code block or old→new diff}
+
+  {any self-correction notes}
+
+- [ ] **Step 2: {action}**
+
+  {exact code block}
+
+- [ ] **Step 3: Verify**
+
+  \`\`\`bash
+  {verification commands}
+  \`\`\`
+
+  Expected: {what passing looks like}
+
+- [ ] **Step 4: Commit**
+
+  \`\`\`bash
+  git add {files}
+  git commit -m "$(cat <<'EOF'
+  {message}
+  EOF
+  )"
+  \`\`\`
 ```
 
-Tell the user:
+### 4.8 Plan Review
+
+After writing the full plan, dispatch the reviewer agent in challenge
+mode:
+
+```
+Review this implementation plan for:
+- Steps that are vague or ambiguous (missing code, missing line refs)
+- Missing verification steps
+- Dependency ordering errors (phase N uses something from phase N+1)
+- File ownership conflicts in parallel phases
+- Missing edge cases from the spec
+
+File: PLAN.md
+Mode: challenge
+```
+
+Fix issues and re-dispatch (max 3 cycles).
+
+### 4.9 User Approval
+
+Present the plan summary:
 
 ```
 Plan written to: PLAN.md
@@ -344,9 +524,7 @@ Please review the plan. Approve to finalize, or request changes.
 [approve/change/replan]
 ```
 
-### 4.5 User Approval
-
-Wait for user approval of the plan. If the user requests changes:
+Wait for user approval. If the user requests changes:
 - Adjust phases, re-tag, rewrite PLAN.md
 - Do NOT re-run the full brainstorm or spec phases
 
@@ -396,6 +574,9 @@ Add {topic} spec and implementation plan
 - **Always research before forming opinions** — web search, codebase
   exploration, governance reference docs. Every option is
   research-backed, not just inference.
+- **Always read files before referencing them** — line numbers, function
+  names, and patterns must come from reading the actual code, never
+  from memory or inference.
 - **Minimum 3 options for every design question** — more is fine, fewer
   is not. If there are genuinely only 2 options, explain why.
 - **Challenge user assumptions with evidence** — but never dismiss their
@@ -404,10 +585,12 @@ Add {topic} spec and implementation plan
   possible.
 - **Wait at every phase gate** — do not proceed to the next phase
   without user confirmation. The user controls the pace.
-- **Reviewer dispatch is mandatory in Phase 3** — do not skip challenge
-  review. If the reviewer agent is not available, note the gap and ask
-  the user to review the spec manually.
+- **Reviewer dispatch is mandatory** — in Phase 3 for the spec and
+  Phase 4 for the plan. Do not skip challenge review.
 - **Phase tags are binding** — the dispatcher uses them to determine
   execution strategy. Tag carefully.
 - **File ownership boundaries must be explicit** — for parallel phases,
   list every file per track. Ambiguity causes merge conflicts.
+- **Plans are execution-grade or they are not done** — if a step says
+  "update X" without showing the exact change, the plan is incomplete.
+  Go back and read the file, find the exact lines, and write the diff.

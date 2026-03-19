@@ -121,29 +121,8 @@ rdf_get_active_profiles() {
 # Check if a component belongs to any active profile
 # Args: $1=component type (agents|commands|scripts), $2=component name
 # Returns: 0 if included, 1 if excluded
-# v3: agents and commands are universal (always included).
-#     Scripts still use profile-based filtering via profile.json if present.
+# v3: all component types are universal — profile.json filtering removed.
+#     Agents, commands, and scripts are always included.
 rdf_profile_includes() {
-    local comp_type="$1"
-    local comp_name="$2"
-
-    # v3: agents and commands are universal — no profile filtering
-    if [[ "$comp_type" == "agents" || "$comp_type" == "commands" ]]; then
-        return 0
-    fi
-
-    # Scripts: check profile.json if available (backward compat)
-    local active
-    active="$(rdf_get_active_profiles)"
-
-    while IFS= read -r profile; do
-        [[ -z "$profile" ]] && continue
-        local pf_file="${RDF_PROFILES_DIR}/${profile}/profile.json"
-        [[ -f "$pf_file" ]] || continue
-        if jq -e --arg n "$comp_name" --arg t "$comp_type" '.[$t] // [] | index($n)' "$pf_file" > /dev/null 2>&1; then
-            return 0
-        fi
-    done <<< "$active"
-
-    return 1
+    return 0
 }

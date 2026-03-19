@@ -174,15 +174,29 @@ cc_generate_all() {
     rdf_require_file "$_CC_AGENT_META" "agent-meta.json"
     rdf_require_bin jq
 
-    # Clean output directory
-    command rm -rf "$_CC_OUTPUT_DIR"
-    command mkdir -p "$_CC_OUTPUT_DIR"
+    local _output_final="$_CC_OUTPUT_DIR"
+    local _output_new="${_CC_OUTPUT_DIR}.new"
+    local _output_old="${_CC_OUTPUT_DIR}.old"
+
+    # Build into staging directory
+    command rm -rf "$_output_new"
+    command mkdir -p "$_output_new"
+    _CC_OUTPUT_DIR="$_output_new"
 
     cc_generate_agents
     cc_generate_commands
     cc_generate_scripts
     cc_generate_hooks
     cc_generate_governance
+
+    # Atomic swap
+    _CC_OUTPUT_DIR="$_output_final"
+    command rm -rf "$_output_old"
+    if [[ -d "$_output_final" ]]; then
+        command mv "$_output_final" "$_output_old"
+    fi
+    command mv "$_output_new" "$_output_final"
+    command rm -rf "$_output_old"
 
     local agent_count command_count script_count
     agent_count="$(find "${_CC_OUTPUT_DIR}/agents" -name '*.md' 2>/dev/null | wc -l)"

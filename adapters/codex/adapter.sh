@@ -164,13 +164,27 @@ cdx_generate_all() {
     rdf_log "generating Codex adapter output..."
     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
 
-    # Clean output directory
-    command rm -rf "$_CDX_OUTPUT_DIR"
-    command mkdir -p "$_CDX_OUTPUT_DIR"
+    local _output_final="$_CDX_OUTPUT_DIR"
+    local _output_new="${_CDX_OUTPUT_DIR}.new"
+    local _output_old="${_CDX_OUTPUT_DIR}.old"
+
+    # Build into staging directory
+    command rm -rf "$_output_new"
+    command mkdir -p "$_output_new"
+    _CDX_OUTPUT_DIR="$_output_new"
 
     cdx_generate_agents_md
     cdx_generate_config
     cdx_generate_scripts
+
+    # Atomic swap
+    _CDX_OUTPUT_DIR="$_output_final"
+    command rm -rf "$_output_old"
+    if [[ -d "$_output_final" ]]; then
+        command mv "$_output_final" "$_output_old"
+    fi
+    command mv "$_output_new" "$_output_final"
+    command rm -rf "$_output_old"
 
     rdf_log "Codex generation complete"
 }

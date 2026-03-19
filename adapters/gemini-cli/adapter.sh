@@ -194,14 +194,28 @@ gem_generate_all() {
     rdf_require_file "$_GEM_AGENT_META" "gemini-cli agent-meta.json"
     rdf_require_bin jq
 
-    # Clean output directory
-    command rm -rf "$_GEM_OUTPUT_DIR"
-    command mkdir -p "$_GEM_OUTPUT_DIR"
+    local _output_final="$_GEM_OUTPUT_DIR"
+    local _output_new="${_GEM_OUTPUT_DIR}.new"
+    local _output_old="${_GEM_OUTPUT_DIR}.old"
+
+    # Build into staging directory
+    command rm -rf "$_output_new"
+    command mkdir -p "$_output_new"
+    _GEM_OUTPUT_DIR="$_output_new"
 
     gem_generate_agents
     gem_generate_commands
     gem_generate_context
     gem_generate_scripts
+
+    # Atomic swap
+    _GEM_OUTPUT_DIR="$_output_final"
+    command rm -rf "$_output_old"
+    if [[ -d "$_output_final" ]]; then
+        command mv "$_output_final" "$_output_old"
+    fi
+    command mv "$_output_new" "$_output_final"
+    command rm -rf "$_output_old"
 
     local agent_count command_count script_count
     agent_count="$(find "${_GEM_OUTPUT_DIR}/.gemini/agents" -name '*.md' 2>/dev/null | wc -l)"

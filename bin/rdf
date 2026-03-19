@@ -19,6 +19,7 @@ RDF ${RDF_VERSION} -- rfxn Development Framework
 
 Commands:
   generate   Build tool-specific files from canonical sources
+  deploy     Deploy generated output to tool destinations
   sync       Pull /root/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
   github     GitHub Issues + Projects integration
@@ -36,9 +37,10 @@ Run 'rdf <command> help' for subcommand details.
 USAGE
 }
 
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090,SC1091
 case "${1:-}" in
     generate) shift; source "${RDF_LIBDIR}/cmd/generate.sh"; cmd_generate "$@" ;;
+    deploy)   shift; source "${RDF_LIBDIR}/cmd/deploy.sh";   cmd_deploy "$@" ;;
     sync)     shift; source "${RDF_LIBDIR}/cmd/sync.sh";     cmd_sync "$@" ;;
     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;

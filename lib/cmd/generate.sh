@@ -6,7 +6,7 @@
 
 _generate_usage() {
     cat <<'USAGE'
-Usage: rdf generate <target>
+Usage: rdf generate [--deploy] <target>
 
 Build tool-specific output from canonical sources.
 
@@ -17,10 +17,14 @@ Targets:
   agents-md      Generate cross-tool AGENTS.md
   all            Generate all available adapters
 
+Options:
+  --deploy       Run 'rdf deploy <target>' after generation completes
+
 The generated output is written to adapters/<target>/output/.
 
 Examples:
   rdf generate claude-code
+  rdf generate --deploy claude-code
   rdf generate gemini-cli
   rdf generate codex
   rdf generate agents-md
@@ -45,18 +49,42 @@ _generate_adapter() {
 
 cmd_generate() {
     rdf_profile_init
+    local deploy_after=0
+
+    # Parse --deploy flag if present
+    if [[ "${1:-}" == "--deploy" ]]; then
+        deploy_after=1
+        shift
+    fi
+
     case "${1:-}" in
         claude-code)
             _generate_adapter "claude-code/adapter.sh" "cc_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                # shellcheck disable=SC1090,SC1091
+                source "${RDF_LIBDIR}/cmd/deploy.sh"
+                cmd_deploy claude-code
+            fi
             ;;
         gemini-cli)
             _generate_adapter "gemini-cli/adapter.sh" "gem_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                # shellcheck disable=SC1090,SC1091
+                source "${RDF_LIBDIR}/cmd/deploy.sh"
+                cmd_deploy gemini-cli
+            fi
             ;;
         codex)
             _generate_adapter "codex/adapter.sh" "cdx_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                rdf_warn "--deploy for codex requires manual 'rdf deploy --project-root <path> codex'"
+            fi
             ;;
         agents-md)
             _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                rdf_warn "--deploy not applicable to agents-md target"
+            fi
             ;;
         all)
             rdf_log "generating all adapters..."
@@ -86,6 +114,10 @@ cmd_generate() {
                 rdf_warn "${failed} adapter(s) failed"
             else
                 rdf_log "all adapters generated successfully"
+            fi
+
+            if [[ $deploy_after -eq 1 ]]; then
+                rdf_warn "--deploy with 'all' is not supported — deploy each target individually"
             fi
             ;;
         help|--help|-h)
