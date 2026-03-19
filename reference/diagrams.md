@@ -4,257 +4,255 @@
 
 ## 1. Engineering Pipeline
 
-The main work pipeline from user request to merge. Optional stages in dashed borders.
-Tier 2+ changes activate the full gate (Scope, Challenger, Sentinel, UAT).
+The v3 lifecycle from user request to merge. Quality gates are selected by
+phase tags (risk level + type), not tier classification.
 
 ```mermaid
 flowchart TD
     User([User Request])
 
-    User --> PO
+    User --> Planner
 
-    subgraph Intake
-        PO{{PO — Product Owner}}
+    subgraph Planning
+        Planner{{planner — research + spec + plan}}
     end
 
-    PO -->|scoped problem| EM
-
-    subgraph Orchestration
-        EM[EM — Engineering Manager]
-    end
-
-    EM -->|tier 2+: Scope workorder| Scope
-    EM -->|tier 0-1| SE
+    Planner -->|spec ready| ReviewChallenge
 
     subgraph Pre-Implementation
-        Scope[Scope — Work Order Assembly]
-        Scope -->|plan-only dispatch| SEPlan[SE — Plan Only]
-        SEPlan -->|implementation-plan.md| Challenger
-        Challenger{{Challenger — Pre-Impl Adversary}}
+        ReviewChallenge{{reviewer — challenge mode}}
     end
 
-    Challenger -->|challenge findings| SE
-    Scope -->|scope-workorder| EM
+    ReviewChallenge -->|challenge findings| Planner
+    Planner -->|PLAN.md approved| Dispatcher
+
+    subgraph Orchestration
+        Dispatcher[dispatcher — execution orchestrator]
+    end
+
+    Dispatcher -->|phase context + governance| Engineer
 
     subgraph Implementation
-        SE[SE — Senior Engineer]
-        Registry[(test-registry-P N .md\ntest-lock-P N .md)]
+        Engineer[engineer — TDD implementation]
     end
 
-    SE -->|writes| Registry
-    SE -->|result| QAGate
+    Engineer -->|result + TDD evidence| Dispatcher
 
-    subgraph Verification
+    Dispatcher -->|phase tags select gates| Gates
+
+    subgraph Quality Gates
         direction LR
-        QAGate[QA — Verification Gate]
-        Sentinel{{Sentinel — 4-Pass Review}}
+        Gate1[Gate 1\nEngineer Self-Report]
+        Gate2[Gate 2\nqa — verification]
+        Gate3[Gate 3\nreviewer — sentinel]
+        Gate4[Gate 4\nuat — acceptance]
     end
 
-    Registry -->|reads: Docker reuse + baseline| QAGate
-    SE -->|tier 2+ parallel| Sentinel
-    Sentinel -->|findings| QAGate
+    Gates --> GateDecision{All gates pass?}
 
-    QAGate -->|touches output| UX
+    GateDecision -->|yes| NextPhase{More phases?}
+    GateDecision -->|no, retries left| Engineer
+    GateDecision -->|no, retries exhausted| UserEscalation([Surface to User])
 
-    subgraph Review
-        UX{{UX Reviewer}}
-    end
+    NextPhase -->|yes| Dispatcher
+    NextPhase -->|no| Ship
 
-    UX --> UAT
-
-    subgraph Acceptance
-        UAT{{UAT — User Acceptance}}
-    end
-
-    UAT -->|verdict| Merge
-    QAGate -->|tier 0-1| Merge
-
-    Merge([Merge])
+    Ship([/r:ship → Merge])
 
     style User fill:#4a5568,color:#fff,stroke:#2d3748
-    style Merge fill:#276749,color:#fff,stroke:#22543d
-    style SE fill:#553c9a,color:#fff,stroke:#44337a
-    style SEPlan fill:#553c9a,color:#fff,stroke:#44337a
-    style EM fill:#2b6cb0,color:#fff,stroke:#2c5282
-    style QAGate fill:#975a16,color:#fff,stroke:#744210
-    style Sentinel fill:#9b2c2c,color:#fff,stroke:#742a2a
-    style Challenger fill:#9b2c2c,color:#fff,stroke:#742a2a
-    style PO fill:#2b6cb0,color:#fff,stroke:#2c5282
-    style Scope fill:#2b6cb0,color:#fff,stroke:#2c5282
-    style UX fill:#2b6cb0,color:#fff,stroke:#2c5282
-    style UAT fill:#2b6cb0,color:#fff,stroke:#2c5282
-    style Registry fill:#276749,color:#fff,stroke:#22543d
+    style Ship fill:#276749,color:#fff,stroke:#22543d
+    style UserEscalation fill:#9b2c2c,color:#fff,stroke:#742a2a
+    style Planner fill:#2b6cb0,color:#fff,stroke:#2c5282
+    style ReviewChallenge fill:#9b2c2c,color:#fff,stroke:#742a2a
+    style Dispatcher fill:#2b6cb0,color:#fff,stroke:#2c5282
+    style Engineer fill:#553c9a,color:#fff,stroke:#44337a
+    style Gate1 fill:#553c9a,color:#fff,stroke:#44337a
+    style Gate2 fill:#975a16,color:#fff,stroke:#744210
+    style Gate3 fill:#9b2c2c,color:#fff,stroke:#742a2a
+    style Gate4 fill:#975a16,color:#fff,stroke:#744210
+    style GateDecision fill:#2b6cb0,color:#fff,stroke:#2c5282
+    style NextPhase fill:#2b6cb0,color:#fff,stroke:#2c5282
 ```
 
 ---
 
-## 2. SE 7-Step Protocol
+## 2. Engineer TDD Protocol
 
 ```mermaid
 flowchart LR
-    subgraph SE Protocol
-        direction LR
-        S1[1. Context] --> S2[2. Plan]
-        S2 --> S3[3. Implement]
-        S3 --> S4[4. Changelog]
-        S4 --> S5[5. Verify]
-        S5 --> S6[6. Commit]
-        S6 --> S7[7. Report]
+    subgraph Setup
+        S1[Read Governance\nconventions · constraints\nverification · anti-patterns]
     end
 
-    WO([Work Order]) --> S1
-    S7 --> Result([Result File])
+    subgraph TDD Cycle
+        direction LR
+        Red[RED\nWrite Failing Test] --> Green[GREEN\nMinimum Implementation]
+        Green --> Refactor[REFACTOR\nClean Up — Keep Green]
+        Refactor -->|next requirement| Red
+    end
+
+    subgraph Evidence
+        Report[Report Back\ntest names · red/green output\ncoverage delta · files changed]
+    end
+
+    Phase([Phase Context\nfrom dispatcher]) --> S1
+    S1 --> Red
+    Refactor --> Report
+    Report --> Result([Result to Dispatcher])
 
     style S1 fill:#553c9a,color:#fff
-    style S2 fill:#553c9a,color:#fff
-    style S3 fill:#553c9a,color:#fff
-    style S4 fill:#553c9a,color:#fff
-    style S5 fill:#553c9a,color:#fff
-    style S6 fill:#553c9a,color:#fff
-    style S7 fill:#553c9a,color:#fff
-    style WO fill:#4a5568,color:#fff
+    style Red fill:#9b2c2c,color:#fff
+    style Green fill:#276749,color:#fff
+    style Refactor fill:#553c9a,color:#fff
+    style Report fill:#975a16,color:#fff
+    style Phase fill:#4a5568,color:#fff
     style Result fill:#276749,color:#fff
 ```
 
 **Step details:**
-1. **Context** — Read CLAUDE.md, MEMORY.md, PLAN.md, AUDIT.md. Grep callers.
-2. **Plan** — Design approach. Document trade-offs. Identify bash 4.1 risks.
-3. **Implement** — Edit files. Respond to challenge findings.
-4. **Changelog** — Update CHANGELOG + CHANGELOG.RELEASE with tagged lines.
-5. **Verify** — `bash -n`, shellcheck, anti-pattern greps, run tests, bash 4.1 evidence.
-6. **Commit** — Stage by name. Message format per project. No AI attribution.
-7. **Report** — Write result file with status, commit hash, verification results.
+1. **Setup** — Read governance index, load conventions.md, constraints.md, verification.md, anti-patterns.md for the target project.
+2. **Red** — Write a failing test that defines the acceptance criteria from the phase description.
+3. **Green** — Write the minimum implementation to make the test pass.
+4. **Refactor** — Clean up implementation while keeping all tests green. Repeat Red-Green-Refactor for each requirement.
+5. **Evidence** — Report structured evidence: test names, red/green output, coverage delta, files changed.
 
 ---
 
-## 3. Sentinel Review (Standard + Library Integration)
+## 3. Reviewer Modes
 
 ```mermaid
 flowchart TD
-    Input([SE Result + Full Diff]) --> Mode{Mode?}
+    Input([Dispatch from\nplanner or dispatcher]) --> Mode{Mode?}
 
-    Mode -->|Standard 4-pass| Gather[Gather Context]
-    Mode -->|LIBRARY_INTEGRATION| GatherLib[Gather Context\nfocus: source/init/API]
+    Mode -->|challenge| Challenge
+    Mode -->|sentinel| Sentinel
 
-    Gather --> P1 & P2 & P3 & P4
+    subgraph Challenge Mode — Pre-Implementation
+        direction LR
+        C1[Design Flaws\narchitectural risks\nmissing constraints]
+        C2[Edge Cases\nboundary conditions\nfailure modes]
+        C3[Simpler Alternatives\nover-engineering\nexisting solutions]
+        C4[Risk Assessment\nblast radius\nrollback complexity]
+    end
 
-    P1[Pass 1\nAnti-Slop]
-    P2[Pass 2\nRegression]
-    P3[Pass 3\nSecurity]
-    P4[Pass 4\nPerformance]
+    Challenge --> COut([challenge findings\nto planner])
 
-    P1 & P2 & P3 & P4 --> Output([sentinel-N.md\nmax 20 findings])
+    subgraph Sentinel Mode — Post-Implementation
+        direction LR
+        P1[Pass 1\nAnti-Slop\nnaming lies · copy-paste\npremature abstraction]
+        P2[Pass 2\nRegression\nbehavioral continuity\ncaller contracts · exit codes]
+        P3[Pass 3\nSecurity\ninjection · credentials\ntemp files · eval]
+        P4[Pass 4\nPerformance\nO n² · process spawning\nredundant I/O]
+    end
 
-    GatherLib --> LP2[Pass 2\nRegression\nsource guard, init, API mapping]
-    GatherLib --> LP3[Pass 3\nSecurity\ncredentials, permissions]
+    Sentinel --> SOut([sentinel findings\nmax 20 · to dispatcher])
 
-    LP2 & LP3 --> LibOutput([sentinel-lib-N.md])
-
-    Output --> QA([QA reads at Step 5.5])
-    LibOutput --> QA
-
+    style C1 fill:#9b2c2c,color:#fff
+    style C2 fill:#9b2c2c,color:#fff
+    style C3 fill:#9b2c2c,color:#fff
+    style C4 fill:#9b2c2c,color:#fff
     style P1 fill:#9b2c2c,color:#fff
     style P2 fill:#9b2c2c,color:#fff
     style P3 fill:#9b2c2c,color:#fff
     style P4 fill:#9b2c2c,color:#fff
-    style LP2 fill:#9b2c2c,color:#fff
-    style LP3 fill:#9b2c2c,color:#fff
     style Input fill:#4a5568,color:#fff
-    style Output fill:#975a16,color:#fff
-    style LibOutput fill:#975a16,color:#fff
-    style QA fill:#975a16,color:#fff
-    style Gather fill:#4a5568,color:#fff
-    style GatherLib fill:#4a5568,color:#fff
     style Mode fill:#2b6cb0,color:#fff
+    style COut fill:#975a16,color:#fff
+    style SOut fill:#975a16,color:#fff
 ```
 
-| Pass | Lens | Default Severity | Library Integration |
-|------|------|-----------------|---------------------|
-| Anti-Slop | Naming lies, copy-paste, premature abstraction | SHOULD-FIX | Skipped |
-| Regression | Behavioral continuity, caller contracts, exit codes | MUST-FIX | Included |
-| Security | Injection, credentials, temp files, eval | MUST-FIX | Included |
-| Performance | O(N²), process spawning, redundant I/O | SHOULD-FIX | Skipped |
+| Mode | Lens | Focus | Invoked By |
+|------|------|-------|------------|
+| Challenge | Design flaws, edge cases, simpler alternatives, risk | Specs and plans (pre-impl) | planner, `/review --challenge` |
+| Sentinel: Anti-Slop | Naming lies, copy-paste, premature abstraction | Diffs (post-impl) | dispatcher, `/review --sentinel` |
+| Sentinel: Regression | Behavioral continuity, caller contracts, exit codes | Diffs (post-impl) | dispatcher, `/review --sentinel` |
+| Sentinel: Security | Injection, credentials, temp files, eval | Diffs (post-impl) | dispatcher, `/review --sentinel` |
+| Sentinel: Performance | O(n²), process spawning, redundant I/O | Diffs (post-impl) | dispatcher, `/review --sentinel` |
 
 ---
 
-## 4. Audit Pipeline (3-Round)
+## 4. Audit Pipeline
 
 ```mermaid
 flowchart TD
-    Trigger([/audit or /audit-quick]) --> R1
+    Trigger([/r:audit]) --> Dispatch
 
-    subgraph R1[Round 1 — Domain Agents — parallel]
+    Dispatch[dispatcher\nreads PLAN.md + codebase scope]
+
+    Dispatch --> Par
+
+    subgraph Par[Parallel Subagents]
         direction LR
-        opus[opus\nregression · latent\nsecurity · modernize]
-        sonnet[sonnet\ncli · docs · config\ntest-cov · test-exec\ninstall · build-ci\nupgrade · interfaces]
-        haiku[haiku\nstandards · version]
+        R1[reviewer — sentinel\nregression + anti-slop]
+        R2[reviewer — sentinel\nsecurity]
+        R3[reviewer — sentinel\nperformance]
+        Q1[qa — standards\nlint · conventions · tests]
     end
 
-    R1 --> R2
+    Par --> Collect
 
-    subgraph R2[Round 2 — Condense + Dedup — parallel]
-        direction LR
-        GA[Group A\nagents 1-8\n→ findings-a.md]
-        GB[Group B\nagents 9-15\n→ findings-b.md]
+    subgraph Collect[Collect + Deduplicate]
+        Dedup[Cross-agent dedup\nmerge overlapping findings\nnormalize severity]
     end
 
-    R2 --> R3
-
-    subgraph R3[Round 3 — Compile — sequential]
-        Compile[Cross-group dedup\n300-line cap\nP1 expanded · P2 table · P3 grouped]
-    end
-
-    R3 --> Output([AUDIT.md])
+    Collect --> Output([AUDIT.md\n300-line cap\nP1 expanded · P2 table · P3 grouped])
 
     style Trigger fill:#4a5568,color:#fff
+    style Dispatch fill:#2b6cb0,color:#fff
+    style R1 fill:#9b2c2c,color:#fff
+    style R2 fill:#9b2c2c,color:#fff
+    style R3 fill:#9b2c2c,color:#fff
+    style Q1 fill:#975a16,color:#fff
+    style Dedup fill:#2b6cb0,color:#fff
     style Output fill:#276749,color:#fff
-    style opus fill:#553c9a,color:#fff
-    style sonnet fill:#2b6cb0,color:#fff
-    style haiku fill:#718096,color:#fff
-    style GA fill:#2b6cb0,color:#fff
-    style GB fill:#2b6cb0,color:#fff
-    style Compile fill:#2b6cb0,color:#fff
 ```
 
 ---
 
-## 5. Verification Gate (Tiered)
+## 5. Quality Gates (Phase-Tag Based)
 
 ```mermaid
 flowchart TD
-    SE([SE Result]) --> Classify{EM classifies tier}
+    Engineer([Engineer Result]) --> Tags{Phase tags\nin PLAN.md}
 
-    Classify -->|Tier 0-1| Lite[QA-Lite\n3-step review]
-    Classify -->|Tier 2+| Full[Full Gate]
+    Tags -->|"risk:low\ntype:config"| G1Only[Gate 1 Only\nEngineer Self-Report]
+    Tags -->|"risk:medium\ntype:feature\n(default)"| G1G2[Gates 1 + 2\nSelf-Report + QA]
+    Tags -->|"risk:high\nor type:security"| G1G2G3[Gates 1 + 2 + 3\n+ Reviewer Sentinel]
+    Tags -->|"type:user-facing"| G1G2G4[Gates 1 + 2 + 4\n+ UAT]
+    Tags -->|"risk:high\ntype:user-facing"| AllGates[All 4 Gates]
 
-    subgraph Full Gate
-        direction LR
-        QAFull[QA — Full 6-step]
-        UATFull[UAT — Docker scenarios]
-    end
+    G1Only --> Decide
+    G1G2 --> Decide
+    G1G2G3 --> Decide
+    G1G2G4 --> Decide
+    AllGates --> Decide
 
-    Lite --> LiteDecision{QA verdict}
-    Full --> FullDecision{QA + UAT verdict}
+    Decide{All selected\ngates pass?}
 
-    LiteDecision -->|APPROVED| MergeLite([Merge])
-    LiteDecision -->|CHANGES_REQUESTED| FixLite([SE fix ×3 max])
-    LiteDecision -->|ESCALATION| Full
+    Decide -->|APPROVED| Merge([Phase Complete])
+    Decide -->|CHANGES_REQUESTED| Fix([Engineer Fix\n×3 max retries])
+    Decide -->|REJECTED| Blocked([Surface to User])
 
-    FullDecision -->|Both APPROVED| MergeFull([Merge])
-    FullDecision -->|QA CHANGES_REQUESTED| FixFull([SE fix ×3 max])
-    FullDecision -->|QA REJECTED| Blocked([Blocked])
-
-    style SE fill:#553c9a,color:#fff
-    style Classify fill:#2b6cb0,color:#fff
-    style Lite fill:#975a16,color:#fff
-    style QAFull fill:#975a16,color:#fff
-    style UATFull fill:#2b6cb0,color:#fff
-    style MergeLite fill:#276749,color:#fff
-    style MergeFull fill:#276749,color:#fff
-    style FixLite fill:#9b2c2c,color:#fff
-    style FixFull fill:#9b2c2c,color:#fff
+    style Engineer fill:#553c9a,color:#fff
+    style Tags fill:#2b6cb0,color:#fff
+    style G1Only fill:#553c9a,color:#fff
+    style G1G2 fill:#975a16,color:#fff
+    style G1G2G3 fill:#9b2c2c,color:#fff
+    style G1G2G4 fill:#975a16,color:#fff
+    style AllGates fill:#9b2c2c,color:#fff
+    style Merge fill:#276749,color:#fff
+    style Fix fill:#9b2c2c,color:#fff
     style Blocked fill:#9b2c2c,color:#fff
+    style Decide fill:#2b6cb0,color:#fff
 ```
+
+| Phase Tags | Gates | Agents Involved |
+|---|---|---|
+| `risk:low, type:config` | 1 | engineer (self-report) |
+| `risk:medium, type:feature` (default) | 1 + 2 | engineer + qa |
+| `risk:high` or `type:security` | 1 + 2 + 3 | engineer + qa + reviewer sentinel |
+| `type:user-facing` | 1 + 2 + 4 | engineer + qa + uat |
+| `risk:high, type:user-facing` | 1 + 2 + 3 + 4 | engineer + qa + reviewer sentinel + uat |
 
 ---
 
@@ -365,61 +363,80 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant EM
-    participant Scope
-    participant Challenger
-    participant SE
-    participant GitHub
-    participant Sentinel
+    participant User
+    participant Planner
+    participant Reviewer
+    participant Dispatcher
+    participant Engineer
     participant QA
     participant UAT
 
-    EM->>Scope: workorder mode (phase N)
-    activate Scope
-    Scope->>EM: scope-workorder-P<N>.md
-    deactivate Scope
+    User->>Planner: /r:plan (research + scope)
+    activate Planner
+    Planner->>Planner: discover → brainstorm → spec
 
-    opt Tier 2+ Challenger Gate
-        EM->>SE: plan-only mode
-        activate SE
-        SE->>EM: implementation-plan.md (PLAN_COMPLETE)
-        deactivate SE
-        EM->>Challenger: review plan
-        activate Challenger
-        Challenger->>EM: challenge-N.md
-        deactivate Challenger
+    opt Challenge Gate (spec review)
+        Planner->>Reviewer: dispatch challenge mode
+        activate Reviewer
+        Reviewer->>Planner: challenge findings
+        deactivate Reviewer
+        Planner->>Planner: address findings, revise spec
     end
 
-    EM->>SE: current-phase.md (work order)
-    activate SE
-    SE-->>SE: phase-N-status.md (progress)
-    SE-->>GitHub: gh issue comment (task N.M complete)
-    SE-->>SE: test-registry-P<N>.md (after tests)
-    SE->>EM: phase-N-result.md
-    deactivate SE
+    Planner->>Planner: decompose spec → PLAN.md
+    Planner->>User: PLAN.md ready for review
+    deactivate Planner
 
-    par Parallel verification
-        EM->>QA: dispatch review
+    User->>Dispatcher: /r:build [N]
+    activate Dispatcher
+    Dispatcher->>Dispatcher: read PLAN.md → identify phase N
+    Dispatcher->>Dispatcher: read governance index → load context
+    Dispatcher->>Dispatcher: determine gates from phase tags
+
+    Dispatcher->>Engineer: phase context + governance + file boundaries
+    activate Engineer
+    Engineer->>Engineer: read governance (conventions, constraints)
+    Engineer->>Engineer: TDD: red → green → refactor
+    Note over Engineer: work-output/phase-N-status.md (progress)
+    Engineer->>Dispatcher: phase-N-result.md (TDD evidence)
+    deactivate Engineer
+
+    Note over Dispatcher: Gate selection based on phase tags
+
+    opt Gate 2: QA Verification
+        Dispatcher->>QA: dispatch verification
         activate QA
-        Note over QA: reads test-registry-P<N>.md
-        EM->>Sentinel: dispatch review
-        activate Sentinel
-        Sentinel->>QA: sentinel-N.md (findings)
-        deactivate Sentinel
+        QA->>QA: lint + tests + anti-pattern greps
+        QA->>Dispatcher: qa-phase-N-verdict.md
+        deactivate QA
     end
 
-    QA->>EM: qa-phase-N-verdict.md
-    deactivate QA
+    opt Gate 3: Reviewer Sentinel (risk:high or type:security)
+        Dispatcher->>Reviewer: dispatch sentinel mode
+        activate Reviewer
+        Reviewer->>Reviewer: 4-pass: anti-slop, regression, security, performance
+        Reviewer->>Dispatcher: sentinel-N.md (max 20 findings)
+        deactivate Reviewer
+    end
 
-    opt Tier 2+
-        EM->>UAT: dispatch acceptance
+    opt Gate 4: UAT (type:user-facing)
+        Dispatcher->>UAT: dispatch acceptance
         activate UAT
-        UAT->>EM: uat-phase-N-verdict.md
+        UAT->>UAT: real-world scenarios, CLI interactions
+        UAT->>Dispatcher: uat-phase-N-verdict.md
         deactivate UAT
     end
 
-    EM-->>EM: merge decision
-    EM-->>EM: append pipeline-metrics.jsonl
+    alt All gates pass
+        Dispatcher->>Dispatcher: commit, update PLAN.md status
+        Dispatcher->>Dispatcher: next phase or complete
+    else Gate failure (retries left)
+        Dispatcher->>Engineer: feedback + re-enter TDD
+    else Retries exhausted
+        Dispatcher->>User: surface failure context
+    end
+
+    deactivate Dispatcher
 ```
 
 ---

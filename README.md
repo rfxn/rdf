@@ -254,10 +254,9 @@ exactly the information that role needs to do its job well.
 ### Lifecycle Pipeline
 
 ```
-USER -> /r:plan (planner) -> /r:start (dispatcher)
-     -> [/r:review --challenge (reviewer)]
-     -> /build (engineer) -> [/review --sentinel (reviewer) || /verify (qa)]
-     -> /test (uat)
+USER -> /r:plan (planner)
+     -> [/review --challenge (reviewer)]
+     -> /build [N] (dispatcher -> engineer -> qa/reviewer/uat gates)
      -> /r:ship -> MERGE
 ```
 

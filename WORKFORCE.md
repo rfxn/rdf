@@ -34,10 +34,9 @@ USER
 
 ════════════════════════════════════════════════════════════════════
 LIFECYCLE PIPELINE
-  USER → /r:plan (planner) → /r:start (dispatcher)
+  USER → /r:plan (planner)
        → [/review --challenge (reviewer)]
-       → /build (engineer) → [/review --sentinel (reviewer) ∥ /verify (qa)]
-       → /test (uat)
+       → /build [N] (dispatcher → engineer → qa/reviewer/uat gates)
        → /r:ship → MERGE
 ════════════════════════════════════════════════════════════════════
 ```

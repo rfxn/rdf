@@ -33,7 +33,8 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 - Canonical content: frontmatter-free verification, stale-name grep
 
 ## Naming Convention
-- Agents/commands: `{domain}-{role}` for domain-specific, `{role}` for core
-- Domain shortcodes: sys, sec, fe, php, py, iaas, fs
-- CC agent names: `rfxn-{file-stem}` (e.g., rfxn-sys-eng)
-- Slash commands: `/{file-stem}` (e.g., /sys-eng)
+- Agents: role-only names (`planner`, `engineer`, `qa`, etc.)
+- CC agent names: `rdf-{file-stem}` (e.g., `rdf-engineer`, `rdf-qa`)
+- Lifecycle commands: `/r:{name}` (e.g., `/r:start`, `/r:plan`)
+- Utility commands: `/r:util:{subject}-{verb}` (e.g., `/r:util:mem-compact`)
+- CC slash commands use hyphens: `/r-start`, `/r-util-mem-compact`
