@@ -6,8 +6,6 @@ enough context to continue where the last session left off.
 
 ## Progress Tracking
 
-At command startup, set up progress tracking for user feedback:
-
 **If TaskCreate tool is available** (Claude Code):
 ```
 TaskCreate: subject: "Initialize session"
@@ -16,10 +14,7 @@ TaskCreate: subject: "Initialize session"
 Mark `in_progress` at start, `completed` before the dashboard.
 
 **If TaskCreate is NOT available** (Gemini CLI, Codex):
-Output a markdown checklist at the start and update inline:
-```
-- [ ] Loading project context...
-```
+Output `- [ ] Loading project context...` before starting.
 Replace with `- [x] Session loaded` when complete.
 
 ## Protocol
@@ -31,195 +26,198 @@ Run /clear to reset conversation context before loading fresh state.
 ### 2. Gather State
 
 Run all data gathering in parallel where possible. Target: under
-5 seconds wall time. Do NOT display results as they are gathered —
-all output is consolidated into the single dashboard in section 3.
+5 seconds wall time. Batch git commands into single invocations.
+Do NOT display results — all output consolidates into section 3.
 
-**From governance index** (`.claude/governance/index.md`):
-- Project name (from `## Project` section)
-- Operational mode (from `Mode:` line)
-- Plan progress summary (from `Plan:` line)
-- Governance file count
+**Git state** (single-project — cwd is a git repo):
+```bash
+# Run these in ONE bash call:
+git branch --show-current
+git rev-parse --short HEAD
+git log -1 --format=%cr
+git status --porcelain | wc -l
+git log --oneline -5
+```
 
-If governance does not exist, note it for the fallback display.
-
-**From git** (single-project — cwd is a git repo):
-- Current branch: `git branch --show-current`
-- HEAD hash: `git rev-parse --short HEAD`
-- Dirty state: `git status --porcelain | wc -l`
-- Last commit age: `git log -1 --format=%cr`
-- Recent commits: `git log --oneline -5`
-
-**From git** (parent workspace — cwd is NOT a git repo):
+**Git state** (parent workspace — cwd is NOT a git repo):
 - Enumerate sub-project repos: directories containing `.git/`
 - For each: branch, HEAD hash, dirty count, last commit age
-- Aggregate: total repos, repos with commits <24h (active), total
-  dirty files, most recent commit (project + hash + age)
+- Aggregate: total repos, active (commits <24h), total dirty
 
-**From PLAN.md** (if present):
-- Total phase count and per-phase status
+**Governance** (`.rdf/governance/index.md` or `.claude/governance/index.md`):
+- Project name, operational mode, plan progress, file count
+- Governance age: stat mtime, calculate hours since modification
+- If governance does not exist, note for fallback display
+
+**PLAN.md** (if present):
+- Total phase count and per-phase status (complete/in-progress/pending/blocked)
 - Current/next pending phase number and description
-- Any phases marked in-progress
 
-**From work-output/** (if present):
-- Phase status files: `work-output/phase-*-status.md`
-- Stale status files (mtime >1 hour)
+**Pipeline position** (same logic as r-save):
+- `docs/specs/` has files + no PLAN.md → `spec`
+- PLAN.md with pending phases → `plan`
+- PLAN.md with in-progress phases → `build phase N/M`
+- PLAN.md with all complete → `ship`
+- None → `idle`
 
-**Governance age:**
-- Stat mtime of `.claude/governance/index.md`
-- Calculate hours since last modification
+**In-flight work** (lightweight checks, parallel with git):
+- `HANDOFF.md`: read title + first 3 progress lines
+- `work-output/spec-progress.md`: read TOPIC + PHASE
+- `work-output/ship-progress.md`: read STAGE
+- `work-output/current-phase.md`: read PROJECT_NAME, PHASE, PHASE_TITLE
+- `PLAN.md` / `PLAN-*.md`: grep for `in-progress` or `blocked`
+- `work-output/session-log.jsonl`: read last entry
 
-**In-flight work detection** (run in parallel with other checks):
+**Suppression rules:**
+- Plans with ALL phases `complete`: omit
+- Plans with only `pending` (no in-progress/blocked): show only if
+  modified within 7 days
+- `current-phase.md` older than 30 days: omit
 
-Scan for signals of interrupted or ongoing workstreams. These are
-lightweight checks — grep for status keywords, check file existence,
-read first lines only.
+**Session log** (if exists):
+- Read last entry for: commits, diff_summary, pipeline, insight
+- Calculate age for "Last session" display
 
-- `HANDOFF.md` in cwd: if present, read the `# Handoff:` title line
-  and `## Current Progress` section (first 3 lines after the heading)
-  to extract what was interrupted and how far it got
-- `work-output/spec-progress.md`: if present, read `TOPIC` and
-  `PHASE` lines to determine spec subject and current phase
-- `work-output/ship-progress.md`: if present, read `STAGE` line
-  to determine current shipping stage
-- `work-output/current-phase.md`: if present, read `PROJECT_NAME`,
-  `PHASE`, and `PHASE_TITLE` lines. Flag as stale if mtime >24h
-- `PLAN-*.md` at workspace root: for each, grep for table rows
-  containing `in-progress` or `blocked`. Ignore files where all
-  phases are `complete` or `pending` with none in-progress
-- `*/PLAN.md` in sub-projects: same grep — find any project with
-  phases marked `in-progress` or `blocked`
-- `work-output/session-log.jsonl`: if present, read last entry for
-  the previous session's end-state
-
-**In-flight suppression rules:**
-- Plans where ALL phases are `complete`: omit entirely
-- Plans where all non-complete phases are `pending` and no phases
-  are `in-progress` or `blocked`: show only if the plan was modified
-  within the last 7 days (recent intent, not ancient debris)
-- `current-phase.md` older than 30 days: omit (dead context)
-
-**Insights** (parallel with other checks):
-- Read `~/.rdf/insights.jsonl` for display in the dashboard
-- Read `~/.rdf/lessons-learned.md` to confirm it exists (for the
-  agent's own awareness, not for display)
+**Insights:**
+- Read `~/.rdf/insights.jsonl` for display
+- Read `~/.rdf/lessons-learned.md` to confirm it exists
 
 ### 3. Display Dashboard
 
-All output is ONE consolidated block. This is the only visible
-output from the entire start operation. Target: under 25 lines.
+ONE consolidated block. This is the ONLY visible output from the
+entire start operation.
+
+**Target: under 20 lines for single-project, under 15 for workspace.**
+
+---
 
 **Single-project dashboard:**
 
 ```
-### {Project} {version} — `{branch}` @ `{hash}` ({age})
+### {Project} {version} — `{branch}` @ `{hash}` ({age}) · {pipeline}
 
 | Plan | Dirty | Mode | Governance |
 |------|-------|------|------------|
 | {M}/{N} phases | {N} files | {mode} | {N} files ({T}h) |
 
-{in-flight block — only if signals exist}
+{in-flight — only if signals exist}
 
-{plan progress — only if PLAN.md exists}
+{plan progress — capped at 5 phases}
 
-{recent commits OR last session summary}
+{last session line}
 
-{warnings — inline, only if any}
+{warnings — only if thresholds exceeded}
 
----
-
-{insights block — only if insights exist}
+{insights — only if entries exist}
 ```
 
 **Parent workspace dashboard:**
 
 ```
-### {workspace} — {N} repos, {N} active
+### {workspace} — {N} repos, {N} active · {most_recent_pipeline}
 
 | Last Activity | Dirty | MEMORY.md |
 |---------------|-------|-----------|
 | {project}: `{hash}` ({age}) | {N} files / {M} repos | {N}/200 |
 
-{in-flight block}
+{in-flight signals across repos}
 
-{recent activity across repos}
+{recent activity — top 3 commits across repos}
+
+{warnings}
+
+{insights}
+```
 
 ---
 
-{insights block}
+### Section rendering
+
+**Heading** — one dense line packing: project, version, branch,
+hash, age, and pipeline stage. Pipeline stage at the end tells the
+user where they are in the arc (idle/spec/plan/build/ship).
+
+**Status table** — one row, four columns. No multi-row tables.
+If governance doesn't exist, replace that cell with `none — /r:init`.
+
+**In-flight** — show only if signals fire:
+
+```
+> **In Flight**: {signal summary}
 ```
 
-### Section details
-
-**In-flight block** — show only if signals fire. Compact format:
-
+For 1-2 signals, pack into one line with semicolons:
 ```
-> **In Flight**: {one-line per signal, semicolon-separated if <=2}
+> **In Flight**: Spec — pipeline design, Phase 2; Plan — 7 pending phases
+```
 
+For 3+ signals, use bulleted blockquote:
+```
 > **In Flight** — {N} signals
 > - **Handoff**: {title} — {progress}
-> - **Plan**: `PLAN.md` — Phase 4 *in-progress*
+> - **Plan**: Phase 4 *in-progress*
 > - **Spec**: {topic} — Phase {N}
 ```
 
-For 1-2 signals, use a single `>` line with semicolons. For 3+
-signals, use the bulleted list format. Signal priority order:
-Handoff > Spec > Ship > Plan (in-progress) > Plan (pending) >
-Dispatch (stale).
+Signal priority: Handoff > Spec > Ship > Plan (in-progress) >
+Plan (pending) > Dispatch (stale).
 
-**Plan progress** — task list checkboxes:
+**Plan progress** — task list, capped at 5 visible phases:
 
 ```
 - [x] Phase 1 — {desc, 30c max}
+- [x] Phase 2 — {desc}
 - [ ] **Phase 3 — {desc}** *(in-progress)*
 - [ ] Phase 4 — {desc}
-
-Next: Phase 3 — {full description}
+- [ ] Phase 5 — {desc}
+  *+ 2 more phases*
 ```
 
 Phase styling:
-- `[x]` + plain text = complete
-- `[ ]` + **bold** + *(in-progress)* italic = current work
-- `[ ]` + plain text = pending
-- `[ ]` + ~~strikethrough~~ + *(blocked)* italic = blocked
+- `[x]` + plain = complete
+- `[ ]` + **bold** + *(in-progress)* = current work
+- `[ ]` + plain = pending
+- `[ ]` + ~~strikethrough~~ + *(blocked)* = blocked
 
-If no PLAN.md: `Plan: none — `/r:plan` to create one.`
+If >5 phases: show first 2 complete + current + next 2 pending,
+then `*+ N more phases*` in italic. Full list is in PLAN.md.
 
-**Recent commits / last session** — prefer session log if available:
+If no PLAN.md: omit section entirely. Pipeline stage in the
+heading already signals `idle`.
 
-From session log:
+**Last session** — one line, prefer session log over git log:
+
+From session log (if exists):
 ```
-Last session ({age}): {N} commits — {summary of work}
+Last: {N} commits · {diff_summary} · {pipeline} *({age})*
 ```
 
-Fallback to git log (3 commits max):
+Fallback (no session log) — 3 most recent commits:
 ```
 - `{hash}` {message} *({age})*
 - `{hash}` {message} *({age})*
 - `{hash}` {message} *({age})*
 ```
 
-**Warnings** — inline blockquote, only if warnings exist:
+**Warnings** — one blockquote line, pipe-separated:
 
 ```
-> **Warn**: Governance {T}h old — `/r:refresh` | MEMORY.md {N}/200 — `/r:util:mem-compact`
+> ⚠ Governance {T}h old — `/r:refresh` | MEMORY.md {N}/200 — `/r:util:mem-compact`
 ```
 
-Use pipe `|` separators for multiple warnings on one line.
-Only show if thresholds are exceeded:
+Thresholds:
 - Governance stale: >24 hours
 - Dirty state: >5 files
 - Status file stale: >1 hour
 - Memory size: >=180 lines
 
-**Insights block** — separated by horizontal rule, at the bottom:
+If no thresholds exceeded, omit entirely.
+
+**Insights** — at the bottom, no heading or rule needed:
 
 ```
----
-
-### Insights
-
+> **Insights**
 > - **{project}**: {insight text} *— {tool}, {age}*
-> - {insight text} *— {project}, {tool}, {age}*
 > - {insight text} *— {project}, {tool}, {age}*
 ```
 
@@ -229,23 +227,17 @@ Selection (two-tier, 3 max):
 3. No project match = 3 most recent universal
 4. Fewer than 3 total = show what exists
 
-If no insights exist, omit the rule and the entire section.
+If no insights exist, omit entirely.
 
 ### 4. Load CLAUDE.md
 
 Read the project's `CLAUDE.md` (if present) to internalize project
-instructions. Do NOT display its contents — just confirm it was
-loaded as the last line of output.
+instructions. Do NOT display its contents — just confirm loaded.
 
 ## Rules
-- Do NOT load full governance file contents (architecture.md, etc.)
-  — only the index. Agents load what they need just-in-time.
+- Do NOT load full governance file contents — only the index
 - Do NOT read full PLAN.md prose — extract phase names and statuses
-  only. The plan is read in full when work begins.
-- Do NOT read MEMORY.md — it is loaded into context automatically
-  and is human-facing, not operational.
-- Do NOT run tests, lint, or any expensive operations.
-- Keep total output under 25 lines. Consolidate into the single
-  dashboard — no incremental per-section displays.
-- Target under 5 seconds wall time — all git commands can run in
-  parallel.
+- Do NOT read MEMORY.md — it loads automatically
+- Do NOT run tests, lint, or any expensive operations
+- Keep total output under 20 lines
+- Target under 5 seconds wall time — batch git commands

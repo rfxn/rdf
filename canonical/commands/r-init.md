@@ -693,6 +693,12 @@ Only show what was actually found — absence is not information.
 > **Ready** — `/r:start` to begin | `/r:spec` to design | `/r:plan` to plan
 ```
 
+**Pipeline-aware Ready line:** If PLAN.md or specs already exist,
+adjust the hint:
+- Specs exist, no PLAN.md → `> **Ready** — `/r:plan` to create implementation plan`
+- PLAN.md exists → `> **Ready** — `/r:build` to start phase 1`
+- Nothing exists → `> **Ready** — `/r:start` to begin | `/r:spec` to design`
+
 **Adaptation rules:**
 - The heading includes the project name and a count — makes the
   output feel like a result, not a form
