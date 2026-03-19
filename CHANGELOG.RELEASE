@@ -1,41 +1,50 @@
-# RDF 2.1.0 Release Notes
+# RDF 3.0.0 Release Notes
 
 ## What's New
-- **GitHub Issue Model v2** — phase-level tracking replaces per-task issue management,
-  reducing API calls by ~72% per release cycle
-- **Roadmap Planning** — new `type:initiative` issues for directional time-boxed planning,
-  `type:release` issues for versioned release tracking
-- **Two-Horizon Roadmap** — Planning Roadmap (Target Date) for big-picture initiatives,
-  Execution Roadmap (Release iteration) for active work
-- **Task Progress via Comments** — agents post one comment per completed task on the phase
-  issue, providing async visibility from any terminal
-- **Initiative Lifecycle** — Planning → Specced → Executing → Complete, with cross-project
-  initiative support
-- **Ecosystem Board Cleanup** — task-level items removed, board now shows phase-level signal
-  plus initiative roadmap items
-- New Mermaid diagrams: Issue Hierarchy and Two-Horizon Roadmap
 
-## Agent/Command Updates
-- `mgr` command gains GitHub integration section for v2 workflow
-- `sys-eng` command posts task-completion comments, references phase issues in commits
-- `sys-qa` command posts QA verdicts as phase issue comments
-- `sys-sentinel` agent posts findings summary on phase issues
-- `refresh` command syncs initiative and release issues (removed task issue sync)
-- `rel-prep`, `rel-ship`, `rel-merge` updated for type:release lifecycle
-- `ecosystem-init` now idempotent (updates fields on existing projects)
+RDF 3.0.0 is a complete architecture redesign. The prior domain-specific
+agent model (12 agents with baked-in domain knowledge) is replaced by a
+universal agent model (6 agents whose behavior is shaped by governance
+files initialized per-project).
 
-## CLI Changes
-- `_LABEL_TAXONOMY` gains `type:initiative` and `type:release`
-- `_github_ecosystem_init()` adds `Target Date` (DATE) field, `geoscope` project option
-- `_github_ecosystem_init()` no longer early-returns on existing project
-- Field creation loop handles DATE type (not just SINGLE_SELECT)
+### Universal Agents
+- **planner** (opus) -- research, specs, implementation plans
+- **dispatcher** (sonnet) -- plan execution orchestrator
+- **engineer** (opus) -- universal implementation, governance-driven
+- **qa** (sonnet) -- verification gate
+- **uat** (sonnet) -- user acceptance testing
+- **reviewer** (opus) -- adversarial review (challenge + sentinel modes)
 
-## Documentation
-- README, RDF.md, WORKFORCE.md updated for v2 model
-- Core governance issue conventions rewritten
-- Diagrams 7-10 updated/added
-- v1 spec Section 5 marked as superseded
+### /r: Command Namespace
+23 commands replace the prior ~68:
+- 13 lifecycle commands: /r:init, /r:start, /r:plan, /r:mode, /r:status,
+  /r:refresh, /r:sync, /r:audit, /r:ship, /build, /verify, /test, /review
+- 10 utility commands under /r:util: namespace
 
-## Migration from 2.0.0
-No breaking changes. Run `rdf generate claude-code` to pick up canonical updates.
-Board cleanup (removing task items) was performed during this release.
+### Governance-Driven Profiles
+Profiles no longer bundle agents and commands. All 6 agents and 23 commands
+are always available. Profiles provide governance seed templates that
+/r:init uses to initialize per-project governance files. The governance
+files shape agent behavior at runtime.
+
+## Migration from 2.x
+
+### Automatic
+Run `rdf generate claude-code` to regenerate. Symlinks remain unchanged.
+
+### What Changed
+- Agent names: `rfxn-` prefix replaced by `rdf-` (e.g., `rdf-engineer`)
+- Commands: old slash commands replaced by `/r:` namespace equivalents
+- Profiles: `profile.json` manifests removed (governance-template.md only)
+- Dispatch: `lib/dispatch-agents.json` and `lib/dispatch-tasks.json` removed
+
+### Preserved Artifacts
+- `canonical/agents-v2-archived/` -- all 12 v2 agent definitions
+- `canonical/commands-v2-archived/` -- all 68 v2 command definitions
+- `adapters/claude-code/agent-meta-v2.json` -- v2 agent metadata
+
+### Breaking Changes
+- v2 slash commands (`/mgr`, `/sys-eng`, `/audit`, etc.) no longer exist
+- `profile.json` files removed from all profiles
+- `rdf_profile_includes` no longer gates agent/command generation
+- `dispatch-agents.json` and `dispatch-tasks.json` removed

@@ -1,63 +1,42 @@
 # RDF Changelog
 
-## 3.0.0-dev (in progress)
+## 3.0.0
 
 ### Architecture
-[New] Universal agent architecture — 6 domain-agnostic agents replace
-      12 domain-specific agents
-[New] Governance initialization model — project data drives agent behavior
-[New] /r: command namespace — 13 lifecycle + 10 utility commands
-[New] Operational modes — extrinsic lens (security, performance, migration)
-[New] Governance index schema for just-in-time context loading
+[Change] Universal agent architecture — 6 domain-agnostic agents replace
+         12 domain-specific agents
+[Change] Governance initialization model — project data drives agent behavior
+[Change] /r: command namespace — 13 lifecycle + 10 utility commands
 [Change] Profiles become governance seed templates, not agent bundles
-[Remove] Domain-prefixed agents (sys-eng, fe-qa, etc.)
+[Change] CC agent name prefix rfxn- -> rdf-
+[Remove] Domain-prefixed agents (sys-eng, fe-qa, sec-eng, etc.)
 [Remove] ~45 domain-specific slash commands
+[Remove] profile.json manifest files
 
-### Governance Initialization (Plan 2)
-[New] /r:init skill — 5-phase governance generation (ingest, scan,
-      detect, generate, validate) with governance file templates
-[New] /r:refresh skill — incremental governance re-scan with
-      user-modification preservation
+### Agents
+[New] planner — research-driven collaborative planning (opus)
+[New] dispatcher — plan execution orchestrator (sonnet)
+[New] engineer — universal implementation engineer (opus)
+[New] qa — verification gate (sonnet)
+[New] uat — user acceptance testing (sonnet)
+[New] reviewer — adversarial review, challenge + sentinel modes (opus)
 
-### Profiles & Modes (Plan 3)
-[Change] Profiles restructured from agent bundles to governance seed
-         templates (governance-template.md + reference/ docs)
-[New] 4 operational mode context files (development, security-assessment,
-      performance-audit, migration)
-[New] /r:mode command for session-scoped mode switching
-[New] Profile registry with auto-detection rules
-[Remove] profile.json manifest files from all profiles
+### Lifecycle Commands
+[New] /r:init — governance initialization
+[New] /r:start — session initialization with context anchor
+[New] /r:plan — 5-phase planner workflow
+[New] /r:mode — session-scoped mode switching
+[New] /r:status — project health dashboard
+[New] /r:refresh — governance-aware codebase re-scan
+[New] /r:sync — canonical source pull-back
+[New] /r:audit — full codebase audit with parallel dispatch
+[New] /r:ship — composite release workflow
+[New] /build — plan phase execution via dispatcher
+[New] /verify — QA verification via qa subagent
+[New] /test — UAT acceptance via uat subagent
+[New] /review — adversarial review in challenge or sentinel mode
 
-### Planning Commands (Plan 4)
-[New] /r:start skill — session initialization with context anchor,
-      governance freshness check, staleness warnings
-[New] /r:status skill — project health dashboard with plan progress,
-      phase outcomes, governance age, structured warnings
-[New] /r:plan skill — 5-phase planner workflow: discover, brainstorm
-      (research-driven, 3+ options, adversarial), spec (with challenge
-      review), plan (tagged phases with execution modes), handoff
-[New] v3 command mapping for Claude Code adapter
-
-### Execution Commands (Plan 5)
-[New] /r:build command — dispatches dispatcher for plan execution
-[New] /r:verify command — standalone QA verification via qa subagent
-[New] /r:test command — standalone UAT acceptance testing via uat subagent
-[New] /r:review command — adversarial review in challenge or sentinel mode
-
-### Release, Audit & Governance Commands (Plan 6)
-[New] /r:ship — composite release workflow with qa + reviewer
-      verification gates, changelog generation, attribution scrub,
-      PR creation with CI monitoring
-[New] /r:audit — full codebase audit dispatching parallel reviewer
-      sentinel passes (regression, security, performance) + qa
-      standards verification, deduplication, AUDIT.md synthesis
-[New] /r:refresh — governance-aware codebase re-scan, re-runs
-      /r:init phases 2-5 with user-modification preservation
-[New] /r:sync — canonical source pull-back for RDF self-development,
-      v3-aware frontmatter stripping
-[New] command-meta-v3.json — command-to-agent dispatch metadata
-
-### Utility Commands (Plan 7)
+### Utility Commands
 [New] /r:util:mem-compact — archive stale MEMORY.md entries
 [New] /r:util:doc-gen — generate documentation for specific surfaces
 [New] /r:util:ci-gen — generate CI workflow from test infrastructure
@@ -68,6 +47,27 @@
 [New] /r:util:test-dedup — find duplicate/overlapping tests
 [New] /r:util:chg-gen — generate changelog entries from diff
 [New] /r:util:chg-dedup — deduplicate changelog entries
+
+### Profiles & Modes
+[Change] Profiles restructured from agent bundles to governance seed
+         templates (governance-template.md + reference/ docs)
+[New] 4 operational mode context files (development, security-assessment,
+      performance-audit, migration)
+[New] Profile registry with auto-detection rules
+
+### Adapter
+[Change] agent-meta.json — 6 universal agents with rdf- prefix
+[Change] adapter.sh — profile filtering removed for agents/commands
+[Change] teams-meta.json — name prefix rfxn -> rdf
+[New] command-meta-v3.json — command-to-agent dispatch metadata
+
+### Migration
+[New] canonical/agents-v2-archived/ — preserved v2 agent definitions
+[New] canonical/commands-v2-archived/ — preserved v2 command definitions
+[New] adapters/claude-code/agent-meta-v2.json — preserved v2 metadata
+[Remove] canonical/agents-v3/ and canonical/commands-v3/ (staging dirs)
+[Remove] lib/dispatch-agents.json, lib/dispatch-tasks.json (v2 dispatch)
+[Remove] adapters/claude-code/command-meta.json (v2 stub)
 
 ## 2.1.0 (2026-03-16)
 

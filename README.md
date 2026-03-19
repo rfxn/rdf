@@ -3,13 +3,13 @@
 Convention governance, agent pipelines, and project orchestration for the
 rfxn ecosystem. Tool-agnostic by design, currently delivered via Claude Code.
 
-**Version:** 2.1.0 | **License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
+**Version:** 3.0.0 | **License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
 
 > **This is not a drop-in framework.** RDF is purpose-built for the rfxn
 > ecosystem and shared as a reference for what disciplined AI-assisted
 > development can look like. The value here is the pattern, not the files.
 > Engineering organizations looking to get consistent, reliable output from
-> AI coding assistants should study the approach: typed agent pipelines,
+> AI coding assistants should study the approach: governance-driven agents,
 > adversarial quality gates, convention inheritance, and context window
 > management. The goal is autonomous execution that does not require
 > babysitting the model on every commit.
@@ -130,7 +130,7 @@ blast radius.
 
 ### Core Design
 
-RDF is built on five principles:
+RDF 3.0 is built on five principles:
 
 1. **Canonical-first, adapter-delivered.** All convention content, agent
    prompts, and governance docs live as tool-agnostic markdown in
@@ -138,11 +138,11 @@ RDF is built on five principles:
    from canonical sources. Development happens in `canonical/` -- deployed
    copies are generated output, not editable originals.
 
-2. **Profile system for discipline selection.** Core framework primitives
-   are always active. Domain profiles (systems-engineering, security,
-   frontend, future disciplines) bundle relevant agents, commands,
-   conventions, and reference docs. Multiple profiles can be active
-   simultaneously with dependency resolution.
+2. **Governance-driven agent behavior.** Six universal agents replace the
+   prior domain-specific model. Agent behavior is shaped by governance
+   files initialized per-project via `/r:init`, not by baking domain
+   knowledge into agent prompts. Profiles provide governance seed
+   templates, not agent/command bundles.
 
 3. **Unified CLI.** Single `rdf` dispatcher with lazy-sourced subcommand
    modules. Eight subcommands cover the full lifecycle: generate, profile,
@@ -151,10 +151,7 @@ RDF is built on five principles:
 4. **GitHub-native project management.** GitHub Issues + Projects v2 is
    the durable work tracking layer with phase-level tracking: one issue
    per phase (not per task), initiative issues for roadmap planning, and
-   release issues for version tracking. A two-horizon roadmap provides
-   both planning visibility (Target Date) and execution status (Release
-   iteration). PLAN.md and MEMORY.md remain as session-local agent
-   context but GitHub Issues is the source of truth for queue state.
+   release issues for version tracking.
 
 5. **Not a runtime.** Claude Code / Gemini CLI / Codex IS the runtime.
    RDF is the governance layer that tells the runtime how to behave.
@@ -197,13 +194,13 @@ rdf/
 |       +-- github.sh                # rdf github
 |
 |-- canonical/                       # Tool-agnostic source of truth
-|   |-- agents/                      # Pure markdown, no frontmatter
-|   |-- commands/                    # Pure markdown (~66 commands)
+|   |-- agents/                      # 6 universal agents (pure markdown)
+|   |-- commands/                    # 23 commands under /r: namespace
 |   |-- scripts/                     # Hook scripts (bash)
 |   +-- reference/                   # Framework-level docs
 |
 |-- profiles/
-|   |-- registry.json                # Profile catalog + dep graph
+|   |-- registry.md                  # Profile catalog
 |   |-- core/                        # Core profile
 |   |-- systems-engineering/         # Bash/shell projects
 |   |-- security/                    # Security assessment
@@ -224,28 +221,19 @@ rdf/
 
 ### Naming Convention
 
-**Pattern:** `{domain}-{role}` for domain-specific, `{role}` for core.
+**v3 convention:** Universal agents use role-only names. No domain prefix.
 
-| Tier | Prefix | Examples | Rationale |
-|------|--------|---------|-----------|
-| Core | none | mgr, po, scope | Orchestrate across any domain |
-| Domain | {domain}- | sys-eng, sys-qa, sys-sentinel | Domain expertise in agent prompt |
-| Specialist | {domain}- | sec-eng, fe-qa, fe-uat | Cross-cutting or domain-scoped |
+| Agent | CC Name | Model | Role |
+|-------|---------|-------|------|
+| planner | rdf-planner | opus | Research, specs, implementation plans |
+| dispatcher | rdf-dispatcher | sonnet | Plan execution orchestrator |
+| engineer | rdf-engineer | opus | Universal implementation |
+| qa | rdf-qa | sonnet | Verification gate |
+| uat | rdf-uat | sonnet | User acceptance testing |
+| reviewer | rdf-reviewer | opus | Adversarial review (challenge + sentinel) |
 
-**Domain registry:**
-
-| Shortcode | Profile | Domain |
-|-----------|---------|--------|
-| sys | systems-engineering | Bash/shell, Linux, security tooling |
-| sec | security | Offensive/defensive security assessment |
-| fe | frontend | Vue/React, CSS, Playwright |
-| php | php-backend | PHP, MySQL (future) |
-| py | python-backend | Python/Perl (future) |
-| iaas | infrastructure | IaaS, API, cloud (future) |
-| fs | full-stack | Cross-stack coordination (future) |
-
-**CC agent names:** `rfxn-{file-stem}` (e.g., `rfxn-sys-eng`, `rfxn-mgr`)
-**Slash commands:** `/{file-stem}` (e.g., `/sys-eng`, `/mgr`)
+**CC agent names:** `rdf-{file-stem}` (e.g., `rdf-engineer`, `rdf-qa`)
+**Slash commands:** `/r-{name}` or `/r:{name}` (e.g., `/r-start` or `/r:start`)
 
 ---
 
@@ -258,50 +246,41 @@ typed agent personas, each loaded with a small, highly specific context
 window scoped to exactly one job.
 
 A QA agent does not see implementation details -- it sees the diff, the
-test results, and the verification protocol. A Sentinel agent does not
-see the requirements discussion -- it sees the code and runs four
-adversarial passes. Each agent is a context buffer: a narrow, deep
-window into exactly the information that role needs to do its job well.
+test results, and the verification protocol. A Reviewer agent does not
+see the requirements discussion -- it sees the code and runs adversarial
+passes. Each agent is a context buffer: a narrow, deep window into
+exactly the information that role needs to do its job well.
 
-### Engineering Pipeline
-
-```
-USER -> [PO] -> mgr -> [scope -> sys-eng plan-only -> sys-challenger]
-     -> sys-eng -> [sys-sentinel || sys-qa] -> [sys-ux] -> sys-uat
-     -> MERGE
-```
-
-| Role | Model | Purpose |
-|------|-------|---------|
-| Engineering Manager - mgr | sonnet | Orchestrator - prioritize, delegate, quality gates |
-| Product Owner - po | sonnet | Requirements translation, scope gating (optional) |
-| Scoping & Work Orders - scope | sonnet | Work order assembly, impact analysis |
-| Pre-Impl Adversary - sys-challenger | sonnet | Design flaws, edge cases, simpler alternatives |
-| Senior Engineer - sys-eng | opus | 7-step execution protocol, implementation |
-| QA Engineer - sys-qa | sonnet | Verification gate - 6-step review, bash 4.1 compliance |
-| Post-Impl Adversary - sys-sentinel | opus | 4-pass review: anti-slop, regression, security, performance |
-| UX & Output Design - sys-ux | sonnet | CLI output, help text, error messages (trigger-based) |
-| User Acceptance Testing - sys-uat | sonnet | Sysadmin persona - Docker install, real-world scenarios |
-| Security Engineer - sec-eng | opus | Offensive/defensive security assessment |
-| Frontend QA - fe-qa | sonnet | API contracts, DOM, CSS, JS patterns |
-| Frontend UAT - fe-uat | sonnet | Playwright headless scenarios |
-
-### Audit Pipeline (3-Round)
+### Lifecycle Pipeline
 
 ```
-/audit or /audit-quick
-  -> Round 1: 15 domain agents in parallel (opus/sonnet/haiku by domain)
-  -> Round 2: Condense + dedup in parallel (2 groups)
-  -> Round 3: Compile (sequential, 300-line cap)
+USER -> /r:plan (planner) -> /r:start (dispatcher)
+     -> [/r:review --challenge (reviewer)]
+     -> /build (engineer) -> [/review --sentinel (reviewer) || /verify (qa)]
+     -> /test (uat)
+     -> /r:ship -> MERGE
+```
+
+| Role | Agent | Model | Purpose |
+|------|-------|-------|---------|
+| Planner | rdf-planner | opus | Research, specs, implementation plans |
+| Dispatcher | rdf-dispatcher | sonnet | Plan execution, phase orchestration |
+| Engineer | rdf-engineer | opus | Implementation via governance-driven protocol |
+| QA | rdf-qa | sonnet | Verification gate -- lint, tests, anti-patterns |
+| Reviewer | rdf-reviewer | opus | Adversarial review -- challenge + sentinel modes |
+| UAT | rdf-uat | sonnet | User acceptance -- sysadmin persona, real scenarios |
+
+### Audit Pipeline
+
+```
+/r:audit
+  -> Parallel: reviewer (3x) + qa (1x)
+  -> Consolidation
   -> AUDIT.md
 ```
 
-15 domain agents: regression, latent, standards, cli, docs, config,
-test-coverage, test-exec, install, build-ci, upgrade, version, security,
-interfaces, modernize. Quick mode runs 6 static-analysis agents.
-
-> See [WORKFORCE.md](WORKFORCE.md) for full pipeline diagrams, protocol
-> details, and verification gate decision matrix.
+> See [WORKFORCE.md](WORKFORCE.md) for full pipeline diagrams and
+> verification gate details.
 
 ---
 
@@ -323,19 +302,14 @@ ln -sf "$(pwd)/adapters/claude-code/output/agents" /root/.claude/agents
 ln -sf "$(pwd)/adapters/claude-code/output/scripts" /root/.claude/scripts
 ```
 
-### Upgrade from Pre-2.0
+### Upgrade from 2.x
 
 ```bash
-# Remove old direct-file deployment
-rm -rf /root/.claude/commands /root/.claude/agents /root/.claude/scripts
-
-# Generate and symlink
+# Regenerate (v3 agents and commands replace v2 automatically)
 cd /root/admin/work/proj/rdf || exit 1
 bin/rdf generate claude-code
 
-ln -sf "$(pwd)/adapters/claude-code/output/commands" /root/.claude/commands
-ln -sf "$(pwd)/adapters/claude-code/output/agents" /root/.claude/agents
-ln -sf "$(pwd)/adapters/claude-code/output/scripts" /root/.claude/scripts
+# Symlinks remain unchanged -- they point to output/ which is regenerated
 ```
 
 ### Verify Installation
@@ -345,8 +319,8 @@ ln -sf "$(pwd)/adapters/claude-code/output/scripts" /root/.claude/scripts
 ls -la /root/.claude/commands /root/.claude/agents /root/.claude/scripts
 
 # Check counts
-echo "Agents: $(ls /root/.claude/agents/*.md 2>/dev/null | wc -l)"      # 12
-echo "Commands: $(ls /root/.claude/commands/*.md 2>/dev/null | wc -l)"   # ~66
+echo "Agents: $(ls /root/.claude/agents/*.md 2>/dev/null | wc -l)"      # 6
+echo "Commands: $(ls /root/.claude/commands/*.md 2>/dev/null | wc -l)"   # 23
 echo "Scripts: $(ls /root/.claude/scripts/*.sh 2>/dev/null | wc -l)"     # 10
 
 # Health check
@@ -362,7 +336,7 @@ Single `rdf` dispatcher with lazy-sourced subcommand modules.
 ```
 Usage: rdf <command> [subcommand] [options]
 
-RDF 2.1.0 -- rfxn Development Framework
+RDF 3.0.0 -- rfxn Development Framework
 
 Commands:
   generate   Build tool-specific files from canonical sources
@@ -383,19 +357,20 @@ Run 'rdf <command> help' for subcommand details.
 
 ### rdf generate
 
-Build tool-specific output from canonical sources and active profiles.
+Build tool-specific output from canonical sources.
 
 ```bash
-rdf generate claude-code     # canonical + profiles -> CC output
-rdf generate gemini-cli      # canonical + profiles -> Gemini config
-rdf generate codex           # canonical + profiles -> Codex config
-rdf generate agents-md       # canonical + profiles -> AGENTS.md
+rdf generate claude-code     # canonical -> CC output
+rdf generate gemini-cli      # canonical -> Gemini config
+rdf generate codex           # canonical -> Codex config
+rdf generate agents-md       # canonical -> AGENTS.md
 rdf generate all             # all active adapters
 ```
 
 Reads `canonical/{agents,commands,scripts}`, applies adapter-specific
 metadata (frontmatter, tool config), writes to `adapters/<target>/output/`.
-Idempotent -- safe to run repeatedly.
+Idempotent -- safe to run repeatedly. All agents and commands are
+generated unconditionally (v3 universal model).
 
 ### rdf profile
 
@@ -403,15 +378,14 @@ Manage active domain profiles with dependency resolution.
 
 ```bash
 rdf profile list             # show profiles with dependencies
-rdf profile install <name>   # activate + resolve deps + regenerate
+rdf profile install <name>   # activate + resolve deps
 rdf profile remove <name>    # deactivate, warn if dependents active
-rdf profile status           # active profiles + component counts
+rdf profile status           # active profiles + governance template status
 ```
 
-Profiles control which agents, commands, governance docs, and reference
-material are included in generation output. Installing a profile
-automatically installs its dependencies (e.g., `systems-engineering`
-pulls in `core`).
+In v3, profiles control governance template selection for `/r:init`,
+not agent/command availability. All 6 agents and 23 commands are always
+generated regardless of active profiles.
 
 ### rdf init
 
@@ -428,7 +402,7 @@ rdf init <path> [options]
   --batch               # process multiple directories
 ```
 
-Creates CLAUDE.md (from profile template), MEMORY.md, configures
+Creates CLAUDE.md (from governance template), MEMORY.md, configures
 `.git/info/exclude`, and optionally bootstraps GitHub Issues
 infrastructure.
 
@@ -490,24 +464,6 @@ rdf sync [options]
 GitHub Issues + Projects v2 integration with phase-level tracking and
 two-horizon roadmap planning.
 
-**Issue hierarchy (v2 model):**
-
-```
-Initiative (type:initiative)  -- planning horizon, directional timing
-  +-- Release (type:release)  -- committed version, specific timeline
-       +-- Phase (type:phase) -- execution unit, tracked on boards
-            +-- Tasks (comments) -- progress trail, async visibility
-```
-
-Phases are the unit of work on GitHub -- one issue per phase, not per
-task. Task progress is tracked via comments on the phase issue.
-Initiatives provide roadmap planning; releases track versioned
-deliverables.
-
-**Two-horizon roadmap** on the ecosystem project:
-- **Planning Roadmap** -- initiatives and releases on a Target Date timeline
-- **Execution Roadmap** -- phase issues in active releases by iteration
-
 ```bash
 rdf github setup [--repo <owner/repo>]       # labels + repo project
 rdf github sync-labels [--org <org>]         # sync taxonomy across repos
@@ -522,87 +478,71 @@ for the full specification.
 
 ## Profiles
 
-Profiles bundle agents, commands, governance, and reference docs for a
-domain discipline. Multiple profiles can be active simultaneously.
+Profiles provide governance seed templates for project initialization.
+In v3, all agents and commands are universal -- profiles control which
+governance template is used by `/r:init`, not which agents are available.
 
-| Profile | Requires | Agents | Description |
-|---------|----------|--------|-------------|
-| core | -- | mgr, po, scope | Framework primitives -- always active |
-| systems-engineering | core | sys-eng, sys-qa, sys-uat, sys-sentinel, sys-challenger, sys-ux | Bash/shell projects |
-| security | core | sec-eng | Security assessment |
-| frontend | core | fe-qa, fe-uat | Web/frontend (generic, framework-agnostic) |
+| Profile | Requires | Governance Template | Description |
+|---------|----------|---------------------|-------------|
+| core | -- | governance-template.md | Framework primitives -- always active |
+| systems-engineering | core | governance-template.md | Bash/shell projects |
+| security | core | governance-template.md | Security assessment |
+| frontend | core | governance-template.md | Web/frontend |
 
 Each profile contains:
-- `profile.json` -- component list (agents, commands, scripts, reference docs)
-- `governance.md` -- domain-specific conventions and standards
-- `templates/` -- CLAUDE.md templates for `rdf init`
+- `governance-template.md` -- domain-specific governance seed
 - `reference/` -- domain-specific reference documentation (optional)
+- `templates/` -- CLAUDE.md templates for `rdf init` (optional)
 
 ---
 
 ## Inventory
 
-### Agents (12)
-
-**Core (3):**
+### Agents (6)
 
 | File | CC Name | Model | Role |
 |------|---------|-------|------|
-| mgr.md | rfxn-mgr | sonnet | Engineering Manager - orchestrate, delegate, quality gates |
-| po.md | rfxn-po | sonnet | Product Owner - intake, requirements, scope gating |
-| scope.md | rfxn-scope | sonnet | Scoping & research - impact analysis, work order assembly |
+| planner.md | rdf-planner | opus | Research, brainstorming, specs, plans |
+| dispatcher.md | rdf-dispatcher | sonnet | Plan execution orchestrator |
+| engineer.md | rdf-engineer | opus | Universal implementation engineer |
+| qa.md | rdf-qa | sonnet | Verification gate |
+| uat.md | rdf-uat | sonnet | User acceptance testing |
+| reviewer.md | rdf-reviewer | opus | Adversarial review (challenge + sentinel) |
 
-**Systems Engineering (6):**
+### Commands (23)
 
-| File | CC Name | Model | Role |
-|------|---------|-------|------|
-| sys-eng.md | rfxn-sys-eng | opus | Senior Engineer - 7-step execution protocol |
-| sys-qa.md | rfxn-sys-qa | sonnet | QA Engineer - 6-step verification gate |
-| sys-uat.md | rfxn-sys-uat | sonnet | UAT - sysadmin persona, Docker scenarios |
-| sys-sentinel.md | rfxn-sys-sentinel | opus | Post-impl adversary - 4-pass review |
-| sys-challenger.md | rfxn-sys-challenger | sonnet | Pre-impl adversary - design flaws, edge cases |
-| sys-ux.md | rfxn-sys-ux | sonnet | UX/output design - CLI, help text, man pages |
+**Lifecycle (13):**
 
-**Security (1):**
+| Command | Slash | Purpose |
+|---------|-------|---------|
+| r-init | /r:init | Governance initialization |
+| r-start | /r:start | Session initialization |
+| r-plan | /r:plan | Planning workflow (dispatches planner) |
+| r-mode | /r:mode | Switch operational mode |
+| r-status | /r:status | Project health dashboard |
+| r-refresh | /r:refresh | Governance refresh |
+| r-sync | /r:sync | Canonical source sync |
+| r-audit | /r:audit | Full codebase audit |
+| r-ship | /r:ship | Release workflow |
+| build | /build | Execute plan phase (dispatches dispatcher) |
+| verify | /verify | QA verification (dispatches qa) |
+| test | /test | UAT acceptance (dispatches uat) |
+| review | /review | Adversarial review (dispatches reviewer) |
 
-| File | CC Name | Model | Role |
-|------|---------|-------|------|
-| sec-eng.md | rfxn-sec-eng | opus | Security engineer - offensive/defensive assessment |
+**Utility (10):**
 
-**Frontend (2):**
-
-| File | CC Name | Model | Role |
-|------|---------|-------|------|
-| fe-qa.md | rfxn-fe-qa | sonnet | Frontend QA - API contracts, DOM, CSS, JS |
-| fe-uat.md | rfxn-fe-uat | sonnet | Frontend UAT - Playwright headless scenarios |
-
-### Commands (~66)
-
-**Personas (12):** `mgr`, `sys-eng`, `sys-qa`, `sys-uat`, `po`, `scope`,
-`sys-sentinel`, `sys-challenger`, `sys-ux`, `sec-eng`, `fe-qa`, `fe-uat`
-
-**Audit pipeline (24):** `audit`, `audit-quick`, `audit-delta`,
-`audit-compile`, `audit-condense`, `audit-context`, `audit-plan`,
-`audit-feedback`, `audit-schema`, `audit-regression`, `audit-latent`,
-`audit-security`, `audit-standards`, `audit-version`, `audit-cli`,
-`audit-docs`, `audit-config`, `audit-test-coverage`, `audit-test-exec`,
-`audit-install`, `audit-build-ci`, `audit-upgrade`, `audit-interfaces`,
-`audit-modernize`
-*(+ 2 deprecated stubs: `audit-dedup`, `audit-synthesis`)*
-
-**Release (7):** `rel-prep`, `rel-ship`, `rel-merge`, `rel-notes`,
-`rel-chg-dedup`, `rel-chg-diff`, `rel-scrub`
-
-**Project (6):** `proj-status`, `proj-health`, `proj-cross`,
-`proj-cross-audit`, `proj-lib-sync`, `proj-scaffold`
-
-**Code quality (5):** `code-validate`, `code-grep`, `test-strategy`,
-`test-impact`, `test-dedup`
-
-**Memory (3):** `mem-save`, `mem-audit`, `mem-compact`
-
-**Other (8):** `modernize`, `onboard`, `reload`, `refresh`, `status`,
-`ci-setup`, `lib-release`, `doc-author`
+| Command | Slash | Purpose |
+|---------|-------|---------|
+| r-util-mem-compact | /r:util:mem-compact | Archive stale MEMORY.md entries |
+| r-util-chg-gen | /r:util:chg-gen | Generate changelog from diff |
+| r-util-chg-dedup | /r:util:chg-dedup | Deduplicate changelog entries |
+| r-util-doc-gen | /r:util:doc-gen | Generate documentation |
+| r-util-ci-gen | /r:util:ci-gen | Generate CI workflow |
+| r-util-lib-sync | /r:util:lib-sync | Cross-project library drift detection |
+| r-util-lib-release | /r:util:lib-release | Shared library release lifecycle |
+| r-util-code-scan | /r:util:code-scan | Pattern-class bug finder |
+| r-util-code-modernize | /r:util:code-modernize | Codebase modernization assessment |
+| r-util-test-dedup | /r:util:test-dedup | Find duplicate/overlapping tests |
 
 ### Scripts (10)
 
@@ -650,7 +590,7 @@ Commands are slash-invokable skills scoped to specific tasks.
    headers. The first line should be a descriptive title.
 
    ```markdown
-   # /my-command -- What this command does
+   # /r:<name> -- What this command does
 
    ## When to Use
    ...
@@ -659,23 +599,19 @@ Commands are slash-invokable skills scoped to specific tasks.
    ...
    ```
 
-2. **Assign to a profile.** Add the command name to the `commands` array
-   in the appropriate `profiles/<profile>/profile.json`.
+2. **Regenerate.** Run `rdf generate claude-code` to produce the
+   deployment output. All commands are generated unconditionally.
 
-3. **Regenerate.** Run `rdf generate claude-code` to produce the
-   deployment output.
-
-4. **Verify.** Confirm the command appears in
+3. **Verify.** Confirm the command appears in
    `adapters/claude-code/output/commands/` and is accessible via
    the symlink at `/root/.claude/commands/`.
 
-5. **Update inventory.** Add the command to `README.md` and
-   `WORKFORCE.md` command tables.
+4. **Update inventory.** Add the command to the README.md command table.
 
 **Rules:**
 - Canonical files are tool-agnostic -- no `---` YAML frontmatter blocks
-- Cross-references use canonical names (`/sys-eng`, not `/syseng`)
-- Commands that dispatch agents reference the canonical agent filename
+- Commands use the `/r:` namespace (lifecycle) or `/r:util:` (utility)
+- Commands that dispatch agents reference the universal agent name
 
 ## How To: Add an Agent
 
@@ -691,78 +627,45 @@ Agents are typed personas with defined protocols and model assignments.
 
    ```json
    "<name>": {
-     "name": "rfxn-<name>",
+     "name": "rdf-<name>",
      "description": "One-line description for CC agent picker",
      "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
      "model": "sonnet"
    }
    ```
 
-   Use `disallowedTools` for read-only agents (QA, Sentinel, etc.).
+   Use `disallowedTools` for read-only agents (QA, Reviewer, etc.).
 
-3. **Assign to a profile.** Add to `profiles/<profile>/profile.json`.
-
-4. **Create the dispatch command.** Write a corresponding
-   `canonical/commands/<name>.md` that tells the runtime how to
-   invoke and configure the agent.
-
-5. **Regenerate and verify.** Run `rdf generate claude-code`, confirm
+3. **Regenerate and verify.** Run `rdf generate claude-code`, confirm
    the agent file in `output/agents/` has correct YAML frontmatter.
 
-**Naming:** Follow `{domain}-{role}` convention. Core agents (mgr, po,
-scope) have no domain prefix. Domain agents use the registered shortcode
-(sys, sec, fe).
+**Naming:** Universal agents use role-only names with `rdf-` prefix.
 
 ## How To: Add a Profile
 
-Profiles bundle agents, commands, governance, and reference docs for a
-new domain discipline.
+Profiles provide governance seed templates for project initialization.
 
-1. **Register the profile.** Add an entry to `profiles/registry.json`
-   with name, description, dependencies, and domain shortcode.
+1. **Register the profile.** Add an entry to `profiles/registry.md`
+   with name, description, and dependencies.
 
 2. **Create the profile directory.**
 
    ```
    profiles/<name>/
-   |-- profile.json           # Component lists
-   |-- governance.md          # Domain-specific conventions
-   +-- templates/
-       +-- claude-<type>.md.tmpl   # CLAUDE.md template for rdf init
+   |-- governance-template.md   # Governance seed for /r:init
+   +-- reference/               # Domain-specific docs (optional)
    ```
 
-3. **Write profile.json.** List the agents, commands, scripts, and
-   reference docs this profile includes:
+3. **Write governance-template.md.** Document domain-specific
+   conventions, standards, and constraints. This content seeds the
+   governance files created by `/r:init`.
 
-   ```json
-   {
-     "name": "<name>",
-     "requires": ["core"],
-     "agents": ["<domain>-eng", "<domain>-qa"],
-     "commands": ["<domain>-eng", "<domain>-qa"],
-     "scripts": [],
-     "reference": []
-   }
-   ```
-
-4. **Write governance.md.** Document domain-specific conventions,
-   standards, and constraints. This content is injected into project
-   CLAUDE.md files by `rdf init`.
-
-5. **Create templates.** Write `.tmpl` files with variable placeholders
-   (`{{PROJECT_NAME}}`, `{{VERSION}}`, etc.) for `rdf init` to use.
-
-6. **Update `rdf generate`** if the profile needs adapter-specific
-   handling beyond the default copy/frontmatter-inject pattern.
-
-7. **Regenerate and test.** `rdf profile install <name>`, then
-   `rdf generate claude-code`, verify output includes the new
-   profile's components.
+4. **Regenerate and test.** `rdf profile install <name>`, then
+   `rdf generate claude-code`, verify governance output.
 
 **Rules:**
 - All profiles must depend on `core` (directly or transitively)
 - Governance content must not duplicate parent conventions -- extend only
-- Profile governance follows `canonical/reference/memory-standards.md`
 
 ## How To: Add an Adapter
 
@@ -804,13 +707,13 @@ rdf init /root/admin/work/proj --batch
 ```
 
 This creates:
-- `CLAUDE.md` from the active profile template
+- `CLAUDE.md` from the active governance template
 - `MEMORY.md` (unless `--no-memory`)
 - `.git/info/exclude` entries for working files
 - GitHub labels and project board (with `--github`)
 
 For manual onboarding:
-1. Create a project-level `CLAUDE.md` following the template
+1. Create a project-level `CLAUDE.md` following the governance template
 2. Add `.git/info/exclude` entries: `CLAUDE.md`, `PLAN*.md`, `AUDIT.md`,
    `MEMORY.md`, `.claude/`
 3. Run `rdf github setup --repo owner/repo` for GitHub infrastructure
@@ -829,10 +732,6 @@ For manual onboarding:
 - **Adapter metadata is separate from content.** Tool-specific
   configuration (CC frontmatter, Gemini config) lives in adapter
   metadata files, not in canonical markdown.
-
-- **Profile governance follows memory-standards.md.** Convention
-  documents must follow the standards defined in
-  `canonical/reference/memory-standards.md`.
 
 - **RDF is authoritative.** Develop in `rdf/canonical/`, deploy via
   `rdf generate`. Never treat deployed files as the source of truth.
@@ -868,9 +767,9 @@ rdf/canonical/  --[rdf generate]-->  rdf/adapters/*/output/
 | Document | Content |
 |----------|---------|
 | [RDF.md](RDF.md) | Architecture, scope, risk, directory structure |
-| [WORKFORCE.md](WORKFORCE.md) | Org chart, pipeline diagrams, command cheat sheet, workflows |
+| [WORKFORCE.md](WORKFORCE.md) | Agent workforce, pipeline diagrams, workflows |
 | [reference/diagrams.md](reference/diagrams.md) | Mermaid diagrams: pipeline, architecture, ecosystem |
 | [docs/specs/](docs/specs/) | Architecture design specs |
-| [docs/plans/](docs/plans/) | Phase implementation plans |
+| [docs/plans/](docs/plans/) | Implementation plans |
 
-**Total: 12 agents + ~66 commands + 10 scripts = ~88 primitives + pipeline optimization protocols**
+**Total: 6 agents + 23 commands + 10 scripts = 39 primitives**
