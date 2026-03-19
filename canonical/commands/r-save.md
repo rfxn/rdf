@@ -59,21 +59,31 @@ only the final report (section 8) produces visible output.
 
 ### 1. Compute Session Diff
 
-Determine what happened this session by examining git state:
-
+Run ONE command to gather current project state:
 ```bash
-git log --oneline -20
-git diff --name-only
-git diff --cached --name-only
+bash state/rdf-state.sh --full .
 ```
 
-Identify:
-- New commits since the session started (use the HEAD hash from
-  the last session-log entry, or from MEMORY.md "HEAD:" field, or
+This returns JSON with: HEAD, branch, dirty count + file names,
+recent commits, unpushed count, plan phases, pipeline position,
+session log last entry, and insights. Parse the JSON.
+
+If `rdf-state.sh` is not found, fall back to individual commands:
+```bash
+echo "HEAD=$(git rev-parse --short HEAD)" && \
+echo "BRANCH=$(git branch --show-current)" && \
+echo "DIRTY=$(git status --porcelain | wc -l)" && \
+echo "UNPUSHED=$(git rev-list --count HEAD...@{u} 2>/dev/null || echo 0)" && \
+git log --oneline -20
+```
+
+From the state JSON or fallback, identify:
+- New commits since the session started (compare HEAD against
+  `session_last` field's `head_after`, or MEMORY.md HEAD, or
   fall back to the last 10 commits)
 - Uncommitted changes (staged + unstaged)
 - Files modified across all new commits
-- Upstream status: `git rev-list --count HEAD...@{u}` (ahead/behind)
+- Upstream status (unpushed count)
 
 **Diff characterization:** Classify changed files into categories
 by path prefix or extension:

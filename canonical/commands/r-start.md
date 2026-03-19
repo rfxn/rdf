@@ -25,62 +25,38 @@ Run /clear to reset conversation context before loading fresh state.
 
 ### 2. Gather State
 
-Run all data gathering in parallel where possible. Target: under
-5 seconds wall time. Batch git commands into single invocations.
-Do NOT display results — all output consolidates into section 3.
+**Single-project** (cwd is a git repo):
 
-**Git state** (single-project — cwd is a git repo):
+Run ONE command to gather all state:
 ```bash
-# Run these in ONE bash call:
-git branch --show-current
-git rev-parse --short HEAD
-git log -1 --format=%cr
-git status --porcelain | wc -l
-git log --oneline -5
+bash state/rdf-state.sh --full .
 ```
 
-**Git state** (parent workspace — cwd is NOT a git repo):
+This returns a JSON blob with: project name, version, branch, HEAD,
+dirty count + file names, recent commits, plan phases, governance
+status, pipeline position, in-flight signals, session log last entry,
+and insights. Parse the JSON — do NOT make additional git/stat calls.
+
+The script lives at `{RDF_HOME}/state/rdf-state.sh` where RDF_HOME
+is the RDF installation directory. If the script is not found, fall
+back to individual git commands (backward compatibility).
+
+**Parent workspace** (cwd is NOT a git repo):
 - Enumerate sub-project repos: directories containing `.git/`
-- For each: branch, HEAD hash, dirty count, last commit age
+- Run `rdf-state.sh --full` on each (or the 5 most recently modified)
 - Aggregate: total repos, active (commits <24h), total dirty
 
-**Governance** (`.rdf/governance/index.md` or `.claude/governance/index.md`):
-- Project name, operational mode, plan progress, file count
-- Governance age: stat mtime, calculate hours since modification
-- If governance does not exist, note for fallback display
+**Supplemental reads** (only if rdf-state.sh is unavailable):
 
-**PLAN.md** (if present):
-- Total phase count and per-phase status (complete/in-progress/pending/blocked)
-- Current/next pending phase number and description
-
-**Pipeline position** (same logic as r-save):
-- `docs/specs/` has files + no PLAN.md → `spec`
-- PLAN.md with pending phases → `plan`
-- PLAN.md with in-progress phases → `build phase N/M`
-- PLAN.md with all complete → `ship`
-- None → `idle`
-
-**In-flight work** (lightweight checks, parallel with git):
-- `HANDOFF.md`: read title + first 3 progress lines
-- `work-output/spec-progress.md`: read TOPIC + PHASE
-- `work-output/ship-progress.md`: read STAGE
-- `work-output/current-phase.md`: read PROJECT_NAME, PHASE, PHASE_TITLE
-- `PLAN.md` / `PLAN-*.md`: grep for `in-progress` or `blocked`
-- `work-output/session-log.jsonl`: read last entry
-
-**Suppression rules:**
-- Plans with ALL phases `complete`: omit
-- Plans with only `pending` (no in-progress/blocked): show only if
-  modified within 7 days
-- `current-phase.md` older than 30 days: omit
-
-**Session log** (if exists):
-- Read last entry for: commits, diff_summary, pipeline, insight
-- Calculate age for "Last session" display
-
-**Insights:**
-- Read `~/.rdf/insights.jsonl` for display
-- Read `~/.rdf/lessons-learned.md` to confirm it exists
+If the script cannot be found, gather state with individual commands.
+Batch git commands into single bash invocations to minimize tool calls:
+```bash
+echo "HEAD=$(git rev-parse --short HEAD)" && \
+echo "BRANCH=$(git branch --show-current)" && \
+echo "DIRTY=$(git status --porcelain | wc -l)" && \
+echo "AGE=$(git log -1 --format=%cr)" && \
+git log --oneline -5
+```
 
 ### 3. Display Dashboard
 
