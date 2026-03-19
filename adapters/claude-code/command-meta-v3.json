@@ -30,5 +30,67 @@
     "dispatches": [],
     "dispatch_mode": "none",
     "reads_governance": []
+  },
+  "utility-commands": {
+    "r-util-mem-compact": {
+      "slash-command": "/r:util:mem-compact",
+      "description": "Archive stale MEMORY.md entries",
+      "source": "canonical/commands-v3/r-util-mem-compact.md",
+      "execution": "skill"
+    },
+    "r-util-doc-gen": {
+      "slash-command": "/r:util:doc-gen",
+      "description": "Generate docs for a specific surface",
+      "source": "canonical/commands-v3/r-util-doc-gen.md",
+      "execution": "skill"
+    },
+    "r-util-ci-gen": {
+      "slash-command": "/r:util:ci-gen",
+      "description": "Generate CI workflow from test infra",
+      "source": "canonical/commands-v3/r-util-ci-gen.md",
+      "execution": "skill"
+    },
+    "r-util-lib-sync": {
+      "slash-command": "/r:util:lib-sync",
+      "description": "Cross-project library drift detection",
+      "source": "canonical/commands-v3/r-util-lib-sync.md",
+      "execution": "skill"
+    },
+    "r-util-lib-release": {
+      "slash-command": "/r:util:lib-release",
+      "description": "Shared library release lifecycle",
+      "source": "canonical/commands-v3/r-util-lib-release.md",
+      "execution": "skill"
+    },
+    "r-util-code-scan": {
+      "slash-command": "/r:util:code-scan",
+      "description": "Structured pattern-class bug finder",
+      "source": "canonical/commands-v3/r-util-code-scan.md",
+      "execution": "skill"
+    },
+    "r-util-code-modernize": {
+      "slash-command": "/r:util:code-modernize",
+      "description": "Assess codebase maturity + plan",
+      "source": "canonical/commands-v3/r-util-code-modernize.md",
+      "execution": "skill"
+    },
+    "r-util-test-dedup": {
+      "slash-command": "/r:util:test-dedup",
+      "description": "Find duplicate/overlapping tests",
+      "source": "canonical/commands-v3/r-util-test-dedup.md",
+      "execution": "skill"
+    },
+    "r-util-chg-gen": {
+      "slash-command": "/r:util:chg-gen",
+      "description": "Generate changelog entries from diff",
+      "source": "canonical/commands-v3/r-util-chg-gen.md",
+      "execution": "skill"
+    },
+    "r-util-chg-dedup": {
+      "slash-command": "/r:util:chg-dedup",
+      "description": "Deduplicate changelog entries",
+      "source": "canonical/commands-v3/r-util-chg-dedup.md",
+      "execution": "skill"
+    }
   }
 }
