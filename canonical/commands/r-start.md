@@ -23,12 +23,18 @@ Run all data gathering in parallel where possible. Target: under
 
 If governance does not exist, note it for the fallback display.
 
-**From git:**
+**From git** (single-project — cwd is a git repo):
 - Current branch: `git branch --show-current`
 - HEAD hash: `git rev-parse --short HEAD`
 - Dirty state: `git status --porcelain | wc -l`
 - Last commit age: `git log -1 --format=%cr`
 - Recent commits: `git log --oneline -5`
+
+**From git** (parent workspace — cwd is NOT a git repo):
+- Enumerate sub-project repos: directories containing `.git/`
+- For each: branch, HEAD hash, dirty count, last commit age
+- Aggregate: total repos, repos with commits <24h (active), total
+  dirty files, most recent commit (project + hash + age)
 
 **From PLAN.md** (if present):
 - Total phase count and per-phase status
@@ -44,37 +50,101 @@ If governance does not exist, note it for the fallback display.
 - Stat mtime of `.claude/governance/index.md`
 - Calculate hours since last modification
 
+**In-flight work detection** (run in parallel with other checks):
+
+Scan for signals of interrupted or ongoing workstreams. These are
+lightweight checks — grep for status keywords, check file existence,
+read first lines only.
+
+- `HANDOFF.md` in cwd: if present, read the `# Handoff:` title line
+  and `## Current Progress` section (first 3 lines after the heading)
+  to extract what was interrupted and how far it got
+- `work-output/current-phase.md`: if present, read `PROJECT_NAME`,
+  `PHASE`, and `PHASE_TITLE` lines. Flag as stale if mtime >24h
+- `PLAN-*.md` at workspace root: for each, grep for table rows
+  containing `in-progress` or `blocked`. Ignore files where all
+  phases are `complete` or `pending` with none in-progress
+- `*/PLAN.md` in sub-projects: same grep — find any project with
+  phases marked `in-progress` or `blocked`
+- `work-output/session-log.jsonl`: if present, read last entry for
+  the previous session's end-state (already gathered in step 5)
+
 ### 3. Display Session Anchor
 
-Use a markdown table — two columns of key-value pairs per row:
+Use a 4-column markdown table with meaningful headers. The anchor
+answers: "Where am I? What's the state? What needs attention?"
+
+**Single-project anchor** (inside a git repo):
 
 ```
 ### Session Anchor
-
-| | | | |
-|---|---|---|---|
-| **Project** | {name} | **Branch** | {branch} |
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
+| **Project** | {name} {version} | **Branch** | {branch} |
 | **HEAD** | {hash} ({age}) | **Dirty** | {N} files |
 | **Plan** | {M/N} phases | **Mode** | {mode} |
-| **Governance** | {N} files | **Age** | {T}h since refresh |
+| **Governance** | {N} files ({T}h old) | **Last commit** | {1-line summary} |
 ```
 
-**Fallback (no governance, or parent workspace):**
+**Parent workspace anchor** (not a git repo, multiple sub-projects):
+
+Gather aggregate state: count sub-project directories that contain
+`.git/`, sum dirty files across all, find the most recent commit
+across all projects.
 
 ```
 ### Session Anchor
-
-| | | | |
-|---|---|---|---|
-| **Project** | {basename of cwd} | **Branch** | {branch} |
-| **HEAD** | {hash} ({age}) | **Dirty** | {N} files |
-| **Governance** | not initialized | | |
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
+| **Workspace** | {basename} | **Projects** | {N} repos |
+| **Active** | {N} with commits <24h | **Dirty** | {N} files across {M} repos |
+| **Last activity** | {project}: {hash} ({age}) | **MEMORY.md** | {N}/200 lines |
 ```
 
-When in a parent workspace (not a git repo), omit HEAD/Dirty/Branch
-rows and show only Project, Governance, MEMORY.md, and Date.
+Drop governance row for parent workspaces — governance is per-project.
+Drop date — the terminal and system context already provide it.
+MEMORY.md line count belongs here only for parent workspaces (the
+constraint is workspace-scoped); for single projects it moves to
+the warnings section at >=180 lines.
 
-### 4. Display Plan Status
+### 4. Display In-Flight Work
+
+Show this section only if at least one signal fires. It answers:
+"Is there interrupted work I should resume or clean up?"
+
+Scan results are displayed as a compact table:
+
+```
+### In Flight
+| Signal | Source | Detail |
+|--------|--------|--------|
+| Handoff | `HANDOFF.md` | {title} — {progress summary} |
+| Plan | `PLAN-pkglib.md` | 3 pending, 0 in-progress |
+| Plan | `brute-force-detection/PLAN.md` | Phase 4 in-progress |
+| Dispatch | `work-output/current-phase.md` | pkg_lib Phase 1 (stale, 12d old) |
+```
+
+**Signal priority** (display order):
+1. **Handoff** — explicit interrupted session. Always show first.
+2. **Plan (in-progress/blocked)** — active workstreams. Show project
+   name, which phases are in-progress or blocked.
+3. **Plan (has pending phases)** — dormant plans with unfinished work.
+   Show count of pending phases only (no per-phase detail).
+4. **Dispatch** — stale `current-phase.md`. Show project, phase, age.
+
+**Suppression rules:**
+- Plans where ALL phases are `complete`: omit entirely
+- Plans where all non-complete phases are `pending` and no phases
+  are `in-progress` or `blocked`: show only if the plan was modified
+  within the last 7 days (recent intent, not ancient debris)
+- `current-phase.md` older than 30 days: omit (dead context)
+- If no signals fire, skip this section entirely — no empty table
+
+**For parent workspaces:** scan both root `PLAN-*.md` files and
+`*/PLAN.md` inside sub-project directories. For single-project
+workspaces: scan only `PLAN.md` in cwd.
+
+### 5. Display Plan Status
 
 If PLAN.md exists and has phases, show a compact progress table:
 
@@ -92,7 +162,7 @@ Next: Phase 3 — {full description}
 
 If no PLAN.md: `Plan: none — run /r:plan to create one.`
 
-### 5. Display Last Session Summary
+### 6. Display Last Session Summary
 
 If `work-output/session-log.jsonl` exists, read the last entry and
 display what happened in the previous session:
@@ -113,7 +183,7 @@ If the session log does not exist, fall back to recent git commits:
 - {hash} {message} ({age})
 ```
 
-### 6. Display Agent Activity
+### 7. Display Agent Activity
 
 If work-output/agent-feed.log exists and has entries newer than the
 last commit, show the last 3 agent completions:
@@ -124,7 +194,7 @@ last commit, show the last 3 agent completions:
 - {timestamp} {agent_type} on {project} — {preview}
 ```
 
-### 7. Warnings
+### 8. Warnings
 
 Collect and display all warnings at the end:
 
@@ -143,7 +213,7 @@ Dirty state threshold: >5 files.
 Status file stale threshold: >1 hour.
 Memory size threshold: >=180 lines.
 
-### 8. Load CLAUDE.md
+### 9. Load CLAUDE.md
 
 Read the project's `CLAUDE.md` (if present) to internalize project
 instructions. Do NOT display its contents — just confirm it was loaded.
