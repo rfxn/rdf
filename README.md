@@ -256,7 +256,8 @@ exactly the information that role needs to do its job well.
 ### Lifecycle Pipeline
 
 ```
-USER -> /r:plan (planner)
+USER -> /r:spec (design: discover -> brainstorm -> spec -> review)
+     -> /r:plan (decompose: spec -> PLAN.md -> review)
      -> [/review --challenge (reviewer)]
      -> /build [N] (dispatcher -> engineer -> qa/reviewer/uat gates)
      -> /r:ship -> MERGE
@@ -264,7 +265,8 @@ USER -> /r:plan (planner)
 
 | Role | Agent | Model | Purpose |
 |------|-------|-------|---------|
-| Planner | rdf-planner | opus | Research, specs, implementation plans |
+| Spec Designer | rdf-planner | opus | Research, brainstorm, write design specs |
+| Planner | rdf-planner | opus | Decompose specs into implementation plans |
 | Dispatcher | rdf-dispatcher | sonnet | Plan execution, phase orchestration |
 | Engineer | rdf-engineer | opus | Implementation via governance-driven protocol |
 | QA | rdf-qa | sonnet | Verification gate -- lint, tests, anti-patterns |
@@ -521,7 +523,8 @@ Each profile contains:
 | r-init | /r:init | Governance initialization |
 | r-start | /r:start | Session initialization + warm handoff |
 | r-save | /r:save | End-of-session state sync |
-| r-plan | /r:plan | Planning workflow (dispatches planner) |
+| r-spec | /r:spec | Design workflow (discover, brainstorm, spec, review) |
+| r-plan | /r:plan | Planning workflow (spec -> PLAN.md -> review) |
 | r-mode | /r:mode | Switch operational mode |
 | r-status | /r:status | Project health dashboard |
 | r-refresh | /r:refresh | Governance refresh |

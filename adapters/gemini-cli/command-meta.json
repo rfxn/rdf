@@ -1,5 +1,6 @@
 {
   "_comment": "Maps canonical command basename to Gemini TOML description. Unlisted commands get first-sentence extraction.",
+  "r-spec": "Design workflow -- discover, brainstorm, write spec, challenge review",
   "build": "Execute implementation plan phase via dispatcher subagent",
   "verify": "Run QA verification against diff or specified scope",
   "test": "Run UAT acceptance tests from end-user perspective",

@@ -1,4 +1,28 @@
 {
+  "r-spec": {
+    "name": "/r:spec",
+    "type": "skill",
+    "description": "Design workflow — discover, brainstorm, write spec, challenge review",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": ["index.md", "architecture.md", "conventions.md"]
+  },
+  "r-plan": {
+    "name": "/r:plan",
+    "type": "skill-with-subagents",
+    "description": "Planning workflow — decompose spec into PLAN.md, challenge review",
+    "dispatches": ["reviewer"],
+    "dispatch_mode": "sequential",
+    "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md"]
+  },
+  "build": {
+    "name": "/build",
+    "type": "subagent-foreground",
+    "description": "Execute implementation plan phase via dispatcher subagent",
+    "dispatches": ["dispatcher"],
+    "dispatch_mode": "sequential",
+    "reads_governance": ["index.md", "conventions.md", "constraints.md", "verification.md", "anti-patterns.md"]
+  },
   "r-ship": {
     "name": "/r:ship",
     "type": "skill-with-subagents",

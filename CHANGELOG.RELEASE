@@ -16,13 +16,14 @@ files initialized per-project).
 - **reviewer** (opus) -- adversarial review (challenge + sentinel modes)
 
 ### /r: Command Namespace
-23 commands replace the prior ~68:
-- 13 lifecycle commands: /r:init, /r:start, /r:plan, /r:mode, /r:status,
-  /r:refresh, /r:sync, /r:audit, /r:ship, /build, /verify, /test, /review
+24 commands replace the prior ~68:
+- 14 lifecycle commands: /r:init, /r:start, /r:spec, /r:plan, /r:mode,
+  /r:status, /r:refresh, /r:sync, /r:audit, /r:ship, /build, /verify,
+  /test, /review
 - 10 utility commands under /r:util: namespace
 
 ### Governance-Driven Profiles
-Profiles no longer bundle agents and commands. All 6 agents and 23 commands
+Profiles no longer bundle agents and commands. All 6 agents and 24 commands
 are always available. Profiles provide governance seed templates that
 /r:init uses to initialize per-project governance files. The governance
 files shape agent behavior at runtime.
