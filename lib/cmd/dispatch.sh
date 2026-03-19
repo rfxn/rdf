@@ -45,7 +45,7 @@ Dispatch mode is controlled by RDF_AGENT_TEAMS environment variable:
 
 Examples:
   rdf dispatch status
-  rdf dispatch agent sys-eng se-implement 3 /path/to/project /path/to/PLAN.md
+  rdf dispatch agent engineer se-implement 3 /path/to/project /path/to/PLAN.md
   rdf dispatch pipeline 2 3 /path/to/project /path/to/PLAN.md
   rdf dispatch pipeline 2 3 /path/to/project /path/to/PLAN.md --no-challenger
   RDF_AGENT_TEAMS=true rdf dispatch pipeline 2 3 /path/to/project /path/to/PLAN.md

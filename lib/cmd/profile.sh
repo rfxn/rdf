@@ -220,35 +220,27 @@ _profile_status() {
     echo "Active profiles:"
     echo ""
 
-    local total_agents=0
-    local total_commands=0
-    local total_scripts=0
+    local total_gov=0
 
     while IFS= read -r name; do
         [[ -z "$name" ]] && continue
-        local pf_file="${RDF_HOME}/profiles/${name}/profile.json"
-        if [[ ! -f "$pf_file" ]]; then
-            echo "  ${name}: profile.json missing!"
-            continue
+        local gov_file="${RDF_HOME}/profiles/${name}/governance-template.md"
+        local gov_status="missing"
+        if [[ -f "$gov_file" ]]; then
+            gov_status="present"
+            total_gov=$((total_gov + 1))
         fi
 
-        local agent_count command_count script_count
-        agent_count="$(jq '.agents | length' "$pf_file")"
-        command_count="$(jq '.commands | length' "$pf_file")"
-        script_count="$(jq '.scripts | length' "$pf_file")"
-
-        total_agents=$((total_agents + agent_count))
-        total_commands=$((total_commands + command_count))
-        total_scripts=$((total_scripts + script_count))
-
         local desc
-        desc="$(jq -r '.description' "$pf_file")"
-        echo "  ${name}: ${agent_count} agents, ${command_count} commands, ${script_count} scripts"
+        desc="$(jq -r --arg n "$name" '.profiles[$n].description // "no description"' "$_PROFILE_REGISTRY")"
+        echo "  ${name}: governance-template ${gov_status}"
         echo "    ${desc}"
     done <<< "$active"
 
     echo ""
-    echo "Total: ${total_agents} agents, ${total_commands} commands, ${total_scripts} scripts"
+    echo "Governance templates: ${total_gov}"
+    echo "Agents: 6 universal (all profiles)"
+    echo "Commands: 23 (all profiles)"
 }
 
 cmd_profile() {
