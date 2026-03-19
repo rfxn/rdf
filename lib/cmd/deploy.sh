@@ -200,6 +200,7 @@ _deploy_gemini_cli() {
     _deploy_symlink "${output_dir}/.gemini/agents" "${dest_base}/agents" "$dry_run" "$force"
     _deploy_symlink "${output_dir}/.gemini/commands" "${dest_base}/commands" "$dry_run" "$force"
     _deploy_symlink "${output_dir}/.gemini/GEMINI.md" "${dest_base}/GEMINI.md" "$dry_run" "$force"
+    _deploy_symlink "${output_dir}/scripts" "${dest_base}/scripts" "$dry_run" "$force"
 }
 
 # Deploy Codex adapter output to ~/.codex/ + project root
