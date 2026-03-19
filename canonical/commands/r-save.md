@@ -44,12 +44,47 @@ Output a markdown checklist at the start and update inline:
 Replace each `[ ]` with `[x]` as phases complete, or `[-]` for
 phases skipped (no PLAN.md, no AUDIT.md).
 
+## Execution Model
+
+The save operation has a dependency graph that allows parallelization:
+
+```
+Phase 1: Session diff (sequential — fast, feeds all others)
+    ├──► Phase 2: Plan sync    ─┐
+    ├──► Phase 3: Memory sync  ─┼── PARALLEL (independent)
+    └──► Phase 4: Audit resolve ┘
+              │
+Phase 5: Session log (sequential — needs results from 2-4)
+Phase 6: Insight    (sequential — needs phase 1 zero-change check)
+Phase 7: Lessons    (sequential — needs phase 6 insight)
+Phase 8: Report     (sequential — presents all results)
+```
+
+**Claude Code:** Dispatch phases 2, 3, and 4 as parallel background
+subagents via the Agent tool (`run_in_background: true`). Each
+subagent receives the session diff data (commit list, HEAD range,
+dirty files) in its prompt. The main thread waits for all three to
+complete, then continues with phases 5-8. This eliminates ~60% of
+the sequential tool-call latency. Subagent output is not shown to
+the user — it returns structured results for the report.
+
+**Gemini CLI:** If the tool supports background task execution,
+use the same pattern. If not, run phases 2-4 sequentially but
+batch git commands (run all `git log`, `git diff`, `git status`
+in a single shell invocation) to minimize round-trips.
+
+**Codex:** Run phases 2-4 sequentially. Codex contexts are
+typically smaller, so the sequential overhead is proportionally
+less significant.
+
+**All tools:** Phases 1, 5, 6, 7, 8 always run on the main thread.
+Only phases 2-4 are candidates for parallelization.
+
 ## Protocol
 
 Execute sections 1-7 silently — do NOT display per-section output.
 All results feed into the single consolidated report in section 8.
-Tool calls (git commands, file reads/writes) provide activity
-feedback in the terminal; text output is reserved for the report.
+Subagent output (phases 2-4) is absorbed, not displayed.
 
 ### 1. Compute Session Diff
 
@@ -98,7 +133,18 @@ arc the project is:
 
 Record all values for the report.
 
-### 2. Sync PLAN.md with Git
+### 2. Sync PLAN.md with Git (parallelizable)
+
+**Subagent dispatch** (Claude Code): Launch as background Agent with
+the session diff data. Prompt must include: commit list, HEAD range,
+project path. Subagent returns a structured result:
+```
+PLAN_STATUS: {no_plan | no_changes | updated}
+PHASES_COMPLETED: [{list}]
+PHASES_IN_PROGRESS: [{list}]
+TOTAL_PHASES: {N}
+SUMMARY: {one-line for report}
+```
 
 Read `PLAN.md` from the project root. If it does not exist, skip.
 
@@ -131,7 +177,17 @@ For each phase in PLAN.md:
 Record for report: phases newly completed, phases in-progress,
 total phase count.
 
-### 3. Sync MEMORY.md
+### 3. Sync MEMORY.md (parallelizable)
+
+**Subagent dispatch** (Claude Code): Launch as background Agent.
+Prompt must include: project path, current HEAD hash, branch name.
+Subagent returns:
+```
+MEMORY_STATUS: {created | updated | unchanged}
+HEAD_OLD: {hash}
+HEAD_NEW: {hash}
+WARNINGS: [{list, e.g., "at 185/200 lines"}]
+```
 
 Locate the project's MEMORY.md in the Claude auto-memory directory:
 `/root/.claude/projects/{path-encoded}/memory/MEMORY.md`
@@ -155,7 +211,16 @@ a warning for the report.
 Record for report: whether HEAD changed, commit count recorded,
 push status, any warnings.
 
-### 4. Resolve AUDIT.md (if exists)
+### 4. Resolve AUDIT.md (parallelizable)
+
+**Subagent dispatch** (Claude Code): Launch as background Agent
+ONLY if AUDIT.md exists (check before dispatching). Prompt must
+include: project path, commit list. Subagent returns:
+```
+AUDIT_STATUS: {no_audit | no_changes | resolved}
+RESOLVED_COUNT: {N}
+REMAINING_COUNT: {N}
+```
 
 If `AUDIT.md` exists in the project root:
 
@@ -171,7 +236,13 @@ Record for report: findings resolved count, findings remaining.
 
 If no `AUDIT.md`: skip silently.
 
-### 5. Write Session Log
+### 5. Write Session Log (after parallel phases complete)
+
+**Wait for subagents:** Before writing the session log, ensure all
+background agents from phases 2-4 have completed. In Claude Code,
+you will be notified when background agents finish — do NOT poll.
+Collect their structured results for the session log entry and
+report.
 
 Append a structured entry to `work-output/session-log.jsonl`:
 
