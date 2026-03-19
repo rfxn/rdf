@@ -84,3 +84,149 @@ An internal coverage map (not written to disk) that tracks:
 - Which files were found and their priority tier
 - Which governance categories they cover (full, partial, or none)
 - Sections within each file that map to each category
+
+## Phase 2: Codebase Scan
+
+Analyze the target directory to detect languages, frameworks, directory
+structure, build system, and test infrastructure.
+
+### Language Detection
+
+Scan file extensions, shebangs, and package manifests:
+
+- **File extensions:** `.py`, `.js`, `.ts`, `.go`, `.rs`, `.java`,
+  `.rb`, `.sh`, `.bash`, `.c`, `.cpp`, `.h`
+- **Shebangs:** Read first line of files without extensions —
+  `#!/bin/bash`, `#!/usr/bin/env python3`, etc.
+- **Package manifests:** `package.json`, `pyproject.toml`, `setup.py`,
+  `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle`
+
+Record: primary language, secondary languages, percentage breakdown.
+
+### Framework Detection
+
+Identify frameworks from dependency declarations and imports:
+
+- **package.json:** Check `dependencies` and `devDependencies` for
+  React, Vue, Next.js, Express, Fastify, etc.
+- **pyproject.toml / requirements.txt:** Django, Flask, FastAPI, etc.
+- **Cargo.toml:** Actix, Axum, Rocket, etc.
+- **go.mod:** Gin, Echo, Fiber, etc.
+- **Config files:** `next.config.js`, `nuxt.config.ts`, `angular.json`,
+  `webpack.config.js`, `vite.config.ts`
+
+### Directory Structure
+
+Map the project layout:
+
+- Source directories: `src/`, `lib/`, `app/`, `pkg/`, `cmd/`, `files/`
+- Test directories: `tests/`, `test/`, `__tests__/`, `spec/`
+- Documentation: `docs/`, `doc/`
+- Configuration: config files at root level
+- Build output: `dist/`, `build/`, `target/`, `out/`
+
+### Build System
+
+Detect how the project builds and runs:
+
+- `Makefile` — scan targets (build, test, install, clean)
+- `package.json` scripts — scan script names and commands
+- `pyproject.toml` [tool.poetry.scripts] or [project.scripts]
+- CI configs (detailed in Phase 3)
+
+### Test Framework
+
+Identify test infrastructure:
+
+- **JavaScript/TypeScript:** jest, vitest, mocha, cypress, playwright
+  (from devDependencies + config files)
+- **Python:** pytest, unittest, tox (from configs + test file patterns)
+- **Bash:** bats (from `.bats` files, `tests/` directory)
+- **Go:** standard `go test` (from `_test.go` files)
+- **Rust:** standard `cargo test` (from `#[test]` in source)
+
+Record: test framework(s), test directory, test file count,
+test runner command.
+
+### Linter/Formatter Detection
+
+Scan for configuration files:
+
+- `.eslintrc*`, `.prettierrc*`, `biome.json` (JS/TS)
+- `.flake8`, `pyproject.toml [tool.ruff]`, `setup.cfg` (Python)
+- `.shellcheckrc`, shellcheck directives in source (Bash)
+- `.golangci.yml` (Go)
+- `.editorconfig` (cross-language)
+- `.clang-format` (C/C++)
+
+### Output of Phase 2
+
+An internal scan result (not written to disk) containing:
+- Language breakdown with percentages
+- Detected frameworks with versions where available
+- Directory structure map
+- Build system and commands
+- Test framework, runner command, and test count
+- Linter/formatter tools and their config file paths
+
+## Phase 3: Tooling & Infrastructure Detection
+
+Detect CI/CD, containers, platform targets, dependency management,
+and git conventions.
+
+### CI/CD Detection
+
+Scan for CI configuration:
+
+- **GitHub Actions:** `.github/workflows/*.yml` — extract job names,
+  test matrix (OS, language versions), deployment targets
+- **GitLab CI:** `.gitlab-ci.yml` — extract stages, jobs, runners
+- **Jenkins:** `Jenkinsfile` — extract stages and agents
+- **CircleCI:** `.circleci/config.yml`
+- **Travis:** `.travis.yml`
+
+Record: CI platform(s), test matrix, deployment targets, and the
+actual test/lint/build commands run in CI.
+
+### Container Detection
+
+- `Dockerfile` — extract base image, exposed ports, entrypoint
+- `docker-compose.yml` — extract services, volumes, networks
+- `.dockerignore` — note excluded paths
+
+### Platform Targets
+
+Determine target operating systems and environments:
+
+- From CI matrix (e.g., `runs-on: [ubuntu-22.04, macos-latest]`)
+- From Dockerfile base images
+- From README or CLAUDE.md (already captured in Phase 1)
+- From conditional logic in source (`if [[ "$OSTYPE" == ... ]]`)
+
+### Dependency Management
+
+- Lockfiles: `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`,
+  `poetry.lock`, `Pipfile.lock`, `Cargo.lock`, `go.sum`
+- Version constraints: minimum versions, pinned versions
+- Monorepo tools: `lerna.json`, `pnpm-workspace.yaml`,
+  `nx.json`, Turborepo (`turbo.json`)
+
+### Git Patterns
+
+Analyze recent git history (last ~50 commits):
+
+- **Branch naming:** feature/, bugfix/, release/, hotfix/
+- **Commit conventions:** conventional commits, custom prefix,
+  tag format (e.g., `[New]`, `[Fix]`, `type: description`)
+- **Active areas:** files with most recent changes
+- **Contributors:** number of unique authors (team size signal)
+
+### Output of Phase 3
+
+An internal tooling result (not written to disk) containing:
+- CI platform and configuration summary
+- Container setup and base images
+- Platform target list
+- Dependency management tools and lockfile status
+- Git conventions (branch naming, commit format)
+- Active development areas
