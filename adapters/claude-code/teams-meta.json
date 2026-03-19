@@ -7,7 +7,7 @@
     "location": "settings.json env block"
   },
   "team_defaults": {
-    "name_prefix": "rfxn",
+    "name_prefix": "rdf",
     "delegate_mode": true,
     "teammate_mode": "in-process"
   },

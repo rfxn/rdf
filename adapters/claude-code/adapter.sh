@@ -9,7 +9,7 @@
 _CC_ADAPTER_DIR="${RDF_ADAPTERS}/claude-code"
 _CC_OUTPUT_DIR="${_CC_ADAPTER_DIR}/output"
 _CC_AGENT_META="${_CC_ADAPTER_DIR}/agent-meta.json"
-_CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta.json"
+_CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta-v3.json"
 
 # Generate YAML frontmatter block from agent-meta.json entry
 # Args: $1 = canonical agent basename (no extension)
@@ -71,12 +71,6 @@ cc_generate_agents() {
         local basename_f
         basename_f="$(basename "$src_file" .md)"
 
-        # Profile filter: skip if not in any active profile
-        if ! rdf_profile_includes "agents" "$basename_f"; then
-            rdf_log "  skipped (inactive profile): ${basename_f}"
-            continue
-        fi
-
         local dst_file="${dst_dir}/${basename_f}.md"
 
         # Generate frontmatter + canonical body
@@ -108,12 +102,6 @@ cc_generate_commands() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
-        local cmd_name="${basename_f%.md}"
-        # Profile filter
-        if ! rdf_profile_includes "commands" "$cmd_name"; then
-            rdf_log "  skipped (inactive profile): ${cmd_name}"
-            continue
-        fi
         command cp "$src_file" "${dst_dir}/${basename_f}"
         count=$((count + 1))
     done
@@ -169,7 +157,7 @@ cc_generate_governance() {
 
     while IFS= read -r profile; do
         [[ -z "$profile" ]] && continue
-        local gov_file="${RDF_HOME}/profiles/${profile}/governance.md"
+        local gov_file="${RDF_HOME}/profiles/${profile}/governance-template.md"
         if [[ -f "$gov_file" ]]; then
             command cp "$gov_file" "${dst_dir}/${profile}-governance.md"
             count=$((count + 1))

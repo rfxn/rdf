@@ -1,83 +1,71 @@
 {
-  "mgr": {
-    "name": "rfxn-mgr",
-    "description": "Engineering Manager for rfxn projects. Orchestrates work, delegates to engineers, tracks progress, enforces quality gates. Shell-native Linux DevOps leader.",
-    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
-    "model": "sonnet"
-  },
-  "po": {
-    "name": "rfxn-po",
-    "description": "Product Owner intake and requirements translation for rfxn projects. Translates ambiguous requests into scoped problem statements with acceptance criteria. Challenges user assumptions. Read-only, optional.",
-    "tools": ["Read", "Glob", "Grep"],
-    "disallowedTools": ["Bash", "Write", "Edit"],
-    "model": "sonnet"
-  },
-  "scope": {
-    "name": "rfxn-scope",
-    "description": "Scoping and research agent for rfxn projects. Validates phase references against actual codebase state, performs impact analysis and complexity assessment, decomposes feature requests into phased plans. Read-only, fast.",
-    "tools": ["Read", "Glob", "Grep"],
-    "disallowedTools": ["Bash", "Write", "Edit"],
-    "model": "sonnet"
-  },
-  "sys-eng": {
-    "name": "rfxn-sys-eng",
-    "description": "Senior Engineer for rfxn bash/shell projects. Executes plan phases via 7-step protocol. Expert in bash 4.1+, Linux systems, rfxn conventions. Writes status updates to work-output/phase-N-status.md at each step.",
+  "planner": {
+    "name": "rdf-planner",
+    "description": "Research-driven collaborative planner. Brainstorms ideas, researches best practices, challenges assumptions, writes specs and implementation plans. Use for any planning, scoping, or design work.",
     "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
     "model": "opus"
   },
-  "sys-qa": {
-    "name": "rfxn-sys-qa",
-    "description": "QA Engineer for rfxn projects. Mandatory verification gate for all SE work. Reviews code for defects, regressions, anti-patterns. Read-only — cannot modify source files. Writes status updates to work-output/qa-phase-N-status.md.",
+  "dispatcher": {
+    "name": "rdf-dispatcher",
+    "description": "Plan execution orchestrator. Reads PLAN.md, executes phases via TDD, dispatches engineer/qa/uat/reviewer subagents, enforces quality gates. Use when executing implementation plans.",
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "model": "sonnet"
+  },
+  "engineer": {
+    "name": "rdf-engineer",
+    "description": "Universal implementation engineer. Follows TDD, reads governance for domain-specific conventions. Dispatched by the dispatcher for plan phase execution.",
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "model": "opus"
+  },
+  "qa": {
+    "name": "rdf-qa",
+    "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r:verify.",
     "tools": ["Bash", "Read", "Glob", "Grep"],
     "disallowedTools": ["Write", "Edit"],
     "model": "sonnet"
   },
-  "sys-uat": {
-    "name": "rfxn-sys-uat",
-    "description": "User Acceptance Testing agent. Sysadmin persona that runs real-world scenarios against installed tools in Docker containers. Tests UX, multi-step workflows, failure recovery, backward compatibility. Cannot modify source code.",
+  "uat": {
+    "name": "rdf-uat",
+    "description": "User acceptance testing. Runs real-world scenarios from end-user persona. Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r:test.",
     "tools": ["Bash", "Read", "Glob", "Grep"],
     "disallowedTools": ["Write", "Edit"],
     "model": "sonnet"
   },
-  "sys-sentinel": {
-    "name": "rfxn-sys-sentinel",
-    "description": "Post-implementation adversarial reviewer for rfxn projects. Runs four passes against SE's diff: Anti-Slop, Regression, Security, Performance. Finds regressions, injection vectors, hidden O(N^2), and semantic clarity issues that lint and tests miss. Read-only.",
+  "reviewer": {
+    "name": "rdf-reviewer",
+    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 4-pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r:review.",
     "tools": ["Bash", "Read", "Glob", "Grep"],
     "disallowedTools": ["Write", "Edit"],
     "model": "opus"
   },
-  "sys-challenger": {
-    "name": "rfxn-sys-challenger",
-    "description": "Pre-implementation adversary for rfxn projects. Challenges the SE's implementation plan before code is written. Finds design flaws, behavioral regressions, missed edge cases, and simpler alternatives. Read-only, fast. Dispatched by EM for tier 2+ changes only.",
-    "tools": ["Read", "Glob", "Grep"],
-    "disallowedTools": ["Bash", "Write", "Edit"],
-    "model": "sonnet"
-  },
-  "sys-ux": {
-    "name": "rfxn-sys-ux",
-    "description": "UX and output surface design reviewer for rfxn projects. Reviews CLI output, email templates, help text, man pages, error messages, and README sections against the Design System Reference. Two modes: DESIGN_REVIEW (pre-impl) and OUTPUT_REVIEW (post-impl). Collaborative expert.",
-    "tools": ["Read", "Glob", "Grep"],
-    "disallowedTools": ["Bash", "Write", "Edit"],
-    "model": "sonnet"
-  },
-  "sec-eng": {
-    "name": "rfxn-sec-eng",
-    "description": "Senior security engineer persona for infrastructure and codebase security assessments. Offensive security background with deep systems engineering expertise.",
-    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
-    "model": "opus"
-  },
-  "fe-qa": {
-    "name": "rfxn-fe-qa",
-    "description": "Frontend QA agent. Reviews API response contracts, DOM structural correctness, CSS design system consistency, and JS patterns. Read-only — cannot modify source files. Writes status updates to work-output/frontend-qa-status.md.",
-    "tools": ["Bash", "Read", "Glob", "Grep"],
-    "disallowedTools": ["Write", "Edit"],
-    "model": "sonnet"
-  },
-  "fe-uat": {
-    "name": "rfxn-fe-uat",
-    "description": "Frontend UAT agent. Sysadmin persona that runs real-world scenarios via Playwright in headless Chromium. Tests UX, workflows, visual regression. Read-only — cannot modify source files. Writes status updates to work-output/frontend-uat-status.md.",
-    "tools": ["Bash", "Read", "Glob", "Grep"],
-    "disallowedTools": ["Write", "Edit"],
-    "model": "sonnet"
+  "commands": {
+    "build": {
+      "file": "commands/build.md",
+      "dispatches": "dispatcher",
+      "type": "subagent-foreground",
+      "args": "[N]",
+      "description": "Execute implementation plan phase via dispatcher"
+    },
+    "verify": {
+      "file": "commands/verify.md",
+      "dispatches": "qa",
+      "type": "subagent-foreground",
+      "args": "[scope]",
+      "description": "Run QA verification against diff or specified scope"
+    },
+    "test": {
+      "file": "commands/test.md",
+      "dispatches": "uat",
+      "type": "subagent-foreground",
+      "args": "[scope]",
+      "description": "Run UAT acceptance tests from end-user perspective"
+    },
+    "review": {
+      "file": "commands/review.md",
+      "dispatches": "reviewer",
+      "type": "subagent-foreground",
+      "args": "[--challenge <file>] [--sentinel] [scope]",
+      "description": "Adversarial review in challenge or sentinel mode"
+    }
   }
 }
