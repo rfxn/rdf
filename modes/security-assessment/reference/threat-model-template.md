@@ -1,6 +1,6 @@
 # Threat Model Template
 
-> Reference doc for security profile. Copied to
+> Reference doc for security-assessment mode. Copied to
 > .claude/governance/reference/ during /r:init.
 
 ## Template Structure

@@ -15,8 +15,8 @@ Arguments:
   path                  Project directory to initialize
 
 Options:
-  --type TYPE           Force project type: shell|lib|frontend|security|minimal
-                        (default: auto-detect)
+  --type TYPE           Force project type: shell|lib|frontend|minimal
+                        (default: auto-detect; security type removed -- use '/r:mode security')
   --tools TOOLS         Comma-separated tool targets (default: claude-code)
   --version X.Y.Z       Initial version string (default: from VERSION file or 0.1.0)
   --no-memory           Skip MEMORY.md placeholder creation
@@ -64,7 +64,7 @@ _type_to_profile() {
         shell)    echo "shell" ;;
         lib)      echo "shell" ;;
         frontend) echo "frontend" ;;
-        security) echo "security" ;;
+        security) rdf_warn "security profile removed -- use '/r:mode security' for assessment work"; echo "core" ;;
         minimal)  echo "core" ;;
         *)        echo "core" ;;
     esac

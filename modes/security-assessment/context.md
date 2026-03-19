@@ -21,6 +21,14 @@ Assessment domains:
 - Supply chain (dependencies, update mechanisms, signatures)
 - Cryptography (TLS, key management, entropy)
 
+## Rules of Engagement
+
+- Never modify production systems without explicit authorization
+- Document all tools and commands executed
+- Preserve evidence chains (screenshots, logs, output)
+- Report critical findings immediately
+- Track false positives per project
+
 ## Planner Behavior
 
 - Brainstorm attack vectors, not features
@@ -56,6 +64,14 @@ Modified 4-pass sentinel with security emphasis:
 | P1 | High | Exploitation with low-privilege access |
 | P2 | Medium | Requires specific conditions or chaining |
 | P3 | Low | Informational, hardening, defense-in-depth |
+
+## Privilege Escalation Analysis
+
+1. Map all SUID/SGID binaries and sudo rules
+2. Identify writable paths in privileged execution chains
+3. Check for symlink race conditions in temporary file usage
+4. Verify service account permissions (least privilege)
+5. Document escalation chains with tier classification
 
 ## Checklist
 

@@ -22,7 +22,7 @@ Subcommands:
 Examples:
   rdf profile list
   rdf profile install shell
-  rdf profile install security frontend
+  rdf profile install shell python
   rdf profile remove frontend
   rdf profile status
 USAGE
