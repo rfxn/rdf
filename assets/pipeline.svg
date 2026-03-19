@@ -81,14 +81,20 @@
   <!-- Quality Gates Bar -->
   <rect x="30" y="260" width="900" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
   <text x="480" y="280" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="bold">Quality Gates</text>
-  <text x="120" y="302" text-anchor="middle" fill="#7d8590" font-size="11">G1: Self-report</text>
-  <text x="310" y="302" text-anchor="middle" fill="#d2a8ff" font-size="11">G2: QA verification</text>
-  <text x="530" y="302" text-anchor="middle" fill="#ffa657" font-size="11">G3: Reviewer sentinel</text>
-  <text x="750" y="302" text-anchor="middle" fill="#79c0ff" font-size="11">G4: UAT acceptance</text>
 
-  <!-- Gate dots -->
-  <circle cx="55" cy="300" r="4" fill="#3fb950"/>
-  <circle cx="245" cy="300" r="4" fill="#d2a8ff"/>
-  <circle cx="465" cy="300" r="4" fill="#ffa657"/>
-  <circle cx="680" cy="300" r="4" fill="#79c0ff"/>
+  <!-- G1: evenly spaced at 1/8 of 900 = center at 142 -->
+  <circle cx="75" cy="300" r="4" fill="#3fb950"/>
+  <text x="92" y="304" fill="#3fb950" font-size="11">G1: Self-report</text>
+
+  <!-- G2: center at 367 -->
+  <circle cx="290" cy="300" r="4" fill="#d2a8ff"/>
+  <text x="307" y="304" fill="#d2a8ff" font-size="11">G2: QA verification</text>
+
+  <!-- G3: center at 592 -->
+  <circle cx="510" cy="300" r="4" fill="#ffa657"/>
+  <text x="527" y="304" fill="#ffa657" font-size="11">G3: Reviewer sentinel</text>
+
+  <!-- G4: center at 817 -->
+  <circle cx="730" cy="300" r="4" fill="#79c0ff"/>
+  <text x="747" y="304" fill="#79c0ff" font-size="11">G4: UAT acceptance</text>
 </svg>
