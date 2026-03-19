@@ -1,0 +1,41 @@
+{
+  "planner": {
+    "name": "rdf-planner",
+    "description": "Research-driven collaborative planner. Brainstorms ideas, researches best practices, challenges assumptions, writes specs and implementation plans. Use for any planning, scoping, or design work.",
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "model": "opus"
+  },
+  "dispatcher": {
+    "name": "rdf-dispatcher",
+    "description": "Plan execution orchestrator. Reads PLAN.md, executes phases via TDD, dispatches engineer/qa/uat/reviewer subagents, enforces quality gates. Use when executing implementation plans.",
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "model": "sonnet"
+  },
+  "engineer": {
+    "name": "rdf-engineer",
+    "description": "Universal implementation engineer. Follows TDD, reads governance for domain-specific conventions. Dispatched by the dispatcher for plan phase execution.",
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "model": "opus"
+  },
+  "qa": {
+    "name": "rdf-qa",
+    "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r:verify.",
+    "tools": ["Bash", "Read", "Glob", "Grep"],
+    "disallowedTools": ["Write", "Edit"],
+    "model": "sonnet"
+  },
+  "uat": {
+    "name": "rdf-uat",
+    "description": "User acceptance testing. Runs real-world scenarios from end-user persona. Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r:test.",
+    "tools": ["Bash", "Read", "Glob", "Grep"],
+    "disallowedTools": ["Write", "Edit"],
+    "model": "sonnet"
+  },
+  "reviewer": {
+    "name": "rdf-reviewer",
+    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 4-pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r:review.",
+    "tools": ["Bash", "Read", "Glob", "Grep"],
+    "disallowedTools": ["Write", "Edit"],
+    "model": "opus"
+  }
+}
