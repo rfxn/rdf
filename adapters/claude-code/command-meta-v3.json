@@ -99,6 +99,30 @@
       "description": "Deduplicate changelog entries",
       "source": "canonical/commands/r-util-chg-dedup.md",
       "execution": "skill"
+    },
+    "r-util-rel-squash": {
+      "slash-command": "/r:util:rel-squash",
+      "description": "Release branch squash plan + execution",
+      "source": "canonical/commands/r-util-rel-squash.md",
+      "execution": "skill"
+    },
+    "r-util-mem-audit": {
+      "slash-command": "/r:util:mem-audit",
+      "description": "Fact-check MEMORY.md claims against live state",
+      "source": "canonical/commands/r-util-mem-audit.md",
+      "execution": "skill"
+    },
+    "r-util-proj-cross": {
+      "slash-command": "/r:util:proj-cross",
+      "description": "Cross-project convention drift and overlap analysis",
+      "source": "canonical/commands/r-util-proj-cross.md",
+      "execution": "skill"
+    },
+    "r-util-test-scope": {
+      "slash-command": "/r:util:test-scope",
+      "description": "Test tier recommendation + function-to-test impact",
+      "source": "canonical/commands/r-util-test-scope.md",
+      "execution": "skill"
     }
   }
 }

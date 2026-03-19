@@ -541,44 +541,69 @@ If a spot check reveals an inaccuracy:
 
 ## Output Report
 
-After all 5 phases complete, present the user with a structured summary:
+After all 5 phases complete, present the user with a structured summary.
+This output is the first thing the user sees after initialization —
+it must be informative, scannable, and actionable.
+
+**Every field must be populated.** If a field cannot be determined,
+show `(not detected)` rather than omitting the line.
 
 ```
 +-- /r:init Complete -----------------------------------------------+
-| Target:     {path}                                                |
+| Target:     {absolute path}                                       |
 | Duration:   {elapsed time}                                        |
 +-------------------------------------------------------------------+
 |                                                                   |
 | INGESTED (Phase 1):                                               |
-|   {filename} ({line_count} lines) — {categories covered}          |
-|   ...                                                             |
+|   CLAUDE.md (project)  {N}L — {categories: arch, conventions...}  |
+|   CLAUDE.md (parent)   {N}L — {categories}                        |
+|   MEMORY.md            {N}L — {categories: state, lessons...}     |
+|   PLAN.md              {N}L — {brief description}                 |
+|   {other files found, one per line}                               |
 |                                                                   |
 | DETECTED (Phases 2-3):                                            |
-|   Languages: {list with percentages}                              |
-|   Frameworks: {list}                                               |
-|   Tests: {framework} ({count} tests, command: {cmd})              |
-|   CI: {platform} ({workflow count} workflows)                     |
-|   Linters: {list}                                                 |
+|   Languages:  {lang} {pct}% ({N} files, ~{N}k lines)             |
+|   Tests:      {framework} ({N} unit + {N} UAT, {run command})     |
+|   CI:         {platform} ({workflow desc, matrix summary})        |
+|   Linters:    {tool list with flags}                              |
+|   Platforms:  {N} OS targets ({range summary})                    |
+|   Build:      {build system, key targets}                         |
+|   Frameworks: {list, or omit line if none}                        |
 |                                                                   |
 | GENERATED (Phase 4):                                              |
-|   .claude/governance/index.md          (always loaded, {lines}L)  |
-|   .claude/governance/architecture.md   ({source}: {lines}L)       |
-|   .claude/governance/conventions.md    ({source}: {lines}L)       |
-|   .claude/governance/verification.md   ({source}: {lines}L)       |
-|   .claude/governance/constraints.md    ({source}: {lines}L)       |
-|   .claude/governance/anti-patterns.md  ({source}: {lines}L)       |
+|   .claude/governance/index.md          ({N}L)                     |
+|   .claude/governance/architecture.md   ({N}L, {source})           |
+|   .claude/governance/conventions.md    ({N}L, {source})           |
+|   .claude/governance/verification.md   ({N}L, {source})           |
+|   .claude/governance/constraints.md    ({N}L, {source})           |
+|   .claude/governance/anti-patterns.md  ({N}L, {source})           |
 |                                                                   |
-|   {source} = "from scan", "from .md refs", or "mixed"            |
+|   {source} = "from scan" | "refs only" | "mixed"                 |
 |                                                                   |
-| CONFIDENCE:                                                       |
-|   HIGH: {count} sections | MEDIUM: {count} | LOW: {count}        |
+| VALIDATION (Phase 5):                                             |
+|   Spot checks: {N}/{N} passed                                    |
+|   Confidence:  HIGH {N} | MEDIUM {N} | LOW {N}                   |
+|   {if LOW > 0:}                                                   |
+|   Low-confidence items:                                           |
+|     - {item description}                                          |
+|     - {item description}                                          |
+|   {if conflicts:}                                                 |
+|   Conflicts:                                                      |
+|     - {conflict description}                                      |
 |                                                                   |
-| LOW-CONFIDENCE ITEMS:                                             |
-|   {each item on its own line}                                     |
+| GIT STATE:                                                        |
+|   Branch: {branch}  HEAD: {hash} ({age})                          |
+|   Dirty: {N} files  Last commit: {message, truncated}             |
+|   {if PLAN.md exists:}                                            |
+|   Plan: {M/N} phases ({status summary})                           |
 |                                                                   |
 +-------------------------------------------------------------------+
 
-Next: Run /r:start to begin working with this project.
+Next steps:
+  /r:start    — begin working (loads governance + plan progress)
+  /r:status   — full project health dashboard
+  /r:plan     — create an implementation plan
+  /r:refresh  — update governance after codebase changes
 ```
 
 ### .gitignore / .git/info/exclude

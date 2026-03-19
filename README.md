@@ -508,7 +508,7 @@ Each profile contains:
 | uat.md | rdf-uat | sonnet | User acceptance testing |
 | reviewer.md | rdf-reviewer | opus | Adversarial review (challenge + sentinel) |
 
-### Commands (24)
+### Commands (28)
 
 **Lifecycle (14):**
 
@@ -529,20 +529,24 @@ Each profile contains:
 | test | /test | UAT acceptance (dispatches uat) |
 | review | /review | Adversarial review (dispatches reviewer) |
 
-**Utility (10):**
+**Utility (14):**
 
 | Command | Slash | Purpose |
 |---------|-------|---------|
 | r-util-mem-compact | /r:util:mem-compact | Archive stale MEMORY.md entries |
+| r-util-mem-audit | /r:util:mem-audit | Fact-check MEMORY.md against live state |
 | r-util-chg-gen | /r:util:chg-gen | Generate changelog from diff |
 | r-util-chg-dedup | /r:util:chg-dedup | Deduplicate changelog entries |
+| r-util-rel-squash | /r:util:rel-squash | Release branch squash plan + execution |
 | r-util-doc-gen | /r:util:doc-gen | Generate documentation |
 | r-util-ci-gen | /r:util:ci-gen | Generate CI workflow |
 | r-util-lib-sync | /r:util:lib-sync | Cross-project library drift detection |
 | r-util-lib-release | /r:util:lib-release | Shared library release lifecycle |
+| r-util-proj-cross | /r:util:proj-cross | Cross-project convention drift + overlap |
 | r-util-code-scan | /r:util:code-scan | Pattern-class bug finder |
 | r-util-code-modernize | /r:util:code-modernize | Codebase modernization assessment |
 | r-util-test-dedup | /r:util:test-dedup | Find duplicate/overlapping tests |
+| r-util-test-scope | /r:util:test-scope | Test tier + function-to-test impact |
 
 ### Scripts (10)
 
