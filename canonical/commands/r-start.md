@@ -46,24 +46,33 @@ If governance does not exist, note it for the fallback display.
 
 ### 3. Display Session Anchor
 
-```
-+-- Session Anchor ------------------------------------------------+
-| Project: {name}              Branch: {branch}                    |
-| HEAD:    {hash} ({age})      Dirty: {N} files                   |
-| Plan:    {M/N} phases        Mode: {mode}                       |
-| Governance: {N} files        Age: {T}h since refresh             |
-+------------------------------------------------------------------+
-```
-
-**Fallback (no governance):**
+Use a markdown table — two columns of key-value pairs per row:
 
 ```
-+-- Session Anchor ------------------------------------------------+
-| Project: {basename of cwd}   Branch: {branch}                   |
-| HEAD:    {hash} ({age})      Dirty: {N} files                   |
-| Governance: not initialized                                      |
-+------------------------------------------------------------------+
+### Session Anchor
+
+| | | | |
+|---|---|---|---|
+| **Project** | {name} | **Branch** | {branch} |
+| **HEAD** | {hash} ({age}) | **Dirty** | {N} files |
+| **Plan** | {M/N} phases | **Mode** | {mode} |
+| **Governance** | {N} files | **Age** | {T}h since refresh |
 ```
+
+**Fallback (no governance, or parent workspace):**
+
+```
+### Session Anchor
+
+| | | | |
+|---|---|---|---|
+| **Project** | {basename of cwd} | **Branch** | {branch} |
+| **HEAD** | {hash} ({age}) | **Dirty** | {N} files |
+| **Governance** | not initialized | | |
+```
+
+When in a parent workspace (not a git repo), omit HEAD/Dirty/Branch
+rows and show only Project, Governance, MEMORY.md, and Date.
 
 ### 4. Display Plan Status
 
