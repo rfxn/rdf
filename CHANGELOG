@@ -1,5 +1,18 @@
 # RDF Changelog
 
+## 3.0.0-dev (in progress)
+
+### Architecture
+[New] Universal agent architecture — 6 domain-agnostic agents replace
+      12 domain-specific agents
+[New] Governance initialization model — project data drives agent behavior
+[New] /r: command namespace — 13 lifecycle + 10 utility commands
+[New] Operational modes — extrinsic lens (security, performance, migration)
+[New] Governance index schema for just-in-time context loading
+[Change] Profiles become governance seed templates, not agent bundles
+[Remove] Domain-prefixed agents (sys-eng, fe-qa, etc.)
+[Remove] ~45 domain-specific slash commands
+
 ## 2.1.0 (2026-03-16)
 
 ### GitHub Issue Model v2 — Phase-Level Tracking + Roadmap Planning
