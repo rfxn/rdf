@@ -1,398 +1,200 @@
-# rfxn Development Framework (RDF) v1.0
+# rfxn Development Framework (RDF) v3.0
 
-Canonical artifact taxonomy, handoff model, and session continuity protocol
-for all rfxn projects. This is the authoritative reference for what each
-artifact is, where it lives, who writes it, and how it survives sessions.
-
-> Other reference files cover specific subsystems (audit-pipeline.md,
-> test-infra.md, etc.). This file defines the framework that contains them all.
+Artifact taxonomy, handoff model, and session continuity protocol for all
+rfxn projects. Authoritative reference for what each artifact is, where it
+lives, who writes it, and how it survives sessions.
 
 ---
 
 ## Artifact Taxonomy
 
-Six categories. Each artifact has a fixed location pattern, format, lifecycle,
-and ownership. No artifact type may be invented without adding it here first.
+Six categories. Each artifact has a fixed location, format, lifecycle, and
+ownership.
 
-### Category 1: Governance (stable, rarely change)
+### Category 1: Governance (stable)
 
-Constraints, conventions, and reference documentation. Changed only when the
-framework itself evolves. Never contains volatile data (counts, hashes, dates).
+Constraints, conventions, and reference documentation. Changed only when
+the framework evolves. Never contains volatile data.
 
-| Artifact | Location | Format | Owner |
-|----------|----------|--------|-------|
-| Parent CLAUDE.md | `/root/admin/work/proj/CLAUDE.md` | Markdown | Human |
-| Project CLAUDE.md | `<project>/CLAUDE.md` | Markdown | Human |
-| Shared reference | `/root/admin/work/proj/reference/*.md` | Markdown | Human |
-| Project reference | `<project>/reference/*.md` | Markdown | Human |
-| Static data | `<project>/data/*.json` | JSON | Human/Tool |
+| Artifact | Location | Owner |
+|----------|----------|-------|
+| Parent CLAUDE.md | `/root/admin/work/proj/CLAUDE.md` | Human |
+| Project CLAUDE.md | `<project>/CLAUDE.md` | Human |
+| Governance index | `<project>/.claude/governance/index.md` | `/r:init` |
+| Governance files | `<project>/.claude/governance/*.md` | `/r:init`, `/r:refresh` |
+| Shared reference | `/root/admin/work/proj/reference/*.md` | Human |
+| Project reference | `<project>/reference/*.md` | Human |
 
 **Rules:**
 - Parent CLAUDE.md is authoritative; project CLAUDE.md inherits, never repeats
-- Reference files are factual and version-independent
-- Project reference/ is optional but recommended for projects with API contracts
-  or complex internal architecture (e.g., monitoring dashboard data schemas)
-- All governance artifacts are excluded from git via `.git/info/exclude`
-  (CLAUDE.md, PLAN*.md) or committed as project documentation (reference/, data/)
+- Governance index is always loaded (~50 lines, ~100-150 tokens)
+- Other governance files loaded just-in-time by agents via index pointers
+- All governance artifacts excluded from git via `.git/info/exclude`
 
-### Category 2: State (volatile, updated frequently)
+### Category 2: State (volatile)
 
 Current project status, roadmaps, and audit findings. Updated after every
-commit, phase completion, or audit run. Cross-session continuity depends
-on these artifacts being current.
+commit, phase completion, or audit run.
 
-| Artifact | Location | Format | Owner | Mandatory |
-|----------|----------|--------|-------|-----------|
-| MEMORY.md | Auto-memory dir or `<project>/MEMORY.md` | Markdown | `/mem-save` | All projects |
-| PLAN.md | `<project>/PLAN.md` | Markdown | EM / Human | When active work |
-| PLAN-\<feature\>.md | `<project>/PLAN-<feature>.md` | Markdown | Human | Per feature branch |
-| AUDIT.md | `<project>/AUDIT.md` | Markdown | Audit pipeline | After audit run |
+| Artifact | Location | Owner | Mandatory |
+|----------|----------|-------|-----------|
+| MEMORY.md | Auto-memory dir | `/r:util:mem-compact` | All projects |
+| PLAN.md | `<project>/PLAN.md` | `/r:plan` | When active work |
+| AUDIT.md | `<project>/AUDIT.md` | `/r:audit` | After audit run |
 
-**Auto-memory location:** `/root/.claude/projects/-root-admin-work-proj-<project>/memory/`
+**MEMORY.md:** 200-line hard limit. Overflow to topic files.
 
-**MEMORY.md rules:**
-- 200-line hard limit (truncated in context window beyond that)
-- Required sections: Status, Known Issues, Lessons Learned
-- Overflow to topic files (e.g., `codebase-map.md`, `ci-status.md`)
-- See `reference/memory-standards.md` for full spec
+**PLAN.md status markers:**
+- `pending` — not started
+- `in-progress` — engineer dispatched
+- `complete` — committed
+- `deferred` — postponed
+- `blocked` — waiting on dependency
 
-**PLAN.md lifecycle:**
-- DRAFT: under development, not yet actionable
-- ACTIVE: current work, phases being dispatched
-- COMPLETE: all phases done, awaiting archive
-- ARCHIVED: moved to `old_plans/<project>/` with date prefix
-- One ACTIVE plan per project at a time; feature plans (PLAN-\<feature\>.md)
-  may coexist with the main PLAN.md
-- Fallback lookup: `~/.claude/plans/` for cross-project or session-generated plans
+### Category 3: Execution (transient)
 
-**PLAN.md phase status markers:**
-- `PENDING` — not started
-- `IN PROGRESS` — SE dispatched, not yet committed
-- `COMPLETED (<hash>)` — committed, hash recorded
-- `DEFERRED` — postponed to future release
-- `BLOCKED (<reason>)` — waiting on dependency
+Agent work products created during a session. Structured files in
+`work-output/` passed between agents as handoff contracts.
 
-**AUDIT.md rules:**
-- Generated by audit pipeline, not hand-edited
-- Findings use canonical schema from `reference/audit-pipeline.md`
-- RESOLVED markers added by `/mem-save` as findings are fixed
-- Regenerated on each full audit run
+| Artifact | Writer | Reader |
+|----------|--------|--------|
+| `phase-N-status.md` | engineer | dispatcher |
+| `phase-N-result.md` | engineer | dispatcher |
+| `qa-phase-N-verdict.md` | qa | dispatcher |
+| `sentinel-N.md` | reviewer | dispatcher |
+| `uat-phase-N-verdict.md` | uat | dispatcher |
 
-### Category 3: Execution (transient, per-session)
-
-Agent work products created during a session. Structured files passed between
-agents as the handoff contract. Survive on disk across sessions but are
-expected to be stale after a crash — recovery uses them forensically.
-
-| Artifact | Location | Writer | Reader | Lifecycle |
-|----------|----------|--------|--------|-----------|
-| Work order | `work-output/current-phase.md` | EM | SE | Overwritten per dispatch |
-| Parallel work order | `work-output/phase-N-workorder.md` | EM | SE | Per parallel dispatch |
-| SE status | `work-output/phase-N-status.md` | SE | monitoring system, EM | Written at each of 7 steps |
-| SE result | `work-output/phase-N-result.md` | SE | QA, EM | Final deliverable |
-| QA status | `work-output/qa-phase-N-status.md` | QA | monitoring system | Written at each of 6 steps |
-| QA verdict | `work-output/qa-phase-N-verdict.md` | QA | EM | Gate decision |
-| UAT verdict | `work-output/uat-phase-N-verdict.md` | UAT | EM | Advisory gate |
-| Scope validation | `work-output/scope-validation-N.md` | Planner | EM, SE | Pre-dispatch check |
-| Session manifest | `work-output/session.md` | EM | EM (recovery), monitoring system | Per session |
-| In-flight registry | `work-output/in-flight.md` | EM | EM (recovery), monitoring system | Per session |
-| Agent feed | `work-output/agent-feed.log` | SubagentStop hook | Forensic review | Append-only |
-| Spool events | `work-output/spool/<agent-id>.jsonl` | monitoring hook | collectors | Append-only |
-
-**Work order schema:**
+**Engineer result schema:**
 ```
-PROJECT_PATH: <absolute path>
-PROJECT_NAME: <name>
-VERSION: <version>
-BRANCH: <branch>
-PHASE: <N>
-PLAN_SOURCE: <filename>
-PHASE_TITLE: <title>
-DESCRIPTION: <verbatim from PLAN>
-FILES_TO_MODIFY: <list>
-ACCEPTANCE_CRITERIA: <list>
-CONTEXT: <EM observations, MEMORY.md lessons>
-CROSS_PROJECT_REFERENCES: <for shared lib integrations>
-SCOPE_LOCK: <parallel only: allowed/forbidden files>
-```
-
-**SE result schema:**
-```
-STATUS: COMPLETE | PARTIAL | BLOCKED
+STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 PHASE: <N>
 COMMIT_HASH: <sha>
-COMMIT_MESSAGE: <verbatim>
-VERIFICATION:
-  LINT: PASS | FAIL
-  TESTS: PASS (Tier N) | FAIL | SKIPPED
-  ANTI_PATTERNS: PASS | FAIL
-  SELF_REVIEW: DONE | SKIPPED
 FILES_CHANGED: <list>
-BLOCKERS: <description or "none">
-NOTES: <observations>
+TDD_EVIDENCE:
+  TESTS: <test names, red/green output>
+  COVERAGE_DELTA: <if measurable>
+GOVERNANCE_APPLIED: <constraints and how>
+CONCERNS: <if DONE_WITH_CONCERNS>
 ```
 
 **QA verdict schema:**
 ```
-STATUS: APPROVED | CHANGES_REQUESTED | REJECTED
-PHASE: <N>
-BRANCH: <commit info>
-QA_MODE: LITE | FULL
-STRUCTURAL: PASS | FAIL
-BEHAVIORAL: DONE | SKIPPED
-FINDINGS: <numbered list with severity or "(none)">
-MERGE_READY: true | false
-ESCALATION_RECOMMENDED: true | false
+RESULT: PASS | FAIL
+SCOPE: <files reviewed>
+CHECKS:
+  LINT: PASS | FAIL
+  TESTS: PASS | FAIL
+  ANTI_PATTERNS: PASS | FAIL
+  CONVENTIONS: PASS | FAIL
+FAILURES: <actionable fix suggestions>
 ```
 
-### Category 4: Orchestration (agent definitions and toolchain)
+### Category 4: Orchestration (agent definitions)
 
 Agent personas, commands, hooks, and scripts that define the pipeline.
-Changed only when the pipeline itself evolves.
 
 | Artifact | Location | Format |
 |----------|----------|--------|
-| Agent personas | `~/.claude/agents/*.md` | YAML frontmatter + Markdown |
-| Commands | `~/.claude/commands/*.md` | Markdown (skill format) |
-| Hook scripts | `~/.claude/scripts/*.sh` | Bash |
-| Hook config | `~/.claude/settings.json` | JSON (hooks section) |
-| MCP config | `<project>/.mcp.json` | JSON |
+| Agent definitions | `canonical/agents/*.md` | Pure markdown |
+| Commands | `canonical/commands/*.md` | Pure markdown |
+| Hook scripts | `canonical/scripts/*.sh` | Bash |
+| Agent metadata | `adapters/claude-code/agent-meta.json` | JSON |
+| Hook config | `~/.claude/settings.json` | JSON |
 
-**Agent persona format:**
-```yaml
----
-name: <agent-name>
-description: <one-line>
-tools: [Bash, Read, Write, Edit, Glob, Grep]
-model: opus | sonnet
----
-<prompt body>
-```
+**Agent naming:** `rdf-{role}` (e.g., `rdf-engineer`, `rdf-qa`)
 
-**Command naming conventions:**
-- `audit-*.md` — audit pipeline domain agents and orchestrators
-- `rel-*.md` — release workflow commands
-- `proj-*.md` — project coordination commands
-- `mem-*.md` — memory management commands
-- `dx:*.md` — developer experience utilities
-- `code-*.md` — code quality commands
-- `test-*.md` — test utilities
-- Standalone names for major personas: `mgr.md`, `sys-eng.md`, `sys-qa.md`, `sys-uat.md`
+**Command naming:**
+- `/r:{name}` — lifecycle commands (13)
+- `/r:util:{subject}-{verb}` — utility commands (10)
 
-### Category 5: Integration (Monitoring Contracts)
+### Category 5: Integration (monitoring)
 
-Contracts between the filesystem-based framework and the monitoring system's
-collection and display pipeline. These define what the dashboard expects to
-find and in what shape.
-
-**Collector protocol:**
-- Collectors receive env vars: `PROJ_ROOT`, optional `COLLECT_PROJECT`,
-  `COLLECT_LIMIT`
-- Output: valid JSON (array or object) to stdout
-- Errors: stderr only (not parsed)
-- Constraints: 30s timeout, 1MB max buffer
-
-**Consumed artifacts (what collectors read):**
+Contracts between the framework and the monitoring system.
 
 | Collector | Reads | Refresh |
 |-----------|-------|---------|
-| collect-projects.sh | Git state, version files, PLAN-CI.md | 15s |
-| collect-activity.sh | `git log` across all projects | 30s |
-| collect-plans.sh | PLAN*.md files (phase status, completion %) | 30s |
-| collect-audits.sh | AUDIT.md files (severity counts) | 60s |
-| collect-agents.sh | work-output/*.md (status files) | 3s |
-| collect-running.sh | Transcript files (in-progress detection) | 5s |
-| collect-spool.sh | work-output/spool/*.jsonl (completed events) | 5s |
-| collect-skills.sh | ~/.claude/commands/*.md | 300s |
-| collect-health.sh | Runs all collectors, reports health | 60s |
-
-**Spool event schema (JSONL):**
-```json
-{
-  "ts": "<ISO 8601>",
-  "event": "subagent_stop",
-  "agent_id": "<id>",
-  "agent_type": "<rfxn-sys-eng|rfxn-sys-qa|...>",
-  "agent_role": "<SE|QA|UAT|...>",
-  "session_id": "<uuid>",
-  "project": "<name>",
-  "cwd": "<absolute path>",
-  "last_message_preview": "<truncated>",
-  "transcript_path": "<absolute path to JSONL>"
-}
-```
-
-**Event gap:** Only `subagent_stop` events are captured. There is no
-`subagent_start` event. The monitoring system approximates "running" state
-by scanning transcript files (`collect-running.sh`), which is fragile. A
-future `SubagentStart` hook would close this gap.
+| collect-projects.sh | Git state, version files | 15s |
+| collect-activity.sh | `git log` across projects | 30s |
+| collect-plans.sh | PLAN*.md phase status | 30s |
+| collect-audits.sh | AUDIT.md severity counts | 60s |
+| collect-agents.sh | work-output/*.md status | 3s |
+| collect-spool.sh | work-output/spool/*.jsonl | 5s |
 
 ### Category 6: Archive (historical)
 
-Completed, superseded, or compacted artifacts. Retained for reference
-but not loaded into active context.
-
-| Artifact | Location | Source |
-|----------|----------|--------|
-| Archived plans | `old_plans/<project>/` | Completed PLAN.md files |
-| Memory archives | `memory/archive-v<version>.md` | Compacted MEMORY.md overflow |
-| CHANGELOG | `<project>/CHANGELOG` | Cumulative release history |
-| CHANGELOG.RELEASE | `<project>/CHANGELOG.RELEASE` | Current release only |
-| Session transcripts | `~/.claude/projects/<namespace>/<uuid>.jsonl` | Raw conversation logs |
+| Artifact | Location |
+|----------|----------|
+| Archived plans | `docs/plans/archived/` |
+| v2 agents | `canonical/agents-v2-archived/` |
+| v2 commands | `canonical/commands-v2-archived/` |
+| CHANGELOG | `<project>/CHANGELOG` |
 
 ---
 
 ## Handoff Model
 
-### Intra-Session: Agent Pipeline
+### Agent Pipeline
 
-The EM agent orchestrates a sequential pipeline. Each transition is a
-structured file written to `work-output/`.
+The dispatcher orchestrates a sequential pipeline. Each transition is a
+structured file in `work-output/`.
 
 ```
-EM ──[work order]──→ Planner ──[scope validation]──→ EM
- │                                                     │
- └──[work order]──→ SE ──[result]──→ EM ──[dispatch]──→ QA ──[verdict]──→ EM
-                                                                           │
-                                                              (if requested)
-                                                         EM ──[dispatch]──→ UAT
+dispatcher ──[phase context]──→ engineer ──[result]──→ dispatcher
+                                                          │
+                               ┌──────────────────────────┤
+                               ▼                          ▼
+                      qa ──[verdict]──→          reviewer ──[findings]──→
+                      dispatcher                 dispatcher
+                               │
+                               ▼
+                      uat ──[verdict]──→ dispatcher
 ```
 
-**Handoff contracts:**
-1. EM writes `current-phase.md` → SE reads it at step 1 (CONTEXT)
-2. SE writes `phase-N-result.md` → QA reads it at step 1 (CONTEXT)
-3. QA writes `qa-phase-N-verdict.md` → EM reads it for merge decision
-4. UAT writes `uat-phase-N-verdict.md` → EM reads it (advisory)
+**Gate selection** is driven by phase tags in PLAN.md:
+- `risk:low, type:config` → Gate 1 (engineer self-report)
+- `risk:medium, type:feature` → Gates 1 + 2 (+ qa)
+- `risk:high` or `type:security` → Gates 1 + 2 + 3 (+ reviewer)
+- `type:user-facing` → Gates 1 + 2 + 4 (+ uat)
 
 **Parallel variant:**
-- EM writes `phase-N-workorder.md` per SE (embedded, not file reference)
-- Each SE runs in an isolated git worktree
-- Scope locks prevent file overlap between concurrent SEs
-- QA runs sequentially after all SEs complete (or interleaved with look-ahead)
+- Dispatcher validates file ownership boundaries (no overlap)
+- Each engineer runs in an isolated git worktree
+- Integration check after all engineers complete
+- QA runs across full diff after merge
 
-### Intra-Session: Live Status
+### Cross-Session Continuity
 
-During execution, agents write status files that the monitoring system polls:
+When a session ends, the next session reconstructs state from:
 
-```
-SE writes phase-N-status.md ──→ collect-agents.sh reads it (3s poll)
-QA writes qa-phase-N-status.md ──→ collect-agents.sh reads it (3s poll)
-SubagentStop hook writes spool JSONL ──→ collect-spool.sh reads it (5s poll)
-```
+| Source | Reliability | What it provides |
+|--------|-------------|-----------------|
+| `git log` + `git diff` | Authoritative | Committed and uncommitted state |
+| PLAN.md | High | Phase completion status |
+| MEMORY.md | High (if saved) | State summary, open items |
+| AUDIT.md | High | Outstanding findings |
+| work-output/ | Forensic | In-flight state at session end |
 
-### Cross-Session: Continuity Model
-
-When a session ends (normally or by crash), the next session reconstructs
-state from persistent artifacts. Priority order:
-
-| Source | Reliability | What it tells you |
-|--------|-------------|-------------------|
-| `git log` + `git diff` | Authoritative | What was committed, what's uncommitted |
-| PLAN.md | High | Which phases are COMPLETED vs PENDING |
-| MEMORY.md | High (if saved) | State summary, lessons, open items |
-| AUDIT.md | High | Outstanding findings and resolutions |
-| work-output/ residual | Forensic | What was in-flight when session ended |
-| Spool JSONL | Archival | What agents completed (times, outcomes) |
-
-**The critical gap:** MEMORY.md is the only cross-session state summary,
-and it depends on `/mem-save` being invoked. If a session crashes before
-save, MEMORY.md is stale by however many phases were completed since the
-last save.
-
-**Mitigation:** Commit after every phase (mandatory per CLAUDE.md commit
-protocol). Git is the true record. MEMORY.md is a convenience summary,
-not the source of truth. A new session can always reconstruct from
-`git log --oneline` + PLAN.md phase markers.
-
-### Session Manifest (new artifact)
-
-Tracks what happened during the current session. Written by EM on first
-dispatch, updated on each agent completion.
-
-**Location:** `work-output/session.md`
-**Lifecycle:** Overwritten on session start. Stale file = previous session.
-
-```
-SESSION_ID: <uuid>
-STARTED: <ISO 8601>
-PROJECT: <name>
-BRANCH: <branch>
-LAST_SAVE: <timestamp of last /mem-save>
-
-DISPATCHES:
-- phase 5 | SE | agent-abc123 | COMPLETE | 14:30-14:42
-- phase 5 | QA | agent-def456 | APPROVED | 14:43-14:48
-- phase 6 | SE | agent-ghi789 | RUNNING  | 14:50-
-
-COMPLETED_PHASES: [5]
-IN_PROGRESS: [6]
-PENDING: [7, 8]
-```
-
-**Who writes:** EM (on dispatch and on reading agent results)
-**Who reads:** EM on next session startup (crash recovery), monitoring system
-(`collect-agents.sh`)
-
-### In-Flight Registry (new artifact)
-
-Tracks what agents are currently dispatched. Enables crash detection
-and live status visibility without scanning transcript files.
-
-**Location:** `work-output/in-flight.md`
-**Lifecycle:** Entries added on dispatch, removed on completion. Stale
-entries after session restart indicate crashed agents.
-
-```
-## Active Agents
-
-PHASE: 6
-AGENT_ID: agent-ghi789
-AGENT_TYPE: rfxn-sys-eng
-WORKTREE: /root/admin/work/proj/bfd/.git/worktrees/2.0.1-p6-se
-SCOPE_LOCK: [files/bfd, files/internals/alert.sh]
-DISPATCHED: 2026-03-08T14:50:00Z
-STATUS: RUNNING
-```
-
-**Who writes:** EM (append on dispatch, remove on completion read)
-**Who reads:** EM on startup (stale entries = crash recovery trigger),
-monitoring system (`collect-running.sh` — replaces transcript scanning)
-
-**Crash detection protocol:**
-1. EM reads `in-flight.md` on startup
-2. For each RUNNING entry: check if agent-id has a spool event (completed?)
-3. If spool event exists: agent finished but EM crashed before reading result
-   → read result file, resume pipeline from QA dispatch
-4. If no spool event: agent crashed mid-execution
-   → check `git diff` for uncommitted changes, warn user, recommend recovery
+**The critical gap:** MEMORY.md depends on being saved before session end.
+Git is the true record. MEMORY.md is a convenience summary.
 
 ---
 
 ## Project Presence Requirements
 
-Which artifacts MUST exist for each project type:
-
-| Artifact | Shell project | Shared library | Monitoring dashboard | Parent workspace |
-|----------|---------------|----------------|----------------------|------------------|
-| CLAUDE.md | Required | Required | Required | Required |
-| MEMORY.md | Required | Required | Required | In auto-memory |
-| PLAN.md | When active | When active | When active | N/A |
-| AUDIT.md | After audit | After audit | After audit | N/A |
-| reference/ | Optional | Optional | Required | Required |
-| work-output/ | Auto-created | Auto-created | Auto-created | Auto-created |
-| CHANGELOG | Required | Required | Required | N/A |
-| tests/ | Required | Required | Required | N/A |
-
-**Monitoring dashboard note:** `reference/` is mandatory for the monitoring
-dashboard because it is the integration layer — it must formally document
-what it consumes (data schemas, collector protocol, API contracts).
+| Artifact | Shell project | Shared library |
+|----------|---------------|----------------|
+| CLAUDE.md | Required | Required |
+| MEMORY.md | Required | Required |
+| PLAN.md | When active | When active |
+| AUDIT.md | After audit | After audit |
+| CHANGELOG | Required | Required |
+| tests/ | Required | Required |
 
 ---
 
 ## Exclusion Protocol
 
-Working artifacts are excluded from git. Each project maintains exclusions
-in `.git/info/exclude` (local to working tree, not committed):
+Working artifacts excluded from git via `.git/info/exclude`:
 
 ```
 CLAUDE.md
@@ -404,21 +206,4 @@ work-output/
 audit-output/
 ```
 
-NEVER use `.gitignore` for these — exclusion rules stay local.
-
----
-
-## Framework Versioning
-
-This framework is versioned as RDF v\<major\>.\<minor\>. Increment:
-- **Minor** for new artifact types, new fields in existing schemas
-- **Major** for breaking changes to artifact locations, format changes that
-  require migration
-
-Current version: **RDF v1.0**
-
-When adding a new artifact type:
-1. Define it in this file (category, location, format, lifecycle, ownership)
-2. Update project presence requirements if mandatory
-3. Update monitoring collectors if the artifact should be visible
-4. Update parent CLAUDE.md if the artifact has commit or workflow implications
+Never use `.gitignore` for these — exclusion rules stay local.

@@ -188,7 +188,7 @@ Dirty working tree (N pending):
 ### 4. Project Health
 
 Read from a cache file at `${XDG_RUNTIME_DIR:-/tmp}/rfxn-health-${project}.cache`.
-Written by `/proj-health`. Omitted entirely when no cache exists.
+Written by `/r:status` (or legacy `/proj-health`). Omitted when no cache exists.
 
 ```
 H:GREEN
