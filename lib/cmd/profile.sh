@@ -21,7 +21,7 @@ Subcommands:
 
 Examples:
   rdf profile list
-  rdf profile install systems-engineering
+  rdf profile install shell
   rdf profile install security frontend
   rdf profile remove frontend
   rdf profile status

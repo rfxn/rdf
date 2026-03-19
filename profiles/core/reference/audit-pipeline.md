@@ -1,6 +1,6 @@
 # Audit Pipeline Reference
 
-> Reference for systems-engineering profile. Architecture and operation
+> Reference for core profile. Architecture and operation
 > of the 3-round audit pipeline.
 
 ## Pipeline Architecture

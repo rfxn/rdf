@@ -104,6 +104,17 @@ RDF_PROFILES_STATE=""
 rdf_profile_init() {
     RDF_PROFILES_DIR="${RDF_HOME}/profiles"
     RDF_PROFILES_STATE="${RDF_HOME}/.rdf-profiles"
+
+    # One-time migration: systems-engineering -> shell (RDF 3.x profile rename)
+    if [[ -f "$RDF_PROFILES_STATE" ]]; then
+        if grep -q '^systems-engineering$' "$RDF_PROFILES_STATE"; then
+            local _mig_tmp
+            _mig_tmp="$(mktemp "${RDF_PROFILES_STATE}.XXXXXX")"
+            sed 's/^systems-engineering$/shell/' "$RDF_PROFILES_STATE" > "$_mig_tmp" && \
+                command mv "$_mig_tmp" "$RDF_PROFILES_STATE"
+            rdf_log "migrated profile: systems-engineering -> shell"
+        fi
+    fi
 }
 
 # Get list of active profile names (one per line, core always included)

@@ -1,6 +1,6 @@
 # Cross-Project Coordination Reference
 
-> Reference for systems-engineering profile. Patterns for managing
+> Reference for core profile. Patterns for managing
 > shared libraries and consumer updates across the rfxn ecosystem.
 
 ## Library Integration Pattern

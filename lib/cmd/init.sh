@@ -61,8 +61,8 @@ _detect_project_type() {
 _type_to_profile() {
     local type="$1"
     case "$type" in
-        shell)    echo "systems-engineering" ;;
-        lib)      echo "systems-engineering" ;;
+        shell)    echo "shell" ;;
+        lib)      echo "shell" ;;
         frontend) echo "frontend" ;;
         security) echo "security" ;;
         minimal)  echo "core" ;;

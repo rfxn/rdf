@@ -9,13 +9,13 @@
     {
       "heading": "Build & Test",
       "source": "governance",
-      "profile": "systems-engineering",
+      "profile": "shell",
       "extract": "testing"
     },
     {
       "heading": "Code Style & Conventions",
       "source": "governance",
-      "profile": "systems-engineering",
+      "profile": "shell",
       "extract": "shell-standards"
     },
     {

@@ -1,0 +1,40 @@
+{
+  "profiles": {
+    "core": {
+      "requires": [],
+      "removable": false,
+      "description": "Always active. Commit protocol, verification, security hygiene, dependency management",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "shell": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Bash/shell projects. Quoting, portability, signal handling, BATS testing",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "python": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Python projects. Typing, packaging, pytest, async conventions",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "frontend": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Web frontend. Component architecture, a11y, CSS methodology, performance",
+      "summary": "governance-template + 4 reference docs"
+    },
+    "database": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Database engineering. Schema design, migration safety, query discipline",
+      "summary": "governance-template + 4 reference docs"
+    },
+    "go": {
+      "requires": ["core"],
+      "removable": true,
+      "description": "Go projects. Error handling, concurrency, interfaces, modules",
+      "summary": "governance-template + 3 reference docs"
+    }
+  }
+}

@@ -6,16 +6,19 @@
 
 | Profile | Requires | Description |
 |---------|----------|-------------|
-| core | -- | Always active. Commit protocol, verification checks, artifact taxonomy |
-| systems-engineering | core | Bash/shell projects. Shell standards, portability, BATS testing |
-| frontend | core | Web/frontend projects. Accessibility, component testing, browser compat |
-| security | core | Security assessments. OWASP methodology, threat modeling, severity schema |
+| core | -- | Always active. Commit protocol, verification, security hygiene, dependency management |
+| shell | core | Bash/shell projects. Quoting, portability, signal handling, BATS testing |
+| python | core | Python projects. Typing, packaging, pytest, async conventions |
+| frontend | core | Web frontend. Component architecture, a11y, CSS methodology, performance |
+| database | core | Database engineering. Schema design, migration safety, query discipline |
+| go | core | Go projects. Error handling, concurrency, interfaces, modules |
 
 ## Future Profiles
 
 | Profile | Requires | Description |
 |---------|----------|-------------|
-| python | core | Python projects. Typing, venv, pytest conventions |
+| rust | core | Rust projects. Ownership patterns, error handling, cargo conventions |
+| java | core | Java projects. Build tooling, dependency management, testing frameworks |
 | full-stack | core, frontend, python | Cross-layer integration. Composes frontend + backend profiles |
 
 ## Profile Structure
@@ -34,3 +37,9 @@ Profiles do NOT contain:
 Multiple profiles compose naturally. /r:init merges governance
 templates in dependency order (core first, then domain profiles).
 When templates conflict, the more specific profile wins.
+
+## Machine-Readable Registry
+
+`registry.json` is the authoritative source for profile metadata.
+CLI commands (`rdf profile list/install/remove/status`) read from
+registry.json. This markdown file is for human reference only.
