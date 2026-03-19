@@ -593,3 +593,71 @@ excluded:
 
 If the user chooses to exclude, add `.claude/governance/` to
 `.git/info/exclude` (not `.gitignore`, to avoid polluting the repo).
+
+---
+
+## Rules
+
+### Supplement Model
+
+1. **NEVER modify existing convention files** — CLAUDE.md, AGENTS.md,
+   GEMINI.md, MEMORY.md, PLAN.md, .cursorrules, and
+   .github/copilot-instructions.md are read-only inputs to /r:init.
+2. **NEVER duplicate content** — if an existing file covers a topic,
+   the governance file MUST cross-reference it by section name and
+   line range instead of copying the content.
+3. **Generate only for gaps** — governance files contain original
+   content only for topics not covered by any existing file.
+4. **Never silently resolve conflicts** — every disagreement between
+   sources must appear in the low-confidence report.
+
+### Error Handling
+
+1. If the target path does not exist, report an error and stop.
+2. If the target path has no `.git/`, warn the user that git history
+   analysis (Phase 3) will be skipped, then continue with remaining
+   phases.
+3. If no convention files AND no source files are found, report that
+   the directory appears empty and stop.
+4. If `.claude/governance/` already exists with files, warn the user:
+   - "Governance files already exist. To update, use /r:refresh instead."
+   - "To regenerate from scratch, delete .claude/governance/ first."
+   - Stop without modifying existing governance files.
+
+### Monorepo Behavior
+
+1. `/r:init .` at the repo root produces governance for the dominant
+   patterns across the whole repository.
+2. `/r:init ./services/api` scopes Phases 2-3 to that subdirectory
+   but still checks parent directories for convention files (Phase 1).
+3. Scoped governance is written to `{subdir}/.claude/governance/`,
+   NOT to the repo root's `.claude/governance/`.
+4. The architecture.md for a root-level init in a monorepo documents
+   all service boundaries and their individual technology stacks.
+
+### Re-Init vs Refresh
+
+- `/r:init` is for first-time governance generation. It refuses to
+  run if `.claude/governance/` already exists (see Error Handling #4).
+- `/r:refresh` is for updating governance after codebase changes.
+  It preserves user modifications and updates scan-derived content.
+- To force a full re-init, the user must delete `.claude/governance/`
+  first.
+
+### Performance
+
+- Phase 1 (ingest) should complete in under 30 seconds for typical
+  projects. Read files but do not load entire contents into context
+  unless they are under 500 lines. For large files, scan section
+  headers and extract the coverage map from headings.
+- Phase 2 (scan) uses file extension counting and targeted reads of
+  config files — do NOT read every source file in the project.
+- Phase 3 (tooling) reads specific config file paths — do NOT
+  traverse the entire tree.
+- Git history analysis is limited to the last 50 commits.
+
+### Idempotency
+
+If /r:init is run and produces governance files, running /r:init
+again (without deleting governance/) will NOT modify anything — it
+detects existing governance and directs the user to /r:refresh.
