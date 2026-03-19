@@ -1,0 +1,34 @@
+{
+  "r-ship": {
+    "name": "/r:ship",
+    "type": "skill-with-subagents",
+    "description": "Composite release workflow — preflight, verification, release prep, publish, report",
+    "dispatches": ["qa", "reviewer"],
+    "dispatch_mode": "parallel",
+    "reads_governance": ["index.md", "verification.md", "conventions.md"]
+  },
+  "r-audit": {
+    "name": "/r:audit",
+    "type": "skill-with-subagents",
+    "description": "Full codebase audit — dispatches parallel reviewer and qa subagents",
+    "dispatches": ["reviewer", "reviewer", "reviewer", "qa"],
+    "dispatch_mode": "parallel",
+    "reads_governance": ["index.md", "verification.md", "anti-patterns.md", "constraints.md", "architecture.md"]
+  },
+  "r-refresh": {
+    "name": "/r:refresh",
+    "type": "skill",
+    "description": "Re-scan codebase and update governance files",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md", "constraints.md", "anti-patterns.md"]
+  },
+  "r-sync": {
+    "name": "/r:sync",
+    "type": "skill",
+    "description": "Pull emergency edits from ~/.claude/ back to rdf/canonical/",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": []
+  }
+}

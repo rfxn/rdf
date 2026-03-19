@@ -1,126 +1,134 @@
-Re-scan the codebase and update governance files while preserving user
-modifications. This is an incremental update — not a full re-init.
+You are running the /r:refresh governance refresh. This command
+re-scans the codebase and updates governance files to match current
+reality, preserving user modifications.
 
-`$ARGUMENTS` is the target path (optional, defaults to `.`).
+## Arguments
 
----
+$ARGUMENTS — optional scope:
+- No args or `all`: full refresh (governance + state files)
+- `governance`: refresh .claude/governance/ files only
+- `state`: refresh MEMORY.md and PLAN.md only (v2 behavior)
+- `github`: sync GitHub issue state with local plan (deterministic)
 
-## Prerequisites
+## Setup
 
-- `.claude/governance/` must already exist (created by /r:init)
-- If governance does not exist, instruct the user to run /r:init first
+- Read .claude/governance/index.md to understand current governance
+- Check governance file ages (modification times)
+- Read .claude/governance/.user-modified if it exists (list of files
+  the user has manually edited — these get merge treatment, not
+  overwrite)
 
-## Protocol
+## Stage 1: Codebase Re-Scan (init phases 2-3)
 
-### Step 1: Detect User Modifications
+Re-run the /r:init codebase analysis against current state:
 
-Before updating any governance file, check for user modifications:
+### 1a. Phase 2 — Codebase Scan
+- Language detection (file extensions, shebangs, package manifests)
+- Framework detection (package.json deps, imports, config files)
+- Directory structure mapping (src/, tests/, lib/, etc.)
+- Build system (Makefile, package.json scripts, CI configs)
+- Test framework (jest, pytest, bats, go test, etc.)
+- Linter/formatter configs (.eslintrc, .prettierrc, shellcheck, etc.)
 
-1. Read `.claude/governance/.user-modified` if it exists — this file
-   lists governance files the user has manually edited.
-2. For each governance file, check if it has been modified since the
-   last /r:init or /r:refresh by comparing content against the
-   generated markers.
-3. Build a protected-files list — these files will NOT be overwritten.
+### 1b. Phase 3 — Tooling & Infrastructure Detection
+- CI/CD: .github/workflows/, .gitlab-ci.yml, Jenkinsfile
+- Containers: Dockerfile, docker-compose.yml
+- Platform targets: CI matrix, target OS in configs
+- Dependencies: lockfiles, version constraints
+- Git patterns: branch naming, commit conventions (from log)
 
-### Step 2: Re-Ingest Convention Files (Phase 1 Lite)
+### 1c. Diff Against Current Governance
+- Compare scan results with existing governance files
+- Identify: new findings, removed findings, changed findings
+- Track drift (governance says X but codebase now shows Y)
 
-Re-read existing convention files to check for changes since last init:
+## Stage 2: Re-Ingest Authoritative Files (init phase 1, partial)
 
-- If a convention file has been added (e.g., new CLAUDE.md), incorporate
-  it into the coverage map.
-- If a convention file has been modified, update cross-references in
-  governance files to reflect new section names or line ranges.
-- If a convention file has been removed, flag this and convert
-  cross-references to inline content from scan data.
+- Re-read CLAUDE.md, AGENTS.md, and other convention files
+- Compare against governance references to these files
+- If authoritative files have changed, update governance pointers
+- Do NOT modify the authoritative files themselves
 
-### Step 3: Re-Run Phase 2 (Codebase Scan)
+## Stage 3: Update Governance Files (init phase 4)
 
-Follow the same procedure as /r:init Phase 2. Compare results against
-existing governance to identify:
+For each governance file in .claude/governance/:
 
-- New languages or frameworks added to the project
-- Removed dependencies or changed tooling
-- New test files or changed test infrastructure
-- New or changed linter configurations
+### 3a. Check User-Modified Status
+- If the file is listed in .user-modified: MERGE mode
+  - Show the user what would change
+  - Ask for confirmation before applying
+  - Preserve user additions, update only generated sections
+- If the file is NOT user-modified: UPDATE mode
+  - Overwrite with regenerated content
 
-### Step 4: Re-Run Phase 3 (Tooling Detection)
+### 3b. Update Each File
+- index.md — regenerate from current scan (always updated)
+- architecture.md — update component map, boundaries
+- conventions.md — update coding patterns from scan
+- verification.md — update check list from detected tools
+- constraints.md — update platform targets, version floors
+- anti-patterns.md — update from codebase patterns
 
-Follow the same procedure as /r:init Phase 3. Compare against existing
-governance for:
+### 3c. Track Changes
+- Record what changed in each file
+- Note any new governance files needed (new framework detected, etc.)
+- Note any governance files that are now unnecessary (framework removed)
 
-- New or changed CI workflows
-- New Dockerfiles or compose configurations
-- Changed platform targets
-- New git patterns (branch naming changes, commit convention changes)
+## Stage 4: Validate (init phase 5)
 
-### Step 5: Update Governance Files (Phase 4 Incremental)
+- Spot-check updated governance against codebase
+- Verify file references in index.md still point to existing files
+- Flag low-confidence inferences for user review
+- If drift was detected in Stage 1, report it prominently
 
-For each governance file that is NOT in the protected-files list:
+## Stage 5: Refresh State Files (if scope includes state)
 
-1. **Regenerate** the file content using the same merge logic as
-   /r:init Phase 4 (reference existing .md, generate from scan, etc.)
-2. **Diff** the new content against the existing governance file
-3. **Apply updates** — overwrite the file with new content
-4. If the file IS in the protected-files list, generate the new
-   content but write it to `.claude/governance/.pending/{filename}`
-   instead, with a note:
-   ```
-   User-modified file not updated. Pending changes written to:
-   .claude/governance/.pending/{filename}
-   Review and merge manually.
-   ```
+### 5a. Refresh MEMORY.md
+- Locate MEMORY.md (auto-memory path or project-local)
+- Update version, branch, HEAD hash from git
+- Update test count from test files
+- Append new commits since last recorded hash
+- Cross-reference PLAN.md phase statuses
+- Size guard: warn if >= 180 lines
 
-### Step 6: Re-Run Phase 5 (Validate)
+### 5b. Refresh PLAN.md
+- Cross-reference phases against git log
+- Mark completed phases with commit hash evidence
+- Update status summary
 
-Follow the same validation procedure as /r:init Phase 5.
+### 5c. Sync GitHub Issues (if scope includes github)
+- Cross-reference GitHub issues with PLAN.md
+- Close phase issues for completed phases
+- Reopen issues for incomplete phases marked closed
+- Update initiative status if all children complete
 
-### Step 7: Update Index
+## Stage 6: Output Summary
 
-Regenerate `.claude/governance/index.md` to reflect current state.
-The index is ALWAYS regenerated (never user-protected) because it
-must accurately reflect the current governance file set.
+    ## Refresh: {project} {version} ({branch})
 
-## Output Report
+    ### Governance
+    - index.md: {updated/unchanged}
+    - architecture.md: {updated/unchanged/user-modified merge}
+    - conventions.md: {updated/unchanged/user-modified merge}
+    - verification.md: {updated/unchanged}
+    - constraints.md: {updated/unchanged}
+    - anti-patterns.md: {updated/unchanged}
 
-```
-+-- /r:refresh Complete --------------------------------------------+
-| Target:     {path}                                                |
-| Duration:   {elapsed time}                                        |
-+-------------------------------------------------------------------+
-|                                                                   |
-| CHANGES DETECTED:                                                 |
-|   {list of meaningful changes since last init/refresh}            |
-|                                                                   |
-| UPDATED FILES:                                                    |
-|   {filename} — {summary of changes}                               |
-|   ...                                                             |
-|                                                                   |
-| PROTECTED FILES (user-modified):                                  |
-|   {filename} — pending changes in .pending/{filename}             |
-|   ...                                                             |
-|                                                                   |
-| CONFIDENCE:                                                       |
-|   HIGH: {count} | MEDIUM: {count} | LOW: {count}                 |
-|                                                                   |
-+-------------------------------------------------------------------+
-```
+    ### Drift Detected
+    - {description of each drift item, or "None"}
 
----
+    ### State Files
+    - MEMORY.md: {updated/skipped/not found} — {N} new commits
+    - PLAN.md: {updated/skipped/not found} — {N} phases updated
+    - GitHub: {synced/skipped/not configured} — {N} resolved
 
-## Rules
+    ### Low-Confidence Items
+    - {items flagged for user review, or "None"}
 
-1. **NEVER delete existing governance files** — update or skip, never remove.
-2. **NEVER overwrite user-modified files** — write pending changes to
-   `.pending/` for manual review.
-3. **ALWAYS regenerate index.md** — it must reflect current reality.
-4. If no changes are detected, report "Governance is up to date" and
-   skip file writes.
-5. The `.user-modified` marker file uses a simple format:
-   ```
-   # User-modified governance files
-   # Add filenames (one per line) to protect from /r:refresh overwrites
-   conventions.md
-   anti-patterns.md
-   ```
-   Users can add or remove entries manually to control protection.
+## Constraints
+- Never overwrite user-modified governance files without confirmation
+- Never modify authoritative files (CLAUDE.md, AGENTS.md, etc.)
+- Always validate governance after update (phase 5 spot-check)
+- State file refresh follows the same rules as v2 /refresh:
+  grep from source, never forward-copy stale values
+- Do NOT commit — refresh is a working-tree operation only
