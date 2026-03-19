@@ -15,6 +15,11 @@ to `/r:start` — save writes the journal, start reads it.
 
 ## Protocol
 
+Execute sections 1-7 silently — do NOT display per-section output.
+All results feed into the single consolidated report in section 8.
+Tool calls (git commands, file reads/writes) provide activity
+feedback in the terminal; text output is reserved for the report.
+
 ### 1. Compute Session Diff
 
 Determine what happened this session by examining git state:
@@ -32,15 +37,8 @@ Identify:
 - Uncommitted changes (staged + unstaged)
 - Files modified across all new commits
 
-Display as a key-value table:
-```
-### Session Diff
-| Property | Value |
-|----------|-------|
-| **Commits** | {N} new since `{start_hash}` |
-| **Files changed** | {committed} committed, {uncommitted} uncommitted |
-| **Branch** | `{branch}` |
-```
+Record values for the report: commit count, start hash, end hash,
+files changed count, dirty count, branch name.
 
 ### 2. Sync PLAN.md with Git
 
@@ -71,26 +69,9 @@ For each phase in PLAN.md:
 - Do NOT reorder phases or change descriptions
 - Do NOT change phases that are already marked complete (idempotent)
 - Update the progress summary at the top of PLAN.md if present
-  (e.g., "Phases 1-4 complete, Phase 5 in progress")
 
-Display plan sync results as a task list showing what changed:
-```
-### Plan Sync
-- [x] Phase 1 — *complete* (`a3f7c12`)
-- [x] Phase 2 — *complete* (`b4e8d23`) *(newly detected)*
-- [ ] **Phase 3** — *in-progress* (uncommitted changes)
-- [ ] Phase 4 — *pending* (no changes)
-```
-
-Phase styling:
-- `[x]` + plain text = already complete (no change)
-- `[x]` + *(newly detected)* italic = marked complete this save
-- `[ ]` + **bold** + *in-progress* italic = current work
-- `[ ]` + plain text + *pending* = untouched
-
-If no phases changed: `Plan: no changes — all phases up to date.`
-
-If `--dry-run`: show proposed changes without writing.
+Record for report: phases newly completed, phases in-progress,
+total phase count.
 
 ### 3. Sync MEMORY.md
 
@@ -107,35 +88,14 @@ If it does not exist, create it with the standard index format.
   for the version grep pattern)
 - **Pushed**: check `git status` for ahead/behind upstream
 
-**Record recent work:**
-- Find the last recorded HEAD hash in MEMORY.md
-- Run `git log {last_hash}..HEAD --oneline` to get new commits
-- If there are new commits, note them in the project state section
-
 **CRITICAL**: Never forward-copy values from prior MEMORY.md entries.
 Always grep from source or git for current values.
 
-Display MEMORY.md updates as a task list showing what was saved:
-```
-### Memory Sync
-- [x] **HEAD** updated: `a3f7c12` → `d5e9f01`
-- [x] **Branch** confirmed: `2.0.2`
-- [x] **Version** confirmed: `2.0.2`
-- [x] **Commits** recorded: {N} new (`{oldest_hash}`..`{newest_hash}`)
-- [ ] **Pushed**: *behind upstream by {N} commits*
-```
+**Size guard**: After updating, count total lines. If >=180, record
+a warning for the report.
 
-Use `[x]` for fields that were updated or confirmed current. Use
-`[ ]` for fields that need attention (behind upstream, version
-mismatch, etc.).
-
-**Size guard**: After updating, count total lines. If >=180, append
-a warning using a blockquote:
-```
-> **Warning** — `MEMORY.md` is {N}/200 lines. Run `/r:util:mem-compact`.
-```
-
-If `--dry-run`: show proposed changes without writing.
+Record for report: whether HEAD changed, commit count recorded,
+push status, any warnings.
 
 ### 4. Resolve AUDIT.md (if exists)
 
@@ -149,17 +109,9 @@ If `AUDIT.md` exists in the project root:
 - Update executive summary counts if findings were resolved
 - Do NOT delete findings — only annotate resolution status
 
-Display audit resolution as a task list (only if findings changed):
-```
-### Audit Sync
-- [x] **F-003**: path traversal guard — *resolved* (`c7d2e41`)
-- [x] **F-007**: missing input validation — *resolved* (`c7d2e41`)
-- [ ] **F-012**: race condition in lock file — *unresolved*
-```
+Record for report: findings resolved count, findings remaining.
 
-If no `AUDIT.md`: skip silently (no output).
-If no findings changed: `Audit: no changes.`
-If `--dry-run`: show which findings would be marked resolved.
+If no `AUDIT.md`: skip silently.
 
 ### 5. Write Session Log
 
@@ -189,22 +141,11 @@ The `head_before` value comes from: the last session-log entry's
 session's commits. If no commits were made, `head_before` equals
 `head_after`.
 
-Display the session log entry as a key-value table:
-```
-### Session Log
-| Property | Value |
-|----------|-------|
-| **Timestamp** | `2026-03-18T14:32:00Z` |
-| **HEAD** | `a3f7c12` → `d5e9f01` |
-| **Commits** | {N} |
-| **Files** | {N} changed, {N} dirty |
-| **Phases completed** | {list} |
-| **Written to** | `work-output/session-log.jsonl` |
-```
-
-If `--dry-run`: show the entry that would be appended.
-
 ### 6. Generate Session Insight
+
+**Zero-change sessions:** If the session produced 0 commits and 0
+dirty files, skip insight generation entirely — there is no session
+to reflect on.
 
 Reflect on the full session — what was built, how it was built, what
 went smoothly, what caused friction or rework. Distill a single
@@ -241,80 +182,107 @@ Tags are 1-3 categories from: `git`, `naming`, `testing`, `commands`,
 **Cap at 30 entries.** If the file exceeds 30 lines after appending,
 trim the oldest entries (from the top) to keep 30.
 
-**Zero-change sessions:** If the session produced 0 commits and 0
-dirty files, skip insight generation — there is no session to
-reflect on.
+### 7. Lessons Learned Prompt
 
-Display the insight in the output report (section 7) as part of
-the actions list.
+**Check auto-commit setting:** Read `~/.rdf/config.json` (if it
+exists) for the `auto_commit_insights` key.
 
-### 7. Output Report
+- If `true`: automatically append the insight to
+  `~/.rdf/lessons-learned.md` under the appropriate category heading.
+  Note `(auto-committed)` in the report. Skip the prompt.
+- If `false` or config does not exist: include the prompt in the
+  report (see section 8).
 
-The final report consolidates all sections into a compact summary.
-Use the session anchor table from r-start's style, a task list of
-actions taken, and a blockquote for the next-session hint.
+**Appending to lessons-learned.md:**
+
+When committing (either auto or user-confirmed), append the insight
+as a bullet under the matching category heading in
+`~/.rdf/lessons-learned.md`. If the file does not exist, create it
+with the standard header (see below). If the category heading does
+not exist, add it.
+
+Standard header for new file:
+```markdown
+# Lessons Learned
+
+Cross-session operational wisdom, promoted from session insights.
+Referenced by all AI tools via project CLAUDE.md / GEMINI.md.
+Max 50 entries — run `/r:util:mem-compact` to prune.
+```
+
+Category headings map from insight tags:
+- `git` → `## Git`
+- `naming` → `## Naming`
+- `testing` → `## Testing`
+- `commands` → `## Commands`
+- `context` → `## Context Management`
+- `planning` → `## Planning`
+- `review` → `## Review`
+- `performance` → `## Performance`
+- `workflow` → `## Workflow`
+- `scope` → `## Scope`
+
+Use the first tag as the category. Bullet format:
+`- {insight text}`
+
+**Cap at 50 entries.** If the file exceeds 50 bullets after
+appending, note it as a warning in the report.
+
+### 8. Output Report
+
+This is the ONLY visible text output from the entire save operation.
+Everything above executes silently — this section consolidates all
+results into one compact block.
+
+**Target: under 15 lines of visible output.**
 
 ```
 ## Save: {Project} v{version} (`{branch}`)
 
-### Summary
-| Property | Value | Property | Value |
-|----------|-------|----------|-------|
-| **Commits** | {N} new | **HEAD** | `{start_hash}` → `{end_hash}` |
-| **Files** | {committed} committed, {uncommitted} dirty | **Branch** | `{branch}` |
+| Commits | HEAD | Files | Dirty |
+|---------|------|-------|-------|
+| {N} new | `{start}` → `{end}` | {N} changed | {N} |
 
-### Actions
-- [x] **Session diff** — {N} commits, {N} files
-- [x] **Plan sync** — Phase {N} → *complete* (`{hash}`), Phase {M} *in-progress*
-- [x] **Memory sync** — HEAD updated, {N} commits recorded
-- [ ] **Audit sync** — *not present*
-- [x] **Session log** — appended to `work-output/session-log.jsonl`
-- [x] **Insight** — "{the punchline text}"
+- [x] **Plan** — {summary: "Phase 2 complete, Phase 3 in-progress" or "7 pending, no changes" or "no PLAN.md"}
+- [x] **Memory** — HEAD `{old}` → `{new}`, {N} commits recorded
+- [x] **Log** — appended to `session-log.jsonl`
+- [ ] **Audit** — *not present*
 
-> **Next session** — run `/r:start` to resume from Phase {N}.
+> **Insight**: {the punchline text}
+>
+> Commit as lesson learned? **y** / **n** / **auto**
+> *(auto saves future insights to `~/.rdf/lessons-learned.md`)*
+
+> **Next** — `/r:start` to resume. {context hint}
 ```
 
-Action styling:
-- `[x]` = action completed successfully
-- `[ ]` = action skipped (file not present, no changes, etc.)
-- Use *italic* for status keywords (*complete*, *in-progress*,
-  *not present*, *no changes*)
-- Use inline code for paths, hashes, and commands
+**Adaptation rules:**
 
-Adapt the line content to what actually happened — do not show
-placeholder lines for sections that were skipped. Examples:
-- Plan does not exist: `- [ ] **Plan sync** — *no* `PLAN.md` *found*`
-- Audit resolved findings: `- [x] **Audit sync** — {N} findings *resolved*`
-- No commits this session: `- [x] **Session diff** — 0 commits, {N} dirty files`
+- Only show action lines for sections that ran — omit lines for
+  sections that were entirely skipped (no PLAN.md = omit Plan line)
+- Exception: Audit line shows as `[ ]` with *not present* when
+  AUDIT.md does not exist (signals absence is known, not an error)
+- If auto-commit is enabled, replace the prompt block with:
+  `> **Insight** *(auto-committed)*: {text}`
+- If zero-change session (no insight generated), omit the insight
+  block entirely
+- If `--dry-run`, prefix heading with `[dry-run]` and append:
+  `> **Dry run** — no files were modified.`
+- Warnings (MEMORY.md >=180 lines, behind upstream) append to the
+  Next blockquote as additional `>` lines
 
-If `--dry-run`, prefix the report heading with `[dry-run]` and
-append a blockquote:
-```
-> **Dry run** — no files were modified. Review the proposed changes above.
-```
-
-## Formatting Guide
-
-Available markdown primitives and when to use them:
-
-| Primitive | Syntax | Best for |
-|-----------|--------|----------|
-| **Table** | `\| col \| col \|` | Session diff, session log, final summary |
-| **Task list** | `- [x]` / `- [ ]` | Plan sync, memory sync, audit sync, actions |
-| **Blockquote** | `>` | Warnings, next-session hint, dry-run notice |
-| **Bold** | `**text**` | Labels, property names, phase/finding identifiers |
-| **Italic** | `*text*` | Status keywords (*complete*, *in-progress*, *pending*) |
-| **Inline code** | `` `text` `` | Paths, hashes, commands, branch names |
-
-**Do NOT use** (not rendered in Claude Code):
-HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
-
-**Output size target:** Keep the final consolidated report (section 6)
-under 20 lines. The per-section displays (sections 1-5) are shown
-incrementally as work progresses and do not count toward this limit.
+**After displaying the report:** If the prompt is shown (not
+auto-commit), wait for the user's response:
+- **y**: Append insight to `~/.rdf/lessons-learned.md` per section 7.
+  Confirm: `Saved to lessons-learned.md`
+- **n**: Do nothing. Insight stays in rolling pool only.
+- **auto**: Write `{"auto_commit_insights": true}` to
+  `~/.rdf/config.json` (merge if file exists). Append this insight.
+  Confirm: `Auto-commit enabled. Saved to lessons-learned.md`
 
 ## Rules
 
+- Execute sections 1-7 silently — the report is the only output
 - Read before writing — never overwrite content you haven't read
 - Preserve all existing content structure and formatting
 - Only update facts that are verifiably stale (confirmed via git)

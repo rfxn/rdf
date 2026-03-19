@@ -23,7 +23,7 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 - Tag body lines: [New] [Change] [Fix] [Remove]
 - No Co-Authored-By / AI attribution
 - Stage files explicitly by name — never `git add -A` or `git add .`
-- Never commit: PLAN*.md, AUDIT.md, MEMORY.md, .claude/
+- Never commit: PLAN*.md, AUDIT.md, MEMORY.md, .claude/, .rdf/
 - Both CHANGELOG and CHANGELOG.RELEASE updated on code-changing commits
 
 ## Testing

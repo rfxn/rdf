@@ -44,6 +44,12 @@ commit, phase completion, or audit run.
 | spec-progress.md | `work-output/` | `/r:spec` | During design |
 | ship-progress.md | `work-output/` | `/r:ship` | During release |
 | session-log.jsonl | `work-output/` | `/r:save` | When active work |
+| insights.jsonl | `~/.rdf/` | `/r:save` | Rolling 30 entries |
+| lessons-learned.md | `~/.rdf/` | `/r:save` (user-promoted) | Cross-session wisdom |
+| config.json | `~/.rdf/` | `/r:save` (auto setting) | RDF preferences |
+
+**`~/.rdf/`:** Tool-agnostic RDF operational state. Never tracked in git.
+Referenced by parent CLAUDE.md / GEMINI.md / AGENTS.md for agent discovery.
 
 **MEMORY.md:** 200-line hard limit. Overflow to topic files.
 

@@ -13,7 +13,8 @@ Run /clear to reset conversation context before loading fresh state.
 ### 2. Gather State
 
 Run all data gathering in parallel where possible. Target: under
-5 seconds wall time.
+5 seconds wall time. Do NOT display results as they are gathered —
+all output is consolidated into the single dashboard in section 3.
 
 **From governance index** (`.claude/governance/index.md`):
 - Project name (from `## Project` section)
@@ -43,7 +44,6 @@ If governance does not exist, note it for the fallback display.
 
 **From work-output/** (if present):
 - Phase status files: `work-output/phase-*-status.md`
-- Agent feed: last 5 entries from `work-output/agent-feed.log`
 - Stale status files (mtime >1 hour)
 
 **Governance age:**
@@ -71,102 +71,87 @@ read first lines only.
 - `*/PLAN.md` in sub-projects: same grep — find any project with
   phases marked `in-progress` or `blocked`
 - `work-output/session-log.jsonl`: if present, read last entry for
-  the previous session's end-state (already gathered in step 5)
+  the previous session's end-state
 
-### 3. Display Session Anchor
-
-Use a 4-column markdown table with meaningful headers. The anchor
-answers: "Where am I? What's the state? What needs attention?"
-
-**Single-project anchor** (inside a git repo):
-
-```
-### Session Anchor
-| Property | Value | Property | Value |
-|----------|-------|----------|-------|
-| **Project** | {name} {version} | **Branch** | {branch} |
-| **HEAD** | {hash} ({age}) | **Dirty** | {N} files |
-| **Plan** | {M/N} phases | **Mode** | {mode} |
-| **Governance** | {N} files ({T}h old) | **Last commit** | {1-line summary} |
-```
-
-**Parent workspace anchor** (not a git repo, multiple sub-projects):
-
-Gather aggregate state: count sub-project directories that contain
-`.git/`, sum dirty files across all, find the most recent commit
-across all projects.
-
-```
-### Session Anchor
-| Property | Value | Property | Value |
-|----------|-------|----------|-------|
-| **Workspace** | {basename} | **Projects** | {N} repos |
-| **Active** | {N} with commits <24h | **Dirty** | {N} files across {M} repos |
-| **Last activity** | {project}: {hash} ({age}) | **MEMORY.md** | {N}/200 lines |
-```
-
-Drop governance row for parent workspaces — governance is per-project.
-Drop date — the terminal and system context already provide it.
-MEMORY.md line count belongs here only for parent workspaces (the
-constraint is workspace-scoped); for single projects it moves to
-the warnings section at >=180 lines.
-
-### 4. Display In-Flight Work
-
-Show this section only if at least one signal fires. It answers:
-"Is there interrupted work I should resume or clean up?"
-
-Use a blockquote header with task list items. Task lists give
-instant visual state — unchecked = needs attention, checked = resolved
-or acknowledged. The blockquote draws the eye to this section.
-
-```
-> **In Flight** — {N} signals
-
-- [ ] **Handoff**: {title} — {progress summary}
-- [ ] **Spec**: {topic} — Phase {N} *{phase name}*
-- [ ] **Ship**: {current stage}
-- [ ] **Plan**: `brute-force-detection/PLAN.md` — Phase 4 *in-progress*
-- [ ] **Plan**: `PLAN-pkglib.md` — 3 pending phases
-- [ ] **Dispatch**: `current-phase.md` — pkg_lib Phase 1 *(stale, 12d)*
-```
-
-**Signal priority** (display order):
-1. **Handoff** — explicit interrupted session. Always show first.
-2. **Spec** — active spec design. Show topic and current phase from
-   `work-output/spec-progress.md`.
-3. **Ship** — active shipping workflow. Show current stage from
-   `work-output/ship-progress.md`.
-4. **Plan (in-progress/blocked)** — active workstreams. Show project
-   name, which phases are in-progress or blocked. Use *italic* for
-   the status keyword.
-5. **Plan (has pending phases)** — dormant plans with unfinished work.
-   Show count of pending phases only (no per-phase detail).
-6. **Dispatch** — stale `current-phase.md`. Show project, phase, age
-   in *(italic parenthetical)*.
-
-**Suppression rules:**
+**In-flight suppression rules:**
 - Plans where ALL phases are `complete`: omit entirely
 - Plans where all non-complete phases are `pending` and no phases
   are `in-progress` or `blocked`: show only if the plan was modified
   within the last 7 days (recent intent, not ancient debris)
 - `current-phase.md` older than 30 days: omit (dead context)
-- If no signals fire, skip this section entirely
 
-**For parent workspaces:** scan both root `PLAN-*.md` files and
-`*/PLAN.md` inside sub-project directories. For single-project
-workspaces: scan only `PLAN.md` in cwd.
+**Insights** (parallel with other checks):
+- Read `~/.rdf/insights.jsonl` for display in the dashboard
+- Read `~/.rdf/lessons-learned.md` to confirm it exists (for the
+  agent's own awareness, not for display)
 
-### 5. Display Plan Status
+### 3. Display Dashboard
 
-If PLAN.md exists and has phases, use task list checkboxes — they
-communicate completion state at a glance without needing a status
-column. Bold the in-progress phase to draw focus.
+All output is ONE consolidated block. This is the only visible
+output from the entire start operation. Target: under 25 lines.
+
+**Single-project dashboard:**
 
 ```
-### Plan Progress
-- [x] Phase 1 — {desc, truncated to 30c}
-- [x] Phase 2 — {desc}
+### {Project} {version} — `{branch}` @ `{hash}` ({age})
+
+| Plan | Dirty | Mode | Governance |
+|------|-------|------|------------|
+| {M}/{N} phases | {N} files | {mode} | {N} files ({T}h) |
+
+{in-flight block — only if signals exist}
+
+{plan progress — only if PLAN.md exists}
+
+{recent commits OR last session summary}
+
+{warnings — inline, only if any}
+
+---
+
+{insights block — only if insights exist}
+```
+
+**Parent workspace dashboard:**
+
+```
+### {workspace} — {N} repos, {N} active
+
+| Last Activity | Dirty | MEMORY.md |
+|---------------|-------|-----------|
+| {project}: `{hash}` ({age}) | {N} files / {M} repos | {N}/200 |
+
+{in-flight block}
+
+{recent activity across repos}
+
+---
+
+{insights block}
+```
+
+### Section details
+
+**In-flight block** — show only if signals fire. Compact format:
+
+```
+> **In Flight**: {one-line per signal, semicolon-separated if <=2}
+
+> **In Flight** — {N} signals
+> - **Handoff**: {title} — {progress}
+> - **Plan**: `PLAN.md` — Phase 4 *in-progress*
+> - **Spec**: {topic} — Phase {N}
+```
+
+For 1-2 signals, use a single `>` line with semicolons. For 3+
+signals, use the bulleted list format. Signal priority order:
+Handoff > Spec > Ship > Plan (in-progress) > Plan (pending) >
+Dispatch (stale).
+
+**Plan progress** — task list checkboxes:
+
+```
+- [x] Phase 1 — {desc, 30c max}
 - [ ] **Phase 3 — {desc}** *(in-progress)*
 - [ ] Phase 4 — {desc}
 
@@ -179,85 +164,36 @@ Phase styling:
 - `[ ]` + plain text = pending
 - `[ ]` + ~~strikethrough~~ + *(blocked)* italic = blocked
 
-If no PLAN.md: `Plan: none — run /r:plan to create one.`
+If no PLAN.md: `Plan: none — `/r:plan` to create one.`
 
-### 6. Display Last Session Summary
+**Recent commits / last session** — prefer session log if available:
 
-If `work-output/session-log.jsonl` exists, read the last entry and
-display what happened in the previous session:
-
+From session log:
 ```
-### Last Session ({age} ago)
-- {N} commits on {branch}
-- Completed: Phase {N} ({description})
-- In progress: Phase {N} ({description})
+Last session ({age}): {N} commits — {summary of work}
 ```
 
-If the session log does not exist, fall back to recent git commits:
-
+Fallback to git log (3 commits max):
 ```
-### Recent Commits
-- {hash} {message} ({age})
-- {hash} {message} ({age})
-- {hash} {message} ({age})
+- `{hash}` {message} *({age})*
+- `{hash}` {message} *({age})*
+- `{hash}` {message} *({age})*
 ```
 
-### 7. Display Agent Activity
-
-If work-output/agent-feed.log exists and has entries newer than the
-last commit, show the last 3 agent completions:
+**Warnings** — inline blockquote, only if warnings exist:
 
 ```
-### Agent Activity
-- {timestamp} {agent_type} on {project} — {preview}
-- {timestamp} {agent_type} on {project} — {preview}
+> **Warn**: Governance {T}h old — `/r:refresh` | MEMORY.md {N}/200 — `/r:util:mem-compact`
 ```
 
-### 8. Warnings
+Use pipe `|` separators for multiple warnings on one line.
+Only show if thresholds are exceeded:
+- Governance stale: >24 hours
+- Dirty state: >5 files
+- Status file stale: >1 hour
+- Memory size: >=180 lines
 
-Collect and display warnings using a blockquote. The vertical bar
-naturally reads as "pay attention" and visually separates warnings
-from the data sections above.
-
-```
-> **Warnings**
-> - Governance is {T}h old — run `/r:refresh`
-> - {N} uncommitted files across {M} repos
-> - Phase {N} status file is stale (>1h) — likely interrupted
-> - MEMORY.md at {N}/200 lines — run `/r:util:mem-compact`
-```
-
-Only show the warnings block if there are warnings to display.
-Use inline code for command references so they stand out as
-actionable.
-
-Governance stale threshold: >24 hours.
-Dirty state threshold: >5 files.
-Status file stale threshold: >1 hour.
-Memory size threshold: >=180 lines.
-
-### 9. Display Insights
-
-Read `~/.rdf/insights.jsonl`. If the file does not exist or is
-empty, skip this section entirely.
-
-**Selection (two-tier, 3 insights max):**
-
-1. Scan all entries for project matches — the `project` field
-   matches the current project name (basename of cwd for single-
-   project, or the most recently active sub-project for workspaces).
-   Select the most recent match as the **pinned project insight**.
-2. From remaining entries, select the 2 most recent as **universal
-   insights**.
-3. If no project match exists, show 3 most recent universal.
-4. If fewer than 3 total insights exist, show what is available.
-
-**Display format:**
-
-Use a horizontal rule separator, a `###` heading, and a blockquote
-list. Each insight gets an italic attribution showing source project,
-tool, and age. The pinned project insight shows first with its
-project name bolded.
+**Insights block** — separated by horizontal rule, at the bottom:
 
 ```
 ---
@@ -269,51 +205,19 @@ project name bolded.
 > - {insight text} *— {project}, {tool}, {age}*
 ```
 
-Example:
+Selection (two-tier, 3 max):
+1. Most recent project-matching entry = pinned (bold project name)
+2. 2 most recent from remaining entries = universal
+3. No project match = 3 most recent universal
+4. Fewer than 3 total = show what exists
 
-```
----
+If no insights exist, omit the rule and the entire section.
 
-### Insights
-
-> - **apf**: Sweep all adapter metadata after renames — Gemini CLI was missed on first pass. *— claude-code, 2h ago*
-> - Untrack working docs early to avoid noisy deletion commits. *— rdf, claude-code, 1d ago*
-> - Batch related renames into one commit to keep diffs reviewable. *— bfd, gemini-cli, 3d ago*
-```
-
-If no project-pinned insight exists, omit the bold project prefix
-on the first item — all three are universal:
-
-```
-> - {insight text} *— {project}, {tool}, {age}*
-> - {insight text} *— {project}, {tool}, {age}*
-> - {insight text} *— {project}, {tool}, {age}*
-```
-
-### 10. Load CLAUDE.md
+### 4. Load CLAUDE.md
 
 Read the project's `CLAUDE.md` (if present) to internalize project
-instructions. Do NOT display its contents — just confirm it was loaded.
-
-## Formatting Guide
-
-Available markdown primitives and when to use them:
-
-| Primitive | Syntax | Best for |
-|-----------|--------|----------|
-| **Table** | `\| col \| col \|` | Structured data, dashboards, key-value pairs |
-| **Task list** | `- [x]` / `- [ ]` | Phase progress, in-flight items, checklists |
-| **Blockquote** | `>` | Warnings, callouts, anything needing visual separation |
-| **Bold** | `**text**` | Labels, section headers within lists |
-| **Italic** | `*text*` | Status keywords, secondary info, parentheticals |
-| **Bold+italic** | `***text***` | Urgent emphasis (use sparingly) |
-| **Inline code** | `` `text` `` | Paths, hashes, commands, values that need to pop |
-| **Strikethrough** | `~~text~~` | Blocked/suppressed items |
-| **Heading** | `##` / `###` | Major / minor section breaks |
-| **Rule** | `---` | Lightweight section divider (lighter than heading) |
-
-**Do NOT use** (not rendered in Claude Code):
-HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
+instructions. Do NOT display its contents — just confirm it was
+loaded as the last line of output.
 
 ## Rules
 - Do NOT load full governance file contents (architecture.md, etc.)
@@ -323,7 +227,7 @@ HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 - Do NOT read MEMORY.md — it is loaded into context automatically
   and is human-facing, not operational.
 - Do NOT run tests, lint, or any expensive operations.
-- Keep total output under 40 lines. Use tables, task lists, and
-  blockquotes over prose — see Formatting Guide above.
+- Keep total output under 25 lines. Consolidate into the single
+  dashboard — no incremental per-section displays.
 - Target under 5 seconds wall time — all git commands can run in
   parallel.
