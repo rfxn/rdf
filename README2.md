@@ -1,31 +1,21 @@
 # RDF -- rfxn Development Framework
 
+![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
+![Version](https://img.shields.io/badge/version-3.0.0-green.svg)
+![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
+![Profiles](https://img.shields.io/badge/profiles-6-orange.svg)
+
 **Governance-driven AI development for teams that ship to production.**
 
 RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Gemini CLI, Codex), encoding project conventions, quality gates, and domain expertise into typed agent personas -- so the AI writes code that actually follows your rules.
-
-**License:** GNU GPL v2 | **Author:** Ryan MacDonald <ryan@rfxn.com>
 
 ---
 
 ## How It Works
 
-```
-                    /r:spec              /r:plan             /r:build            /r:ship
-                   ─────────            ─────────           ─────────           ─────────
-  Your idea   ->   research    ->   decompose into   ->   execute with   ->   release
-  or GH issue      brainstorm       implementation        TDD + quality       with PR
-                   write spec        plan (PLAN.md)        gates per phase     and tags
-
-  INPUT:           request or        spec document         PLAN.md             complete branch
-                   GitHub issue
-
-  OUTPUT:          docs/specs/*.md   PLAN.md               committed code      PR + tag
-
-  AGENT:           planner           planner               dispatcher ->       qa + reviewer
-                                                           engineer ->
-                                                           qa/reviewer/uat
-```
+<p align="center">
+  <img src="assets/pipeline.svg" alt="RDF Pipeline: spec -> plan -> build -> ship" width="100%"/>
+</p>
 
 Six universal agents handle every project. Their behavior is shaped by governance files initialized per-project -- not baked into prompts. A QA agent reviewing a bash firewall tool and a QA agent reviewing a Python pipeline follow different rules because their governance files are different, not because they are different agents.
 
