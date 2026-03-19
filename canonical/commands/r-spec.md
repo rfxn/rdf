@@ -286,16 +286,30 @@ that the plan phase is decomposition, not discovery.
 
 #### 3.1.1 Read the Codebase
 
-Before writing the spec, read every file in scope. Collect:
-- Current file sizes (line counts)
-- Function inventories (names, locations, line ranges)
+Before writing the spec, read every file in scope and produce a
+**Codebase Inventory** — a structured table written to scratch
+(inline or work-output) BEFORE starting the spec. This forces
+concrete data commitment before prose.
+
+**Mandatory inventory table:**
+
+```
+### Codebase Inventory
+
+| File | Lines | Key Functions | Dependencies | Test File |
+|------|-------|--------------|--------------|-----------|
+| path/to/file.sh | 247 | func_a(), func_b() | sources lib.sh | tests/file.bats |
+```
+
+Additionally collect:
 - Dependency chains (what sources what, in what order)
 - Existing patterns and conventions (boilerplate, naming, guards)
-- Test file references to files being changed
+- Dead code candidates encountered during reading
 
 This is mandatory. Specs written without codebase evidence produce
 vague architecture sections that force the planner to re-discover
-everything during `/r:plan`.
+everything during `/r:plan`. The inventory table is the proof that
+files were actually read, not just referenced from memory.
 
 #### 3.1.2 Write Design Document
 
@@ -333,9 +347,35 @@ The core of the spec. Must include:
 - **Dependency Rules** — constraints on the architecture
 
 **Section 5: File Contents**
-For every new or significantly modified file, describe contents at
-the function level. Group functions by sub-domain. Include
-dependencies at the bottom of each file's description.
+For every new file, produce a **function inventory table**:
+
+```
+| Function | Signature | Purpose | Dependencies |
+|----------|-----------|---------|--------------|
+| _migrate_governance() | (src_dir, dest_dir) | Move governance files | _verify_dir() |
+```
+
+For every significantly modified file, produce a **change inventory**:
+
+```
+| Function | Current behavior | New behavior | Lines affected |
+|----------|-----------------|--------------|----------------|
+| _setup_exclude() | writes .claude/ | writes .rdf/ | 122-133 |
+```
+
+Prose descriptions are NOT sufficient. Tables are mandatory. Group
+by sub-domain. Include dependencies at the bottom of each file's
+description.
+
+**Section 5b: Examples**
+Mandatory for any spec that introduces or modifies user-facing
+commands, output formats, or file structures. Must include:
+- Exact CLI invocation and expected stdout (code block)
+- Before/after state comparison (file tree, config content)
+- Error output for at least one failure case
+
+If the spec is purely internal (no user-facing change), state
+"Internal refactor — no user-facing output changes" and skip.
 
 **Section 6: Conventions**
 Exact templates and patterns used across multiple files: boilerplate,
@@ -354,25 +394,66 @@ omit the section header.
 Findings table of dead code discovered during codebase reading, or
 "No dead code found."
 
-**Section 10: Verification**
-Exact commands to verify the spec's goals are met after implementation.
+**Section 10a: Test Strategy**
+What tests to write, where they live, what they cover. For shell
+projects: BATS test file names and `@test` descriptions. For other
+stacks: test file paths and test function names. Minimum: one test
+per goal. Format:
+
+```
+| Goal | Test file | Test description |
+|------|-----------|-----------------|
+| Goal 1 | tests/migrate.bats | @test "migrate moves governance" |
+```
+
+If the project has no test infrastructure, state "Manual verification
+only" and explain why.
+
+**Section 10b: Verification Commands**
+Exact bash commands to verify goals are met post-implementation.
+Each command must include **expected output** (not just the command):
+
+```bash
+grep -r '\.claude/governance/' canonical/ | wc -l
+# expect: 0
+```
 
 **Section 11: Risks**
 Numbered list with specific mitigation for each. Risks are NOT edge
 cases — they are things that could cause implementation to fail.
+
+**Section 11b: Edge Cases**
+Mandatory table of input/state combinations requiring explicit
+handling. Minimum 5 entries. If fewer than 5 can be identified,
+the spec hasn't thought hard enough about failure modes.
+
+```
+| Scenario | Expected behavior | Handling |
+|----------|-------------------|---------|
+| Both .claude/ and .rdf/ exist | Error, refuse to proceed | doctor flags, manual resolution |
+```
 
 **Section 12: Open Questions**
 Should be empty if brainstorming was thorough.
 
 #### 3.1.3 Spec Quality Standard
 
-A spec is architecture-grade when:
+A spec is architecture-grade when ALL of the following are true.
+These are not aspirational — the reviewer checks each one and any
+failure is BLOCKING.
+
 1. The planner can decompose it into phases without re-reading source
 2. Every file is inventoried with contents and line estimates
-3. Dependencies are mapped as a tree, not just listed
-4. Goals are measurable and verification commands exist for each
-5. Migration safety is analyzed for every affected pathway
-6. Risks have mitigations, not just descriptions
+3. Section 5 has function inventory tables (not prose descriptions)
+4. Dependencies are mapped as a tree, not just listed
+5. Goals are measurable and verification commands exist for each
+6. Verification commands include expected output, not just the command
+7. Migration safety is analyzed for every affected pathway
+8. Risks have mitigations, not just descriptions
+9. Edge cases table has >=5 entries (Section 11b)
+10. Examples section shows concrete user-facing output (Section 5b)
+11. Test strategy maps every goal to at least one test (Section 10a)
+12. No-touch files are explicitly listed if the change involves rename/migration
 
 Update crash safety state:
 ```
@@ -386,23 +467,48 @@ Mark task "Write architecture-grade spec" as `completed`.
 
 Mark task "Challenge review and user approval" as `in_progress`.
 
-Dispatch the reviewer agent in challenge mode:
+Dispatch the reviewer agent in challenge mode. The dispatch prompt
+must include the quality standard as an explicit checklist:
 
 ```
-Review this spec for:
-- Vague sections (missing file inventories, missing line estimates)
+Review this spec against the quality standard. Each criterion is
+checked independently — if ANY fail, the finding is BLOCKING:
+
+1. Can the planner decompose without re-reading source?
+   Check: Section 5 has function inventory TABLES, not prose
+2. Every file inventoried with line estimates?
+   Check: count files in Section 4 file map vs files mentioned
+   elsewhere — mismatch = BLOCKING
+3. Dependencies mapped as a tree/diagram?
+   Check: Section 4 has ASCII or table dependency diagram
+4. Goals measurable with verification commands?
+   Check: Section 10b has a command for each goal in Section 2
+5. Verification commands include expected output?
+   Check: every command in 10b has a "# expect:" comment
+6. Migration safety analyzed for every pathway?
+   Check: Section 8 covers upgrade, install, rollback
+7. Risks have mitigations, not just descriptions?
+   Check: Section 11 has mitigation for every risk
+8. Edge cases table has >=5 entries?
+   Check: Section 11b exists and has >=5 rows
+9. Examples show concrete output?
+   Check: Section 5b has code blocks with exact CLI output
+10. Test strategy maps goals to tests?
+    Check: Section 10a has a test for every goal in Section 2
+11. No-touch files listed (if migration/rename)?
+    Check: files that must NOT change are explicitly enumerated
+
+Also review for:
 - Dependency ordering errors
-- Missing migration safety analysis
-- Risks without mitigations
-- Goals that cannot be verified with the listed verification commands
 - Simpler alternatives to the proposed architecture
+- Files referenced in prose but missing from the file map
 
 File: docs/specs/{filename}
 Mode: challenge
 
 Also read governance context:
-- .claude/governance/index.md
-- .claude/governance/constraints.md (if exists)
+- .rdf/governance/index.md
+- .rdf/governance/constraints.md (if exists)
 ```
 
 ### 3.3 Review-Fix Cycle

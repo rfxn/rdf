@@ -131,7 +131,7 @@ Mark task "Write execution-grade implementation phases" as `in_progress`.
 
 ### 2.1 Write Plan Preamble
 
-Every plan starts with three sections before any phases:
+Every plan starts with four sections before any phases:
 
 **Header:**
 
@@ -178,17 +178,42 @@ One table listing ALL files across the entire plan:
 ## File Map
 
 ### New Files
-| File | Lines | Purpose |
-|------|-------|---------|
+| File | Lines | Purpose | Test File |
+|------|-------|---------|-----------|
 
 ### Modified Files
-| File | Changes |
-|------|---------|
+| File | Changes | Test File |
+|------|---------|-----------|
 
 ### Deleted Files
 | File | Reason |
 |------|--------|
 ```
+
+Every new or modified file must have a corresponding test file column
+entry. If no test applies, state `N/A (config)` or `N/A (docs)`.
+
+**Phase Dependency Graph:**
+
+If any phase is tagged `[parallel-agent]`, include an ASCII dependency
+graph showing which phases can run concurrently and which block others:
+
+```markdown
+## Phase Dependencies
+
+Phase 1 (CLI tooling)
+  ├──► Phase 2 (migrate command)
+  │      └──► Phase 3 (migrate projects)
+  │             ├──► Phase 4 (update agents)      ← parallel
+  │             ├──► Phase 5 (update commands)     ← parallel
+  │             └──► Phase 6 (update templates)    ← parallel
+  │                    └──► Phase 7 (documentation)
+  │                           └──► Phase 8 (dead code)
+  └──────────────────────────────► Phase 9 (verify + push)
+```
+
+If all phases are sequential, state: `All phases sequential — no
+parallelization.`
 
 ### 2.2 Decompose Into Phases
 
@@ -253,8 +278,13 @@ checkboxes. Each step is 2-5 minutes of work.
 3. **Location** — file path and line numbers in the CURRENT file state
    (not the state after prior steps — use function names when line
    numbers will shift)
-4. **Verification** — command to run after this step (bash -n, grep,
-   test command)
+4. **Verification** — command to run after this step AND the expected
+   output. Never write a bare command without showing what success
+   looks like:
+   ```bash
+   grep -c '\.rdf/governance/' canonical/agents/engineer.md
+   # expect: 1
+   ```
 
 **The final step of every phase is a commit step** with a pre-written
 commit message.
@@ -263,6 +293,11 @@ commit message.
 (dependency ordering, scoping issue, variable shadowing, a "wait —
 this won't work because..."), preserve the reasoning inline. These
 notes prevent the engineer from re-discovering the same gotcha.
+
+**Edge case propagation:** If the spec (Section 11b) lists edge
+cases, each edge case must map to at least one step in the plan.
+Check the spec's edge case table and verify coverage. If an edge
+case is deferred, note it explicitly with rationale.
 
 ### 2.6 Phase Format
 
@@ -276,7 +311,7 @@ The complete format for each phase:
 {1-2 sentence summary of what this phase does and why}
 
 **Files:**
-- Create: `path/to/new.file`
+- Create: `path/to/new.file` (test: `tests/new.bats`)
 - Modify: `path/to/existing.file` (what changes)
 - Delete: `path/to/removed.file` (why)
 
@@ -284,8 +319,9 @@ The complete format for each phase:
 - **Risk**: {low | medium | high}
 - **Type**: {config | feature | refactor | ...}
 - **Gates**: {G1 | G1+G2 | ...}
-- **Accept**: {acceptance criteria — concrete, testable}
-- **Test**: {test strategy}
+- **Accept**: {acceptance criteria — concrete, testable, pass/fail}
+- **Test**: {test file + test names, or verification commands with expected output}
+- **Edge cases**: {spec edge cases covered by this phase, or "none"}
 
 - [ ] **Step 1: {action}**
 
@@ -293,7 +329,10 @@ The complete format for each phase:
 
 - [ ] **Step 2: Verify**
 
-  {verification commands}
+  ```bash
+  {command}
+  # expect: {expected output}
+  ```
 
 - [ ] **Step 3: Commit**
 
@@ -301,6 +340,16 @@ The complete format for each phase:
 
 ---
 ```
+
+**Mandatory phase metadata fields:** Mode, Risk, Type, Gates, Accept,
+Test, Edge cases. Omitting any field is a plan quality failure.
+
+**Accept criteria** must be concrete and testable — "governance works"
+is not acceptable. "grep -c '.rdf/governance/' in all 4 agent files
+returns 1 each" is acceptable.
+
+**Test field** must name specific test files or verification commands
+with expected output. "run tests" is not acceptable.
 
 Every phase MUST end with a `---` horizontal rule. This is the crash
 safety marker — a phase without a trailing `---` is considered
@@ -317,15 +366,39 @@ Mark task "Challenge review and user approval" as `in_progress`.
 ### 3.1 Plan Review
 
 After writing the full plan, dispatch the reviewer agent in challenge
-mode:
+mode. The dispatch prompt must include the quality standard as an
+explicit checklist:
 
 ```
-Review this implementation plan for:
+Review this implementation plan against the quality standard. Each
+criterion is checked independently — if ANY fail, finding is BLOCKING:
+
+1. Can a fresh agent execute any phase without reading the spec?
+   Check: steps have exact code blocks, not references to "the spec"
+2. Every verification step includes expected output?
+   Check: every verify step has "# expect:" comment
+3. Every phase has all 7 metadata fields?
+   Check: Mode, Risk, Type, Gates, Accept, Test, Edge cases present
+4. Accept criteria are concrete and testable?
+   Check: Accept lines contain commands or measurable conditions
+5. Test field names specific tests?
+   Check: Test lines have file paths or exact commands, not "run tests"
+6. Edge cases from spec mapped to phases?
+   Check: read spec Section 11b, verify each edge case appears in a phase
+7. Dependency graph present (if parallel phases exist)?
+   Check: if any phase is [parallel-agent], graph exists in preamble
+8. File Map has test column?
+   Check: every new/modified file has a test file entry or "N/A (reason)"
+
+Also review for:
 - Steps that are vague or ambiguous (missing code, missing line refs)
-- Missing verification steps
 - Dependency ordering errors (phase N uses something from phase N+1)
 - File ownership conflicts in parallel phases
-- Missing edge cases from the spec
+- Commit messages that don't match project conventions
+
+Calibration: only flag BLOCKING if the issue would prevent an engineer
+from executing the step without guessing. Style preferences, naming
+opinions, and alternative approaches are SUGGESTION, not BLOCKING.
 
 File: PLAN.md
 Mode: challenge
@@ -383,19 +456,29 @@ After all steps complete, present the pipeline handoff:
 
 ## Plan Quality Standard
 
-A plan is execution-grade when:
+A plan is execution-grade when ALL of the following are true. These
+are not aspirational — the reviewer checks each one and any failure
+is BLOCKING.
+
 1. A fresh agent can execute any phase without reading the spec
 2. Every create/modify action has exact code or exact old→new diff
-3. Every step has a verification command
+3. Every verification step includes expected output (`# expect:`)
 4. No step says "update X" without showing what the update is
 5. Line references point to current file state (verified by reading)
 6. Commit messages are pre-written with proper tag format
 7. Every phase ends with a `---` crash safety marker
+8. Every phase has all 7 metadata fields (Mode, Risk, Type, Gates,
+   Accept, Test, Edge cases)
+9. Accept criteria are concrete and testable (grep/wc/diff commands)
+10. Test field names specific test files or verification commands
+11. Edge cases from the spec are mapped to phases (none missed)
+12. File Map includes test file column for every new/modified file
+13. Dependency graph present if any phase is `[parallel-agent]`
 
 A plan that says "extract functions to new file" is an outline.
 A plan that says "cut lines 61-173 from functions.apf, paste after
-boilerplate in apf_ipt.sh, add sourcing line to hub, run bash -n"
-is execution-grade.
+boilerplate in apf_ipt.sh, add sourcing line to hub, run bash -n,
+expect exit 0" is execution-grade.
 
 ---
 
