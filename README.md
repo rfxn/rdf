@@ -275,9 +275,6 @@ rdf/
 |   |-- codex/                         # Codex adapter (AGENTS.md)
 |   +-- agents-md/                     # Cross-tool AGENTS.md
 |-- state/rdf-state.sh                 # Project state -> JSON (<1s)
-|-- docs/
-|   |-- specs/                         # Design specifications
-|   +-- plans/                         # Implementation plans
 +-- reference/                         # Diagrams, architecture docs
 ```
 
@@ -435,8 +432,6 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[RDF.md](RDF.md)** | Architecture scope, risk analysis, directory structure |
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
-| **[docs/specs/](docs/specs/)** | Design specifications (spec-plan-build-ship pipeline, profiles, etc.) |
-| **[docs/plans/](docs/plans/)** | Implementation plans |
 | **[CHANGELOG](CHANGELOG)** | Development history |
 | **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.0) |
 

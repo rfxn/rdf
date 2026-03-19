@@ -133,10 +133,6 @@ rdf/                                 # Repository root
 |-- state/
 |   +-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
 |
-|-- docs/
-|   |-- specs/                       # Architecture and design documents
-|   +-- plans/                       # Implementation plans
-|
 |-- CLAUDE.md                        # RDF project's own instructions
 |-- VERSION                          # "3.0.0"
 |-- CHANGELOG
