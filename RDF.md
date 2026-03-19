@@ -111,9 +111,11 @@ rdf/                                 # Repository root
 |   |-- registry.md                  # Profile catalog
 |   |-- core/                        # Core profile
 |   |   +-- governance-template.md   # Governance seed for /r:init
-|   |-- systems-engineering/         # Bash/shell projects
-|   |-- security/                    # Security assessment
-|   +-- frontend/                    # Web/frontend
+|   |-- shell/                       # Bash/shell projects
+|   |-- python/                      # Python projects
+|   |-- frontend/                    # Web/frontend
+|   |-- database/                    # Database projects
+|   +-- go/                          # Go projects
 |
 |-- adapters/
 |   |-- claude-code/
@@ -165,7 +167,7 @@ rdf/                                 # Repository root
 **Out of scope (deferred):**
 
 - Plugin marketplace publishing
-- Additional discipline profiles beyond core/systems-engineering/security/frontend
+- Additional discipline profiles beyond core/shell/python/frontend/database/go
 - SQLite state store (evaluate if flat files become unwieldy at 30+ projects)
 
 ---

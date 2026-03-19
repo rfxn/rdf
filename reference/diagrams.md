@@ -17,14 +17,18 @@ flowchart TD
 
     subgraph Profiles["Profile System"]
         Core[core/\ngovernance-template.md\nreference/framework.md]
-        SysEng[systems-engineering/\ngovernance-template.md\nreference/os-compat.md]
+        Shell[shell/\ngovernance-template.md\nreference/os-compat.md]
+        Python[python/\ngovernance-template.md]
         Frontend[frontend/\ngovernance-template.md\nreference/browser-matrix.md]
-        Security[security/\ngovernance-template.md\nreference/threat-model.md]
+        Database[database/\ngovernance-template.md]
+        Go[go/\ngovernance-template.md]
     end
 
-    Core --> SysEng
+    Core --> Shell
+    Core --> Python
     Core --> Frontend
-    Core --> Security
+    Core --> Database
+    Core --> Go
 
     subgraph Adapters["Adapters (tool-specific)"]
         CC[Claude Code\nagent-meta.json\nhooks.json\noutput/]
@@ -52,9 +56,11 @@ flowchart TD
     style Scripts fill:#553c9a,color:#fff
     style Reference fill:#553c9a,color:#fff
     style Core fill:#2b6cb0,color:#fff
-    style SysEng fill:#2b6cb0,color:#fff
+    style Shell fill:#2b6cb0,color:#fff
+    style Python fill:#2b6cb0,color:#fff
     style Frontend fill:#2b6cb0,color:#fff
-    style Security fill:#2b6cb0,color:#fff
+    style Database fill:#2b6cb0,color:#fff
+    style Go fill:#2b6cb0,color:#fff
     style CC fill:#276749,color:#fff
     style Gemini fill:#276749,color:#fff
     style AgentsMD fill:#276749,color:#fff

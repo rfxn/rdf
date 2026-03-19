@@ -202,9 +202,11 @@ rdf/
 |-- profiles/
 |   |-- registry.md                  # Profile catalog
 |   |-- core/                        # Core profile
-|   |-- systems-engineering/         # Bash/shell projects
-|   |-- security/                    # Security assessment
-|   +-- frontend/                    # Web/frontend
+|   |-- shell/                       # Bash/shell projects
+|   |-- python/                      # Python projects
+|   |-- frontend/                    # Web/frontend
+|   |-- database/                    # Database projects
+|   +-- go/                          # Go projects
 |
 |-- adapters/
 |   |-- claude-code/                 # CC adapter + metadata + output/
@@ -484,9 +486,11 @@ governance template is used by `/r:init`, not which agents are available.
 | Profile | Requires | Governance Template | Description |
 |---------|----------|---------------------|-------------|
 | core | -- | governance-template.md | Framework primitives -- always active |
-| systems-engineering | core | governance-template.md | Bash/shell projects |
-| security | core | governance-template.md | Security assessment |
+| shell | core | governance-template.md | Bash/shell projects |
+| python | core | governance-template.md | Python projects |
 | frontend | core | governance-template.md | Web/frontend |
+| database | core | governance-template.md | Database projects |
+| go | core | governance-template.md | Go projects |
 
 Each profile contains:
 - `governance-template.md` -- domain-specific governance seed
@@ -560,8 +564,8 @@ Each profile contains:
 | color-preview.sh | core | Terminal color palette preview |
 | test-half-clone.sh | core | Test harness for half-clone |
 | subagent-stop.sh | core | Capture agent completion events |
-| pre-commit-validate.sh | systems-engineering | Pre-commit lint + anti-pattern greps |
-| post-edit-lint.sh | systems-engineering | Post-edit shellcheck on modified files |
+| pre-commit-validate.sh | shell | Pre-commit lint + anti-pattern greps |
+| post-edit-lint.sh | shell | Post-edit shellcheck on modified files |
 
 ---
 
