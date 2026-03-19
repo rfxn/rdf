@@ -380,7 +380,8 @@ When security artifacts detected (redteam/, threat-model.md, security CI):
 | `lib/cmd/init.sh` | `_type_to_profile()` maps `shell` -> `"systems-engineering"` | Map to `"shell"` |
 | `lib/cmd/profile.sh` | Example usage, `_PROFILE_REGISTRY` references | Update all references |
 | `adapters/agents-md/sections.json` | `"profile": "systems-engineering"` | Change to `"shell"` |
-| `adapters/codex/adapter.sh` | Profile name references | Update |
+| `adapters/codex/adapter.sh` | Profile name references | Update (if exists — codex adapter may not yet be implemented) |
+| `README.md`, `RDF.md` | Directory trees, profile tables, roadmap mentions | Update all `systems-engineering` references to `shell` |
 | `profiles/detection-rules.md` | Section heading `### systems-engineering` | Rename to `### shell` |
 | `profiles/registry.json` | Profile entry key | Rename key |
 | `profiles/registry.md` | Documentation table | Update |
@@ -520,7 +521,7 @@ A single SQL file or docker-compose with postgres does not warrant the full data
 | Profiles (total) | 6 (core + 5 domain) |
 | Governance templates | 6 (~680 lines total) |
 | Reference docs | 20 (3+3+3+4+4+3) |
-| Total files | 26 (6 governance + 20 reference) |
+| Total files | 28 (6 governance + 20 reference + 2 administrative) |
 | Detection rule entries | 5 + mode suggestions |
 | Breaking changes | 1 (systems-engineering -> shell rename, with migration) |
 | Removed profiles | 1 (security — migrated to mode) |
