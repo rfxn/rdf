@@ -236,7 +236,61 @@ Dirty state threshold: >5 files.
 Status file stale threshold: >1 hour.
 Memory size threshold: >=180 lines.
 
-### 9. Load CLAUDE.md
+### 9. Display Insights
+
+Read `~/.rdf/insights.jsonl`. If the file does not exist or is
+empty, skip this section entirely.
+
+**Selection (two-tier, 3 insights max):**
+
+1. Scan all entries for project matches — the `project` field
+   matches the current project name (basename of cwd for single-
+   project, or the most recently active sub-project for workspaces).
+   Select the most recent match as the **pinned project insight**.
+2. From remaining entries, select the 2 most recent as **universal
+   insights**.
+3. If no project match exists, show 3 most recent universal.
+4. If fewer than 3 total insights exist, show what is available.
+
+**Display format:**
+
+Use a horizontal rule separator, a `###` heading, and a blockquote
+list. Each insight gets an italic attribution showing source project,
+tool, and age. The pinned project insight shows first with its
+project name bolded.
+
+```
+---
+
+### Insights
+
+> - **{project}**: {insight text} *— {tool}, {age}*
+> - {insight text} *— {project}, {tool}, {age}*
+> - {insight text} *— {project}, {tool}, {age}*
+```
+
+Example:
+
+```
+---
+
+### Insights
+
+> - **apf**: Sweep all adapter metadata after renames — Gemini CLI was missed on first pass. *— claude-code, 2h ago*
+> - Untrack working docs early to avoid noisy deletion commits. *— rdf, claude-code, 1d ago*
+> - Batch related renames into one commit to keep diffs reviewable. *— bfd, gemini-cli, 3d ago*
+```
+
+If no project-pinned insight exists, omit the bold project prefix
+on the first item — all three are universal:
+
+```
+> - {insight text} *— {project}, {tool}, {age}*
+> - {insight text} *— {project}, {tool}, {age}*
+> - {insight text} *— {project}, {tool}, {age}*
+```
+
+### 10. Load CLAUDE.md
 
 Read the project's `CLAUDE.md` (if present) to internalize project
 instructions. Do NOT display its contents — just confirm it was loaded.

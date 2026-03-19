@@ -177,7 +177,8 @@ Append a structured entry to `work-output/session-log.jsonl`:
   "spec_path": "{path to spec file, or null if none}",
   "plan_phases_completed": [{list of phase numbers}],
   "plan_phases_in_progress": [{list of phase numbers}],
-  "dirty_files": {N}
+  "dirty_files": {N},
+  "insight": "{punchline text, or null if skipped}"
 }
 ```
 
@@ -203,7 +204,51 @@ Display the session log entry as a key-value table:
 
 If `--dry-run`: show the entry that would be appended.
 
-### 6. Output Report
+### 6. Generate Session Insight
+
+Reflect on the full session — what was built, how it was built, what
+went smoothly, what caused friction or rework. Distill a single
+punchline insight: sage advice for how to better operate with the
+harness or get better output from the model in future sessions.
+
+**The insight must be:**
+- One sentence, max two — a punchline, not a paragraph
+- Actionable — the reader should be able to DO something different
+- About the harness/workflow/model interaction, not about the code
+  itself — "name commands consistently from the start" not "fix the
+  bug in parser.sh"
+- Novel — do not repeat an insight already in the last 5 entries
+
+**Read the last 5 entries** from `~/.rdf/insights.jsonl` to check
+for duplicates. If the file does not exist, create it. Create the
+`~/.rdf/` directory if it does not exist.
+
+**Append one entry:**
+
+```json
+{
+  "timestamp": "{ISO 8601 UTC}",
+  "project": "{project name from cwd basename}",
+  "tool": "{claude-code|gemini-cli|codex}",
+  "insight": "{the punchline}",
+  "tags": ["{category}", "{category}"]
+}
+```
+
+Tags are 1-3 categories from: `git`, `naming`, `testing`, `commands`,
+`context`, `planning`, `review`, `performance`, `workflow`, `scope`.
+
+**Cap at 30 entries.** If the file exceeds 30 lines after appending,
+trim the oldest entries (from the top) to keep 30.
+
+**Zero-change sessions:** If the session produced 0 commits and 0
+dirty files, skip insight generation — there is no session to
+reflect on.
+
+Display the insight in the output report (section 7) as part of
+the actions list.
+
+### 7. Output Report
 
 The final report consolidates all sections into a compact summary.
 Use the session anchor table from r-start's style, a task list of
@@ -224,6 +269,7 @@ actions taken, and a blockquote for the next-session hint.
 - [x] **Memory sync** — HEAD updated, {N} commits recorded
 - [ ] **Audit sync** — *not present*
 - [x] **Session log** — appended to `work-output/session-log.jsonl`
+- [x] **Insight** — "{the punchline text}"
 
 > **Next session** — run `/r:start` to resume from Phase {N}.
 ```
