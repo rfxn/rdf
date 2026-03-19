@@ -107,7 +107,7 @@ Sections:
 - **Artifact Taxonomy** — (existing) working files, session artifacts
 - **Session Safety** — (existing) phase numbering, file verification
 
-**Reference docs (2):** framework.md (existing), memory-standards.md (existing)
+**Reference docs (1):** framework.md (existing)
 
 ---
 
@@ -371,17 +371,160 @@ When security artifacts detected (redteam/, threat-model.md, security CI):
 
 ---
 
-## 8. Summary
+## 8. Migration Plan: systems-engineering -> shell Rename
+
+### Code Sites Requiring Update
+
+| File | Line/Pattern | Change |
+|------|-------------|--------|
+| `lib/cmd/init.sh` | `_type_to_profile()` maps `shell` -> `"systems-engineering"` | Map to `"shell"` |
+| `lib/cmd/profile.sh` | Example usage, `_PROFILE_REGISTRY` references | Update all references |
+| `adapters/agents-md/sections.json` | `"profile": "systems-engineering"` | Change to `"shell"` |
+| `adapters/codex/adapter.sh` | Profile name references | Update |
+| `profiles/detection-rules.md` | Section heading `### systems-engineering` | Rename to `### shell` |
+| `profiles/registry.json` | Profile entry key | Rename key |
+| `profiles/registry.md` | Documentation table | Update |
+| Any existing `.rdf-profiles` state files | May contain `systems-engineering` line | Migrate at runtime |
+
+### State File Migration
+
+Add a one-time migration step to `rdf_profile_init()` in `lib/rdf_common.sh`:
+
+```bash
+# One-time migration: systems-engineering -> shell (RDF 3.x profile rename)
+if [[ -f "$RDF_PROFILES_STATE" ]]; then
+    if grep -q '^systems-engineering$' "$RDF_PROFILES_STATE"; then
+        sed -i 's/^systems-engineering$/shell/' "$RDF_PROFILES_STATE"
+        rdf_log "migrated profile: systems-engineering -> shell"
+    fi
+fi
+```
+
+### Directory Migration
+
+During implementation, the directory rename is:
+```
+git mv profiles/systems-engineering/ profiles/shell/
+```
+
+Existing reference docs disposition:
+- `os-compat.md` -> replaced by `portability-matrix.md` (content absorbed and expanded)
+- `test-infra.md` -> replaced by `testing-bats.md` (content absorbed and expanded)
+- `cross-project.md` -> moves to `profiles/core/reference/cross-project.md` (cross-cutting, not shell-specific)
+- `audit-pipeline.md` -> moves to `profiles/core/reference/audit-pipeline.md` (cross-cutting, not shell-specific)
+
+---
+
+## 9. Registry Format: JSON + Markdown
+
+The profile CLI (`lib/cmd/profile.sh`) uses `registry.json` with jq queries for dependency resolution, existence checks, and listing. The `registry.md` is human-readable documentation.
+
+**Decision:** Both files coexist:
+- `registry.json` — machine-readable, consumed by `rdf profile` CLI commands
+- `registry.md` — human-readable documentation, maintained manually in sync
+
+The implementation must update `registry.json` to reflect the new profile set (remove `security`, rename `systems-engineering` -> `shell`, add `python`, `database`, `go`) alongside the `registry.md` update.
+
+---
+
+## 10. Security Profile Migration: File Disposition
+
+| Current File | Destination | Rationale |
+|-------------|-------------|-----------|
+| `profiles/security/governance-template.md` | `modes/security-assessment/context.md` (merge) | Assessment methodology is mode content |
+| `profiles/security/reference/threat-model-template.md` | `modes/security-assessment/reference/threat-model-template.md` | Threat modeling is assessment methodology |
+| `profiles/security/` directory | Remove after migration | No longer a profile |
+
+---
+
+## 11. Context Budget Analysis
+
+Governance templates are seed data for `/r:init` — they are NOT loaded into every agent dispatch. During `/r:init`, templates merge with codebase scan results to generate project-specific governance files in `.claude/governance/`. Agents load governance on demand via progressive disclosure (3.0 architecture Section 8):
+
+- `index.md` (~100-150 tokens) — always loaded
+- Domain files (architecture.md, conventions.md, etc.) — loaded JIT by agents that need them
+
+**Worst case:** A full-stack project with all 6 profiles active. During `/r:init`, ~680 lines of templates merge with scan data. But the OUTPUT is a single set of governance files (~200-300 lines total after dedup/merge), not 680 lines concatenated. The init merge process condenses overlapping content.
+
+**Adapter output:** `rdf generate` copies governance-template.md files as-is for profile context. For Gemini CLI, all active profiles are concatenated into GEMINI.md. For Claude Code, they're separate files in `governance/`. In the worst case (4 active domain profiles + core), this is ~500 lines of governance across separate files — within the progressive-disclosure budget since agents only load files relevant to their current task.
+
+**Conclusion:** Context budget is manageable. The progressive disclosure architecture prevents all governance from being loaded simultaneously.
+
+---
+
+## 12. Version Floor Assumptions
+
+Profiles assume modern language versions as the baseline. Project-specific version floors detected by `/r:init` override template defaults.
+
+| Profile | Assumed Floor | Rationale |
+|---------|-------------- |-----------|
+| shell | bash 4.3+ | Modern default; rfxn's 4.1 floor is project-specific |
+| python | 3.9+ | Oldest actively supported CPython; geoscope uses 3.9+ |
+| go | 1.21+ | Oldest supported Go release; generics (1.18+) assumed |
+| frontend | ES2020+ | Supported by all "last 2 versions" browsers |
+
+Version-dependent governance advice (e.g., "use Protocol" in Python, "use generics" in Go) is implicitly conditional on the floor. When `/r:init` detects a lower version floor, it omits or adjusts advice accordingly.
+
+---
+
+## 13. Domain Profile Precedence
+
+Domain profiles do NOT conflict with each other — they govern different file types within the same project:
+
+- Shell governance applies to `.sh`/`.bash` files
+- Python governance applies to `.py` files
+- Frontend governance applies to `.tsx`/`.jsx`/`.vue`/`.svelte`/`.css` files
+- Database governance applies to `.sql` files and migration directories
+- Go governance applies to `.go` files
+
+**Rule:** When multiple domain profiles are active, apply each profile only to files matching its detection signals. Core profile applies universally to all files.
+
+If a genuine conflict arises (two profiles disagree on a convention for the same file type), project CLAUDE.md is the tiebreaker. This scenario should not occur with well-designed profiles since each governs a distinct file type.
+
+---
+
+## 14. Detection Rule Refinements
+
+### Frontend: Reduce False Positives
+
+ESLint presence is demoted from activation signal to confidence boost. Many pure Node.js backend projects use ESLint without frontend code.
+
+**Activation signals (ANY):**
+- `.tsx`, `.jsx`, `.vue`, `.svelte` files present
+- `package.json` with frontend framework dependency (react, vue, svelte, next, nuxt, angular, astro, solid)
+- `tsconfig.json` with `"jsx"` compiler option
+- `playwright.config.*` or `cypress.config.*` present
+
+**Confidence boost (not activation alone):**
+- `.eslintrc*` or `eslint.config.*` present
+- `src/components/` directory
+- `public/` or `static/` directory
+
+### Database: Require Two Signals
+
+A single SQL file or docker-compose with postgres does not warrant the full database governance. Require at least two signals:
+
+**Activation when 2+ of:**
+- `*.sql` files in project root, `migrations/`, or `db/`
+- `alembic/`, `alembic.ini` present
+- `schema.prisma`, `drizzle.config.*`, `knexfile.*`
+- `docker-compose.yml` with postgres/mysql/redis/mongo services
+- ORM config: `sqlalchemy`, `django.db`, `sequelize`, `typeorm` in dependencies
+
+---
+
+## 15. Summary
 
 | Deliverable | Count |
 |-------------|-------|
 | Profiles (total) | 6 (core + 5 domain) |
 | Governance templates | 6 (~680 lines total) |
-| Reference docs | 19 |
-| Total files | 25 |
+| Reference docs | 20 (3+3+3+4+4+3) |
+| Total files | 26 (6 governance + 20 reference) |
 | Detection rule entries | 5 + mode suggestions |
-| Breaking changes | 1 (systems-engineering -> shell rename) |
-| Removed profiles | 1 (security) |
+| Breaking changes | 1 (systems-engineering -> shell rename, with migration) |
+| Removed profiles | 1 (security — migrated to mode) |
+| Registry files | 2 (registry.json machine-readable + registry.md documentation) |
 
 ### File Inventory
 
@@ -392,7 +535,8 @@ profiles/
   core/
     governance-template.md                 (updated — +security hygiene, +dep mgmt)
     reference/framework.md                 (existing)
-    reference/memory-standards.md          (existing)
+    reference/cross-project.md             (moved from systems-engineering/)
+    reference/audit-pipeline.md            (moved from systems-engineering/)
   shell/                                   (renamed from systems-engineering/)
     governance-template.md                 (rewritten — universal, not rfxn-specific)
     reference/shell-anti-patterns.md       (new, replaces scattered references)
