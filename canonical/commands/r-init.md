@@ -664,8 +664,8 @@ show `(not detected)` rather than omitting the row.
 ```markdown
 ## /r:init Complete
 
-| | |
-|---|---|
+| Property | Value |
+|----------|-------|
 | **Target** | {absolute path} |
 | **Duration** | {elapsed time} |
 | **Codebase** | {N} tracked files, ~{N}k lines |
@@ -709,8 +709,8 @@ show `(not detected)` rather than omitting the row.
 
 ### Validation (Phase 5)
 
-| | |
-|---|---|
+| Check | Result |
+|-------|--------|
 | **Spot checks** | {N}/{N} passed |
 | **Confidence** | HIGH {N} / MEDIUM {N} / LOW {N} |
 
@@ -725,8 +725,8 @@ show `(not detected)` rather than omitting the row.
 
 ### Git State
 
-| | | | |
-|---|---|---|---|
+| Property | Value | Property | Value |
+|----------|-------|----------|-------|
 | **Branch** | {branch} | **HEAD** | {hash} ({age}) |
 | **Dirty** | {N} files | **Last commit** | {message, truncated} |
 | **Plan** | {M/N phases or "none"} | **Tags** | {latest tag or "none"} |
