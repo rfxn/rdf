@@ -23,7 +23,7 @@ When invoked with a mode name:
 1. Read the mode context file from `modes/{name}/context.md` in the
    RDF repository (resolve aliases per the table above)
 
-2. If `.claude/governance/index.md` exists in the current project,
+2. If `.rdf/governance/index.md` exists in the current project,
    update the `Mode:` line to reflect the new mode
 
 3. Display a mode switch confirmation as a blockquote callout:
@@ -49,7 +49,7 @@ When invoked with a mode name:
 
 When invoked without arguments:
 
-1. Check `.claude/governance/index.md` for the current mode
+1. Check `.rdf/governance/index.md` for the current mode
 2. Display current mode with bold label and inline code value:
 
 ```

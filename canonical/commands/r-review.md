@@ -46,7 +46,7 @@ one of two modes: challenge (spec review) or sentinel (diff review).
 
 ### 3. Load Governance Context
 
-- Read `.claude/governance/index.md`
+- Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
     Review will use general best practices only. Run /r:init for
     project-specific review criteria."
@@ -66,9 +66,9 @@ TARGET: <absolute path to spec/plan file>
 FILE_CONTENT: <contents of the target file>
 
 GOVERNANCE:
-  index: .claude/governance/index.md
-  architecture: .claude/governance/architecture.md
-  constraints: .claude/governance/constraints.md
+  index: .rdf/governance/index.md
+  architecture: .rdf/governance/architecture.md
+  constraints: .rdf/governance/constraints.md
 
 PROJECT_ROOT: <absolute path to project root>
 ```
@@ -82,10 +82,10 @@ CHANGED_FILES: <list of files in scope>
 BASE_BRANCH: <base branch name>
 
 GOVERNANCE:
-  index: .claude/governance/index.md
-  anti-patterns: .claude/governance/anti-patterns.md
-  constraints: .claude/governance/constraints.md
-  conventions: .claude/governance/conventions.md
+  index: .rdf/governance/index.md
+  anti-patterns: .rdf/governance/anti-patterns.md
+  constraints: .rdf/governance/constraints.md
+  conventions: .rdf/governance/conventions.md
 
 PROJECT_ROOT: <absolute path to project root>
 ```

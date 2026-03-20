@@ -7,7 +7,7 @@ work ready for archival, and proposes compaction. Preview mode by default
 
 ## Scope Detection
 
-Read `.claude/governance/index.md` to identify the current project. Then
+Read `.rdf/governance/index.md` to identify the current project. Then
 locate its MEMORY.md:
 - If governance index exists, use the project name to find the memory file
   in the Claude projects memory directory

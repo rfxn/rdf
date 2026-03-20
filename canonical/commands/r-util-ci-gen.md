@@ -6,7 +6,7 @@ infrastructure. Creates workflow files for user review — does NOT commit.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Project name and root directory
 - Test infrastructure details (from governance/verification.md)
 - Target OS matrix (from governance/reference/ if available)

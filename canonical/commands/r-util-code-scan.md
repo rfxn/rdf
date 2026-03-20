@@ -8,7 +8,7 @@ function, cross-references AUDIT.md for tracked instances.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Project files to scan (from governance/architecture.md)
 - Project-specific anti-patterns (from governance/anti-patterns.md)
 - Existing audit findings (from AUDIT.md if present)

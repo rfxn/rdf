@@ -8,7 +8,7 @@ only modify files when explicitly told to fix.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Changelog format and section structure (from governance/conventions.md)
 - Changelog file locations
 - Version naming convention

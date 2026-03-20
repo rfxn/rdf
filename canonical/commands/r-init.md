@@ -1,13 +1,13 @@
 Governance initialization for any codebase. Scans the project, ingests
 existing convention files, detects languages and tooling, and generates
-supplementary governance under `.claude/governance/`.
+supplementary governance under `.rdf/governance/`.
 
 `$ARGUMENTS` is the target path (optional, defaults to `.` for the
 current working directory). Can be a subdirectory for monorepo scoping.
 
 ### Options
 
-- `--force` — delete existing `.claude/governance/` and regenerate
+- `--force` — delete existing `.rdf/governance/` and regenerate
   from scratch. Without this flag, /r:init refuses to run when
   governance already exists (directs to `/r:refresh` instead).
 
@@ -65,7 +65,7 @@ Then update each `[ ]` → `[x]` as phases complete.
 4. **Generate** — produce supplementary governance files
 5. **Validate** — spot-check accuracy, flag low-confidence inferences
 
-Output directory: `.claude/governance/` (relative to target path)
+Output directory: `.rdf/governance/` (relative to target path)
 
 ## Phase 1: Ingest Existing Convention Files
 
@@ -345,22 +345,22 @@ Mark task "Detect tooling and infrastructure" as completed.
 
 Mark task "Generate supplementary governance" as in_progress.
 
-Create `.claude/governance/` directory and generate governance files.
+Create `.rdf/governance/` directory and generate governance files.
 This phase applies the supplement model: reference existing coverage,
 generate from scan data where gaps exist, never duplicate.
 
 ### Directory Setup
 
 ```bash
-mkdir -p .claude/governance
+mkdir -p .rdf/governance
 ```
 
-If `.claude/governance/` already exists (from a prior /r:init or
+If `.rdf/governance/` already exists (from a prior /r:init or
 /r:refresh):
 
 - **Without `--force`:** stop and direct the user to `/r:refresh`
   (see Error Handling #4). DO NOT modify existing files.
-- **With `--force`:** delete the existing `.claude/governance/`
+- **With `--force`:** delete the existing `.rdf/governance/`
   directory entirely, then proceed with fresh generation. Log the
   deletion: `Removed existing governance ({N} files)`.
 
@@ -590,7 +590,7 @@ Structure (must stay under 50 lines / ~100-150 tokens):
 Rules for index.md:
 - One line per file, no multi-line descriptions
 - Authoritative Files = existing project .md files (NOT in governance/)
-- Governance Files = generated supplements IN .claude/governance/
+- Governance Files = generated supplements IN .rdf/governance/
 - Must stay under 50 lines — this is the always-loaded context
 
 Mark task "Generate supplementary governance" as completed.
@@ -746,12 +746,12 @@ not committed source. Do not prompt the user; this is the default.
    phases.
 3. If no convention files AND no source files are found, report that
    the directory appears empty and stop.
-4. If `.claude/governance/` already exists with files AND `--force`
+4. If `.rdf/governance/` already exists with files AND `--force`
    is NOT set, warn the user:
    - "Governance files already exist. To update, use `/r:refresh`."
    - "To regenerate from scratch, use `/r:init --force`."
    - Stop without modifying existing governance files.
-   If `--force` IS set, delete `.claude/governance/` and continue.
+   If `--force` IS set, delete `.rdf/governance/` and continue.
 
 ### Monorepo Behavior
 
@@ -759,15 +759,15 @@ not committed source. Do not prompt the user; this is the default.
    patterns across the whole repository.
 2. `/r:init ./services/api` scopes Phases 2-3 to that subdirectory
    but still checks parent directories for convention files (Phase 1).
-3. Scoped governance is written to `{subdir}/.claude/governance/`,
-   NOT to the repo root's `.claude/governance/`.
+3. Scoped governance is written to `{subdir}/.rdf/governance/`,
+   NOT to the repo root's `.rdf/governance/`.
 4. The architecture.md for a root-level init in a monorepo documents
    all service boundaries and their individual technology stacks.
 
 ### Re-Init vs Refresh
 
 - `/r:init` is for first-time governance generation. It refuses to
-  run if `.claude/governance/` already exists (see Error Handling #4).
+  run if `.rdf/governance/` already exists (see Error Handling #4).
 - `/r:init --force` deletes existing governance and regenerates from
   scratch. Use when governance is stale, corrupt, or after major
   codebase restructuring that `/r:refresh` can't handle.

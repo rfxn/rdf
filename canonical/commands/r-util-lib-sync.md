@@ -7,7 +7,7 @@ sync mode copies and verifies.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Shared libraries used by this project (from governance/architecture.md
   or by scanning for library version variables)
 - Canonical source locations for each library

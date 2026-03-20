@@ -6,7 +6,7 @@ reality, preserving user modifications.
 
 $ARGUMENTS — optional scope:
 - No args or `all`: full refresh (governance + state files)
-- `governance`: refresh .claude/governance/ files only
+- `governance`: refresh .rdf/governance/ files only
 - `state`: refresh MEMORY.md and PLAN.md only (v2 behavior)
 - `github`: sync GitHub issue state with local plan (deterministic)
 
@@ -34,9 +34,9 @@ mark its task in_progress. After completing, mark completed.
 
 ## Setup
 
-- Read .claude/governance/index.md to understand current governance
+- Read .rdf/governance/index.md to understand current governance
 - Check governance file ages (modification times)
-- Read .claude/governance/.user-modified if it exists (list of files
+- Read .rdf/governance/.user-modified if it exists (list of files
   the user has manually edited — these get merge treatment, not
   overwrite)
 
@@ -83,7 +83,7 @@ Mark task "Re-ingest authoritative files" as completed.
 
 Mark task "Update governance files" as in_progress.
 
-For each governance file in .claude/governance/:
+For each governance file in .rdf/governance/:
 
 ### 3a. Check User-Modified Status
 - If the file is listed in .user-modified: MERGE mode
@@ -215,7 +215,7 @@ status in italic, detail column for metrics.
 | GitHub | *synced* | 4 issues closed, 1 reopened |
 ```
 
-Recognized state artifacts in `work-output/` that refresh should
+Recognized state artifacts in `.rdf/work-output/` that refresh should
 cross-reference: `session-log.jsonl`, `phase-*-status.md`,
 `current-phase.md`, `agent-feed.log`, `spec-progress.md`,
 `ship-progress.md`.

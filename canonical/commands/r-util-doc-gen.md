@@ -8,7 +8,7 @@ results for user review before applying changes.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Project name and root directory
 - Documentation standards (from governance/conventions.md)
 - Design system reference (from governance/reference/ if available)

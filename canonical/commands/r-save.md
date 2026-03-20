@@ -128,7 +128,7 @@ For each phase in PLAN.md:
   with the commit hash as evidence
 
 **Record spec path:**
-- If `work-output/spec-progress.md` exists, read the `SPEC_PATH`
+- If `.rdf/work-output/spec-progress.md` exists, read the `SPEC_PATH`
   line. If present and non-empty, record it for the session log
   `spec_path` field.
 
@@ -149,8 +149,8 @@ total phase count.
 
 ### 3. Sync MEMORY.md
 
-Locate the project's MEMORY.md in the Claude auto-memory directory:
-`/root/.claude/projects/{path-encoded}/memory/MEMORY.md`
+Locate the project's MEMORY.md in the .rdf/memory/ directory:
+`.rdf/memory/MEMORY.md`
 
 If it does not exist, create it with the standard index format.
 
@@ -189,7 +189,7 @@ If no `AUDIT.md`: skip silently.
 
 ### 5. Write Session Log
 
-Append a structured entry to `work-output/session-log.jsonl`:
+Append a structured entry to `.rdf/work-output/session-log.jsonl`:
 
 ```json
 {
@@ -211,7 +211,7 @@ Append a structured entry to `work-output/session-log.jsonl`:
 }
 ```
 
-Create `work-output/` directory if it does not exist.
+Create `.rdf/work-output/` directory if it does not exist.
 
 The `head_before` value comes from: the last session-log entry's
 `head_after`, or MEMORY.md's HEAD field, or the oldest of the

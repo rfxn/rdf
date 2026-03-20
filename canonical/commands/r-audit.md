@@ -12,7 +12,7 @@ $ARGUMENTS — optional scope:
 
 ## Setup
 
-- Read .claude/governance/index.md to understand the project
+- Read .rdf/governance/index.md to understand the project
 - Load governance/verification.md for project-specific checks
 - Load governance/anti-patterns.md for known pitfalls
 - Load governance/constraints.md for platform/compat requirements

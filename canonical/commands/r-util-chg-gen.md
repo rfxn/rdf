@@ -7,7 +7,7 @@ governance for changelog format rules.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Changelog format conventions (from governance/conventions.md)
 - Changelog file locations (CHANGELOG, CHANGELOG.RELEASE, or equivalent)
 - Tag conventions ([New], [Change], [Fix] or project-specific)

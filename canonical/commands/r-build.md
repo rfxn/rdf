@@ -48,7 +48,7 @@ Mark target phase as completed when dispatcher returns PASS.
 
 ### 4. Load Governance Context
 
-- Read `.claude/governance/index.md`
+- Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
     Run /r:init to generate governance, or proceed without it."
 - From the index, identify relevant governance files based on phase
@@ -57,7 +57,7 @@ Mark target phase as completed when dispatcher returns PASS.
   - If risk:high or type:security: anti-patterns.md
   - If type:user-facing: architecture.md (for component boundaries)
   - For quality gate selection: verification.md
-- Read the current operational mode (if `.claude/governance/index.md`
+- Read the current operational mode (if `.rdf/governance/index.md`
   has a Mode field other than "development")
 
 ### 5. Assemble Dispatch Payload
@@ -74,12 +74,12 @@ RISK: <risk tag from PLAN.md, default: medium>
 TYPE: <type tag from PLAN.md, default: feature>
 
 GOVERNANCE:
-  index: .claude/governance/index.md
-  conventions: .claude/governance/conventions.md
-  constraints: .claude/governance/constraints.md
-  verification: .claude/governance/verification.md
-  anti-patterns: .claude/governance/anti-patterns.md (if applicable)
-  architecture: .claude/governance/architecture.md (if applicable)
+  index: .rdf/governance/index.md
+  conventions: .rdf/governance/conventions.md
+  constraints: .rdf/governance/constraints.md
+  verification: .rdf/governance/verification.md
+  anti-patterns: .rdf/governance/anti-patterns.md (if applicable)
+  architecture: .rdf/governance/architecture.md (if applicable)
 
 OPERATIONAL_MODE: <mode or "development">
 PROJECT_ROOT: <absolute path to project root>
@@ -94,7 +94,7 @@ dispatches, quality gates, commit strategy.
 ### 7. Report Result
 
 After the dispatcher returns:
-- Read the dispatcher's status output from work-output/
+- Read the dispatcher's status output from .rdf/work-output/
 - Report phase result to the user: PASS (phase complete) or FAIL
   (with failure context and which gate failed)
 - If PASS and more phases remain:

@@ -7,7 +7,7 @@ any files or execute the test suite.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Test framework (BATS, pytest, jest, etc.)
 - Test directory location
 - Test conventions from governance/verification.md

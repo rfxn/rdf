@@ -6,7 +6,7 @@ preparation, and consumer drift notification.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Library metadata (name, version, repository)
 - Consumer projects that use this library
 - Release conventions from governance

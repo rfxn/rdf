@@ -7,7 +7,7 @@ files.
 
 ## Setup
 
-Read `.claude/governance/index.md` to identify:
+Read `.rdf/governance/index.md` to identify:
 - Project name, language, and conventions
 - Verification checks (from governance/verification.md)
 - Anti-patterns (from governance/anti-patterns.md)

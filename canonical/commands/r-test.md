@@ -23,7 +23,7 @@ or scenario category.
 
 ### 2. Load Governance Context
 
-- Read `.claude/governance/index.md`
+- Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
     UAT will use generic test approach. Run /r:init for
     project-specific test configuration."
@@ -41,10 +41,10 @@ MODE: standalone
 SCOPE: <file list, directory, scenario filter, or "current state">
 
 GOVERNANCE:
-  index: .claude/governance/index.md
-  architecture: .claude/governance/architecture.md
-  conventions: .claude/governance/conventions.md
-  verification: .claude/governance/verification.md
+  index: .rdf/governance/index.md
+  architecture: .rdf/governance/architecture.md
+  conventions: .rdf/governance/conventions.md
+  verification: .rdf/governance/verification.md
 
 PROJECT_ROOT: <absolute path to project root>
 ```

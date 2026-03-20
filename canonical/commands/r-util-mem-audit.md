@@ -10,7 +10,7 @@ Read-only report — no modifications.
 - If CWD is `/root/admin/work/proj/`: audit all project MEMORY.md files
 
 MEMORY.md location:
-`/root/.claude/projects/-root-admin-work-proj-{project}/memory/MEMORY.md`
+`.rdf/memory/MEMORY.md`
 
 ## Protocol
 

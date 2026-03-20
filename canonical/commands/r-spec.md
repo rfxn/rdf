@@ -10,7 +10,7 @@ This is the first stage of the spec-plan-build-ship pipeline.
 - No args → start fresh design session
 - GitHub URL (starts with `http`/`https`) → fetch as design seed
 - Issue shorthand (`#` + digits) → `gh issue view {N}` as design seed
-- `--resume` → resume interrupted session from `work-output/spec-progress.md`
+- `--resume` → resume interrupted session from `.rdf/work-output/spec-progress.md`
 
 **Argument detection logic:**
 - Starts with `http` or `https` → GitHub URL → fetch with `gh`
@@ -65,7 +65,7 @@ PHASE 3: SPEC         — write formal design document, get it reviewed
 
 ## Resume Protocol
 
-If `--resume` is specified or `work-output/spec-progress.md` exists
+If `--resume` is specified or `.rdf/work-output/spec-progress.md` exists
 on startup:
 
 1. Read the state file
@@ -96,7 +96,7 @@ Mark task "Discover project context and scope" as `in_progress`.
 
 ### 1.1 Read Governance
 
-Read `.claude/governance/index.md` to understand the project.
+Read `.rdf/governance/index.md` to understand the project.
 
 If governance exists, also load:
 - `architecture.md` from governance (system boundaries, components)
@@ -221,7 +221,7 @@ trade-off.
 
 **Step D: Record decision to crash safety state.**
 
-After each resolved question, append to `work-output/spec-progress.md`:
+After each resolved question, append to `.rdf/work-output/spec-progress.md`:
 
 ```
 TOPIC: {topic}
@@ -414,7 +414,7 @@ Exact bash commands to verify goals are met post-implementation.
 Each command must include **expected output** (not just the command):
 
 ```bash
-grep -r '\.claude/governance/' canonical/ | wc -l
+grep -r '\.rdf/governance/' canonical/ | wc -l
 # expect: 0
 ```
 
@@ -553,7 +553,7 @@ After all phases complete, present the pipeline handoff:
 > Reviewed and approved. Run `/r:plan` to create the implementation plan.
 ```
 
-Clean up: update `work-output/spec-progress.md` with final state:
+Clean up: update `.rdf/work-output/spec-progress.md` with final state:
 ```
 PHASE: complete
 SPEC_PATH: docs/specs/{filename}

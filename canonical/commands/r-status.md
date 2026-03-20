@@ -7,7 +7,7 @@ outcomes, governance freshness, and recent activity.
 
 ### 1. Read Governance Index
 
-Read `.claude/governance/index.md` for project metadata.
+Read `.rdf/governance/index.md` for project metadata.
 
 If missing, display minimal status from git only (branch, HEAD, recent
 commits) and note that governance is not initialized.
@@ -26,8 +26,8 @@ If absent, display: "No active plan. Run /r:plan to create one."
 
 ### 3. Read Phase Status Files
 
-Scan `work-output/` for phase status files written by the dispatcher.
-These files follow the pattern `work-output/phase-N-status.md`.
+Scan `.rdf/work-output/` for phase status files written by the dispatcher.
+These files follow the pattern `.rdf/work-output/phase-N-status.md`.
 
 For each status file found, extract:
 - Phase number
@@ -37,7 +37,7 @@ For each status file found, extract:
 
 ### 4. Check Governance Freshness
 
-Stat `.claude/governance/index.md` for mtime. Calculate age in hours.
+Stat `.rdf/governance/index.md` for mtime. Calculate age in hours.
 Flag if >24h stale.
 
 ### 5. Gather Git Activity
@@ -98,7 +98,7 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
 **Detection logic:**
 - **Spec**: scan `docs/specs/` for spec files. If any exist, show the
   most recent file path as the artifact. Status: *complete* if the file
-  exists and is not referenced by `work-output/spec-progress.md`,
+  exists and is not referenced by `.rdf/work-output/spec-progress.md`,
   *in-progress* if `spec-progress.md` exists, *pending* otherwise.
 - **Plan**: check for `PLAN.md` in the project root. If present, show
   total phase count as the artifact. Status: *complete* if all phases
@@ -108,12 +108,12 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
   number and total as the artifact. Status: *complete* if all phases
   are complete, *in-progress* if any phase is in-progress or has
   commits, *pending* if no phases have started.
-- **Ship**: check for `work-output/ship-progress.md`. If present,
+- **Ship**: check for `.rdf/work-output/ship-progress.md`. If present,
   read the `STAGE` line for the current stage. Status: *complete*
   if stage is "released", *in-progress* if the file exists with
   an active stage, *pending* otherwise.
 
-**Phase outcomes** — table for structured gate results from `work-output/`:
+**Phase outcomes** — table for structured gate results from `.rdf/work-output/`:
 
 ```
 ### Phase Outcomes
@@ -139,7 +139,7 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
 > - Governance is {T}h old — run `/r:refresh`
 > - {N} uncommitted files
 > - Phase {N} status file is stale (>1h) — likely interrupted
-> - Phase {N} **FAIL** — review `work-output/phase-{N}-status.md`
+> - Phase {N} **FAIL** — review `.rdf/work-output/phase-{N}-status.md`
 ```
 
 Thresholds:
@@ -190,7 +190,7 @@ HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 - Read-only — do NOT modify any files
 - Do NOT run tests or lint — this is a status check
 - Do NOT load full governance files — index only
-- If `work-output/` does not exist or is empty, skip the phase outcomes
+- If `.rdf/work-output/` does not exist or is empty, skip the phase outcomes
   section silently
 - Only show the warnings block if there are warnings to display
 - Keep total output under 40 lines — use tables, task lists, and

@@ -22,7 +22,7 @@ or glob pattern.
 
 ### 2. Load Governance Context
 
-- Read `.claude/governance/index.md`
+- Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
     QA will use default checks only. Run /r:init for project-specific
     verification."
@@ -42,11 +42,11 @@ SCOPE: <file list, directory, or "git diff">
 CHANGED_FILES: <list of files in scope>
 
 GOVERNANCE:
-  index: .claude/governance/index.md
-  verification: .claude/governance/verification.md
-  conventions: .claude/governance/conventions.md
-  anti-patterns: .claude/governance/anti-patterns.md
-  constraints: .claude/governance/constraints.md
+  index: .rdf/governance/index.md
+  verification: .rdf/governance/verification.md
+  conventions: .rdf/governance/conventions.md
+  anti-patterns: .rdf/governance/anti-patterns.md
+  constraints: .rdf/governance/constraints.md
 
 PROJECT_ROOT: <absolute path to project root>
 ```
