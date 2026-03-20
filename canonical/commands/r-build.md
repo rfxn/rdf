@@ -72,6 +72,7 @@ FILES: <file list from PLAN.md>
 ACCEPT: <acceptance criteria from PLAN.md>
 RISK: <risk tag from PLAN.md, default: medium>
 TYPE: <type tag from PLAN.md, default: feature>
+PLAN_PHASE_COUNT: <total phases in PLAN.md>
 
 GOVERNANCE:
   index: .rdf/governance/index.md
@@ -101,8 +102,12 @@ After the dispatcher returns:
   > **Phase {N} complete** — {description}
   > Next: Phase {N+1} — {description}. Run `/r:build` to continue.
 - If PASS and all phases are complete:
-  > **All {N} phases complete.**
-  > Run `/r:ship` to begin the release workflow.
+  - If PLAN_PHASE_COUNT >= 3: the dispatcher runs end-of-plan sentinel
+    automatically (this is dispatcher-internal — the build command
+    does not dispatch it separately)
+  - Report result including end-of-plan sentinel verdict:
+    > **All {N} phases complete.** End-of-plan review: {verdict}.
+    > Run `/r:ship` to begin the release workflow.
 
 ## Constraints
 
