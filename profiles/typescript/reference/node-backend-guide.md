@@ -314,10 +314,12 @@ app.get("/api/export", async (req, res) => {
 
 ```typescript
 import { createWriteStream } from "node:fs";
+import path from "node:path";
 import { pipeline } from "node:stream/promises";
 
 app.post("/api/upload", async (req, res) => {
-    const dest = createWriteStream(`/uploads/${req.headers["x-filename"]}`);
+    const safeName = path.basename(req.headers["x-filename"] || "upload");
+    const dest = createWriteStream(`/uploads/${safeName}`);
 
     await pipeline(req, dest);
     // backpressure is automatic -- if disk is slow, TCP receive slows down
