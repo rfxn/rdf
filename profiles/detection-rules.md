@@ -61,6 +61,70 @@ Activate when ANY of:
 - Markers: `Makefile` with `go build`/`go test` targets
 - Config: `.golangci.yml` or `.golangci.yaml` present
 
+### rust
+
+Activate when ANY of:
+- Config: `Cargo.toml` present
+- File extensions: `*.rs` in project root, `src/`, or `tests/`
+- Config: `rust-toolchain.toml` or `clippy.toml` present
+- Markers: `Makefile` with `cargo build`/`cargo test` targets
+
+Confidence boost:
+- `src/main.rs` or `src/lib.rs` -> high confidence
+- `benches/` directory -> medium confidence
+
+### typescript
+
+Activate when ANY of:
+- Config: `tsconfig.json` present
+- File extensions: non-declaration `*.ts` files (exclude `*.d.ts`-only projects)
+- Dependencies: `typescript` in `package.json` devDependencies
+- Config: `ts-node` or `tsx` in package.json scripts
+
+Note: projects with ONLY `*.d.ts` files are type declaration packages,
+not TypeScript projects -- do not activate.
+
+Confidence boost:
+- `src/` with `.ts` files -> high confidence
+- `vitest.config.ts` or `jest.config.ts` -> medium confidence
+
+### perl
+
+Activate when ANY of:
+- File extensions: `*.pl`, `*.pm` present (use `git ls-files` for subdirectory detection)
+- Config: `cpanfile`, `Makefile.PL`, `Build.PL`, or `META.json` present
+- Config: `.perlcriticrc` or `.perltidyrc` present
+- Markers: `t/` directory with `*.t` test files
+
+Confidence boost:
+- `lib/` with `*.pm` files -> high confidence
+- `cpanfile.snapshot` -> medium confidence
+
+### php
+
+Activate when ANY of:
+- Config: `composer.json` present (sufficient alone)
+- File extensions: `*.php` in project root, `app/`, or `src/`
+- Config: `phpunit.xml`, `phpstan.neon`, or `psalm.xml` present
+- Markers: `artisan` file (Laravel) or `bin/console` (Symfony)
+
+Confidence boost:
+- `artisan` file -> high confidence (Laravel)
+- `vendor/` directory -> medium confidence
+
+### infrastructure (priority 3)
+
+Activate when a priority-1 language profile also matches AND any of:
+- File extensions: `*.tf` or `*.tfvars` present
+- Markers: `Dockerfile` or `docker-compose.yml` present
+- Markers: `k8s/`, `kubernetes/`, or `kustomization.yaml` present
+- Markers: `ansible/`, `playbooks/`, or `ansible.cfg` present
+- Config: `terragrunt.hcl`, `packer.json`, or `pulumi.yaml` present
+
+Note: infrastructure is priority-3 -- only activates when at least one
+priority-1 language signal also matches. A standalone Dockerfile without
+language files produces `minimal`, not `infrastructure`.
+
 ## Mode Suggestions (not profile activations)
 
 When security artifacts detected during /r:init:

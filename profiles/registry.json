@@ -3,38 +3,90 @@
     "core": {
       "requires": [],
       "removable": false,
+      "tier": "full",
+      "detect": [],
       "description": "Always active. Commit protocol, verification, security hygiene, dependency management",
       "summary": "governance-template + 3 reference docs"
     },
     "shell": {
       "requires": ["core"],
       "removable": true,
+      "tier": "full",
+      "detect": ["*.sh", "*.bash", "files/", "*.bats"],
       "description": "Bash/shell projects. Quoting, portability, signal handling, BATS testing",
       "summary": "governance-template + 3 reference docs"
     },
     "python": {
       "requires": ["core"],
       "removable": true,
+      "tier": "full",
+      "detect": ["pyproject.toml", "requirements.txt", "*.py"],
       "description": "Python projects. Typing, packaging, pytest, async conventions",
       "summary": "governance-template + 3 reference docs"
     },
     "frontend": {
       "requires": ["core"],
       "removable": true,
+      "tier": "full",
+      "detect": ["*.tsx", "*.jsx", "*.vue", "package.json"],
       "description": "Web frontend. Component architecture, a11y, CSS methodology, performance",
       "summary": "governance-template + 4 reference docs"
     },
     "database": {
       "requires": ["core"],
       "removable": true,
+      "tier": "full",
+      "detect": ["*.sql", "migrations/", "schema.prisma"],
       "description": "Database engineering. Schema design, migration safety, query discipline",
       "summary": "governance-template + 4 reference docs"
     },
     "go": {
       "requires": ["core"],
       "removable": true,
+      "tier": "full",
+      "detect": ["go.mod", "*.go"],
       "description": "Go projects. Error handling, concurrency, interfaces, modules",
       "summary": "governance-template + 3 reference docs"
+    },
+    "rust": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "full",
+      "detect": ["Cargo.toml", "*.rs"],
+      "description": "Rust projects. Ownership, error handling, unsafe discipline, cargo conventions",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "typescript": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "full",
+      "detect": ["tsconfig.json", "*.ts"],
+      "description": "TypeScript/Node.js. Strict mode, async discipline, backend patterns",
+      "summary": "governance-template + 3 reference docs"
+    },
+    "perl": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "starter",
+      "detect": ["cpanfile", "Makefile.PL", "*.pl", "*.pm"],
+      "description": "Perl projects. strict/warnings, three-arg open, Moo/Moose OOP",
+      "summary": "governance-template only"
+    },
+    "php": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "starter",
+      "detect": ["composer.json", "*.php"],
+      "description": "PHP 8.x. Strict types, PSR standards, Laravel/Symfony patterns",
+      "summary": "governance-template only"
+    },
+    "infrastructure": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "starter",
+      "detect": ["*.tf", "Dockerfile", "k8s/", "ansible/"],
+      "description": "Infrastructure as code. Terraform, Kubernetes, Ansible, CI/CD",
+      "summary": "governance-template only"
     }
   }
 }
