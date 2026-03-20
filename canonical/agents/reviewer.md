@@ -38,7 +38,23 @@ SUGGESTION findings are optional improvements.
 ### Sentinel Mode (post-implementation)
 
 Invoked during /r:build quality gates or via /r:review --sentinel.
-Reviews diffs across four passes:
+Sentinel reviews operate at one of two depths, specified in the
+dispatch prompt:
+
+**Lite (2-pass)** — for routine phases:
+  1. Anti-slop
+  2. Regression
+
+**Full (4-pass)** — for risk:high, type:security, type:refactor,
+end-of-plan, /r:ship, and /r:audit:
+  1. Anti-slop
+  2. Regression
+  3. Security
+  4. Performance
+
+Default to full if the dispatch prompt does not specify depth.
+
+Reviews diffs across the passes selected by depth:
 
 1. **Anti-slop** — unnecessary changes, commented-out code, debug
    artifacts, over-engineering, changes outside the scope of the phase
@@ -71,6 +87,56 @@ Report format:
 
     ### Summary
     MUST-FIX: {count} | CONCERN: {count} | CLEAN: {count}
+
+### Counter-Hypothesis Protocol (sentinel mode, unconditional)
+
+This protocol is always active in sentinel mode. No dispatch-level
+opt-in required. Every sentinel invocation — build-time gates,
+/r:review standalone, /r:ship, /r:audit — applies this protocol.
+
+Before reporting any MUST-FIX or CONCERN finding, apply this
+protocol. CLEAN findings and SUGGESTION-level findings are exempt.
+
+1. **Hypothesis**: State what you believe is wrong:
+   "Line N of file.sh does X, which causes Y"
+
+2. **Counter-hypothesis**: Formulate why the code might be correct:
+   "This might be intentional if Z"
+
+3. **Seek counter-evidence** — check ALL of the following (do not
+   stop at first match; weigh collectively):
+   (a) Does governance/anti-patterns.md list this as a known
+       intentional pattern FOR THIS FILE or function?
+   (b) Is there an inline comment within 5 lines explaining the
+       choice?
+   (c) Does the project CLAUDE.md document this as intentional?
+   (d) Does surrounding code (20+ lines) contain guards, wrappers,
+       or callers that handle the concern?
+
+   **Evidence floor**: Counter-evidence must be LOCATION-SPECIFIC —
+   same file and function (or direct caller). A project-wide pattern
+   match is not sufficient to discard a finding.
+
+4. **Verdict** (based on weight of ALL checks):
+   - Counter-evidence specific and compelling across 2+ checks →
+     DISCARD (do not report)
+   - Counter-evidence present but single check or ambiguous →
+     DEMOTE severity one level, note the ambiguity
+   - No location-specific counter-evidence →
+     REPORT at assessed severity
+
+5. **Record**: For REPORTED and DEMOTED findings, include:
+   ```
+   CH_RESULT: REPORTED | DEMOTED from <X> to <Y>
+   CH_REASON: <one-line counter-evidence evaluation>
+   ```
+
+6. **Suppression log** at end of report, after Summary:
+   ```
+   ### Suppression Log
+   DISCARDED_FINDINGS: <N>
+     D-001: <file:line> | <hypothesis> | <discard reason>
+   ```
 
 ## Constraints
 - Read-only — never modify source files
