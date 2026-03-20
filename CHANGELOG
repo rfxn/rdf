@@ -1,5 +1,18 @@
 # RDF Changelog
 
+## 3.2.0
+
+### Gate Simplification & VPE Pipeline Orchestrator
+[Change] Gate selection: risk×type matrix replaced with 5-level scope classification
+[Change] Finding vocabulary: shared severity spine + agent-scoped qualifiers (v2 routing restored)
+[Change] Plan metadata: 7 mandatory fields → 4 (Risk/Type/Gates removed)
+[Change] CONCERN reverted to SHOULD-FIX, SUGGESTION reverted to INFORMATIONAL
+[New] /r:vpe — optional end-to-end pipeline orchestrator (spec→plan→build→ship)
+[New] Scope classification: docs, focused, multi-file, cross-cutting, sensitive
+[New] Finding qualifiers: merge-block, fix-or-refute, workflow-breaking, blocking-concern, etc.
+[New] VPE adaptive intake conversation (1-4 exchanges)
+[New] VPE crash recovery via vpe-progress.md state file
+
 ## 3.1.1
 
 ### Sentinel Integration & Quality Gate Redesign

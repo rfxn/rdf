@@ -1,3 +1,31 @@
+# RDF 3.2.0 Release Notes
+
+## Gate Simplification & VPE Pipeline Orchestrator
+
+Replaces the risk×type gate selection matrix with a 5-level scope
+classification derived automatically by the dispatcher from phase content.
+Restores v2-style per-agent finding qualifiers for self-routing.
+Adds /r:vpe as an optional end-to-end pipeline orchestrator.
+
+Key changes:
+- Scope classification: dispatcher auto-derives scope (docs, focused,
+  multi-file, cross-cutting, sensitive) from file list and governance
+  context — replaces planner-tagged risk/type/gates matrix
+- Finding qualifiers: shared severity spine (MUST-FIX/SHOULD-FIX/
+  INFORMATIONAL) plus agent-scoped qualifiers that carry routing signals
+  (merge-block, fix-or-refute, workflow-breaking, blocking-concern, etc.)
+- Plan metadata simplified: 7 mandatory fields → 4 (Mode, Accept, Test,
+  Edge cases) — Risk, Type, Gates removed from planner surface
+- /r:vpe: optional pipeline orchestrator managing spec→plan→build→ship
+  with adaptive intake (1-4 exchanges), approval gates between stages,
+  and crash recovery via vpe-progress.md
+
+Developer surface: 4 concepts (PASS, MUST-FIX, SHOULD-FIX, phase status
+file). Scope classification is visible in framework.md for transparency
+but requires no developer action.
+
+---
+
 # RDF 3.1.1 Release Notes
 
 ## Sentinel Integration & Quality Gate Redesign
