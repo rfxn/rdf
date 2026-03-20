@@ -134,8 +134,8 @@ Contracts between the framework and the monitoring system.
 | Artifact | Location |
 |----------|----------|
 | Archived plans | `docs/plans/archived/` |
-| v2 agents | `canonical/agents-v2-archived/` |
-| v2 commands | `canonical/commands-v2-archived/` |
+| v2 agents | removed in 3.1.0 (see git history) |
+| v2 commands | removed in 3.1.0 (see git history) |
 | CHANGELOG | `<project>/CHANGELOG` |
 
 ---

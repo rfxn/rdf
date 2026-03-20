@@ -105,6 +105,15 @@ _migrate_workoutput() {
             echo "FAIL: cp work-output" >> "$log_file"
             rdf_die "failed to copy work-output files"
         }
+
+        # Verify copy
+        local dst_count
+        dst_count="$(find "$dst" -type f 2>/dev/null | wc -l)"
+        dst_count="${dst_count##* }"
+        if [[ "$dst_count" -ne "$file_count" ]]; then
+            echo "FAIL: work-output count mismatch src=${file_count} dst=${dst_count}" >> "$log_file"
+            rdf_die "work-output copy verification failed: expected ${file_count} files, got ${dst_count}"
+        fi
     fi
 
     command rm -rf "$src"

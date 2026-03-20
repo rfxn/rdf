@@ -124,7 +124,7 @@ Mark task "Validate governance accuracy" as completed.
 Mark task "Refresh state files" as in_progress.
 
 ### 5a. Refresh MEMORY.md
-- Locate MEMORY.md (auto-memory path or project-local)
+- Locate MEMORY.md (.rdf/memory/ or project-local)
 - Update version, branch, HEAD hash from git
 - Update test count from test files
 - Append new commits since last recorded hash

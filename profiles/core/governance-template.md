@@ -53,11 +53,10 @@ Working artifacts never committed:
 - `PLAN*.md` -- session-local implementation plans
 - `AUDIT.md` -- audit pipeline output
 - `MEMORY.md` -- auto-memory persistence
-- `.claude/` -- tool-specific configuration
-- `work-output/` -- agent status files (ephemeral)
+- `.rdf/` -- per-project RDF state (governance, work-output, memory)
 
 ## Session Safety
 
 - Agent output filenames use integer phase numbers, not labels
 - Verify expected file paths exist before reading
-- Write structured status to work-output/ after each phase
+- Write structured status to .rdf/work-output/ after each phase
