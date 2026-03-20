@@ -160,16 +160,18 @@ dispatcher ──[phase context]──→ engineer ──[result]──→ dispa
                       uat ──[verdict]──→ dispatcher
 ```
 
-**Gate selection** is managed by the dispatcher based on planner-assigned
-phase tags. The developer does not interact with gate selection directly.
+**Verification depth** is managed by the dispatcher. It classifies each
+phase by change scope, derived automatically from the file list,
+description, and governance context:
 
-Summary:
-- Trivial changes (risk:low) → deterministic checks only (engineer + QA)
-- Standard changes → deterministic + adversarial review (+ sentinel)
-- User-facing changes → add UAT acceptance testing
+  docs          — changelog, README, comments
+  focused       — single file, config, one function
+  multi-file    — 2+ files, standard feature/refactor work
+  cross-cutting — install, CLI, cross-OS, breaking changes
+  sensitive     — security, shared libs, data migration
 
-The dispatcher auto-scales sentinel depth (2-pass or 4-pass) based on
-risk level and change type. See dispatcher.md for the full matrix.
+Higher scope = more verification. The dispatcher manages this
+automatically. See dispatcher.md for the full derivation logic.
 
 **Parallel variant:**
 - Dispatcher validates file ownership boundaries (no overlap)

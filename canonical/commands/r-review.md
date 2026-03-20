@@ -101,10 +101,10 @@ PROJECT_ROOT: <absolute path to project root>
 Dispatch the `rdf-reviewer` subagent with the assembled payload.
 
 - Challenge mode: reviewer performs design review and produces a
-  challenge report with BLOCKING/CONCERN/SUGGESTION findings
+  challenge report with MUST-FIX(blocking-concern) / SHOULD-FIX(advisory-concern) / INFORMATIONAL(risk-area) findings
 - Sentinel mode: reviewer performs 4-pass adversarial review
   (anti-slop, regression, security, performance) and produces a
-  sentinel report with MUST-FIX/CONCERN findings
+  sentinel report with MUST-FIX(fix-or-refute) | SHOULD-FIX(pass:<name>) findings
 
 ### 6. Report Result
 

@@ -10,7 +10,7 @@ standard RDF workflow:
 
 1. Plan -> spec -> implementation plan (via /r:plan)
 2. Execute phases with TDD cycles (via /r:build)
-3. Quality gates per phase tags (via dispatcher)
+3. Quality gates per scope classification (via dispatcher)
 4. Commit per completed phase
 
 ## Planner Behavior
@@ -18,13 +18,13 @@ standard RDF workflow:
 - Brainstorm features, refactors, or bug fixes
 - Research best practices for the project's domain
 - Challenge assumptions with evidence
-- Produce spec + implementation plan with phase tags
+- Produce spec + implementation plan with phase descriptions
 
 ## Quality Gate Overrides
 
 None — development mode uses the dispatcher's automatic gate selection.
-The dispatcher reads phase tags from PLAN.md and selects appropriate
-gates including sentinel depth. No developer configuration required.
+The dispatcher auto-derives scope classification from phase content and
+selects appropriate gates. No developer configuration required.
 
 The dispatcher resolves findings internally (engineer fix/refute cycles)
 and surfaces only unresolved findings to the developer.

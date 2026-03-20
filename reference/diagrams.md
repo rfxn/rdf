@@ -177,27 +177,40 @@ flowchart TD
 
 ---
 
-## 4. Quality Gates (Phase-Tag Selection)
+## 4. Quality Gates (Scope Classification)
 
-Phase tags in PLAN.md determine which gates the dispatcher activates.
+Phase content determines which gates the dispatcher activates. Scope is
+derived automatically from the file list, description, and governance
+context — no manual tagging required.
+
+```
+Phase Content → Scope Classification → Gate Selection
+
+  file count       scope:docs          G1
+  path patterns    scope:focused       G1+G2
+  description      scope:multi-file    G1+G2+G3-lite
+  governance       scope:cross-cutting G1+G2+G3-full
+  signals          scope:sensitive     G1+G2+G3-full
+                   + CLI/help files?   +G4
+```
 
 ```mermaid
 flowchart TD
-    Result([Engineer Result]) --> Tags{Phase tags\nin PLAN.md}
+    Result([Engineer Result]) --> Scope{Scope\nClassification}
 
-    Tags -->|"risk:low + type:config"| G1Only[Gate 1 Only\nEngineer Self-Report]
-    Tags -->|"risk:medium + type:feature\n(default)"| G1G2G3L[Gates 1 + 2 + 3-lite\nSelf-Report + QA + Sentinel 2-pass]
-    Tags -->|"risk:medium + type:refactor"| G1G2G3F[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
-    Tags -->|"risk:high\nor type:security"| G1G2G3H[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
-    Tags -->|"type:user-facing"| G1G2G3U[Gates 1 + 2 + 3 + 4\n+ UAT]
-    Tags -->|"risk:high +\ntype:user-facing"| AllGates[All 4 Gates\n+ Sentinel 4-pass]
+    Scope -->|"scope:docs\nchangelog, README, comments"| G1Only[Gate 1 Only\nEngineer Self-Report]
+    Scope -->|"scope:focused\nsingle file, config, one function"| G1G2[Gates 1 + 2\nSelf-Report + QA]
+    Scope -->|"scope:multi-file\n2+ files, standard feature/refactor"| G1G2G3L[Gates 1 + 2 + 3-lite\nSelf-Report + QA + Sentinel 2-pass]
+    Scope -->|"scope:cross-cutting\ninstall, CLI, cross-OS, breaking"| G1G2G3F[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
+    Scope -->|"scope:sensitive\nsecurity, shared libs, data migration"| G1G2G3S[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
+    Scope -->|"+ CLI/help files"| G4[Add Gate 4\n+ UAT]
 
     G1Only --> Verdict
+    G1G2 --> Verdict
     G1G2G3L --> Verdict
     G1G2G3F --> Verdict
-    G1G2G3H --> Verdict
-    G1G2G3U --> Verdict
-    AllGates --> Verdict
+    G1G2G3S --> Verdict
+    G4 --> Verdict
 
     Verdict{Verdict}
 
@@ -206,26 +219,27 @@ flowchart TD
     Verdict -->|REJECTED| Blocked([Surface to User])
 
     style Result fill:#553c9a,color:#fff
-    style Tags fill:#2b6cb0,color:#fff
+    style Scope fill:#2b6cb0,color:#fff
     style G1Only fill:#553c9a,color:#fff
+    style G1G2 fill:#553c9a,color:#fff
     style G1G2G3L fill:#975a16,color:#fff
     style G1G2G3F fill:#9b2c2c,color:#fff
-    style G1G2G3H fill:#9b2c2c,color:#fff
-    style G1G2G3U fill:#975a16,color:#fff
-    style AllGates fill:#9b2c2c,color:#fff
+    style G1G2G3S fill:#9b2c2c,color:#fff
+    style G4 fill:#975a16,color:#fff
     style Complete fill:#276749,color:#fff
     style Fix fill:#9b2c2c,color:#fff
     style Blocked fill:#9b2c2c,color:#fff
     style Verdict fill:#2b6cb0,color:#fff
 ```
 
-| Phase Tags | Gates | Agents |
-|---|---|---|
-| `risk:low, type:config` | 1 | engineer (self-report) |
-| `risk:medium, type:feature` (default) | 1 + 2 + 3-lite | engineer + qa + reviewer (2-pass) |
-| `risk:medium, type:refactor` | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
-| `risk:high` or `type:security` | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
-| `type:user-facing` | add Gate 4 | + uat |
+| Scope | Description | Gates | Agents |
+|---|---|---|---|
+| `docs` | changelog, README, comments | 1 | engineer (self-report) |
+| `focused` | single file, config, one function | 1 + 2 | engineer + qa |
+| `multi-file` | 2+ files, standard feature/refactor | 1 + 2 + 3-lite | engineer + qa + reviewer (2-pass) |
+| `cross-cutting` | install, CLI, cross-OS, breaking changes | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
+| `sensitive` | security, shared libs, data migration | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
+| any + CLI/help files | user-facing output or help text | add Gate 4 | + uat |
 
 ---
 
