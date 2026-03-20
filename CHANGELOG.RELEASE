@@ -1,3 +1,18 @@
+# RDF 3.1.0 Release Notes
+
+## .rdf/ Directory Migration
+
+All per-project RDF state consolidates into a single `.rdf/` directory:
+- `.rdf/governance/` — governance files (was `.claude/governance/`)
+- `.rdf/work-output/` — session state (was `work-output/`)
+- `.rdf/memory/` — agent memory (was CC auto-memory path)
+- `.rdf/scopes/` — sub-scope governance overrides
+
+New `rdf migrate` command handles transition from old layout.
+`rdf doctor` detects legacy state and recommends migration.
+
+---
+
 # RDF 3.0.0 Release Notes
 
 ## What's New

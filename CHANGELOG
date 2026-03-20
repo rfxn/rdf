@@ -1,5 +1,19 @@
 # RDF Changelog
 
+## 3.1.0
+
+### .rdf/ Directory Migration
+[New] rdf migrate: move projects from .claude/ + work-output/ to .rdf/
+[Change] All canonical content uses .rdf/governance/ instead of .claude/governance/
+[Change] work-output/ consolidated under .rdf/work-output/
+[Change] Memory resolved from .rdf/memory/ instead of CC auto-memory path
+[Change] rdf init creates .rdf/ structure instead of work-output/
+[Change] rdf doctor checks .rdf/ structure, detects legacy state
+[Change] Git exclude simplified to CLAUDE.md, PLAN*.md, AUDIT.md, MEMORY.md, .rdf/
+[Remove] v2 archived commands and agents (canonical/{commands,agents}-v2-archived/)
+[Remove] v2 agent metadata (agent-meta-v2.json)
+[Remove] REGR.md, audit-output/ from default exclude entries
+
 ## 3.0.0
 
 ### Architecture

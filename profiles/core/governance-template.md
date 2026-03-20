@@ -10,7 +10,7 @@
 - Stage files explicitly by name -- never `git add -A` or `git add .`
 - Tag body lines: `[New]` `[Change]` `[Fix]` `[Remove]`
 - Never commit working files (CLAUDE.md, PLAN*.md, AUDIT.md, MEMORY.md,
-  .claude/) -- exclude via .git/info/exclude, not .gitignore
+  .rdf/) -- exclude via .git/info/exclude, not .gitignore
 - Amend safety: verify HEAD with `git log --oneline -3` before --amend
 
 ## Verification Checks
