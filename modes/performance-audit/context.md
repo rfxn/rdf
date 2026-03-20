@@ -26,7 +26,7 @@ Bottleneck classification:
 - Research profiling tools appropriate to the project's stack
 - Quantify expected impact before committing to optimization
 - Avoid premature optimization -- measure first
-- Phase tags default to `risk:medium, type:refactor`
+- Default scope context: changes in this mode typically classify as scope:multi-file or scope:cross-cutting
 
 ## Quality Gate Overrides
 
@@ -35,7 +35,7 @@ Performance mode adds benchmark verification to quality gates.
 | Override | Effect |
 |----------|--------|
 | Gate 2 (QA) | Must include before/after benchmark comparison |
-| Gate 3 (reviewer) | Performance pass findings are BLOCKING |
+| Gate 3 (reviewer) | Performance pass findings are MUST-FIX |
 | Regression bar | No performance regression beyond 5% on any measured path |
 
 ## Reviewer Focus

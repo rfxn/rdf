@@ -103,16 +103,16 @@ bin/rdf generate all                  # builds all four in one pass
 
 ### Adversarial Quality Gates
 
-Every phase can trigger quality gates based on risk and type tags:
+The dispatcher auto-derives verification depth from phase content:
 
-| Gate | Agent | Trigger |
-|------|-------|---------|
+| Gate | Agent | Scope Trigger |
+|------|-------|---------------|
 | G1 | Self-report | All phases |
-| G2 | QA (rdf-qa) | risk:medium+ |
-| G3 | Reviewer sentinel (rdf-reviewer) | risk:high or type:security |
-| G4 | UAT (rdf-uat) | type:user-facing |
+| G2 | QA (rdf-qa) | scope:focused+ |
+| G3 | Reviewer sentinel (rdf-reviewer) | scope:cross-cutting or scope:sensitive |
+| G4 | UAT (rdf-uat) | User-facing changes |
 
-The reviewer runs 4 adversarial passes: anti-slop, regression, security, performance. Security findings are **blocking** in security mode.
+The reviewer runs 4 adversarial passes: anti-slop, regression, security, performance. Security findings are **MUST-FIX** in security mode.
 
 ---
 

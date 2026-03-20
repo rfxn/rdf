@@ -353,7 +353,7 @@ explicit checklist:
 
 ```
 Review this implementation plan against the quality standard. Each
-criterion is checked independently — if ANY fail, finding is BLOCKING:
+criterion is checked independently — if ANY fail, finding is MUST-FIX:
 
 1. Can a fresh agent execute any phase without reading the spec?
    Check: steps have exact code blocks, not references to "the spec"
@@ -378,15 +378,16 @@ Also review for:
 - File ownership conflicts in parallel phases
 - Commit messages that don't match project conventions
 
-Calibration: only flag BLOCKING if the issue would prevent an engineer
-from executing the step without guessing. Style preferences, naming
-opinions, and alternative approaches are SUGGESTION, not BLOCKING.
+Calibration: only flag MUST-FIX(blocking-concern) if the issue would
+prevent an engineer from executing the step without guessing. Style
+preferences, naming opinions, and alternative approaches are
+INFORMATIONAL(risk-area), not MUST-FIX.
 
 File: PLAN.md
 Mode: challenge
 ```
 
-Fix issues and re-dispatch (max 3 cycles). If BLOCKING findings
+Fix issues and re-dispatch (max 3 cycles). If MUST-FIX findings
 remain after 3 cycles, present to the user for resolution.
 
 ### 3.2 User Approval
@@ -440,7 +441,7 @@ After all steps complete, present the pipeline handoff:
 
 A plan is execution-grade when ALL of the following are true. These
 are not aspirational — the reviewer checks each one and any failure
-is BLOCKING.
+is MUST-FIX.
 
 1. A fresh agent can execute any phase without reading the spec
 2. Every create/modify action has exact code or exact old→new diff

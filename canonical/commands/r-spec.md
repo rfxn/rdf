@@ -440,7 +440,7 @@ Should be empty if brainstorming was thorough.
 
 A spec is architecture-grade when ALL of the following are true.
 These are not aspirational — the reviewer checks each one and any
-failure is BLOCKING.
+failure is MUST-FIX.
 
 1. The planner can decompose it into phases without re-reading source
 2. Every file is inventoried with contents and line estimates
@@ -472,13 +472,13 @@ must include the quality standard as an explicit checklist:
 
 ```
 Review this spec against the quality standard. Each criterion is
-checked independently — if ANY fail, the finding is BLOCKING:
+checked independently — if ANY fail, the finding is MUST-FIX:
 
 1. Can the planner decompose without re-reading source?
    Check: Section 5 has function inventory TABLES, not prose
 2. Every file inventoried with line estimates?
    Check: count files in Section 4 file map vs files mentioned
-   elsewhere — mismatch = BLOCKING
+   elsewhere — mismatch = MUST-FIX
 3. Dependencies mapped as a tree/diagram?
    Check: Section 4 has ASCII or table dependency diagram
 4. Goals measurable with verification commands?
@@ -515,20 +515,20 @@ Also read governance context:
 
 When the reviewer returns findings:
 
-- **BLOCKING findings**: Must be addressed. Modify the spec, explain
+- **MUST-FIX findings**: Must be addressed. Modify the spec, explain
   the fix to the user, re-dispatch reviewer (max 3 cycles).
-- **CONCERN findings**: Present to the user. Fix if user agrees,
+- **SHOULD-FIX findings**: Present to the user. Fix if user agrees,
   otherwise document the rationale for keeping the current approach.
-- **SUGGESTION findings**: Note them. Implement if trivial, otherwise
+- **INFORMATIONAL findings**: Note them. Implement if trivial, otherwise
   defer to implementation phase.
 
-After 3 review-fix cycles, if BLOCKING findings remain:
+After 3 review-fix cycles, if MUST-FIX findings remain:
 - Present the unresolved findings to the user
 - User decides: fix manually, override, or abandon
 
 ### 3.4 User Approval
 
-After the review cycle completes (all BLOCKING resolved):
+After the review cycle completes (all MUST-FIX resolved):
 
 ```
 Spec finalized: docs/specs/{filename}

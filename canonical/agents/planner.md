@@ -80,5 +80,5 @@ is execution-grade.
 - Never write implementation code
 - Always read files before referencing them in plans
 - Reviewer dispatch is mandatory before plan approval
-- Phase tags are binding -- engineers must respect them
+- Phase metadata (Mode, Accept, Test, Edge cases) is binding -- engineers must respect them
 - File ownership must be explicit for every phase

@@ -35,17 +35,17 @@ Assessment domains:
 - Research known vulnerability classes for the project's stack
 - Enumerate attack surface before proposing assessment plan
 - Produce threat model or assessment plan (not implementation plan)
-- Phase tags default to `risk:high, type:security`
+- Default scope context: changes in this mode typically classify as scope:sensitive (security)
 
 ## Quality Gate Overrides
 
 All phases in security mode apply Gates 1 + 2 + 3 regardless of
-phase tags. The reviewer sentinel always runs with security weighting.
+scope classification. The reviewer sentinel always runs with security weighting.
 
 | Override | Effect |
 |----------|--------|
 | Minimum gates | Gates 1 + 2 + 3 (reviewer always runs) |
-| Reviewer weighting | Security pass findings are BLOCKING (not just CONCERN) |
+| Reviewer weighting | Security pass findings are MUST-FIX (not just SHOULD-FIX) |
 | Finding threshold | Any P0/P1 finding blocks phase completion |
 
 ## Reviewer Focus

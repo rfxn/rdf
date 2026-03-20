@@ -28,7 +28,7 @@ Refactoring types:
 - No phase may change observable behavior (inputs, outputs, side effects)
 - Prefer small phases with high confidence over large ambitious ones
 - Search for all callers/importers of every moved/renamed symbol
-- Phase tags default to `risk:medium, type:refactor`
+- Default scope context: changes in this mode typically classify as scope:multi-file or scope:cross-cutting
 
 ## Quality Gate Overrides
 
@@ -37,8 +37,8 @@ Refactoring mode elevates regression detection.
 | Override | Effect |
 |----------|--------|
 | Minimum gates | Gates 1 + 2 + 3 (reviewer always runs) |
-| Reviewer weighting | Regression pass findings are BLOCKING |
-| Behavior change | ANY observable behavior change is BLOCKING |
+| Reviewer weighting | Regression pass findings are MUST-FIX |
+| Behavior change | ANY observable behavior change is MUST-FIX |
 
 ## Reviewer Focus
 

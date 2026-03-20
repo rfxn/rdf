@@ -27,7 +27,7 @@ Documentation types:
 - Prioritize by user impact, not by what's easiest to document
 - Plan read-then-write: every doc phase starts with reading source
 - Include verification step: documented behavior matches actual behavior
-- Phase tags default to `risk:low, type:config`
+- Default scope context: changes in this mode typically classify as scope:docs
 
 ## Quality Gate Overrides
 
@@ -36,7 +36,7 @@ Documentation mode elevates user acceptance testing.
 | Override | Effect |
 |----------|--------|
 | Gate 4 (UAT) | Elevated -- test docs from user perspective |
-| Reviewer focus | Accuracy against source code is BLOCKING |
+| Reviewer focus | Accuracy against source code is MUST-FIX |
 | Scope | No code changes permitted -- docs only |
 
 ## Reviewer Focus

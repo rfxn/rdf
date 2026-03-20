@@ -119,7 +119,8 @@ flowchart LR
 ## 3. Engineering Pipeline
 
 The v3 lifecycle from user request to merge. Quality gates are selected by
-phase tags (risk level + type) in PLAN.md.
+scope classification, derived automatically from the phase's file list and
+governance context.
 
 ```mermaid
 flowchart TD
@@ -373,7 +374,7 @@ flowchart TD
     Mode -->|"--challenge"| C3
     Mode -->|"--challenge"| C4
 
-    COut([Challenge Report\nBLOCKING / CONCERN / SUGGESTION])
+    COut([Challenge Report\nMUST-FIX / SHOULD-FIX / INFORMATIONAL])
 
     P1[Pass 1: Anti-Slop\nnaming, copy-paste, scope creep] --> SOut
     P2[Pass 2: Regression\nbehavior, contracts, exit codes] --> SOut
@@ -383,7 +384,7 @@ flowchart TD
     Mode -->|"--sentinel"| P3
     Mode -->|"--sentinel"| P4
 
-    SOut([Sentinel Report\nMUST-FIX / CONCERN / CLEAN])
+    SOut([Sentinel Report\nMUST-FIX / SHOULD-FIX / INFORMATIONAL])
 
     style C1 fill:#9b2c2c,color:#fff
     style C2 fill:#9b2c2c,color:#fff

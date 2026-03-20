@@ -110,8 +110,8 @@ Dispatch the `rdf-reviewer` subagent with the assembled payload.
 
 After the reviewer subagent returns:
 - Display the review report directly to the user
-- **Challenge mode**: highlight BLOCKING findings that must be
-  resolved before implementation; summarize CONCERN and SUGGESTION
+- **Challenge mode**: highlight MUST-FIX findings that must be
+  resolved before implementation; summarize SHOULD-FIX and INFORMATIONAL
   counts
 - **Sentinel mode**: highlight MUST-FIX findings; summarize verdict
   (APPROVE / MUST-FIX / CONCERNS)

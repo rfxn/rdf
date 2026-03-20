@@ -28,7 +28,7 @@ Debugging approaches by symptom:
 - Plan instrumentation steps before fix steps
 - Prioritize hypotheses by evidence, not intuition
 - Research known bugs in dependencies/frameworks for the symptom pattern
-- Phase tags default to `risk:medium, type:feature` (the fix is the feature)
+- Default scope context: changes in this mode typically classify as scope:focused or scope:multi-file
 
 ## Quality Gate Overrides
 

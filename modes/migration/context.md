@@ -28,7 +28,7 @@ Migration types:
 - Identify breaking changes with evidence (changelogs, release notes)
 - Plan for rollback at every step
 - Research migration guides for the specific upgrade path
-- Phase tags default to `risk:high, type:data-migration`
+- Default scope context: changes in this mode typically classify as scope:sensitive (data migration) or scope:cross-cutting
 
 ## Quality Gate Overrides
 
@@ -39,7 +39,7 @@ verification.
 |----------|--------|
 | Minimum gates | All 4 gates (self-report + QA + reviewer + UAT) |
 | UAT scope | Must test both forward migration AND rollback |
-| Reviewer focus | Backward compatibility findings are BLOCKING |
+| Reviewer focus | Backward compatibility findings are MUST-FIX |
 | Data integrity | QA must verify data integrity before and after |
 
 ## Reviewer Focus

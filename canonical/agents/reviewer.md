@@ -53,7 +53,7 @@ dispatch prompt:
   1. Anti-slop
   2. Regression
 
-**Full (4-pass)** — for risk:high, type:security, type:refactor,
+**Full (4-pass)** — for scope:cross-cutting, scope:sensitive,
 end-of-plan, /r:ship, and /r:audit:
   1. Anti-slop
   2. Regression
