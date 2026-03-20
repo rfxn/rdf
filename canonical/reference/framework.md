@@ -159,11 +159,16 @@ dispatcher ──[phase context]──→ engineer ──[result]──→ dispa
                       uat ──[verdict]──→ dispatcher
 ```
 
-**Gate selection** is driven by phase tags in PLAN.md:
-- `risk:low, type:config` → Gate 1 (engineer self-report)
-- `risk:medium, type:feature` → Gates 1 + 2 (+ qa)
-- `risk:high` or `type:security` → Gates 1 + 2 + 3 (+ reviewer)
-- `type:user-facing` → Gates 1 + 2 + 4 (+ uat)
+**Gate selection** is managed by the dispatcher based on planner-assigned
+phase tags. The developer does not interact with gate selection directly.
+
+Summary:
+- Trivial changes (risk:low) → deterministic checks only (engineer + QA)
+- Standard changes → deterministic + adversarial review (+ sentinel)
+- User-facing changes → add UAT acceptance testing
+
+The dispatcher auto-scales sentinel depth (2-pass or 4-pass) based on
+risk level and change type. See dispatcher.md for the full matrix.
 
 **Parallel variant:**
 - Dispatcher validates file ownership boundaries (no overlap)

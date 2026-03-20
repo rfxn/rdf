@@ -219,10 +219,10 @@ flowchart TD
 | Phase Tags | Gates | Agents |
 |---|---|---|
 | `risk:low, type:config` | 1 | engineer (self-report) |
-| `risk:medium, type:feature` (default) | 1 + 2 | engineer + qa |
-| `risk:high` or `type:security` | 1 + 2 + 3 | engineer + qa + reviewer sentinel |
-| `type:user-facing` | 1 + 2 + 4 | engineer + qa + uat |
-| `risk:high, type:user-facing` | 1 + 2 + 3 + 4 | all four agents |
+| `risk:medium, type:feature` (default) | 1 + 2 + 3-lite | engineer + qa + reviewer (2-pass) |
+| `risk:medium, type:refactor` | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
+| `risk:high` or `type:security` | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
+| `type:user-facing` | add Gate 4 | + uat |
 
 ---
 
@@ -366,7 +366,7 @@ flowchart TD
     Mode -->|"--sentinel"| P3
     Mode -->|"--sentinel"| P4
 
-    SOut([Sentinel Report\nMUST-FIX / SHOULD-FIX / CLEAN])
+    SOut([Sentinel Report\nMUST-FIX / CONCERN / CLEAN])
 
     style C1 fill:#9b2c2c,color:#fff
     style C2 fill:#9b2c2c,color:#fff

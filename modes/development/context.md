@@ -22,16 +22,12 @@ standard RDF workflow:
 
 ## Quality Gate Overrides
 
-None -- development mode uses the default gate selection from plan
-phase tags:
+None — development mode uses the dispatcher's automatic gate selection.
+The dispatcher reads phase tags from PLAN.md and selects appropriate
+gates including sentinel depth. No developer configuration required.
 
-| Phase Tags | Gates |
-|-----------|-------|
-| risk:low, type:config | Gate 1 (self-report) |
-| risk:medium, type:feature | Gates 1 + 2 (+ QA) |
-| risk:high, type:security | Gates 1 + 2 + 3 (+ reviewer) |
-| type:user-facing | Gates 1 + 2 + 4 (+ UAT) |
-| risk:high, type:user-facing | All 4 gates |
+The dispatcher resolves findings internally (engineer fix/refute cycles)
+and surfaces only unresolved findings to the developer.
 
 ## Reviewer Focus
 
