@@ -1,3 +1,30 @@
+# RDF 3.1.1 Release Notes
+
+## Sentinel Integration & Quality Gate Redesign
+
+Dispatcher-owned quality gate resolution restores the RDF 2.x mgr model.
+Sentinel is now active on all non-trivial phases with automatic depth
+scaling. The developer surface simplifies to ~6 concepts.
+
+Key changes:
+- Tiered sentinel depth: lite (2-pass: anti-slop + regression) for
+  routine phases, full (4-pass) for risk:high, type:security, type:refactor,
+  end-of-plan, /r:ship, and /r:audit
+- Counter-hypothesis protocol (unconditional in sentinel mode) prevents
+  false positives — every MUST-FIX/CONCERN finding is evaluated against
+  location-specific counter-evidence before reporting
+- Parallel QA+sentinel execution: both agents run simultaneously, findings
+  deduplicated by file:line proximity
+- End-of-plan sentinel: mandatory full 4-pass review of cumulative diff
+  after the last phase of any 3+ phase plan
+- Dispatcher-owned finding resolution: fix/refute cycle (max 3 iterations)
+  before escalating to the developer
+- FP calibration: dispatcher re-dispatches sentinel at full depth when
+  zero findings are reported on a 50+ line diff
+- SHOULD-FIX renamed to CONCERN across all surfaces
+
+---
+
 # RDF 3.1.0 Release Notes
 
 ## .rdf/ Directory Migration

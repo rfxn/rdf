@@ -1,5 +1,18 @@
 # RDF Changelog
 
+## 3.1.1
+
+### Sentinel Integration & Quality Gate Redesign
+[Change] Dispatcher gate selection — sentinel on all non-trivial phases
+[New] Tiered sentinel depth (lite 2-pass, full 4-pass)
+[New] Counter-hypothesis FP prevention protocol in reviewer
+[New] Parallel QA+sentinel execution with dedup
+[New] End-of-plan sentinel for 3+ phase plans
+[New] Dispatcher-owned finding resolution (fix/refute cycle)
+[New] FP calibration (dispatcher-internal heuristics)
+[Change] SHOULD-FIX renamed to CONCERN across all surfaces
+[Change] Gate machinery hidden from developer — dispatcher-internal
+
 ## 3.1.0
 
 ### .rdf/ Directory Migration
