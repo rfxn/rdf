@@ -8,12 +8,12 @@
 
 ## Authoritative Files
 {One line per existing .md file ingested during init.
-These files are NOT in .claude/governance/ — they are the project's
+These files are NOT in .rdf/governance/ — they are the project's
 own convention files that remain authoritative.}
 - {filename} — {one-line description of what it covers}
 
 ## Governance Files
-{One line per generated file in .claude/governance/.
+{One line per generated file in .rdf/governance/.
 Only list files that were actually generated with content.}
 - architecture.md — {one-line summary}
 - conventions.md — {one-line summary}

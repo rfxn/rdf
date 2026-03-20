@@ -6,7 +6,7 @@ Extracted from parent CLAUDE.md for on-demand reference.
 
 ## Required Sections
 
-Each project's MEMORY.md (under `/root/.claude/projects/`) must maintain
+Each project's MEMORY.md (under `.rdf/memory/`) must maintain
 at minimum:
 
 1. **Current state** — version, branch, phase status

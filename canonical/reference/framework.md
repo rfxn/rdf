@@ -20,8 +20,8 @@ the framework evolves. Never contains volatile data.
 |----------|----------|-------|
 | Parent CLAUDE.md | `/root/admin/work/proj/CLAUDE.md` | Human |
 | Project CLAUDE.md | `<project>/CLAUDE.md` | Human |
-| Governance index | `<project>/.claude/governance/index.md` | `/r:init` |
-| Governance files | `<project>/.claude/governance/*.md` | `/r:init`, `/r:refresh` |
+| Governance index | `<project>/.rdf/governance/index.md` | `/r:init` |
+| Governance files | `<project>/.rdf/governance/*.md` | `/r:init`, `/r:refresh` |
 | Shared reference | `/root/admin/work/proj/reference/*.md` | Human |
 | Project reference | `<project>/reference/*.md` | Human |
 
@@ -41,9 +41,9 @@ commit, phase completion, or audit run.
 | MEMORY.md | Auto-memory dir | `/r:save` | All projects |
 | PLAN.md | `<project>/PLAN.md` | `/r:plan`, `/r:save` | When active work |
 | AUDIT.md | `<project>/AUDIT.md` | `/r:audit`, `/r:save` | After audit run |
-| spec-progress.md | `work-output/` | `/r:spec` | During design |
-| ship-progress.md | `work-output/` | `/r:ship` | During release |
-| session-log.jsonl | `work-output/` | `/r:save` | When active work |
+| spec-progress.md | `.rdf/work-output/` | `/r:spec` | During design |
+| ship-progress.md | `.rdf/work-output/` | `/r:ship` | During release |
+| session-log.jsonl | `.rdf/work-output/` | `/r:save` | When active work |
 | insights.jsonl | `~/.rdf/` | `/r:save` | Rolling 30 entries |
 | lessons-learned.md | `~/.rdf/` | `/r:save` (user-promoted) | Cross-session wisdom |
 | config.json | `~/.rdf/` | `/r:save` (auto setting) | RDF preferences |
@@ -63,7 +63,7 @@ Referenced by parent CLAUDE.md / GEMINI.md / AGENTS.md for agent discovery.
 ### Category 3: Execution (transient)
 
 Agent work products created during a session. Structured files in
-`work-output/` passed between agents as handoff contracts.
+`.rdf/work-output/` passed between agents as handoff contracts.
 
 | Artifact | Writer | Reader |
 |----------|--------|--------|
@@ -126,8 +126,8 @@ Contracts between the framework and the monitoring system.
 | collect-activity.sh | `git log` across projects | 30s |
 | collect-plans.sh | PLAN*.md phase status | 30s |
 | collect-audits.sh | AUDIT.md severity counts | 60s |
-| collect-agents.sh | work-output/*.md status | 3s |
-| collect-spool.sh | work-output/spool/*.jsonl | 5s |
+| collect-agents.sh | .rdf/work-output/*.md status | 3s |
+| collect-spool.sh | .rdf/work-output/spool/*.jsonl | 5s |
 
 ### Category 6: Archive (historical)
 
@@ -145,7 +145,7 @@ Contracts between the framework and the monitoring system.
 ### Agent Pipeline
 
 The dispatcher orchestrates a sequential pipeline. Each transition is a
-structured file in `work-output/`.
+structured file in `.rdf/work-output/`.
 
 ```
 dispatcher ──[phase context]──→ engineer ──[result]──→ dispatcher
@@ -189,7 +189,7 @@ State sources, in order of reliability:
 | session-log.jsonl | High | Session summaries (commits, phases completed) |
 | MEMORY.md | High (if saved) | State summary, open items |
 | AUDIT.md | High | Outstanding findings |
-| work-output/ | Forensic | In-flight state at session end |
+| .rdf/work-output/ | Forensic | In-flight state at session end |
 
 Git is the true record. `/r:save` creates convenience summaries.
 `/r:start` reads them for a warm handoff.
@@ -218,9 +218,7 @@ CLAUDE.md
 PLAN*.md
 AUDIT.md
 MEMORY.md
-.claude/
-work-output/
-audit-output/
+.rdf/
 ```
 
 Never use `.gitignore` for these — exclusion rules stay local.

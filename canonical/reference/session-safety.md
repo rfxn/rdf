@@ -15,7 +15,7 @@ The recommended workflow for every session:
 /r:save          ← state sync: updates PLAN.md, MEMORY.md, session log
 ```
 
-`/r:save` writes to `work-output/session-log.jsonl` so the next `/r:start`
+`/r:save` writes to `.rdf/work-output/session-log.jsonl` so the next `/r:start`
 can show what happened. Git is the authoritative record; `/r:save` creates
 convenience summaries.
 
@@ -43,16 +43,16 @@ After a crash or new session start:
 1. **Run `/r:start`** — displays session anchor, plan progress, last session summary,
    agent activity, and warnings. This is the primary recovery entry point.
 2. **Assess git state:** `git status`, `git diff --stat`, `git log --oneline -5`
-3. **Check work-output/session-log.jsonl** for the last session's summary — what
+3. **Check .rdf/work-output/session-log.jsonl** for the last session's summary — what
    phases were completed, what was in progress, how many commits were made.
-4. **Check work-output/agent-feed.log** for stale AGENT_STOP entries — these show
+4. **Check .rdf/work-output/agent-feed.log** for stale AGENT_STOP entries — these show
    agents that completed but may not have been followed up on.
-5. **Check for stale status files:** `work-output/phase-*-status.md` files with
+5. **Check for stale status files:** `.rdf/work-output/phase-*-status.md` files with
    mtime >1 hour indicate interrupted work.
 6. **Check for progress files** that indicate interrupted workflows:
-   - `work-output/spec-progress.md` -- design session in progress; contains topic,
+   - `.rdf/work-output/spec-progress.md` -- design session in progress; contains topic,
      phase, and decisions made so far. Resume with `/r:spec --resume`.
-   - `work-output/ship-progress.md` -- release workflow in progress; contains stage
+   - `.rdf/work-output/ship-progress.md` -- release workflow in progress; contains stage
      and PR URL. Resume with `/r:ship` (auto-detects).
 7. **If uncommitted changes exist:** review and either commit or stash before resuming.
 8. **If resume fails:** `/r:start` + PLAN.md provide enough continuity to restart
@@ -70,4 +70,4 @@ When reconstructing state, use these sources in priority order:
 | MEMORY.md | High (if saved) | State summary, open items |
 | AUDIT.md | High | Outstanding findings |
 | agent-feed.log | Forensic | Agent completion events |
-| work-output/*.md | Forensic | In-flight state at session end |
+| .rdf/work-output/*.md | Forensic | In-flight state at session end |

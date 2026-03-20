@@ -29,15 +29,15 @@ if [[ -n "$cwd" ]]; then
 fi
 
 # Determine the feed log location.
-# Try project-level work-output/ first, fall back to parent-level.
+# Try project-level .rdf/work-output/ first, fall back to parent-level.
 feed_dir=""
-if [[ -d "./work-output" ]]; then
-    feed_dir="./work-output"
-elif [[ -d "/root/admin/work/proj/work-output" ]]; then
-    feed_dir="/root/admin/work/proj/work-output"
+if [[ -d "./.rdf/work-output" ]]; then
+    feed_dir="./.rdf/work-output"
+elif [[ -d "/root/admin/work/proj/.rdf/work-output" ]]; then
+    feed_dir="/root/admin/work/proj/.rdf/work-output"
 else
-    # Create parent-level work-output if nothing exists
-    feed_dir="/root/admin/work/proj/work-output"
+    # Create parent-level .rdf/work-output if nothing exists
+    feed_dir="/root/admin/work/proj/.rdf/work-output"
     mkdir -p "$feed_dir"
 fi
 
