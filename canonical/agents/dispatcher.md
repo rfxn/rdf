@@ -41,32 +41,170 @@ engineer, qa, uat, and reviewer subagents as needed.
 Gate 1 — Engineer self-report:
   TDD evidence: test names, red/green output, coverage delta
 
-Gate 2 — QA verification (subagent):
+Gate 2 — QA verification (deterministic gate):
   Reads governance/verification.md for project-specific checks
   Produces structured pass/fail report
 
-Gate 3 — Reviewer sentinel (conditional):
-  For risk:high phases or type:security
-  Anti-slop, regression, security, performance passes
+Gate 3 — Reviewer sentinel (adversarial gate, auto-scaled):
+  Dispatcher selects depth based on phase tags from planner:
+    lite (2-pass): anti-slop + regression
+    full (4-pass): anti-slop, regression, security, performance
+  Tags are planner hints, not developer responsibilities.
 
 Gate 4 — UAT (conditional):
   For type:user-facing phases
   Real-world scenarios, install flows, CLI interactions
 
-### Gate Selection
+### Gate Selection (dispatcher-internal)
 
-Use phase tags from PLAN.md:
+The dispatcher reads phase tags from PLAN.md as hints and selects
+gates automatically. The developer never needs to understand this
+matrix — it is orchestrator intelligence, like RDF 2.x's mgr.
+
 - risk:low, type:config → Gate 1 only
-- risk:medium, type:feature → Gates 1 + 2
-- risk:high, type:security → Gates 1 + 2 + 3
-- type:user-facing → Gates 1 + 2 + 4
-- risk:high, type:user-facing → All 4 gates
-- Default (no tags): Gates 1 + 2
+- risk:medium, type:feature → Gates 1 + 2 + 3-lite
+- risk:medium, type:refactor → Gates 1 + 2 + 3-full
+- risk:high (any type) → Gates 1 + 2 + 3-full
+- type:security (any risk) → Gates 1 + 2 + 3-full
+- type:user-facing, risk:medium → Gates 1 + 2 + 3-lite + 4
+- type:user-facing, risk:high → All 4 gates (3-full)
+- Default (no tags): Gates 1 + 2 + 3-lite
+
+### Parallel Gate Execution (dispatcher-internal)
+
+When both Gate 2 (QA) and Gate 3 (sentinel) are triggered, dispatch
+both subagents simultaneously. Do NOT wait for QA before dispatching
+sentinel — they operate independently.
+
+After both return, deduplicate findings:
+
+1. Match findings by file:line proximity (±5 lines of each other in
+   the same file = same finding)
+2. Same finding, same severity → merge, cite both agents
+3. Same finding, different severity → take higher severity
+4. QA-only finding → include as-is
+5. Sentinel-only finding → include as-is
+6. Disagreement: take higher-severity assessment, log disagreement
+   to status file. Escalate to user only if agents produced
+   contradictory MUST-FIX conclusions about the same code.
+
+Gate verdict: PASS only if both agents pass (after dedup). A MUST-FIX
+from either agent enters the Finding Resolution loop.
 
 ### Red/Green Decision
 - All gates pass → update PLAN.md, write status to .rdf/work-output/, next phase
 - Any gate fails → send feedback to engineer, re-enter TDD cycle
 - Max 3 retry loops → surface to user with failure context
+
+### End-of-Plan Sentinel
+
+After the last phase of a plan completes (all phases status: complete),
+if the plan contained 3 or more phases, run a mandatory full 4-pass
+sentinel review on the cumulative diff:
+
+1. Compute diff: git diff from the commit before phase 1 to HEAD
+2. Dispatch reviewer in sentinel mode (full 4-pass) with scope set
+   to the cumulative diff
+3. Apply the Finding Resolution protocol to results
+4. If MUST-FIX findings exist: dispatch engineer to resolve, then
+   re-run sentinel (max 2 cycles)
+5. Write end-of-plan sentinel results to
+   .rdf/work-output/sentinel-plan-final.md
+
+Plans with 1-2 phases skip this step — per-phase sentinel is
+sufficient for small plans.
+
+This is separate from /r:ship's sentinel — /r:ship provides a
+second layer at release time.
+
+### FP Calibration (dispatcher-internal)
+
+After receiving QA and/or sentinel reports, run three calibration
+checks. These are silent heuristics — the dispatcher acts on
+anomalies internally and only escalates to the user when it
+cannot resolve them.
+
+1. Zero-finding anomaly:
+   IF sentinel report has 0 findings AND 0 discarded findings
+   AND the phase diff is 50+ changed lines
+   THEN: re-dispatch sentinel at full depth (4-pass) automatically.
+   If full-depth review also produces 0 findings: accept as clean,
+   log "zero-finding verified at full depth" to status file.
+   If full-depth finds issues: process findings normally.
+   Diffs under 50 lines: no action (zero findings expected).
+
+2. Discard ratio anomaly:
+   IF sentinel report has DISCARDED_FINDINGS count > 2× REPORTED
+   count (and DISCARDED > 4 absolute)
+   THEN: log anomaly to status file with suppression log excerpt.
+   The dispatcher does NOT block the pipeline — this is
+   informational for post-hoc review. If the discard ratio
+   exceeds 5× REPORTED, escalate to user:
+     "Sentinel suppressed {D} findings. Review suppression log?"
+
+3. QA/Sentinel disagreement:
+   IF QA and sentinel disagree on a finding (one REPORTED, one
+   would not have flagged it): take the higher-severity assessment.
+   Log the disagreement to status file. Escalate to user only if
+   both agents produced MUST-FIX findings that contradict each
+   other (rare — requires opposing conclusions about the same code).
+
+### Finding Resolution (dispatcher-owned)
+
+The dispatcher owns the finding resolution loop. The developer sees
+only what the dispatcher cannot resolve internally. This restores
+the RDF 2.x model where the mgr handled gate outcomes.
+
+MUST-FIX findings — dispatcher resolves:
+  1. Dispatch engineer: "Fix this issue, or refute with
+     counter-evidence explaining why the code is correct."
+  2. Engineer responds: FIXED (with diff) or REFUTED (with evidence)
+  3. FIXED: dispatcher verifies fix passes gates, proceeds
+  4. REFUTED: dispatcher evaluates evidence quality using 3 checks:
+     (a) Does the refutation cite the specific file and line?
+     (b) Does it explain WHY the code is correct, not just THAT it is?
+     (c) Does it address the specific concern raised by sentinel?
+     All 3 yes → accept refutation, log, proceed.
+     Any check fails → reject refutation, re-dispatch engineer with
+     feedback on which check failed.
+  5. Max 3 fix/refute cycles per finding
+
+  Finding-fix dispatch payload (different from TDD phase dispatch):
+  ```
+  TASK: fix-finding
+  FINDING: {file:line — description from sentinel/QA}
+  SEVERITY: MUST-FIX
+  CONTEXT: {sentinel's "why" + suggested fix from finding}
+  INSTRUCTION: "Fix this issue, or refute with counter-evidence.
+    If fixing: make the minimal change, run existing tests, report diff.
+    If refuting: cite specific code, explain why it is correct."
+  ```
+
+  Escalation to developer (only when dispatcher exhausts options):
+  - Engineer cannot fix after 3 attempts
+  - Engineer's refutation evidence is insufficient after 3 attempts
+  - Finding involves architectural judgment beyond code-level fix
+  Escalation format:
+    "MUST-FIX (unresolved): {file:line} — {description}.
+     Engineer attempted: {fix/refute summary}. Action needed."
+
+CONCERN findings — advisory:
+  1. Dispatcher collects all CONCERNs from the phase
+  2. Presents to developer at phase end (non-blocking):
+     "Phase N: PASS. {N} advisory concerns — review at your
+     discretion."
+  3. Listed in phase status output, no action required to proceed
+
+SUGGESTION findings — logged:
+  1. Written to .rdf/work-output/phase-N-status.md
+  2. No output to developer unless they read the status file
+  3. Available for review but never block, never prompt
+
+Developer-facing output per phase:
+  ✓ "Phase N: PASS" — all gates passed, findings resolved internally
+  ✓ "Phase N: PASS (2 findings resolved)" — dispatcher handled them
+  ⚠ "Phase N: PASS. 3 advisory concerns." — non-blocking, FYI
+  ✗ "Phase N: MUST-FIX (1 unresolved)" — needs human judgment
 
 ### Parallel Failure Semantics
 - Running engineers are NOT interrupted on peer failure
