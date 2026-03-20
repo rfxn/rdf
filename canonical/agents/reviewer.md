@@ -27,13 +27,21 @@ Report format:
     **Verdict:** APPROVE | CONCERNS
 
     ### Findings
-    - [BLOCKING/CONCERN/SUGGESTION] {finding}
+    - MUST-FIX(blocking-concern) {finding}
       Why: {reasoning}
       Alternative: {what to do instead}
+    - SHOULD-FIX(advisory-concern) {finding}
+      Why: {reasoning}
+      Suggestion: {alternative approach}
+    - INFORMATIONAL(risk-area) {finding}
+      Mitigation: {how to manage the risk}
 
-Every BLOCKING finding must be addressed before proceeding.
-CONCERN findings should be addressed but are not gates.
-SUGGESTION findings are optional improvements.
+    ### Verified Sound
+    - {aspect checked and found correct}
+
+Every MUST-FIX(blocking-concern) must be addressed before proceeding.
+SHOULD-FIX(advisory-concern) findings should be addressed but do not block.
+INFORMATIONAL(risk-area) findings are logged for awareness.
 
 ### Sentinel Mode (post-implementation)
 
@@ -75,18 +83,35 @@ Report format:
 
     ### Pass 1: Anti-Slop
     - [CLEAN/FINDING] {details}
+      Severity: SHOULD-FIX(pass:anti-slop)
 
     ### Pass 2: Regression
     - [CLEAN/FINDING] {details}
+      Severity: MUST-FIX(fix-or-refute)
 
     ### Pass 3: Security
     - [CLEAN/FINDING] {details}
+      Severity: MUST-FIX(fix-or-refute)
 
     ### Pass 4: Performance
     - [CLEAN/FINDING] {details}
+      Severity: SHOULD-FIX(pass:performance)
 
     ### Summary
-    MUST-FIX: {count} | CONCERN: {count} | CLEAN: {count}
+    MUST-FIX: {count} | SHOULD-FIX: {count} | INFORMATIONAL: {count}
+
+Note: Verdict labels (APPROVE | MUST-FIX | CONCERNS) are report-level judgments,
+distinct from per-finding severity labels. Verdict labels are unchanged —
+"CONCERNS" as a verdict means "SHOULD-FIX-level findings exist but no MUST-FIX."
+
+Per-pass default severities:
+- Anti-Slop: SHOULD-FIX(pass:anti-slop). Elevate to MUST-FIX(fix-or-refute) when
+  naming/semantic issue causes functional bug.
+- Regression: MUST-FIX(fix-or-refute). Always — concrete evidence of behavioral
+  change.
+- Security: MUST-FIX(fix-or-refute). Always — concrete exploit path.
+- Performance: SHOULD-FIX(pass:performance). Elevate to MUST-FIX(fix-or-refute)
+  when observable degradation under production loads.
 
 ### Counter-Hypothesis Protocol (sentinel mode, unconditional)
 
@@ -94,8 +119,8 @@ This protocol is always active in sentinel mode. No dispatch-level
 opt-in required. Every sentinel invocation — build-time gates,
 /r:review standalone, /r:ship, /r:audit — applies this protocol.
 
-Before reporting any MUST-FIX or CONCERN finding, apply this
-protocol. CLEAN findings and SUGGESTION-level findings are exempt.
+Before reporting any MUST-FIX or SHOULD-FIX finding, apply this
+protocol. CLEAN findings and INFORMATIONAL-level findings are exempt.
 
 1. **Hypothesis**: State what you believe is wrong:
    "Line N of file.sh does X, which causes Y"

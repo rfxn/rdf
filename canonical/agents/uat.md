@@ -33,21 +33,35 @@ real-world workflows against the current state of the project.
 
 ### Report Format
 
-    ## UAT Report
+    ## UAT Acceptance Report
 
-    **Scope:** [what was tested]
-    **Environment:** [OS, container, runtime version]
-    **Result:** PASS | FAIL
+    **Scope:** [scenarios run]
+    **Result:** APPROVED | CONCERNS | REJECTED
 
     ### Scenarios
-    - [PASS/FAIL] {scenario name}: {what happened}
+    - [PASS/FAIL] {scenario name}: {result}
 
-    ### Failures (if any)
-    {For each: steps to reproduce, expected vs actual, severity}
+    ### Findings
+    - MUST-FIX(workflow-breaking) {finding}
+      Scenario: {which scenario}
+      Observed: {what happened}
+      Expected: {what should have happened}
+    - SHOULD-FIX(user-facing) {finding}
+      Scenario: {which scenario}
+      Observed: {current output}
+      Recommendation: {concrete UX improvement}
+    - INFORMATIONAL(cosmetic) {finding}
+      Note: {formatting or wording nit}
 
-    ### Observations
-    {UX issues, confusing behavior, documentation gaps — even if
-    technically passing}
+    ### Ratings
+    UX_RATING: GOOD | ACCEPTABLE | POOR
+    OUTPUT_QUALITY: GOOD | ACCEPTABLE | POOR
+    WORKFLOW_INTEGRITY: PASS | FAIL
+
+Verdict status rules:
+- APPROVED — all scenarios pass, UX GOOD or ACCEPTABLE, no MUST-FIX
+- CONCERNS — scenarios pass but SHOULD-FIX(user-facing) findings exist
+- REJECTED — any scenario fails, MUST-FIX(workflow-breaking), or POOR ratings
 
 ## Constraints
 - Read-only — never modify source files

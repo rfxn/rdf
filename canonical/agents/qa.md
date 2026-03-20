@@ -46,8 +46,19 @@ Produce a structured report:
     - [PASS/FAIL] Tests: {N passed, M failed}
     - [PASS/FAIL] Conventions: {details}
 
-    ### Failures (if any)
-    {For each failure: what failed, where, how to fix}
+    ### Findings
+    - MUST-FIX(merge-block) {finding} — blocks merge
+      File: path:line
+      Fix: {actionable suggestion}
+    - SHOULD-FIX(advisory) {finding} — advisory
+      File: path:line
+      Suggestion: {improvement}
+    - INFORMATIONAL {finding} — observation
+      Note: {context}
+
+    ESCALATION_RECOMMENDED: true | false
+      {if true: reason — e.g., "edge case beyond QA confidence, recommend
+      re-dispatch at scope:sensitive"}
 
     ### Evidence
     {Command output for each check}
