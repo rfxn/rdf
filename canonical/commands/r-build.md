@@ -51,12 +51,9 @@ Mark target phase as completed when dispatcher returns PASS.
 - Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
     Run /r:init to generate governance, or proceed without it."
-- From the index, identify relevant governance files based on phase
-  tags:
-  - Always: conventions.md, constraints.md
-  - If risk:high or type:security: anti-patterns.md
-  - If type:user-facing: architecture.md (for component boundaries)
-  - For quality gate selection: verification.md
+- Load all governance files unconditionally:
+  - conventions.md, constraints.md, verification.md,
+    anti-patterns.md, architecture.md
 - Read the current operational mode (if `.rdf/governance/index.md`
   has a Mode field other than "development")
 
@@ -70,8 +67,6 @@ DESCRIPTION: <phase description from PLAN.md>
 MODE: <execution mode tag: serial-context | serial-agent | parallel-agent>
 FILES: <file list from PLAN.md>
 ACCEPT: <acceptance criteria from PLAN.md>
-RISK: <risk tag from PLAN.md, default: medium>
-TYPE: <type tag from PLAN.md, default: feature>
 PLAN_PHASE_COUNT: <total phases in PLAN.md>
 
 GOVERNANCE:
@@ -79,8 +74,8 @@ GOVERNANCE:
   conventions: .rdf/governance/conventions.md
   constraints: .rdf/governance/constraints.md
   verification: .rdf/governance/verification.md
-  anti-patterns: .rdf/governance/anti-patterns.md (if applicable)
-  architecture: .rdf/governance/architecture.md (if applicable)
+  anti-patterns: .rdf/governance/anti-patterns.md
+  architecture: .rdf/governance/architecture.md
 
 OPERATIONAL_MODE: <mode or "development">
 PROJECT_ROOT: <absolute path to project root>
