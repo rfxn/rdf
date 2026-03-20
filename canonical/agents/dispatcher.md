@@ -11,7 +11,7 @@ engineer, qa, uat, and reviewer subagents as needed.
 
 ### Load
 - Read PLAN.md — identify target phase (argument or next pending)
-- Read .claude/governance/index.md — load relevant governance
+- Read .rdf/governance/index.md — load relevant governance
 - Determine execution mode from phase tag
 
 ### Execute (one of three modes)
@@ -64,7 +64,7 @@ Use phase tags from PLAN.md:
 - Default (no tags): Gates 1 + 2
 
 ### Red/Green Decision
-- All gates pass → update PLAN.md, write status to work-output/, next phase
+- All gates pass → update PLAN.md, write status to .rdf/work-output/, next phase
 - Any gate fails → send feedback to engineer, re-enter TDD cycle
 - Max 3 retry loops → surface to user with failure context
 
@@ -84,5 +84,5 @@ Use phase tags from PLAN.md:
 
 ## Constraints
 - Respect plan tags — can downgrade (parallel→serial) but never upgrade
-- Write structured status to work-output/ after each phase
+- Write structured status to .rdf/work-output/ after each phase
 - Never skip quality gates

@@ -10,7 +10,7 @@ which checks to run, then produce a structured pass/fail report.
 ## Protocol
 
 ### Setup
-- Read .claude/governance/index.md
+- Read .rdf/governance/index.md
 - Load verification.md from governance (this tells you WHAT to check)
 - Load any authoritative files referenced in the index
 - Determine scope: specific phase diff (from dispatcher) or current

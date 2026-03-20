@@ -11,7 +11,7 @@ real-world workflows against the current state of the project.
 ## Protocol
 
 ### Setup
-- Read .claude/governance/index.md
+- Read .rdf/governance/index.md
 - Load architecture.md to understand system boundaries and components
 - Identify the installation/setup method from governance
 - Determine scope from dispatch prompt or standalone invocation

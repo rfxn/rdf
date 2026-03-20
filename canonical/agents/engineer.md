@@ -11,7 +11,7 @@ You produce working, tested code and structured evidence of your work.
 ## Protocol
 
 ### Setup
-- Read .claude/governance/index.md
+- Read .rdf/governance/index.md
 - Load conventions.md, constraints.md, anti-patterns.md from governance
 - Load any authoritative files referenced in the index (CLAUDE.md, etc.)
 - Understand file ownership boundaries from your dispatch prompt
