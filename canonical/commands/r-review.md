@@ -80,12 +80,18 @@ MODE: sentinel
 SCOPE: <file list or "branch diff">
 CHANGED_FILES: <list of files in scope>
 BASE_BRANCH: <base branch name>
+DEPTH: full
 
 GOVERNANCE:
   index: .rdf/governance/index.md
   anti-patterns: .rdf/governance/anti-patterns.md
   constraints: .rdf/governance/constraints.md
   conventions: .rdf/governance/conventions.md
+
+REPORT_FORMAT:
+  Include per-finding: file, line, severity, description, why,
+  suggested fix, CH_RESULT, CH_REASON.
+  Include footer: DISCARDED_FINDINGS count and log.
 
 PROJECT_ROOT: <absolute path to project root>
 ```
@@ -98,7 +104,7 @@ Dispatch the `rdf-reviewer` subagent with the assembled payload.
   challenge report with BLOCKING/CONCERN/SUGGESTION findings
 - Sentinel mode: reviewer performs 4-pass adversarial review
   (anti-slop, regression, security, performance) and produces a
-  sentinel report with MUST-FIX/SHOULD-FIX findings
+  sentinel report with MUST-FIX/CONCERN findings
 
 ### 6. Report Result
 
