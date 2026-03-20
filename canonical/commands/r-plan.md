@@ -250,12 +250,14 @@ For each phase, provide orchestration metadata:
 - `type:user-facing` — CLI, UI, output format changes
 - `type:data-migration` — data format or schema changes
 
-**Quality gates** (derived from risk + type):
+**Quality gates** (dispatcher auto-selects — these are hints, not
+developer responsibilities):
 - risk:low, type:config — Gate 1 only (engineer self-report)
-- risk:medium, type:feature — Gates 1 + 2 (+ QA)
-- risk:high or type:security — Gates 1 + 2 + 3 (+ reviewer sentinel)
-- type:user-facing — Gates 1 + 2 + 4 (+ UAT)
-- risk:high, type:user-facing — All 4 gates
+- risk:medium, type:feature — Gates 1 + 2 + 3-lite (+ sentinel 2-pass)
+- risk:medium, type:refactor — Gates 1 + 2 + 3-full (+ sentinel 4-pass)
+- risk:high or type:security — Gates 1 + 2 + 3-full (+ sentinel 4-pass)
+- type:user-facing — add Gate 4 (+ UAT)
+- Default (no tags) — Gates 1 + 2 + 3-lite
 
 ### 2.4 Identify File Ownership Boundaries
 
