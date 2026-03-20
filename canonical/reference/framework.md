@@ -71,6 +71,7 @@ Agent work products created during a session. Structured files in
 | `phase-N-result.md` | engineer | dispatcher |
 | `qa-phase-N-verdict.md` | qa | dispatcher |
 | `sentinel-N.md` | reviewer | dispatcher |
+| `sentinel-plan-final.md` | reviewer (via dispatcher) | dispatcher |
 | `uat-phase-N-verdict.md` | uat | dispatcher |
 
 **Engineer result schema:**

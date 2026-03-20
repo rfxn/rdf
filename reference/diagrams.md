@@ -186,15 +186,17 @@ flowchart TD
     Result([Engineer Result]) --> Tags{Phase tags\nin PLAN.md}
 
     Tags -->|"risk:low + type:config"| G1Only[Gate 1 Only\nEngineer Self-Report]
-    Tags -->|"risk:medium + type:feature\n(default)"| G1G2[Gates 1 + 2\nSelf-Report + QA]
-    Tags -->|"risk:high\nor type:security"| G1G2G3[Gates 1 + 2 + 3\n+ Reviewer Sentinel]
-    Tags -->|"type:user-facing"| G1G2G4[Gates 1 + 2 + 4\n+ UAT]
-    Tags -->|"risk:high +\ntype:user-facing"| AllGates[All 4 Gates]
+    Tags -->|"risk:medium + type:feature\n(default)"| G1G2G3L[Gates 1 + 2 + 3-lite\nSelf-Report + QA + Sentinel 2-pass]
+    Tags -->|"risk:medium + type:refactor"| G1G2G3F[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
+    Tags -->|"risk:high\nor type:security"| G1G2G3H[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
+    Tags -->|"type:user-facing"| G1G2G3U[Gates 1 + 2 + 3 + 4\n+ UAT]
+    Tags -->|"risk:high +\ntype:user-facing"| AllGates[All 4 Gates\n+ Sentinel 4-pass]
 
     G1Only --> Verdict
-    G1G2 --> Verdict
-    G1G2G3 --> Verdict
-    G1G2G4 --> Verdict
+    G1G2G3L --> Verdict
+    G1G2G3F --> Verdict
+    G1G2G3H --> Verdict
+    G1G2G3U --> Verdict
     AllGates --> Verdict
 
     Verdict{Verdict}
@@ -206,9 +208,10 @@ flowchart TD
     style Result fill:#553c9a,color:#fff
     style Tags fill:#2b6cb0,color:#fff
     style G1Only fill:#553c9a,color:#fff
-    style G1G2 fill:#975a16,color:#fff
-    style G1G2G3 fill:#9b2c2c,color:#fff
-    style G1G2G4 fill:#975a16,color:#fff
+    style G1G2G3L fill:#975a16,color:#fff
+    style G1G2G3F fill:#9b2c2c,color:#fff
+    style G1G2G3H fill:#9b2c2c,color:#fff
+    style G1G2G3U fill:#975a16,color:#fff
     style AllGates fill:#9b2c2c,color:#fff
     style Complete fill:#276749,color:#fff
     style Fix fill:#9b2c2c,color:#fff

@@ -105,8 +105,10 @@ After the dispatcher returns:
   - If PLAN_PHASE_COUNT >= 3: the dispatcher runs end-of-plan sentinel
     automatically (this is dispatcher-internal — the build command
     does not dispatch it separately)
-  - Report result including end-of-plan sentinel verdict:
     > **All {N} phases complete.** End-of-plan review: {verdict}.
+    > Run `/r:ship` to begin the release workflow.
+  - If PLAN_PHASE_COUNT < 3:
+    > **All {N} phases complete.**
     > Run `/r:ship` to begin the release workflow.
 
 ## Constraints
