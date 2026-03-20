@@ -46,29 +46,61 @@ Gate 2 — QA verification (deterministic gate):
   Produces structured pass/fail report
 
 Gate 3 — Reviewer sentinel (adversarial gate, auto-scaled):
-  Dispatcher selects depth based on phase tags from planner:
-    lite (2-pass): anti-slop + regression
-    full (4-pass): anti-slop, regression, security, performance
-  Tags are planner hints, not developer responsibilities.
+  Dispatcher selects depth based on scope classification:
+    lite (2-pass): anti-slop + regression — for scope:multi-file
+    full (4-pass): anti-slop, regression, security, performance — for scope:cross-cutting and scope:sensitive
+  Scope is derived from phase content, not planner tags.
 
 Gate 4 — UAT (conditional):
-  For type:user-facing phases
+  Added when file list contains CLI entry points or help text
   Real-world scenarios, install flows, CLI interactions
 
-### Gate Selection (dispatcher-internal)
+### Scope Classification (dispatcher-internal)
 
-The dispatcher reads phase tags from PLAN.md as hints and selects
-gates automatically. The developer never needs to understand this
-matrix — it is orchestrator intelligence, like RDF 2.x's mgr.
+The dispatcher classifies each phase by change scope, derived
+automatically from the phase's file list, description, and governance
+context. The planner does not tag scope — the dispatcher infers it.
 
-- risk:low, type:config → Gate 1 only
-- risk:medium, type:feature → Gates 1 + 2 + 3-lite
-- risk:medium, type:refactor → Gates 1 + 2 + 3-full
-- risk:high (any type) → Gates 1 + 2 + 3-full
-- type:security (any risk) → Gates 1 + 2 + 3-full
-- type:user-facing, risk:medium → Gates 1 + 2 + 3-lite + 4
-- type:user-facing, risk:high → All 4 gates (3-full)
-- Default (no tags): Gates 1 + 2 + 3-lite
+Derivation rules:
+1. Read the phase file list and description from the dispatch payload
+2. Count files. Read file paths and match against governance signals.
+3. Classify at the highest matching scope level. Evaluation order:
+   sensitive > cross-cutting > multi-file > focused > docs
+
+  scope:docs
+    All files are documentation, changelog, comments, or README.
+    No source code changes.
+
+  scope:focused
+    1 file changed, or all changes confined to config/scaffolding.
+    Single function modification.
+
+  scope:multi-file
+    2+ source files changed. Standard feature or refactor work.
+    No install paths, CLI entry points, or security-critical paths.
+
+  scope:cross-cutting
+    Changes touch install scripts, CLI entry points, cross-OS logic,
+    breaking changes, or paths flagged in governance/constraints.md.
+
+  scope:sensitive
+    Changes touch security-critical paths, shared libraries consumed
+    by other projects, data migration logic, or credential handling.
+    Also: any file path flagged in governance/anti-patterns.md as
+    security-sensitive.
+
+Gate mapping:
+  scope:docs          → Gate 1 only
+  scope:focused       → Gates 1 + 2
+  scope:multi-file    → Gates 1 + 2 + Gate 3 (sentinel-lite, 2-pass)
+  scope:cross-cutting → Gates 1 + 2 + Gate 3 (sentinel-full, 4-pass)
+  scope:sensitive     → Gates 1 + 2 + Gate 3 (sentinel-full, 4-pass)
+
+User-facing modifier (any scope level):
+  If the file list contains CLI entry points, help text, or man pages,
+  add Gate 4 (UAT) regardless of scope level.
+
+Default (cannot determine scope): scope:multi-file
 
 ### Parallel Gate Execution (dispatcher-internal)
 
@@ -149,11 +181,34 @@ cannot resolve them.
    both agents produced MUST-FIX findings that contradict each
    other (rare — requires opposing conclusions about the same code).
 
-### Finding Resolution (dispatcher-owned)
+### Finding Resolution (dispatcher-owned, qualifier-routed)
 
 The dispatcher owns the finding resolution loop. The developer sees
 only what the dispatcher cannot resolve internally. This restores
 the RDF 2.x model where the mgr handled gate outcomes.
+
+The dispatcher reads the finding's qualifier to determine routing:
+
+MUST-FIX routing:
+  (merge-block)      → dispatch engineer: "Fix this code issue."
+  (fix-or-refute)    → dispatch engineer: "Fix or refute with evidence."
+  (workflow-breaking) → dispatch engineer: "Fix this workflow."
+  (blocking-concern)  → surface to user: "Design concern — amend plan
+                        or override with justification."
+
+SHOULD-FIX routing:
+  (advisory)          → collect, present at phase end (non-blocking)
+  (pass:<name>)       → collect with pass context (non-blocking)
+  (user-facing)       → collect for UX review summary (non-blocking)
+  (advisory-concern)  → log for planner consideration (non-blocking)
+
+Special signals:
+  ESCALATION_RECOMMENDED → re-derive scope at higher level,
+                           re-dispatch affected gates
+  VERIFIED_SOUND         → log as positive signal (no action)
+
+INFORMATIONAL:
+  All qualifiers → logged to phase status file only
 
 MUST-FIX findings — dispatcher resolves:
   1. Dispatch engineer: "Fix this issue, or refute with
@@ -188,14 +243,14 @@ MUST-FIX findings — dispatcher resolves:
     "MUST-FIX (unresolved): {file:line} — {description}.
      Engineer attempted: {fix/refute summary}. Action needed."
 
-CONCERN findings — advisory:
-  1. Dispatcher collects all CONCERNs from the phase
-  2. Presents to developer at phase end (non-blocking):
-     "Phase N: PASS. {N} advisory concerns — review at your
+SHOULD-FIX findings — advisory:
+  1. All qualifiers → collect, present at phase end (non-blocking)
+  2. Presents to developer at phase end:
+     "Phase N: PASS. {N} advisory findings — review at your
      discretion."
   3. Listed in phase status output, no action required to proceed
 
-SUGGESTION findings — logged:
+INFORMATIONAL findings — logged:
   1. Written to .rdf/work-output/phase-N-status.md
   2. No output to developer unless they read the status file
   3. Available for review but never block, never prompt
@@ -203,7 +258,7 @@ SUGGESTION findings — logged:
 Developer-facing output per phase:
   ✓ "Phase N: PASS" — all gates passed, findings resolved internally
   ✓ "Phase N: PASS (2 findings resolved)" — dispatcher handled them
-  ⚠ "Phase N: PASS. 3 advisory concerns." — non-blocking, FYI
+  ⚠ "Phase N: PASS. 3 advisory findings." — non-blocking, FYI
   ✗ "Phase N: MUST-FIX (1 unresolved)" — needs human judgment
 
 ### Parallel Failure Semantics
