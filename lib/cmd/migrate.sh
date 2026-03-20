@@ -67,7 +67,7 @@ _migrate_governance() {
     local dst_count
     dst_count="$(find "$dst" -type f 2>/dev/null | wc -l)"
     dst_count="${dst_count##* }"
-    if [[ "$dst_count" -ne "$file_count" ]]; then
+    if [[ "$dst_count" -lt "$file_count" ]]; then
         echo "FAIL: governance count mismatch src=${file_count} dst=${dst_count}" >> "$log_file"
         rdf_die "governance copy verification failed: expected ${file_count} files, got ${dst_count}"
     fi
@@ -106,11 +106,11 @@ _migrate_workoutput() {
             rdf_die "failed to copy work-output files"
         }
 
-        # Verify copy
+        # Verify copy (>= is correct — new files may arrive during copy from hooks)
         local dst_count
         dst_count="$(find "$dst" -type f 2>/dev/null | wc -l)"
         dst_count="${dst_count##* }"
-        if [[ "$dst_count" -ne "$file_count" ]]; then
+        if [[ "$dst_count" -lt "$file_count" ]]; then
             echo "FAIL: work-output count mismatch src=${file_count} dst=${dst_count}" >> "$log_file"
             rdf_die "work-output copy verification failed: expected ${file_count} files, got ${dst_count}"
         fi
