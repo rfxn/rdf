@@ -60,3 +60,58 @@ Working artifacts never committed:
 - Agent output filenames use integer phase numbers, not labels
 - Verify expected file paths exist before reading
 - Write structured status to .rdf/work-output/ after each phase
+
+## AI Agent Discipline
+
+- Verify every function, API, and import exists before using it --
+  hallucinated imports are the #1 AI coding failure mode
+- Never generate code for a file you haven't read -- inferred
+  patterns diverge from actual patterns after the first few files
+- When unsure, state uncertainty explicitly -- "I believe X but
+  haven't verified" is more useful than confident wrong answers
+- Grep the codebase before introducing a new helper -- the function
+  you need probably already exists under a different name
+- After making changes, verify with the project's verification
+  commands, not by re-reading your own output
+- Do not add defensive code for scenarios that cannot happen --
+  trust framework guarantees and validated input at boundaries
+- When a fix doesn't work after three attempts, step back and
+  reconsider the approach -- do not layer workarounds
+- Never forward-copy values from prior state files -- always read
+  from source (git, grep, file reads) for current values
+
+## Code Generation Standards
+
+- Read the target file before modifying it -- match existing
+  indentation, naming conventions, and patterns exactly
+- Never generate a file path, import, or dependency without
+  verifying it exists in the project or its package registry
+- When the project has an existing pattern for X (error handling,
+  logging, config), use that pattern -- do not introduce a competing
+  approach even if yours is theoretically better
+- Keep changes minimal -- a bug fix does not need surrounding code
+  cleaned up. A new feature does not need extra configurability
+- Remove dead code encountered during related work -- do not defer
+- Search for existing helpers before writing new logic -- call
+  them, do not re-implement
+
+## Context Window Hygiene
+
+- Batch independent tool calls into single messages
+- Use targeted file reads (offset + limit) for large files
+- Do not re-read files that haven't changed since your last read
+- Prefer grep/glob for discovery over reading entire directories
+- Push repetitive data gathering into shell scripts that return
+  structured output (JSON)
+
+## Collaboration Protocol
+
+- Ask before taking irreversible actions (push, delete, modify
+  shared config) -- the cost of pausing is low, the cost of an
+  unwanted action is high
+- When a task requires more than 3 failed attempts, surface the
+  blocker to the user instead of iterating silently
+- Respect scope boundaries -- if dispatched for Phase 3, do not
+  fix issues in Phase 5's files
+- End every multi-step task with a summary of what changed and
+  what verification was performed
