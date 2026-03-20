@@ -158,8 +158,8 @@ fi
 
 # Work output files
 _work_output_files="[]"
-if [[ -d "${_project_path}/work-output" ]]; then
-    _wo_list="$(command find "${_project_path}/work-output" -maxdepth 1 -type f -name '*.md' -printf '"%f",' 2>/dev/null | sed 's/,$//' || echo "")"
+if [[ -d "${_project_path}/.rdf/work-output" ]]; then
+    _wo_list="$(command find "${_project_path}/.rdf/work-output" -maxdepth 1 -type f -name '*.md' -printf '"%f",' 2>/dev/null | sed 's/,$//' || echo "")"
     _work_output_files="[${_wo_list}]"
 fi
 
@@ -221,7 +221,7 @@ if [[ "$_full_mode" -eq 1 ]]; then
     fi
 
     # Last session log entry
-    _session_file="${_project_path}/work-output/session-log.jsonl"
+    _session_file="${_project_path}/.rdf/work-output/session-log.jsonl"
     if [[ -f "$_session_file" ]]; then
         _session_last="$(tail -1 "$_session_file" 2>/dev/null || echo "")"
     fi
@@ -232,13 +232,13 @@ if [[ "$_full_mode" -eq 1 ]]; then
         _hf_title="$(head -1 "${_project_path}/HANDOFF.md" 2>/dev/null | sed 's/^# *//' || echo "unknown")"
         _if_list="${_if_list}{\"type\":\"handoff\",\"detail\":\"$(_json_str "$_hf_title")\"},"
     fi
-    if [[ -f "${_project_path}/work-output/spec-progress.md" ]]; then
-        _sp_topic="$(grep -m1 '^TOPIC:' "${_project_path}/work-output/spec-progress.md" 2>/dev/null | sed 's/TOPIC: *//' || echo "unknown")"
-        _sp_phase="$(grep -m1 '^PHASE:' "${_project_path}/work-output/spec-progress.md" 2>/dev/null | sed 's/PHASE: *//' || echo "unknown")"
+    if [[ -f "${_project_path}/.rdf/work-output/spec-progress.md" ]]; then
+        _sp_topic="$(grep -m1 '^TOPIC:' "${_project_path}/.rdf/work-output/spec-progress.md" 2>/dev/null | sed 's/TOPIC: *//' || echo "unknown")"
+        _sp_phase="$(grep -m1 '^PHASE:' "${_project_path}/.rdf/work-output/spec-progress.md" 2>/dev/null | sed 's/PHASE: *//' || echo "unknown")"
         _if_list="${_if_list}{\"type\":\"spec\",\"detail\":\"$(_json_str "$_sp_topic — $_sp_phase")\"},"
     fi
-    if [[ -f "${_project_path}/work-output/ship-progress.md" ]]; then
-        _sh_stage="$(grep -m1 '^STAGE:' "${_project_path}/work-output/ship-progress.md" 2>/dev/null | sed 's/STAGE: *//' || echo "unknown")"
+    if [[ -f "${_project_path}/.rdf/work-output/ship-progress.md" ]]; then
+        _sh_stage="$(grep -m1 '^STAGE:' "${_project_path}/.rdf/work-output/ship-progress.md" 2>/dev/null | sed 's/STAGE: *//' || echo "unknown")"
         _if_list="${_if_list}{\"type\":\"ship\",\"detail\":\"$(_json_str "$_sh_stage")\"},"
     fi
     _if_list="${_if_list%,}"

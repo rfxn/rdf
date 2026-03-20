@@ -9,7 +9,7 @@ _init_usage() {
 Usage: rdf init <path> [options]
 
 Initialize a project with RDF conventions. Creates CLAUDE.md from profile
-templates, sets up .git/info/exclude, creates work-output/ directory.
+templates, sets up .git/info/exclude, creates .rdf/ directory structure.
 
 Arguments:
   path                  Project directory to initialize
@@ -125,11 +125,8 @@ _GIT_EXCLUDE_ENTRIES=(
     "CLAUDE.md"
     "PLAN*.md"
     "AUDIT.md"
-    "REGR.md"
     "MEMORY.md"
-    ".claude/"
-    "audit-output/"
-    "work-output/"
+    ".rdf/"
 )
 
 # Ensure .git/info/exclude has all required entries
@@ -282,13 +279,21 @@ _init_one() {
     # 2. .git/info/exclude
     _setup_git_exclude "$path" "$dry_run"
 
-    # 3. work-output/ directory
-    if [[ ! -d "${path}/work-output" ]]; then
+    # 3. .rdf/ directory structure
+    local rdf_dir="${path}/.rdf"
+    if [[ ! -d "$rdf_dir" ]]; then
         if [[ "$dry_run" -eq 1 ]]; then
-            rdf_log "  WOULD CREATE: work-output/"
+            rdf_log "  WOULD CREATE: .rdf/{governance,work-output,memory,scopes}"
         else
-            command mkdir -p "${path}/work-output"
-            rdf_log "  created work-output/"
+            command mkdir -p "${rdf_dir}/governance" "${rdf_dir}/work-output" "${rdf_dir}/memory" "${rdf_dir}/scopes"
+            rdf_log "  created .rdf/{governance,work-output,memory,scopes}"
+        fi
+    else
+        # Ensure subdirectories exist (idempotent)
+        if [[ "$dry_run" -eq 0 ]]; then
+            for subdir in governance work-output memory scopes; do
+                [[ -d "${rdf_dir}/${subdir}" ]] || command mkdir -p "${rdf_dir}/${subdir}"
+            done
         fi
     fi
 

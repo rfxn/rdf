@@ -66,11 +66,18 @@ _check_artifacts() {
         _add_result "artifacts" "$_FAIL" "CLAUDE.md missing"
     fi
 
-    # work-output/
-    if [[ -d "${path}/work-output" ]]; then
-        _add_result "artifacts" "$_OK" "work-output/ present"
+    # .rdf/ structure
+    if [[ -d "${path}/.rdf" ]]; then
+        _add_result "artifacts" "$_OK" ".rdf/ present"
+        for subdir in governance work-output memory; do
+            if [[ -d "${path}/.rdf/${subdir}" ]]; then
+                _add_result "artifacts" "$_OK" ".rdf/${subdir}/ present"
+            else
+                _add_result "artifacts" "$_WARN" ".rdf/${subdir}/ missing"
+            fi
+        done
     else
-        _add_result "artifacts" "$_WARN" "work-output/ missing"
+        _add_result "artifacts" "$_WARN" ".rdf/ missing — run 'rdf init' or 'rdf migrate'"
     fi
 
     # .git/info/exclude
@@ -78,7 +85,7 @@ _check_artifacts() {
         local exclude="${path}/.git/info/exclude"
         if [[ -f "$exclude" ]]; then
             local missing=0
-            for entry in "CLAUDE.md" "PLAN*.md" "MEMORY.md" ".claude/" "work-output/"; do
+            for entry in "CLAUDE.md" "PLAN*.md" "MEMORY.md" ".rdf/"; do
                 if ! grep -qxF "$entry" "$exclude"; then
                     missing=$((missing + 1))
                 fi
@@ -91,6 +98,14 @@ _check_artifacts() {
         else
             _add_result "artifacts" "$_FAIL" ".git/info/exclude file missing"
         fi
+    fi
+
+    # Legacy state detection
+    if [[ -d "${path}/.claude/governance" ]]; then
+        _add_result "artifacts" "$_WARN" ".claude/governance/ still exists — run 'rdf migrate'"
+    fi
+    if [[ -d "${path}/work-output" ]] && [[ ! -L "${path}/work-output" ]]; then
+        _add_result "artifacts" "$_WARN" "work-output/ at project root — run 'rdf migrate'"
     fi
 }
 
@@ -167,11 +182,11 @@ _check_memory() {
             _add_result "memory" "$_WARN" "MEMORY.md near cap (${line_count}/200 lines)"
         fi
     else
-        # Also check auto-memory location
-        local safe_path="${path//\//-}"
-        local auto_memory="/root/.claude/projects/${safe_path}/memory/MEMORY.md"
-        if [[ -f "$auto_memory" ]]; then
-            _add_result "memory" "$_OK" "MEMORY.md in auto-memory location"
+        # Check .rdf/memory/ location
+        if [[ -L "${path}/.rdf/memory" ]] && [[ ! -e "${path}/.rdf/memory" ]]; then
+            _add_result "memory" "$_WARN" ".rdf/memory/ is a dangling symlink — recreate with 'rdf migrate'"
+        elif [[ -f "${path}/.rdf/memory/MEMORY.md" ]]; then
+            _add_result "memory" "$_OK" "MEMORY.md in .rdf/memory/"
         else
             _add_result "memory" "$_WARN" "no MEMORY.md found"
         fi

@@ -28,6 +28,7 @@ Commands:
   refresh    Agent-driven state file updates
   init       Initialize projects with RDF conventions
   doctor     Check project health and convention drift
+  migrate    Migrate project from .claude/ + work-output/ to .rdf/
 
 Options:
   help       Show this help
@@ -51,5 +52,6 @@ case "${1:-}" in
     refresh)  shift; source "${RDF_LIBDIR}/cmd/refresh.sh";  cmd_refresh "$@" ;;
     init)     shift; source "${RDF_LIBDIR}/cmd/init.sh";     cmd_init "$@" ;;
     doctor)   shift; source "${RDF_LIBDIR}/cmd/doctor.sh";   cmd_doctor "$@" ;;
+    migrate)  shift; source "${RDF_LIBDIR}/cmd/migrate.sh"; cmd_migrate "$@" ;;
     *) rdf_die "unknown command: $1 — run 'rdf help' for usage" ;;
 esac

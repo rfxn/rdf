@@ -38,9 +38,7 @@ USAGE
 # Output: absolute path to MEMORY.md (may not exist yet)
 _resolve_memory_path() {
     local project_path="$1"
-    local safe_path="${project_path//\//-}"
-    local memory_dir="/root/.claude/projects/${safe_path}/memory"
-    echo "${memory_dir}/MEMORY.md"
+    echo "${project_path}/.rdf/memory/MEMORY.md"
 }
 
 # Collect git-based state summary for agent consumption
