@@ -29,19 +29,18 @@ if [[ -n "$cwd" ]]; then
 fi
 
 # Determine the feed log location.
-# Try project-level .rdf/work-output/ first, fall back to parent-level.
-feed_dir=""
+# Project-level: .rdf/work-output/agent-feed.log (inside work-output, project-scoped)
+# Workspace-level: .rdf/agent-feed.log (flat, cross-project)
+feed_log=""
 if [[ -d "./.rdf/work-output" ]]; then
-    feed_dir="./.rdf/work-output"
-elif [[ -d "/root/admin/work/proj/.rdf/work-output" ]]; then
-    feed_dir="/root/admin/work/proj/.rdf/work-output"
+    feed_log="./.rdf/work-output/agent-feed.log"
+elif [[ -d "/root/admin/work/proj/.rdf" ]]; then
+    feed_log="/root/admin/work/proj/.rdf/agent-feed.log"
 else
-    # Create parent-level .rdf/work-output if nothing exists
-    feed_dir="/root/admin/work/proj/.rdf/work-output"
-    mkdir -p "$feed_dir"
+    # Create workspace .rdf/ if nothing exists
+    command mkdir -p "/root/admin/work/proj/.rdf"
+    feed_log="/root/admin/work/proj/.rdf/agent-feed.log"
 fi
-
-feed_log="${feed_dir}/agent-feed.log"
 timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 # Build log entry

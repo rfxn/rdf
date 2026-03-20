@@ -394,6 +394,17 @@ cmd_init() {
     if [[ "$batch" -eq 1 ]]; then
         # Batch mode: iterate subdirectories
         rdf_log "batch init: scanning ${path}..."
+
+        # Create workspace-level .rdf/ (flat — agent-feed.log, session-log.jsonl)
+        if [[ ! -d "${path}/.rdf" ]]; then
+            if [[ "$dry_run" -eq 1 ]]; then
+                rdf_log "  WOULD CREATE: workspace .rdf/"
+            else
+                command mkdir -p "${path}/.rdf"
+                rdf_log "  created workspace .rdf/"
+            fi
+        fi
+
         local count=0
 
         for subdir in "${path}"/*/; do

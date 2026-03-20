@@ -565,6 +565,24 @@ cmd_doctor() {
             project_count=$((project_count + 1))
         done
 
+        # Workspace-level checks
+        if [[ "$json_mode" -ne 1 ]]; then
+            echo ""
+            echo "=== workspace ==="
+            echo ""
+            if [[ -d "${path}/.rdf" ]]; then
+                printf "  %-10s %s  %s\n" "[workspace]" "  [OK]" ".rdf/ present"
+                total_ok=$((total_ok + 1))
+            else
+                printf "  %-10s %s  %s\n" "[workspace]" "[WARN]" ".rdf/ missing — run 'rdf init --batch' or 'rdf migrate --all'"
+                total_warn=$((total_warn + 1))
+            fi
+            if [[ -d "${path}/work-output" ]]; then
+                printf "  %-10s %s  %s\n" "[workspace]" "[WARN]" "work-output/ at workspace root — run 'rdf migrate --all'"
+                total_warn=$((total_warn + 1))
+            fi
+        fi
+
         if [[ "$json_mode" -eq 1 ]]; then
             printf "]\n"
         else

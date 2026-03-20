@@ -316,6 +316,42 @@ cmd_migrate() {
             count=$((count + 1))
         done
 
+        # Workspace-level migration: move cross-project state to workspace .rdf/
+        local ws_work_output="${workspace}/work-output"
+        if [[ -d "$ws_work_output" ]]; then
+            command mkdir -p "${workspace}/.rdf"
+
+            if [[ "$dry_run" -eq 1 ]]; then
+                rdf_log "[dry-run] workspace work-output/ migration:"
+                [[ -f "${ws_work_output}/agent-feed.log" ]] && \
+                    rdf_log "  WOULD MOVE: agent-feed.log → .rdf/agent-feed.log"
+                [[ -f "${ws_work_output}/session-log.jsonl" ]] && \
+                    rdf_log "  WOULD MOVE: session-log.jsonl → .rdf/session-log.jsonl"
+            else
+                rdf_log "migrating workspace work-output/..."
+
+                # Move workspace-tier files (flat under .rdf/)
+                for ws_file in agent-feed.log session-log.jsonl; do
+                    if [[ -f "${ws_work_output}/${ws_file}" ]]; then
+                        command cp "${ws_work_output}/${ws_file}" "${workspace}/.rdf/${ws_file}"
+                        command rm "${ws_work_output}/${ws_file}"
+                        rdf_log "  [✓] workspace: ${ws_file} → .rdf/${ws_file}"
+                    fi
+                done
+
+                # Remaining files are stale dispatch artifacts — leave for manual review
+                local remaining
+                remaining="$(find "$ws_work_output" -type f 2>/dev/null | wc -l)"
+                remaining="${remaining##* }"
+                if [[ "$remaining" -gt 0 ]]; then
+                    rdf_log "  [—] ${remaining} stale files remain in workspace work-output/ — review manually"
+                else
+                    command rm -rf "$ws_work_output"
+                    rdf_log "  [✓] removed empty workspace work-output/"
+                fi
+            fi
+        fi
+
         rdf_log "migration scan complete: ${count} projects, ${errors} errors"
     else
         path="${path:-$(pwd)}"
