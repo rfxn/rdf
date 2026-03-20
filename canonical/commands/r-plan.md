@@ -237,27 +237,10 @@ For each phase, provide orchestration metadata:
 - `[serial-agent]` — 2-5 files or files with dependencies, one subagent
 - `[parallel-agent]` — 6+ independent files, parallel subagents
 
-**Risk level:**
-- `risk:low` — config, docs, trivial changes
-- `risk:medium` — new features, refactors with existing tests
-- `risk:high` — security, data migration, breaking changes
-
-**Type:**
-- `type:config` — configuration, scaffolding
-- `type:feature` — new functionality
-- `type:refactor` — restructure without behavior change
-- `type:security` — security-related changes
-- `type:user-facing` — CLI, UI, output format changes
-- `type:data-migration` — data format or schema changes
-
-**Quality gates** (dispatcher auto-selects — these are hints, not
-developer responsibilities):
-- risk:low, type:config — Gate 1 only (engineer self-report)
-- risk:medium, type:feature — Gates 1 + 2 + 3-lite (+ sentinel 2-pass)
-- risk:medium, type:refactor — Gates 1 + 2 + 3-full (+ sentinel 4-pass)
-- risk:high or type:security — Gates 1 + 2 + 3-full (+ sentinel 4-pass)
-- type:user-facing — add Gate 4 (+ UAT)
-- Default (no tags) — Gates 1 + 2 + 3-lite
+The dispatcher automatically classifies change scope and selects
+quality gates based on the phase's file list, description, and
+governance context. No risk, type, or gate tagging is needed in the
+plan — the dispatcher derives these at execution time.
 
 ### 2.4 Identify File Ownership Boundaries
 
@@ -318,9 +301,6 @@ The complete format for each phase:
 - Delete: `path/to/removed.file` (why)
 
 - **Mode**: {serial-context | serial-agent | parallel-agent}
-- **Risk**: {low | medium | high}
-- **Type**: {config | feature | refactor | ...}
-- **Gates**: {G1 | G1+G2 | ...}
 - **Accept**: {acceptance criteria — concrete, testable, pass/fail}
 - **Test**: {test file + test names, or verification commands with expected output}
 - **Edge cases**: {spec edge cases covered by this phase, or "none"}
@@ -343,8 +323,8 @@ The complete format for each phase:
 ---
 ```
 
-**Mandatory phase metadata fields:** Mode, Risk, Type, Gates, Accept,
-Test, Edge cases. Omitting any field is a plan quality failure.
+**Mandatory phase metadata fields:** Mode, Accept, Test, Edge cases.
+Omitting any field is a plan quality failure.
 
 **Accept criteria** must be concrete and testable — "governance works"
 is not acceptable. "grep -c '.rdf/governance/' in all 4 agent files
@@ -379,8 +359,8 @@ criterion is checked independently — if ANY fail, finding is BLOCKING:
    Check: steps have exact code blocks, not references to "the spec"
 2. Every verification step includes expected output?
    Check: every verify step has "# expect:" comment
-3. Every phase has all 7 metadata fields?
-   Check: Mode, Risk, Type, Gates, Accept, Test, Edge cases present
+3. Every phase has all 4 metadata fields?
+   Check: Mode, Accept, Test, Edge cases present
 4. Accept criteria are concrete and testable?
    Check: Accept lines contain commands or measurable conditions
 5. Test field names specific tests?
@@ -469,8 +449,7 @@ is BLOCKING.
 5. Line references point to current file state (verified by reading)
 6. Commit messages are pre-written with proper tag format
 7. Every phase ends with a `---` crash safety marker
-8. Every phase has all 7 metadata fields (Mode, Risk, Type, Gates,
-   Accept, Test, Edge cases)
+8. Every phase has all 4 metadata fields (Mode, Accept, Test, Edge cases)
 9. Accept criteria are concrete and testable (grep/wc/diff commands)
 10. Test field names specific test files or verification commands
 11. Edge cases from the spec are mapped to phases (none missed)
