@@ -76,22 +76,18 @@
   <rect x="522" y="146" width="396" height="38" rx="4" fill="#3fb950" fill-opacity="0.12" stroke="#3fb950" stroke-opacity="0.3" stroke-width="1"/>
   <text x="538" y="162" fill="#3fb950" font-size="12" font-weight="bold">development</text>
   <text x="538" y="177" fill="#7d8590" font-size="10">TDD workflow, progressive quality gates</text>
-  <text x="900" y="168" fill="#7d8590" font-size="10" text-anchor="end">default</text>
 
   <rect x="522" y="192" width="396" height="38" rx="4" fill="#f85149" fill-opacity="0.08" stroke="#f85149" stroke-opacity="0.3" stroke-width="1"/>
   <text x="538" y="208" fill="#f85149" font-size="12" font-weight="bold">security</text>
-  <text x="538" y="223" fill="#7d8590" font-size="10">STRIDE/DREAD, security findings block</text>
-  <text x="900" y="214" fill="#f85149" font-size="10" text-anchor="end">G3 blocking</text>
+  <text x="538" y="223" fill="#7d8590" font-size="10">Threat modeling first, vulnerabilities are blockers</text>
 
   <rect x="522" y="238" width="396" height="38" rx="4" fill="#ffa657" fill-opacity="0.08" stroke="#ffa657" stroke-opacity="0.3" stroke-width="1"/>
   <text x="538" y="254" fill="#ffa657" font-size="12" font-weight="bold">performance</text>
-  <text x="538" y="269" fill="#7d8590" font-size="10">Profiling, bottleneck analysis</text>
-  <text x="900" y="260" fill="#ffa657" font-size="10" text-anchor="end">perf pass</text>
+  <text x="538" y="269" fill="#7d8590" font-size="10">Profiling workflow, bottleneck hunting</text>
 
   <rect x="522" y="284" width="396" height="38" rx="4" fill="#58a6ff" fill-opacity="0.08" stroke="#58a6ff" stroke-opacity="0.3" stroke-width="1"/>
   <text x="538" y="300" fill="#58a6ff" font-size="12" font-weight="bold">migration</text>
-  <text x="538" y="315" fill="#7d8590" font-size="10">Version/platform/data transforms</text>
-  <text x="900" y="306" fill="#58a6ff" font-size="10" text-anchor="end">compat focus</text>
+  <text x="538" y="315" fill="#7d8590" font-size="10">Upgrade planning, rollback safety, backward compat</text>
 
   <!-- Mode footer -->
   <line x1="522" y1="332" x2="918" y2="332" stroke="#30363d" stroke-width="0.5"/>
