@@ -54,6 +54,8 @@ After a crash or new session start:
      phase, and decisions made so far. Resume with `/r:spec --resume`.
    - `.rdf/work-output/ship-progress.md` -- release workflow in progress; contains stage
      and PR URL. Resume with `/r:ship` (auto-detects).
+   - `.rdf/work-output/vpe-progress.md` -- VPE pipeline state; contains current stage
+     and per-repo status. Resume with `/r:vpe --resume`.
 7. **If uncommitted changes exist:** review and either commit or stash before resuming.
 8. **If resume fails:** `/r:start` + PLAN.md provide enough continuity to restart
    from the last completed phase.

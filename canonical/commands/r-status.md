@@ -112,6 +112,9 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
   read the `STAGE` line for the current stage. Status: *complete*
   if stage is "released", *in-progress* if the file exists with
   an active stage, *pending* otherwise.
+- **VPE** (conditional — only shown when `.rdf/work-output/vpe-progress.md`
+  exists): read the current stage and status from the file. Show as:
+  `| **VPE** | *managing* | Stage: {current stage} |`
 
 **Phase outcomes** — table for structured gate results from `.rdf/work-output/`:
 
