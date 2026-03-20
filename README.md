@@ -3,7 +3,7 @@
 ![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
 ![Version](https://img.shields.io/badge/version-3.0.0-green.svg)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
-![Profiles](https://img.shields.io/badge/profiles-6-orange.svg)
+![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
 **Governance-driven AI development for teams that ship to production.**
 
@@ -76,18 +76,30 @@ bin/rdf generate all                  # builds all four in one pass
   <img src="assets/profiles-modes.svg" alt="Profiles (what you work with) x Modes (what you work on)" width="100%"/>
 </p>
 
-**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Six profiles provide deep, real-world best practices with governance templates and reference docs:
+**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Eleven profiles across two tiers provide governance templates and reference docs. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
 
-| Profile | Depth | Security Coverage | Reference Docs |
-|---------|-------|-------------------|----------------|
-| **core** | Commit protocol, verification, dependency management | Secrets, input validation, injection defense (shell/SQL/LLM/HTML) | 3 |
-| **shell** | Quoting, portability, error handling, process management | Command injection, TOCTOU races, SUID confusion, temp files | 3 |
-| **python** | Typing, packaging, fixtures, async patterns | Deserialization, SSRF, import hijacking, subprocess safety | 3 |
-| **frontend** | Components, a11y (WCAG 2.1 AA), CSS methodology, performance | XSS, CSRF, CSP, auth token storage, postMessage | 4 |
-| **database** | Schema design, migration safety, query discipline, indexing | SQL injection, least privilege, RLS, connection string security | 4 |
-| **go** | Error handling, concurrency, interfaces, modules | Race conditions, TLS config, command execution, deserialization | 3 |
+**Full profiles** (governance template + 3-4 reference docs):
 
-**Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Switch with `/r:mode security` and every subsequent agent dispatch shifts its methodology, gate thresholds, and reviewer focus.
+| Profile | Depth | Security Coverage | Refs |
+|---------|-------|-------------------|------|
+| **core** | Commit protocol, verification, AI agent discipline | Secrets, input validation, injection defense | 3 |
+| **shell** | Quoting, portability, error handling, process management | Command injection, TOCTOU races, SUID confusion | 3 |
+| **python** | Typing, packaging, fixtures, async patterns | Deserialization, SSRF, import hijacking | 3 |
+| **frontend** | Components, a11y (WCAG 2.1 AA), CSS, performance | XSS, CSRF, CSP, auth token storage | 4 |
+| **database** | Schema design, migration safety, query discipline | SQL injection, least privilege, RLS | 4 |
+| **go** | Error handling, concurrency, interfaces, modules | Race conditions, TLS config, deserialization | 3 |
+| **rust** | Ownership, error handling, unsafe discipline, cargo | Unsafe without invariants, yanked crates | 3 |
+| **typescript** | Strict mode, async discipline, Node.js backend | Prototype pollution, dependency confusion | 3 |
+
+**Starter profiles** (governance template only — top conventions for AI agents):
+
+| Profile | Focus |
+|---------|-------|
+| **perl** | strict/warnings, three-arg open, Moo/Moose OOP, taint mode |
+| **php** | strict_types, PSR, parameterized queries, Laravel/Symfony |
+| **infrastructure** | Terraform, Kubernetes, Ansible, secrets, CI/CD |
+
+**Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Seven modes cover different workflows: `development` (default), `security`, `performance`, `migration`, `refactoring`, `debugging`, `documentation`.
 
 ### Adversarial Quality Gates
 

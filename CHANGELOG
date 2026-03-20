@@ -14,6 +14,22 @@
 [Remove] v2 agent metadata (agent-meta-v2.json)
 [Remove] REGR.md, audit-output/ from default exclude entries
 
+### Profile & Mode Expansion
+[New] profiles/rust/: full profile — ownership, error handling, unsafe, cargo (3 ref docs)
+[New] profiles/typescript/: full profile — strict mode, async, Node.js backend (3 ref docs)
+[New] profiles/perl/: starter profile — strict/warnings, three-arg open, Moo OOP
+[New] profiles/php/: starter profile — strict_types, PSR, parameterized queries
+[New] profiles/infrastructure/: starter profile — Terraform, K8s, Ansible, CI/CD
+[New] modes/refactoring/: behavior preservation, regression blocking
+[New] modes/debugging/: hypothesis-driven, instrument-first
+[New] modes/documentation/: read-then-write, accuracy review
+[New] Stackable profile auto-detection — rdf init detects and merges multiple profiles
+[Change] core governance template expanded with AI agent discipline (62→117 lines)
+[Change] registry.json: tier (full/starter) and detect fields on all profiles
+[Change] init.sh: _detect_profiles() replaces _detect_project_type(), governance merge
+[Remove] _type_to_template(), _type_to_profile(): dead code
+[Remove] security type from init: use /r:mode security instead
+
 ## 3.0.0
 
 ### Architecture

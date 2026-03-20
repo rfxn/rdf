@@ -11,6 +11,18 @@ All per-project RDF state consolidates into a single `.rdf/` directory:
 New `rdf migrate` command handles transition from old layout.
 `rdf doctor` detects legacy state and recommends migration.
 
+## Profile & Mode Expansion
+
+Five new profiles (Rust, TypeScript, Perl, PHP, Infrastructure) and three
+new modes (refactoring, debugging, documentation). Profiles are now
+stackable — `rdf init` auto-detects multiple profiles and merges their
+governance templates. Two tiers: full (template + reference docs) and
+starter (template only).
+
+Core governance template expanded with AI Agent Discipline, Code
+Generation Standards, Context Window Hygiene, and Collaboration Protocol
+sections that apply to every project.
+
 ---
 
 # RDF 3.0.0 Release Notes

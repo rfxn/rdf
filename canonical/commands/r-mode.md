@@ -13,8 +13,11 @@ Switch the operational mode for the current session.
 | `security` | *Security assessment* | Threat modeling, vuln analysis, hardening |
 | `performance` | *Performance audit* | Profiling, optimization, bottleneck analysis |
 | `migration` | *Version/platform/data migration* | Upgrades, platform moves, data transforms |
+| `refactoring` | *Behavior preservation* | Large restructuring, code movement, API changes |
+| `debugging` | *Hypothesis-driven* | Bug hunts, incident response, root cause analysis |
+| `documentation` | *Read-then-write* | README rewrites, API docs, man pages, guides |
 
-**Aliases:** `security` -> `security-assessment`, `performance` -> `performance-audit`, `dev` -> `development`
+**Aliases:** `security` -> `security-assessment`, `performance` -> `performance-audit`, `dev` -> `development`, `refactor` -> `refactoring`, `debug` -> `debugging`, `docs` -> `documentation`
 
 ## Behavior
 
