@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 310" font-family="ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace" font-size="13">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="310" rx="8" fill="url(#bg)"/>
+  <rect x="1" y="1" width="958" height="308" rx="7" fill="none" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="480" y="32" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="bold">profiles  +  modes  =  agent behavior</text>
+  <text x="480" y="50" text-anchor="middle" fill="#7d8590" font-size="11">What you work WITH  x  What you work ON</text>
+
+  <!-- Left: Profiles -->
+  <rect x="25" y="68" width="400" height="225" rx="6" fill="#161b22" stroke="#a371f7" stroke-width="1.5"/>
+  <rect x="25" y="68" width="400" height="28" rx="6" fill="#a371f7" fill-opacity="0.15"/>
+  <text x="225" y="87" text-anchor="middle" fill="#a371f7" font-weight="bold" font-size="14">Profile — "what is this codebase?"</text>
+
+  <!-- Profile subtitle -->
+  <text x="40" y="112" fill="#7d8590" font-size="11">Permanent. Auto-detected from project structure.</text>
+  <text x="40" y="127" fill="#7d8590" font-size="11">Seeds governance templates at /r:init time.</text>
+
+  <!-- Profile grid -->
+  <rect x="40" y="140" width="115" height="34" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="97" y="155" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">shell</text>
+  <text x="97" y="168" text-anchor="middle" fill="#7d8590" font-size="9">files/*.sh, portability</text>
+
+  <rect x="165" y="140" width="115" height="34" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="222" y="155" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">python</text>
+  <text x="222" y="168" text-anchor="middle" fill="#7d8590" font-size="9">typing, async, fixtures</text>
+
+  <rect x="290" y="140" width="115" height="34" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="347" y="155" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">frontend</text>
+  <text x="347" y="168" text-anchor="middle" fill="#7d8590" font-size="9">a11y, components, CSP</text>
+
+  <rect x="40" y="182" width="115" height="34" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="97" y="197" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">go</text>
+  <text x="97" y="210" text-anchor="middle" fill="#7d8590" font-size="9">errors, concurrency</text>
+
+  <rect x="165" y="182" width="115" height="34" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="222" y="197" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">database</text>
+  <text x="222" y="210" text-anchor="middle" fill="#7d8590" font-size="9">migrations, indexing</text>
+
+  <rect x="290" y="182" width="115" height="34" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="347" y="197" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">core</text>
+  <text x="347" y="210" text-anchor="middle" fill="#7d8590" font-size="9">commits, verification</text>
+
+  <!-- Profile detection hint -->
+  <line x1="40" y1="228" x2="410" y2="228" stroke="#30363d" stroke-width="0.5"/>
+  <text x="40" y="247" fill="#58a6ff" font-size="11">Detected: .sh files -> shell | go.mod -> go</text>
+  <text x="40" y="263" fill="#58a6ff" font-size="11">Output: governance templates + reference docs</text>
+  <text x="40" y="279" fill="#7d8590" font-size="11">rdf init --type shell | rdf profile list</text>
+
+  <!-- Multiplication symbol -->
+  <text x="458" y="180" text-anchor="middle" fill="#e6edf3" font-size="28" font-weight="bold" filter="url(#glow)">x</text>
+
+  <!-- Right: Modes -->
+  <rect x="495" y="68" width="440" height="225" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.5"/>
+  <rect x="495" y="68" width="440" height="28" rx="6" fill="#3fb950" fill-opacity="0.15"/>
+  <text x="715" y="87" text-anchor="middle" fill="#3fb950" font-weight="bold" font-size="14">Mode — "what am I doing right now?"</text>
+
+  <!-- Mode subtitle -->
+  <text x="510" y="112" fill="#7d8590" font-size="11">Session-scoped. Switched with /r:mode.</text>
+  <text x="510" y="127" fill="#7d8590" font-size="11">Changes how agents think, not what they know.</text>
+
+  <!-- Mode rows -->
+  <rect x="510" y="140" width="410" height="28" rx="4" fill="#3fb950" fill-opacity="0.12" stroke="#3fb950" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="524" y="158" fill="#3fb950" font-size="12" font-weight="bold">development</text>
+  <text x="640" y="158" fill="#7d8590" font-size="11">TDD workflow, progressive gates</text>
+  <text x="890" y="158" fill="#7d8590" font-size="10" text-anchor="end">default</text>
+
+  <rect x="510" y="174" width="410" height="28" rx="4" fill="#f85149" fill-opacity="0.08" stroke="#f85149" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="524" y="192" fill="#f85149" font-size="12" font-weight="bold">security</text>
+  <text x="610" y="192" fill="#7d8590" font-size="11">STRIDE/DREAD, security findings block</text>
+  <text x="890" y="192" fill="#f85149" font-size="10" text-anchor="end">G3 blocking</text>
+
+  <rect x="510" y="208" width="410" height="28" rx="4" fill="#ffa657" fill-opacity="0.08" stroke="#ffa657" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="524" y="226" fill="#ffa657" font-size="12" font-weight="bold">performance</text>
+  <text x="630" y="226" fill="#7d8590" font-size="11">Profiling, bottleneck analysis</text>
+  <text x="890" y="226" fill="#ffa657" font-size="10" text-anchor="end">perf pass</text>
+
+  <rect x="510" y="242" width="410" height="28" rx="4" fill="#58a6ff" fill-opacity="0.08" stroke="#58a6ff" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="524" y="260" fill="#58a6ff" font-size="12" font-weight="bold">migration</text>
+  <text x="620" y="260" fill="#7d8590" font-size="11">Version/platform/data transforms</text>
+  <text x="890" y="260" fill="#58a6ff" font-size="10" text-anchor="end">compat focus</text>
+
+  <!-- Mode command hint -->
+  <line x1="510" y1="278" x2="920" y2="278" stroke="#30363d" stroke-width="0.5"/>
+  <text x="510" y="296" fill="#7d8590" font-size="11">/r:mode security</text>
+  <text x="686" y="296" fill="#7d8590" font-size="11">Overlays don't modify governance — agents interpret differently</text>
+</svg>

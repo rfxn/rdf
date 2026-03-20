@@ -70,9 +70,13 @@ Write content once in tool-agnostic markdown. Generate for any runtime:
 bin/rdf generate all                  # builds all four in one pass
 ```
 
-### Domain Expertise Profiles
+### Profiles + Modes
 
-Six profiles provide deep, real-world best practices -- not generic checklists. Each profile includes a governance template (~100-150 lines) plus reference docs with expanded examples.
+<p align="center">
+  <img src="assets/profiles-modes.svg" alt="Profiles (what you work with) x Modes (what you work on)" width="100%"/>
+</p>
+
+**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Six profiles provide deep, real-world best practices with governance templates and reference docs:
 
 | Profile | Depth | Security Coverage | Reference Docs |
 |---------|-------|-------------------|----------------|
@@ -83,24 +87,7 @@ Six profiles provide deep, real-world best practices -- not generic checklists. 
 | **database** | Schema design, migration safety, query discipline, indexing | SQL injection, least privilege, RLS, connection string security | 4 |
 | **go** | Error handling, concurrency, interfaces, modules | Race conditions, TLS config, command execution, deserialization | 3 |
 
-Profiles auto-detect from your codebase (`.sh` files -> shell, `go.mod` -> go, `package.json` with React -> frontend). Project CLAUDE.md always takes precedence over profile defaults.
-
-### Operational Modes
-
-Profiles define *what* the code is. Modes define *how* you work on it right now:
-
-| Mode | Effect |
-|------|--------|
-| `development` | Default TDD workflow, progressive quality gates |
-| `security-assessment` | Threat-model-first, OWASP methodology, security findings are blocking |
-| `performance-audit` | Profiling workflow, bottleneck analysis |
-| `migration` | Version/platform migration planning |
-
-```bash
-/r:mode security                      # switch to security assessment mode
-```
-
-Modes are session-scoped overlays. They change how agents think without modifying governance files.
+**Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Switch with `/r:mode security` and every subsequent agent dispatch shifts its methodology, gate thresholds, and reviewer focus.
 
 ### Adversarial Quality Gates
 
