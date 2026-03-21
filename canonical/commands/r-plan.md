@@ -381,8 +381,8 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    Check: Test lines have file paths or exact commands, not "run tests"
 6. Edge cases from spec mapped to phases?
    Check: read spec Section 11b, verify each edge case appears in a phase
-7. Dependency graph present (if parallel phases exist)?
-   Check: if any phase is [parallel-agent], graph exists in preamble
+7. Structured dependency list present?
+   Check: Phase Dependencies section has `- Phase N: none` or `- Phase N: [deps]` for every phase
 8. File Map has test column?
    Check: every new/modified file has a test file entry or "N/A (reason)"
 

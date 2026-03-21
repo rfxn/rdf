@@ -181,7 +181,9 @@ parallel within each batch):
 4. Wait for all subagents in the batch to complete
 5. Merge completed worktrees in plan order:
    For each completed phase (in plan order, N ascending):
-     git rebase main rdf/phase-{N}-{session-id}
+     git rebase {base-branch} rdf/phase-{N}-{session-id}
+   Where {base-branch} is the branch HEAD was on when worktrees were
+   created (captured at step 2 of worktree dispatch).
      git merge --ff-only rdf/phase-{N}-{session-id}
    This produces a clean linear history — phase commits appear in
    plan order with no merge commit artifacts.

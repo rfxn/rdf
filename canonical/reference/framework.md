@@ -44,6 +44,7 @@ commit, phase completion, or audit run.
 | spec-progress.md | `.rdf/work-output/` | `/r:spec` | During design |
 | ship-progress.md | `.rdf/work-output/` | `/r:ship` | During release |
 | vpe-progress.md | `.rdf/work-output/` | `/r:vpe` | During VPE pipeline |
+| build-progress.md | `.rdf/work-output/` | `/r:build` | During parallel build |
 | session-log.jsonl | `.rdf/work-output/` | `/r:save` | When active work |
 | insights.jsonl | `~/.rdf/` | `/r:save` | Rolling 30 entries |
 | lessons-learned.md | `~/.rdf/` | `/r:save` (user-promoted) | Cross-session wisdom |

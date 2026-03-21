@@ -117,7 +117,8 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
   `| **VPE** | *managing* | Stage: {current stage} |`
 - **Build** (conditional — only shown when `.rdf/work-output/build-progress.md`
   exists and `DISPATCH_MODE` is `parallel`): read the current batch and phase
-  counts. Show as:
+  counts. This entry *replaces* the standard Build line above (not shown
+  alongside it). Show as:
   `| **Build** | *parallel* | Batch {N}/{total}: Phases {list} |`
 
 **Phase outcomes** — table for structured gate results from `.rdf/work-output/`:
