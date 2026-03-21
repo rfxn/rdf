@@ -193,27 +193,34 @@ One table listing ALL files across the entire plan:
 Every new or modified file must have a corresponding test file column
 entry. If no test applies, state `N/A (config)` or `N/A (docs)`.
 
-**Phase Dependency Graph:**
+**Phase Dependencies:**
 
-If any phase is tagged `[parallel-agent]`, include an ASCII dependency
-graph showing which phases can run concurrently and which block others:
+Structured dependency list — required for all plans. `/r:build
+--parallel` reads this to determine which phases can run concurrently.
 
-```markdown
-## Phase Dependencies
+Format:
+- Phase N: none          — no dependencies, eligible for first batch
+- Phase N: [1, 2]        — depends on phases 1 and 2 completing first
 
-Phase 1 (CLI tooling)
-  ├──► Phase 2 (migrate command)
-  │      └──► Phase 3 (migrate projects)
-  │             ├──► Phase 4 (update agents)      ← parallel
-  │             ├──► Phase 5 (update commands)     ← parallel
-  │             └──► Phase 6 (update templates)    ← parallel
-  │                    └──► Phase 7 (documentation)
-  │                           └──► Phase 8 (dead code)
-  └──────────────────────────────► Phase 9 (verify + push)
-```
+Example:
+- Phase 1: none
+- Phase 2: none
+- Phase 3: [1, 2]
+- Phase 4: [1, 2]
+- Phase 5: [3, 4]
+- Phase 6: none
+- Phase 7: [6]
+- Phase 8: [1, 2, 3, 4, 5, 6, 7]
 
-If all phases are sequential, state: `All phases sequential — no
-parallelization.`
+If all phases are strictly sequential:
+- Phase 1: none
+- Phase 2: [1]
+- Phase 3: [2]
+...
+
+The ASCII art dependency graph from prior plans is still permitted
+as a supplementary visual aid but is not read by the build command.
+The structured list is the machine-parseable source of truth.
 
 ### 2.2 Decompose Into Phases
 
@@ -241,6 +248,13 @@ The dispatcher automatically classifies change scope and selects
 quality gates based on the phase's file list, description, and
 governance context. No risk, type, or gate tagging is needed in the
 plan — the dispatcher derives these at execution time.
+
+Note: `[parallel-agent]` mode is for INTRA-PHASE parallelism
+(multiple engineers within one phase). INTER-PHASE parallelism
+(multiple phases running concurrently) is handled by `/r:build
+--parallel`, which reads the Phase Dependencies list above. The
+planner does not need to think about inter-phase parallelism — the
+build command derives it from the dependency graph.
 
 ### 2.4 Identify File Ownership Boundaries
 
@@ -455,7 +469,7 @@ is MUST-FIX.
 10. Test field names specific test files or verification commands
 11. Edge cases from the spec are mapped to phases (none missed)
 12. File Map includes test file column for every new/modified file
-13. Dependency graph present if any phase is `[parallel-agent]`
+13. Structured dependency list present (all plans)
 
 A plan that says "extract functions to new file" is an outline.
 A plan that says "cut lines 61-173 from functions.apf, paste after
