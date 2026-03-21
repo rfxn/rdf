@@ -6,9 +6,10 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 
 ## Development
 - All content development in `canonical/` — pure markdown, no tool frontmatter
-- Run `rdf generate claude-code` to deploy to /root/.claude/
+- `~/.rdf/` is the global state directory (lessons-learned, session logs, insights) — never committed
+- Run `rdf generate claude-code` to deploy to /root/.claude/ — **mandatory before any commit touching `canonical/`**
 - Run `rdf sync` to pull emergency edits back to canonical
-- Run `rdf doctor` to check for drift
+- Run `rdf doctor` before push to verify zero drift
 
 ## Shell Standards
 - Shebang: `#!/usr/bin/env bash`
@@ -23,14 +24,17 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 - Tag body lines: [New] [Change] [Fix] [Remove]
 - No Co-Authored-By / AI attribution
 - Stage files explicitly by name — never `git add -A` or `git add .`
-- Never commit: PLAN*.md, AUDIT.md, MEMORY.md, .claude/, .rdf/
+- Never commit: root-level PLAN*.md, AUDIT.md, MEMORY.md, .claude/, .rdf/
+- Specs (`docs/specs/`) and plans (`docs/plans/`) ARE committed project artifacts
 - Both CHANGELOG and CHANGELOG.RELEASE updated on code-changing commits
+- **Parallel exception:** agents in parallel worktrees skip CHANGELOG; controller consolidates post-merge
 
 ## Testing
-- CLI tools: manual verification + shellcheck
-- Adapter output: diff against expected output
-- State helper: JSON validation + accuracy checks
+- Shell files (`bin/`, `lib/`, `state/`): `bash -n` + `shellcheck` on commits touching them
+- Adapter output: `rdf generate claude-code` then diff against expected output
+- State helper: `bash state/rdf-state.sh --full .` — validate JSON structure + accuracy
 - Canonical content: frontmatter-free verification, stale-name grep
+- Post-migration / post-init: `rdf doctor --all` must show zero FAILs before push
 
 ## Naming Convention
 - Agents: role-only names (`planner`, `engineer`, `qa`, etc.)
