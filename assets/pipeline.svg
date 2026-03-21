@@ -51,8 +51,8 @@
   <!-- Stage 3: Build -->
   <rect x="505" y="70" width="190" height="170" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
   <rect x="505" y="70" width="190" height="28" rx="6" fill="#58a6ff" fill-opacity="0.15"/>
-  <text x="600" y="89" text-anchor="middle" fill="#58a6ff" font-weight="bold" font-size="14">/build</text>
-  <text x="520" y="115" fill="#7d8590" font-size="11">Per phase:</text>
+  <text x="600" y="89" text-anchor="middle" fill="#58a6ff" font-weight="bold" font-size="14">/r:build</text>
+  <text x="520" y="115" fill="#7d8590" font-size="11">Per phase (or parallel batch):</text>
   <text x="530" y="133" fill="#7d8590" font-size="11">Engineer implements (TDD)</text>
   <text x="530" y="151" fill="#7d8590" font-size="11">QA verifies</text>
   <text x="530" y="169" fill="#7d8590" font-size="11">Reviewer audits</text>
@@ -77,7 +77,7 @@
 
   <!-- Quality Gates Bar -->
   <rect x="25" y="260" width="910" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-  <text x="480" y="280" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="bold">Quality Gates</text>
+  <text x="480" y="280" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="bold">Quality Gates  —  scope-derived depth</text>
 
   <circle cx="75" cy="300" r="4" fill="#3fb950"/>
   <text x="92" y="304" fill="#3fb950" font-size="11">G1: Self-report</text>

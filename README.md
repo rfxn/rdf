@@ -1,7 +1,7 @@
 # RDF -- rfxn Development Framework
 
 ![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
-![Version](https://img.shields.io/badge/version-3.0.0-green.svg)
+![Version](https://img.shields.io/badge/version-3.0.4-green.svg)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
@@ -124,8 +124,9 @@ The reviewer runs 4 adversarial passes: anti-slop, regression, security, perform
 |-------|---------|-------------|----------|
 | **Design** | `/r:spec` | Discover, brainstorm options, research, write spec, challenge review | `docs/specs/*.md` |
 | **Plan** | `/r:plan` | Read spec, decompose into phases with TDD steps, challenge review | `PLAN.md` |
-| **Build** | `/r:build [N]` | Dispatcher orchestrates: engineer implements, QA verifies, reviewer audits | Committed code |
+| **Build** | `/r:build [N\|--parallel]` | Dispatcher orchestrates: engineer implements, QA verifies, reviewer audits. Parallel dispatch for independent phases. | Committed code |
 | **Ship** | `/r:ship` | Preflight checks, verification, release prep, publish, report | PR + git tag |
+| **VPE** | `/r:vpe` *(optional)* | End-to-end pipeline orchestrator: intake -> spec -> plan -> build -> ship | All of the above |
 
 Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Start with `/r:build`. Each command tells you the next step.
 
@@ -172,7 +173,7 @@ Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Star
 | `/r:init` | Initialize governance for a new or existing project |
 | `/r:start` | Session initialization -- reload context, display project health |
 | `/r:save` | End-of-session state sync -- PLAN.md, MEMORY.md, session log |
-| `/r:mode` | Switch operational mode (development, security, performance, migration) |
+| `/r:mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
 | `/r:status` | Project health dashboard -- pipeline position, plan progress, warnings |
 | `/r:refresh` | Re-scan codebase and update governance files |
 | `/r:sync` | Pull emergency edits from deployed location back to canonical |
@@ -183,12 +184,14 @@ Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Star
 |---------|-----------|---------|
 | `/r:spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
 | `/r:plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
-| `/r:build [N]` | dispatcher | Execute: TDD cycle per phase with quality gates |
+| `/r:build [N\|--parallel]` | dispatcher | Execute: TDD cycle per phase with quality gates, parallel batch dispatch |
 | `/r:verify` | qa | QA verification against diff or scope |
 | `/r:test` | uat | User acceptance testing from end-user persona |
 | `/r:review` | reviewer | Adversarial review in challenge or sentinel mode |
 | `/r:audit` | 3x reviewer + qa | Full codebase audit across all domains |
 | `/r:ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
+| `/r:vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
+| `/r:tasks` | -- | Read-only task list status -- check progress of long-running commands |
 
 ### Utilities (14)
 
@@ -250,7 +253,7 @@ rdf/
 |                                      #   state, refresh, sync, github, deploy
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
-|   |-- commands/                      # 28 commands (/r: namespace)
+|   |-- commands/                      # 31 commands (/r: namespace)
 |   |-- scripts/                       # 10 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
@@ -262,12 +265,20 @@ rdf/
 |   |-- python/                        # Python -- typing, pytest, packaging
 |   |-- frontend/                      # Web -- a11y, performance, CSS methodology
 |   |-- database/                      # DB -- schema, migrations, engine-specific refs
-|   +-- go/                            # Go -- concurrency, error handling, modules
+|   |-- go/                            # Go -- concurrency, error handling, modules
+|   |-- rust/                          # Rust -- ownership, unsafe, cargo
+|   |-- typescript/                    # TypeScript -- strict, Node.js, async
+|   |-- perl/                          # Perl -- strict/warnings, taint mode (starter)
+|   |-- php/                           # PHP -- strict_types, PSR (starter)
+|   +-- infrastructure/                # Terraform, K8s, Ansible (starter)
 |-- modes/
 |   |-- development/                   # Default TDD workflow
 |   |-- security-assessment/           # Threat-model-first assessment
 |   |-- performance-audit/             # Profiling and optimization
-|   +-- migration/                     # Version/platform migration
+|   |-- migration/                     # Version/platform migration
+|   |-- refactoring/                   # Behavior preservation
+|   |-- debugging/                     # Hypothesis-driven troubleshooting
+|   +-- documentation/                 # Read-then-write accuracy review
 |-- adapters/
 |   |-- claude-code/                   # CC adapter + metadata + hooks
 |   |-- gemini-cli/                    # Gemini CLI adapter (TOML)
@@ -432,10 +443,10 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
 | **[CHANGELOG](CHANGELOG)** | Development history |
-| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.0) |
+| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.4) |
 
 ---
 
-**6 agents -- 28 commands -- 10 scripts -- 6 profiles -- 4 adapters -- 4 modes**
+**6 agents -- 31 commands -- 10 scripts -- 11 profiles -- 4 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

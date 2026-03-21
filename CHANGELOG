@@ -1,6 +1,6 @@
 # RDF Changelog
 
-## 3.3.0
+## 3.0.4
 
 ### Parallel Plan Execution
 [New] /r:build --parallel: inter-phase parallel dispatch via dependency graph
@@ -12,7 +12,7 @@
 [Change] VPE Stage 4: per-phase loop → single /r:build --parallel call
 [Change] Dispatcher: PARALLEL_BATCH flag prevents nested parallelism
 
-## 3.2.0
+## 3.0.3
 
 ### Gate Simplification & VPE Pipeline Orchestrator
 [Change] Gate selection: risk×type matrix replaced with 5-level scope classification
@@ -25,7 +25,7 @@
 [New] VPE adaptive intake conversation (1-4 exchanges)
 [New] VPE crash recovery via vpe-progress.md state file
 
-## 3.1.1
+## 3.0.2
 
 ### Sentinel Integration & Quality Gate Redesign
 [Change] Dispatcher gate selection — sentinel on all non-trivial phases
@@ -38,7 +38,7 @@
 [Change] SHOULD-FIX renamed to CONCERN across all surfaces
 [Change] Gate machinery hidden from developer — dispatcher-internal
 
-## 3.1.0
+## 3.0.1
 
 ### .rdf/ Directory Migration
 [New] rdf migrate: move projects from .claude/ + work-output/ to .rdf/
