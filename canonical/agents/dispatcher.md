@@ -36,6 +36,12 @@ engineer, qa, uat, and reviewer subagents as needed.
 - If conflicts: serialize conflicting tracks and re-run
 - Spawn qa subagent across full diff
 
+**Nested parallel downgrade:** When the dispatch payload contains
+`PARALLEL_BATCH: true`, this dispatcher is running as part of an
+inter-phase parallel batch managed by /r:build. In this case,
+downgrade [parallel-agent] to [serial-agent] to avoid nested
+parallelism. Log: "Downgraded to serial-agent (parallel batch)."
+
 ### Quality Gates (after each phase)
 
 Gate 1 — Engineer self-report:
