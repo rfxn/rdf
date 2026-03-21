@@ -1,7 +1,7 @@
 # Design: Starter Profile Promotion to Full Tier
 
 **Date:** 2026-03-21
-**Status:** Draft
+**Status:** Implemented (3.0.4)
 **Author:** Ryan MacDonald + Claude (Opus 4.6)
 
 ---
@@ -491,7 +491,7 @@ head -5 profiles/*/reference/*.md | grep -c "^>"
    *Mitigation:* Model entries on existing full-profile patterns
    that have been validated across sessions. Use the governance
    template content as the accuracy baseline — it was already
-   reviewed during the profile-mode expansion (3.0.3).
+   reviewed during the profile-mode expansion (3.0.1).
 
 2. **Context window bloat** — 9 new docs (~2,250 lines) increase
    total profile corpus by ~35%.

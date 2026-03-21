@@ -6,7 +6,7 @@
 
 | Profile | Requires | Description |
 |---------|----------|-------------|
-| core | -- | Always active. Commit protocol, verification, security hygiene, AI agent discipline |
+| core | -- | Always active. Commit protocol, verification, security hygiene, dependency management, AI agent discipline |
 | shell | core | Bash/shell projects. Quoting, portability, signal handling, BATS testing |
 | python | core | Python projects. Typing, packaging, pytest, async conventions |
 | frontend | core | Web frontend. Component architecture, a11y, CSS methodology, performance |

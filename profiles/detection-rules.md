@@ -112,18 +112,19 @@ Confidence boost:
 - `artisan` file -> high confidence (Laravel)
 - `vendor/` directory -> medium confidence
 
-### infrastructure (priority 3)
+### infrastructure (supplemental)
 
-Activate when a priority-1 language profile also matches AND any of:
+Activate when at least one language profile (shell, python, go, rust,
+typescript, perl, php, frontend, or database) also matches AND any of:
 - File extensions: `*.tf` or `*.tfvars` present
 - Markers: `Dockerfile` or `docker-compose.yml` present
 - Markers: `k8s/`, `kubernetes/`, or `kustomization.yaml` present
 - Markers: `ansible/`, `playbooks/`, or `ansible.cfg` present
 - Config: `terragrunt.hcl`, `packer.json`, or `pulumi.yaml` present
 
-Note: infrastructure is priority-3 -- only activates when at least one
-priority-1 language signal also matches. A standalone Dockerfile without
-language files produces `minimal`, not `infrastructure`.
+Note: infrastructure is a supplemental profile -- it only activates when
+at least one language profile also matches. A standalone Dockerfile
+without language files activates only the core profile, not infrastructure.
 
 ## Mode Suggestions (not profile activations)
 

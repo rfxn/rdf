@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-21
 **Author:** Ryan MacDonald / Claude
-**Status:** Draft
+**Status:** Implemented (3.0.4)
 **Project:** RDF (rfxn Development Framework)
 
 ---
@@ -78,7 +78,7 @@ physical filesystem isolation via git worktrees.
 - Parallel quality gates within a single phase (dispatcher-internal, unchanged)
 - Changing the dispatcher's execution modes (serial-context, serial-agent, parallel-agent stay as-is)
 - Adding new agents
-- Changing the scope classification system (shipped in 3.2.0, stable)
+- Changing the scope classification system (shipped in 3.0.3, stable)
 - Modifying `/r:spec`, `/r:ship`, `/r:init`, `/r:refresh`, `/r:audit`
 - Nested parallelism (parallel dispatchers each running parallel engineers) — the dispatcher downgrades to serial-agent when invoked as part of an inter-phase parallel batch
 
@@ -172,7 +172,7 @@ physical filesystem isolation via git worktrees.
 ### 4.4 Key Changes
 
 **Design principle: scope classification drives isolation, not just
-gate selection.** The 3.2.0 scope classification already tells the
+gate selection.** The 3.0.3 scope classification already tells the
 dispatcher how much verification a phase needs. This spec extends it:
 scope also determines how much *isolation* a phase needs when running
 in parallel. Same signal, two consumers.

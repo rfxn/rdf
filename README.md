@@ -76,7 +76,7 @@ bin/rdf generate all                  # builds all four in one pass
   <img src="assets/profiles-modes.svg" alt="Profiles (what you work with) x Modes (what you work on)" width="100%"/>
 </p>
 
-**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Eleven profiles across two tiers provide governance templates and reference docs. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
+**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Eleven full profiles provide governance templates and reference docs. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
 
 **Full profiles** (governance template + 3-4 reference docs):
 
@@ -90,14 +90,9 @@ bin/rdf generate all                  # builds all four in one pass
 | **go** | Error handling, concurrency, interfaces, modules | Race conditions, TLS config, deserialization | 3 |
 | **rust** | Ownership, error handling, unsafe discipline, cargo | Unsafe without invariants, yanked crates | 3 |
 | **typescript** | Strict mode, async discipline, Node.js backend | Prototype pollution, dependency confusion | 3 |
-
-**Starter profiles** (governance template only — top conventions for AI agents):
-
-| Profile | Focus |
-|---------|-------|
-| **perl** | strict/warnings, three-arg open, Moo/Moose OOP, taint mode |
-| **php** | strict_types, PSR, parameterized queries, Laravel/Symfony |
-| **infrastructure** | Terraform, Kubernetes, Ansible, secrets, CI/CD |
+| **perl** | strict/warnings, three-arg open, regex security, taint mode | Regex DoS, taint bypass, injection via open() | 3 |
+| **php** | strict_types, PSR, parameterized queries, Laravel/Symfony | SQL injection, deserialization, SSRF, CSRF | 3 |
+| **infrastructure** | Terraform, Kubernetes, Ansible, secrets, CI/CD | State file exposure, secret sprawl, RBAC drift | 3 |
 
 **Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Seven modes cover different workflows: `development` (default), `security`, `performance`, `migration`, `refactoring`, `debugging`, `documentation`.
 
@@ -250,7 +245,7 @@ rdf/
 |-- lib/
 |   |-- rdf_common.sh                  # Shared helpers, profile system
 |   +-- cmd/                           # Subcommands: generate, profile, init, doctor,
-|                                      #   state, refresh, sync, github, deploy
+|                                      #   state, refresh, sync, github, deploy, dispatch, migrate
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
 |   |-- commands/                      # 31 commands (/r: namespace)
@@ -268,9 +263,9 @@ rdf/
 |   |-- go/                            # Go -- concurrency, error handling, modules
 |   |-- rust/                          # Rust -- ownership, unsafe, cargo
 |   |-- typescript/                    # TypeScript -- strict, Node.js, async
-|   |-- perl/                          # Perl -- strict/warnings, taint mode (starter)
-|   |-- php/                           # PHP -- strict_types, PSR (starter)
-|   +-- infrastructure/                # Terraform, K8s, Ansible (starter)
+|   |-- perl/                          # Perl -- strict/warnings, taint mode
+|   |-- php/                           # PHP -- strict_types, PSR
+|   +-- infrastructure/                # Terraform, K8s, Ansible
 |-- modes/
 |   |-- development/                   # Default TDD workflow
 |   |-- security-assessment/           # Threat-model-first assessment

@@ -52,7 +52,7 @@ Then update each `[ ]` → `[x]` as phases complete.
 ## Prerequisites
 
 - The governance index schema must exist at `schemas/governance-index.md`
-  in the RDF installation (created by Plan 1 Task 2)
+  in the RDF installation
 - The target path must be a directory (warn if no `.git/` is present)
 
 ## Overview

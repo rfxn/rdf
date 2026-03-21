@@ -10,18 +10,23 @@ System-level overview: canonical sources, profiles, adapters, CLI tools.
 flowchart TD
     subgraph Canonical["Canonical Source (tool-agnostic)"]
         Agents[agents/*.md\n6 universal agents]
-        Commands[commands/*.md\n23 commands]
+        Commands[commands/*.md\n31 commands]
         Scripts[scripts/*.sh]
         Reference[reference/*.md]
     end
 
-    subgraph Profiles["Profile System"]
+    subgraph Profiles["Profile System (11 full)"]
         Core[core/\ngovernance-template.md\nreference/framework.md]
-        Shell[shell/\ngovernance-template.md\nreference/os-compat.md]
+        Shell[shell/\ngovernance-template.md\nreference/portability-matrix.md]
         Python[python/\ngovernance-template.md]
         Frontend[frontend/\ngovernance-template.md\nreference/browser-matrix.md]
         Database[database/\ngovernance-template.md]
         Go[go/\ngovernance-template.md]
+        Rust[rust/\ngovernance-template.md]
+        TypeScript[typescript/\ngovernance-template.md]
+        Perl[perl/\ngovernance-template.md]
+        PHP[php/\ngovernance-template.md]
+        Infra[infrastructure/\ngovernance-template.md]
     end
 
     Core --> Shell
@@ -29,18 +34,26 @@ flowchart TD
     Core --> Frontend
     Core --> Database
     Core --> Go
+    Core --> Rust
+    Core --> TypeScript
+    Core --> Perl
+    Core --> PHP
+    Core --> Infra
 
     subgraph Adapters["Adapters (tool-specific)"]
         CC[Claude Code\nagent-meta.json\nhooks.json\noutput/]
         Gemini[Gemini CLI\nGEMINI.md\n.gemini/ config]
+        Codex[Codex\nAGENTS.md\nconfig.toml]
         AgentsMD[AGENTS.md\ncross-tool standard]
     end
 
     Canonical --> CC
     Canonical --> Gemini
+    Canonical --> Codex
     Canonical --> AgentsMD
     Profiles --> CC
     Profiles --> Gemini
+    Profiles --> Codex
     Profiles --> AgentsMD
 
     subgraph Tools["CLI Tools"]
@@ -61,8 +74,14 @@ flowchart TD
     style Frontend fill:#2b6cb0,color:#fff
     style Database fill:#2b6cb0,color:#fff
     style Go fill:#2b6cb0,color:#fff
+    style Rust fill:#2b6cb0,color:#fff
+    style TypeScript fill:#2b6cb0,color:#fff
+    style Perl fill:#2b6cb0,color:#fff
+    style PHP fill:#2b6cb0,color:#fff
+    style Infra fill:#2b6cb0,color:#fff
     style CC fill:#276749,color:#fff
     style Gemini fill:#276749,color:#fff
+    style Codex fill:#276749,color:#fff
     style AgentsMD fill:#276749,color:#fff
     style Generate fill:#975a16,color:#fff
     style ProfileCmd fill:#975a16,color:#fff
@@ -312,7 +331,7 @@ sequenceDiagram
     Planner->>User: PLAN.md ready
     deactivate Planner
 
-    User->>Dispatcher: /build [N]
+    User->>Dispatcher: /r:build [N]
     activate Dispatcher
     Dispatcher->>Dispatcher: read PLAN.md phase N
     Dispatcher->>Dispatcher: load governance, select gates
@@ -440,8 +459,8 @@ flowchart TD
 
 | Mode | Lenses | Focus | Invoked By |
 |------|--------|-------|------------|
-| Challenge | Design, edge cases, alternatives, risk | Specs and plans | planner, `/review --challenge` |
-| Sentinel | Anti-slop, regression, security, performance | Diffs | dispatcher, `/review --sentinel` |
+| Challenge | Design, edge cases, alternatives, risk | Specs and plans | planner, `/r:review --challenge` |
+| Sentinel | Anti-slop, regression, security, performance | Diffs | dispatcher, `/r:review --sentinel` |
 
 ---
 

@@ -1,7 +1,7 @@
 # Browser Compatibility Matrix
 
 > Reference doc for frontend profile. Copied to
-> .claude/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r:init.
 
 ## Default Targets
 

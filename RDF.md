@@ -69,10 +69,13 @@ rdf/                                 # Repository root
 |-- lib/
 |   |-- rdf_common.sh                # Shared init, version, config, cleanup
 |   +-- cmd/                         # Subcommand handlers (sourced, not executed)
+|       |-- deploy.sh                # rdf deploy <claude-code|gemini-cli>
+|       |-- dispatch.sh              # rdf dispatch (internal subcommand routing)
 |       |-- generate.sh              # rdf generate <claude-code|gemini-cli|codex|agents-md|all>
 |       |-- profile.sh               # rdf profile <list|install|remove|status>
 |       |-- init.sh                  # rdf init <path> [--type] [--batch] [--tools] [--github]
 |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
+|       |-- migrate.sh               # rdf migrate (version migration helpers)
 |       |-- state.sh                 # rdf state [path] -> JSON to stdout
 |       |-- refresh.sh               # rdf refresh [path] [--scope memory|plan|github|all]
 |       |-- sync.sh                  # rdf sync -> pull /root/.claude/ back to canonical
@@ -112,7 +115,9 @@ rdf/                                 # Repository root
 |   +-- reference/                   # Framework-level docs
 |
 |-- profiles/
-|   |-- registry.md                  # Profile catalog
+|   |-- registry.json                # Machine-readable profile catalog
+|   |-- registry.md                  # Human-readable profile catalog
+|   |-- detection-rules.md           # Auto-detection signals per profile
 |   |-- core/                        # Core profile
 |   |   +-- governance-template.md   # Governance seed for /r:init
 |   |-- shell/                       # Bash/shell projects
@@ -122,9 +127,9 @@ rdf/                                 # Repository root
 |   |-- go/                          # Go projects
 |   |-- rust/                        # Rust projects
 |   |-- typescript/                  # TypeScript projects
-|   |-- perl/                        # Perl projects (starter)
-|   |-- php/                         # PHP projects (starter)
-|   +-- infrastructure/              # Infrastructure (starter)
+|   |-- perl/                        # Perl projects
+|   |-- php/                         # PHP projects
+|   +-- infrastructure/              # Infrastructure
 |
 |-- modes/
 |   |-- development/                 # Standard development (default)
@@ -152,7 +157,7 @@ rdf/                                 # Repository root
 |   +-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
 |
 |-- CLAUDE.md                        # RDF project's own instructions
-|-- VERSION                          # "3.0.0"
+|-- VERSION                          # "3.0.4"
 |-- CHANGELOG
 |-- CHANGELOG.RELEASE
 |-- RDF.md                           # Architecture doc (this file)

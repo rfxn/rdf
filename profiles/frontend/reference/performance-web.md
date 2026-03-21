@@ -1,7 +1,7 @@
 # Web Performance Reference
 
 > Reference doc for frontend profile. Copied to
-> .claude/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r:init.
 > Targets are guidelines -- adjust per project based on audience
 > and infrastructure.
 

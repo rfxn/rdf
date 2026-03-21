@@ -98,38 +98,46 @@ dispatcher, or invoked via `/r:review`.
 
 ## 3. Command Reference
 
-### Lifecycle Commands (13)
+### Lifecycle Commands (17)
 
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
 | r-init | /r:init | -- | Governance initialization |
 | r-start | /r:start | dispatcher | Session initialization |
+| r-save | /r:save | -- | Session state sync |
 | r-plan | /r:plan | planner | Planning workflow |
+| r-spec | /r:spec | -- | Specification authoring |
 | r-mode | /r:mode | -- | Switch operational mode |
 | r-status | /r:status | -- | Project health dashboard |
+| r-tasks | /r:tasks | -- | Task list status |
 | r-refresh | /r:refresh | -- | Governance refresh |
 | r-sync | /r:sync | -- | Canonical source sync |
 | r-audit | /r:audit | reviewer, qa | Full codebase audit |
 | r-ship | /r:ship | qa, reviewer | Release workflow |
 | r-build | /r:build | dispatcher | Execute plan phase |
+| r-vpe | /r:vpe | -- | Pipeline orchestrator |
 | r-verify | /r:verify | qa | QA verification |
 | r-test | /r:test | uat | UAT acceptance |
 | r-review | /r:review | reviewer | Adversarial review |
 
-### Utility Commands (10)
+### Utility Commands (14)
 
 | Command | Slash | Purpose |
 |---------|-------|---------|
 | r-util-mem-compact | /r:util:mem-compact | Archive stale MEMORY.md entries |
+| r-util-mem-audit | /r:util:mem-audit | Fact-check MEMORY.md against live state |
 | r-util-chg-gen | /r:util:chg-gen | Generate changelog from diff |
 | r-util-chg-dedup | /r:util:chg-dedup | Deduplicate changelog entries |
+| r-util-rel-squash | /r:util:rel-squash | Release branch squash plan + execution |
 | r-util-doc-gen | /r:util:doc-gen | Generate documentation |
 | r-util-ci-gen | /r:util:ci-gen | Generate CI workflow |
 | r-util-lib-sync | /r:util:lib-sync | Cross-project library drift detection |
 | r-util-lib-release | /r:util:lib-release | Shared library release lifecycle |
+| r-util-proj-cross | /r:util:proj-cross | Cross-project convention drift analysis |
 | r-util-code-scan | /r:util:code-scan | Pattern-class bug finder |
 | r-util-code-modernize | /r:util:code-modernize | Codebase modernization assessment |
 | r-util-test-dedup | /r:util:test-dedup | Find duplicate/overlapping tests |
+| r-util-test-scope | /r:util:test-scope | Test tier recommendation + impact mapping |
 
 ---
 
@@ -213,4 +221,4 @@ dispatcher, or invoked via `/r:review`.
 | /rel-chg-dedup | /r:util:chg-dedup |
 | /test-dedup | /r:util:test-dedup |
 
-**Total: 6 agents + 23 commands + 10 scripts = 39 primitives**
+**Total: 6 agents + 31 commands + 10 scripts = 47 primitives**

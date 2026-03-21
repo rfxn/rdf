@@ -30,27 +30,17 @@ $ARGUMENTS — optional flags:
 ### Step 2: Scan for Changes
 Compare deployed files against canonical sources:
 
-#### Agents (v3)
+#### Agents
 - **Source**: `~/.claude/agents/*.md`
-- **Target**: `canonical/agents-v3/*.md`
+- **Target**: `canonical/agents/*.md`
 - **Processing**: strip YAML frontmatter (`---` delimited block) before
   comparison. Frontmatter is added by the adapter during generate
   and must be removed during sync.
 
-#### Agents (v2, legacy)
-- **Source**: `~/.claude/agents/*.md`
-- **Target**: `canonical/agents/*.md`
-- **Processing**: same frontmatter stripping
-
-#### Commands (v3)
+#### Commands
 - **Source**: `~/.claude/commands/r-*.md` (`r:` prefixed commands)
-- **Target**: `canonical/commands-v3/*.md`
-- **Processing**: direct comparison (commands have no frontmatter)
-
-#### Commands (v2, legacy)
-- **Source**: `~/.claude/commands/*.md` (non-`r:` prefixed)
 - **Target**: `canonical/commands/*.md`
-- **Processing**: direct comparison
+- **Processing**: direct comparison (commands have no frontmatter)
 
 #### Scripts
 - **Source**: `~/.claude/scripts/*.sh`

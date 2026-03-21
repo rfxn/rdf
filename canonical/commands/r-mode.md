@@ -71,7 +71,7 @@ that changes how agents interpret their existing governance.
 
 | Agent | Mode Effect |
 |-------|-------------|
-| **Spec Designer** | *Research methodology and brainstorming focus change* |
+| **Spec** (`/r:spec`) | *Research methodology and brainstorming focus change* |
 | **Planner** | *Decomposition strategy and phase risk assessment change* |
 | **Dispatcher** | *Quality gate overrides applied* |
 | **Reviewer** | *Pass weighting and blocking thresholds change* |

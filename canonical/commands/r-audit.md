@@ -16,8 +16,8 @@ $ARGUMENTS — optional scope:
 - Load governance/verification.md for project-specific checks
 - Load governance/anti-patterns.md for known pitfalls
 - Load governance/constraints.md for platform/compat requirements
-- Create `audit-output/` directory if it does not exist
-- Remove stale files from prior run: `rm -f audit-output/*.md`
+- Create `.rdf/work-output/` directory if it does not exist
+- Remove stale audit files from prior run: `rm -f .rdf/work-output/audit-*.md`
 
 ## Task List Protocol
 
@@ -79,7 +79,7 @@ Dispatch reviewer subagent in sentinel mode:
 - Focus passes: anti-slop (pass 1) and regression (pass 2)
 - Scope: entire codebase (not just a diff)
 - Extra context: governance/anti-patterns.md
-- Write results to: audit-output/reviewer-regression.md
+- Write results to: .rdf/work-output/reviewer-regression.md
 
 ### 2b. Reviewer — Security Focus
 Dispatch reviewer subagent in sentinel mode:
@@ -92,21 +92,21 @@ Dispatch reviewer subagent in sentinel mode:
   - External command execution
 - Extra context: governance/constraints.md (platform targets affect
   attack surface)
-- Write results to: audit-output/reviewer-security.md
+- Write results to: .rdf/work-output/reviewer-security.md
 
 ### 2c. Reviewer — Performance Focus
 Dispatch reviewer subagent in sentinel mode:
 - Focus pass: performance (pass 4)
 - Scope: entire codebase with emphasis on hot paths, loops,
   data structure choices, I/O patterns
-- Write results to: audit-output/reviewer-performance.md
+- Write results to: .rdf/work-output/reviewer-performance.md
 
 ### 2d. QA — Standards + Lint Verification
 Dispatch qa subagent:
 - Run every check in governance/verification.md
 - Focus on: lint compliance, convention adherence, test coverage
   gaps, documentation drift
-- Write results to: audit-output/qa-standards.md
+- Write results to: .rdf/work-output/qa-standards.md
 
 ### 2e. Wait and Monitor
 - Track subagent completion (check for output files)
@@ -215,7 +215,7 @@ When `--quick` is passed, skip Stage 2 entirely:
 
 ## Constraints
 - Never modify source files — audit is read-only
-- Write findings to audit-output/ and AUDIT.md only
+- Write findings to .rdf/work-output/ and AUDIT.md only
 - Every finding must include file:line and a suggested fix
 - Deduplicate aggressively — same issue from multiple agents is one
   finding

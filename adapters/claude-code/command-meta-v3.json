@@ -5,7 +5,55 @@
     "description": "Design workflow — discover, brainstorm, write spec, challenge review",
     "dispatches": [],
     "dispatch_mode": "none",
-    "reads_governance": ["index.md", "architecture.md", "conventions.md"]
+    "reads_governance": ["index.md", "architecture.md", "constraints.md"]
+  },
+  "r-start": {
+    "name": "/r:start",
+    "type": "skill",
+    "description": "Session initialization — reload context, display project health",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": []
+  },
+  "r-status": {
+    "name": "/r:status",
+    "type": "skill",
+    "description": "Project health dashboard — pipeline position, plan progress, warnings",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": ["index.md"]
+  },
+  "r-init": {
+    "name": "/r:init",
+    "type": "skill",
+    "description": "Initialize governance for a new or existing project",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": []
+  },
+  "r-mode": {
+    "name": "/r:mode",
+    "type": "skill",
+    "description": "Switch operational mode (development, security, performance, etc.)",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": ["index.md"]
+  },
+  "r-tasks": {
+    "name": "/r:tasks",
+    "type": "skill",
+    "description": "Read-only task list status — check progress of long-running commands",
+    "dispatches": [],
+    "dispatch_mode": "none",
+    "reads_governance": []
+  },
+  "r-vpe": {
+    "name": "/r:vpe",
+    "type": "skill-with-subagents",
+    "description": "End-to-end pipeline orchestrator: intake -> spec -> plan -> build -> ship",
+    "dispatches": ["planner", "reviewer", "dispatcher", "qa"],
+    "dispatch_mode": "sequential",
+    "reads_governance": ["index.md", "architecture.md", "conventions.md", "constraints.md", "verification.md"]
   },
   "r-plan": {
     "name": "/r:plan",

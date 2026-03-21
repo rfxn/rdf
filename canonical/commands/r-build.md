@@ -23,9 +23,9 @@ Arguments:
 - Validate minimum schema — each phase must have:
   - `## Phase N: <description>`
   - `**Mode**: serial-context | serial-agent | parallel-agent`
-  - `**Files**: <file list or "all">`
   - `**Accept**: <acceptance criteria>`
-  - `**Status**: pending | in-progress | complete`
+  - `**Test**: <test file + test names, or verification commands>`
+  - `**Edge cases**: <spec edge cases covered, or "none">`
 - If schema validation fails, report which fields are missing and stop
 
 ### 2. Identify Target Phase

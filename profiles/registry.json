@@ -5,7 +5,7 @@
       "removable": false,
       "tier": "full",
       "detect": [],
-      "description": "Always active. Commit protocol, verification, security hygiene, dependency management",
+      "description": "Always active. Commit protocol, verification, security hygiene, dependency management, AI agent discipline",
       "summary": "governance-template + 3 reference docs"
     },
     "shell": {
