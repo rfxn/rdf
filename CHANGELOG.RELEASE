@@ -1,5 +1,26 @@
 # RDF 3.0.4 Release Notes
 
+## Starter Profile Promotion & Evidence Verification
+
+Promotes Perl, PHP, and Infrastructure from starter to full-tier profiles
+by adding 3 reference docs each (anti-patterns, testing, domain-specific).
+Introduces two new evidence conventions: Verification Preamble (context-gate
+for anti-pattern findings) and "When this is safe" inline annotations to
+reduce false positives. Adds Evidence Discipline section to all testing
+reference docs. Updates all 7 operational modes with evidence verification
+discipline.
+
+Key changes:
+- 9 new reference docs across Perl, PHP, Infrastructure profiles
+- Anti-patterns docs include Verification Preamble: scan→verify two-pass
+- Inline "When this is safe" annotations prevent false positives
+- Testing docs include Evidence Discipline: tests as evidence, not ceremony
+- All modes (security, performance, migration, debugging, refactoring,
+  documentation, development) gain evidence-backed verification requirements
+- Registry updated: 0 starter profiles remain, all 11 profiles are full tier
+
+---
+
 ## Parallel Plan Execution
 
 Adds inter-phase parallel dispatch to `/r:build`. The build command

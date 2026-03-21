@@ -14,14 +14,15 @@
 | go | core | Go projects. Error handling, concurrency, interfaces, modules |
 | rust | core | Rust projects. Ownership, error handling, unsafe discipline, cargo conventions |
 | typescript | core | TypeScript/Node.js. Strict mode, async discipline, backend patterns |
+| perl | core | Perl projects. strict/warnings, three-arg open, Moo/Moose OOP |
+| php | core | PHP 8.x. Strict types, PSR standards, Laravel/Symfony patterns |
+| infrastructure | core | Infrastructure as code. Terraform, Kubernetes, Ansible, CI/CD |
 
 ## Starter Profiles
 
 | Profile | Requires | Description |
 |---------|----------|-------------|
-| perl | core | Perl projects. strict/warnings, three-arg open, Moo/Moose OOP |
-| php | core | PHP 8.x. Strict types, PSR standards, Laravel/Symfony patterns |
-| infrastructure | core | Infrastructure as code. Terraform, Kubernetes, Ansible, CI/CD |
+| (none — all profiles promoted to full) | | |
 
 ## Profile Tiers
 
