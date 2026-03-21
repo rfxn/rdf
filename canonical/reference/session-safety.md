@@ -56,6 +56,8 @@ After a crash or new session start:
      and PR URL. Resume with `/r:ship` (auto-detects).
    - `.rdf/work-output/vpe-progress.md` -- VPE pipeline state; contains current stage
      and per-repo status. Resume with `/r:vpe --resume`.
+   - `.rdf/work-output/build-progress.md` -- parallel build state; contains batch
+     progress and session ID. Resume with `/r:build --parallel`.
 7. **If uncommitted changes exist:** review and either commit or stash before resuming.
 8. **If resume fails:** `/r:start` + PLAN.md provide enough continuity to restart
    from the last completed phase.

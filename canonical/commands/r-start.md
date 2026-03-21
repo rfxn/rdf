@@ -135,13 +135,14 @@ For 3+ signals, use bulleted blockquote:
 > - **Spec**: {topic} — Phase {N}
 ```
 
-Signal priority: Handoff > Spec > VPE > Ship > Plan (in-progress) >
+Signal priority: Handoff > Spec > VPE > Ship > Build > Plan (in-progress) >
 Plan (pending) > Dispatch (stale).
 
 Signals and their display text:
 - `spec-progress.md` exists → `Spec — {topic}, Phase {N}`
 - `vpe-progress.md` exists → `VPE pipeline: {stage} — {status}`
 - `ship-progress.md` exists → `Ship — {stage}, PR {url}`
+- `build-progress.md` exists → `Build: batch {N}/{total}, {completed}/{total} phases`
 
 **Plan progress** — task list, capped at 5 visible phases:
 
