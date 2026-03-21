@@ -149,30 +149,30 @@ Write state:
 
 Mark task "Plan" as completed.
 
-## Stage 4: Build (invokes /r:build per phase)
+## Stage 4: Build (invokes /r:build --parallel)
 
 Mark task "Build" as in_progress.
 
-For each pending phase in PLAN.md:
+Invoke /r:build --parallel. The build command handles all phase
+orchestration: dependency graph reading, batch computation, parallel
+dispatch, merge, quality gates, and failure handling.
 
-1. Invoke /r:build {N}
-2. Read the result (PASS or FAIL)
-3. If PASS and more phases remain:
-   "Phase {N} complete. Continuing to Phase {N+1}..."
-   (auto-continue — no approval gate between build phases)
-4. If FAIL:
-   "Phase {N} failed: {failure context}
-    [retry / skip / pause]"
-   Wait for user decision.
-5. After all phases complete:
-   "All {N} phases complete. End-of-plan review: {verdict}.
-    Ready to ship? [Y/pause]"
+VPE receives the aggregate result:
+- All phases passed → continue to ship
+- Failures exist → present to user:
+  "Build completed with failures:
+   {failure summary from /r:build}
+   [retry-failed / pause / continue-to-ship]"
+  Wait for user decision.
 
-Write state after each phase:
+After all phases complete:
+  "All {N} phases complete. End-of-plan review: {verdict}.
+   Ready to ship? [Y/pause]"
+
+Write state after build completes:
   STAGE: build
-  STATUS: in-progress
-  CURRENT_PHASE: {N}
-  COMPLETED_PHASES: [1, 2, ...]
+  STATUS: complete
+  COMPLETED_PHASES: [1, 2, ..., N]
 
 Mark task "Build" as completed when all phases pass.
 
