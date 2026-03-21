@@ -1,5 +1,17 @@
 # RDF Changelog
 
+## 3.3.0
+
+### Parallel Plan Execution
+[New] /r:build --parallel: inter-phase parallel dispatch via dependency graph
+[New] /r:build N-M: range dispatch for specific phase sets
+[New] Structured dependency list format in PLAN.md (machine-parseable)
+[New] Scope-derived isolation: file-gated (multi-file) vs git worktree (cross-cutting/sensitive)
+[New] Parallel failure handling with gate-aware recommendations
+[New] build-progress.md state file for resume and in-flight signals
+[Change] VPE Stage 4: per-phase loop → single /r:build --parallel call
+[Change] Dispatcher: PARALLEL_BATCH flag prevents nested parallelism
+
 ## 3.2.0
 
 ### Gate Simplification & VPE Pipeline Orchestrator

@@ -1,3 +1,25 @@
+# RDF 3.3.0 Release Notes
+
+## Parallel Plan Execution
+
+Adds inter-phase parallel dispatch to `/r:build`. The build command
+reads a structured dependency graph from PLAN.md, computes parallel
+batches, validates file ownership, and dispatches multiple dispatcher
+subagents concurrently with scope-derived isolation.
+
+Key changes:
+- `/r:build --parallel` auto-batches all pending phases by dependency graph
+- `/r:build N-M` dispatches a specific range of phases in parallel
+- Isolation auto-derived from scope: file-gated for multi-file, git
+  worktree for cross-cutting/sensitive phases. `--worktree` flag overrides.
+- Parallel failure handling with gate-aware recommendations
+- Structured dependency list format (`- Phase N: none` / `- Phase N: [deps]`)
+  replaces free-text ASCII dependency graphs
+- VPE Stage 4 calls `/r:build --parallel` once (replaces per-phase loop)
+- Dispatcher PARALLEL_BATCH flag prevents nested parallelism
+
+---
+
 # RDF 3.2.0 Release Notes
 
 ## Gate Simplification & VPE Pipeline Orchestrator
