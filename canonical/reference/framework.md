@@ -180,6 +180,13 @@ automatically. See dispatcher.md for the full derivation logic.
 - Integration check after all engineers complete
 - QA runs across full diff after merge
 
+**Inter-phase parallelism:**
+- `/r:build --parallel` reads the plan dependency graph
+- Independent phases dispatch concurrently (max 4)
+- Isolation auto-derived from scope: file-gated or git worktree
+- Results merge in plan order (deterministic)
+- See r-build.md for the full dispatch protocol.
+
 ### Cross-Session Continuity
 
 The `/r:save` → `/r:start` loop provides structured session handoff:

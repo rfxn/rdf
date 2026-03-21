@@ -176,6 +176,44 @@ flowchart TD
     style MorePhases fill:#2b6cb0,color:#fff,stroke:#2c5282
 ```
 
+### Inter-Phase Parallel Dispatch
+
+/r:build --parallel reads the dependency graph and dispatches batches:
+
+  PLAN.md Phase Dependencies
+         │
+         ▼
+  ┌─────────────────────┐
+  │  Compute Batches    │ ← dependency graph + file ownership
+  └────────┬────────────┘
+           │
+    ┌──────┴──────┐
+    ▼             ▼
+  Batch 1       Batch 2 (waits for batch 1)
+  ┌───┬───┐     ┌───┐
+  │P1 │P2 │     │P5 │
+  │P3 │P4 │     └───┘
+  └───┴───┘
+    │ │ │ │
+    ▼ ▼ ▼ ▼
+  dispatcher dispatcher dispatcher dispatcher
+    │ │ │ │
+    ▼ ▼ ▼ ▼
+  ┌───────────┐
+  │  Merge    │ ← plan order (deterministic)
+  └─────┬─────┘
+        ▼
+  Post-batch QA (worktree mode only)
+        │
+        ▼
+  Next batch or end-of-plan sentinel
+
+Isolation selection:
+  scope:multi-file    → file-gated (shared worktree)
+  scope:cross-cutting → git worktree per phase
+  scope:sensitive     → git worktree per phase
+  --worktree flag     → force git worktree
+
 ---
 
 ## 4. Quality Gates (Scope Classification)
