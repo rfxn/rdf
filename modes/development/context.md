@@ -13,6 +13,20 @@ standard RDF workflow:
 3. Quality gates per scope classification (via dispatcher)
 4. Commit per completed phase
 
+## Evidence Discipline
+
+Agent findings (from reviewer, QA, or self-review) must be grounded
+in specific code references, not general patterns.
+
+- Findings must cite specific file:line locations
+- Pattern-match warnings (e.g., "this might have a race condition")
+  without code-path verification are flagged for investigation, not
+  treated as blocking
+- When in doubt, read the code before reporting -- grep output is a
+  starting point, not a conclusion
+- "This looks wrong" must become "this is wrong because {mechanism}"
+  or be downgraded to a suggestion
+
 ## Planner Behavior
 
 - Brainstorm features, refactors, or bug fixes
@@ -22,7 +36,7 @@ standard RDF workflow:
 
 ## Quality Gate Overrides
 
-None — development mode uses the dispatcher's automatic gate selection.
+None -- development mode uses the dispatcher's automatic gate selection.
 The dispatcher auto-derives scope classification from phase content and
 selects appropriate gates. No developer configuration required.
 

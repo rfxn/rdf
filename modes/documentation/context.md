@@ -21,6 +21,38 @@ Documentation types:
 - Operations: runbooks, deployment guides, troubleshooting
 - Man pages: command-line manual pages (troff/mandoc format)
 
+## Source Verification Discipline
+
+Documentation accuracy depends on verifying claims against source
+code, not generating from memory or pattern-matching.
+
+**Read-before-document rule:**
+- Every function, option, parameter, or behavior documented must be
+  verified by reading the actual source code first
+- The source file:line must be known before writing the doc entry
+- "I think this function takes 3 parameters" is not acceptable --
+  read the definition
+
+**Anti-hallucination protocol:**
+- Never document a parameter, option, or return value without reading
+  the function/endpoint definition
+- Never document a CLI flag without reading the argument parser
+- Never document a config key without reading where it is consumed
+- When unsure whether a feature exists, grep for it -- absence of
+  evidence is evidence of absence
+
+**Staleness detection:**
+- Cross-reference documented version numbers against source (grep)
+- Cross-reference documented paths/filenames against filesystem (ls/glob)
+- Cross-reference documented function signatures against definitions
+- Flag any discrepancy as a doc bug, not a code bug
+
+**False positive prevention for doc bugs:**
+- Before reporting "docs say X but code does Y," verify you are reading
+  the correct version/branch of both the doc and the code
+- Conditional behavior (feature flags, config-dependent paths) may make
+  both the doc and the code correct for different configurations
+
 ## Planner Behavior
 
 - Inventory undocumented or stale-documented surfaces before planning
@@ -38,6 +70,7 @@ Documentation mode elevates user acceptance testing.
 | Gate 4 (UAT) | Elevated -- test docs from user perspective |
 | Reviewer focus | Accuracy against source code is MUST-FIX |
 | Scope | No code changes permitted -- docs only |
+| Evidence requirement | Each documented item must cite source file:line |
 
 ## Reviewer Focus
 
@@ -56,9 +89,9 @@ Additional documentation-specific checks:
 ## Checklist
 
 Before completing a documentation phase:
-- [ ] Every documented function verified against source code
+- [ ] Every documented function/option verified against source code (file:line cited)
 - [ ] Examples tested and produce documented output
-- [ ] No stale version references
-- [ ] No hallucinated parameters or options
-- [ ] Cross-references to other docs are valid
+- [ ] No stale version references (grep-verified)
+- [ ] No hallucinated parameters, options, or return values
+- [ ] Cross-references to other docs are valid (paths exist)
 - [ ] No code changes -- docs only

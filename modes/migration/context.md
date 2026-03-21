@@ -11,10 +11,11 @@ Follows a structured migration assessment:
 
 1. **Inventory** -- catalog current state (versions, dependencies, data formats)
 2. **Compatibility** -- build matrix of source vs target compatibility
-3. **Plan** -- define migration path with rollback points
-4. **Execute** -- incremental migration with verification at each step
-5. **Verify** -- end-to-end validation in target state
-6. **Rollback test** -- verify rollback path works before declaring complete
+3. **Impact verification** -- grep project for actual usage of each affected API/feature
+4. **Plan** -- define migration path with rollback points (verified items only)
+5. **Execute** -- incremental migration with verification at each step
+6. **Verify** -- end-to-end validation in target state
+7. **Rollback test** -- verify rollback path works before declaring complete
 
 Migration types:
 - Version upgrade (dependency, runtime, framework)
@@ -22,10 +23,38 @@ Migration types:
 - Data migration (schema changes, format conversions, storage backends)
 - API migration (endpoint changes, protocol upgrades, contract changes)
 
+## Impact Verification
+
+Breaking changes reported from changelogs, release notes, or static
+analysis must be verified against actual project usage before planning
+remediation work.
+
+**Verification protocol:**
+- For each reported breaking change, grep the project for usage of the
+  affected API, feature, config key, or behavior
+- Changelog items the project does not use are informational, not action items
+- Document verification evidence (grep output or file:line references)
+
+**Impact classification:**
+
+| Category | Criteria | Action |
+|----------|----------|--------|
+| Verified-affected | Project uses the breaking API/feature (grep evidence) | Plan remediation |
+| Informational | Changelog mentions it but project has no usage | Document, no action |
+| Uncertain | Cannot determine usage via static analysis | Flag for manual review |
+
+**False positive prevention:**
+- Never copy a full changelog breaking-changes list as the migration plan --
+  filter by actual usage first
+- Transitive dependency changes need evidence that the project touches the
+  affected surface, not just that the dependency is present
+- Deprecation warnings are not breaking changes -- classify accurately
+
 ## Planner Behavior
 
 - Build compatibility matrix before proposing migration path
 - Identify breaking changes with evidence (changelogs, release notes)
+- Verify each breaking change against actual project usage before planning work
 - Plan for rollback at every step
 - Research migration guides for the specific upgrade path
 - Default scope context: changes in this mode typically classify as scope:sensitive (data migration) or scope:cross-cutting
@@ -41,6 +70,7 @@ verification.
 | UAT scope | Must test both forward migration AND rollback |
 | Reviewer focus | Backward compatibility findings are MUST-FIX |
 | Data integrity | QA must verify data integrity before and after |
+| Evidence requirement | Breaking changes without usage grep are returned for verification |
 
 ## Reviewer Focus
 
@@ -50,13 +80,18 @@ Modified 4-pass sentinel with migration emphasis:
 3. Security (standard -- migration paths are attack surfaces)
 4. Performance (standard -- verify no degradation post-migration)
 
+Reviewer additionally checks:
+- Each planned remediation item traces to verified project usage
+- No unverified changelog items treated as action items
+- Rollback procedure exists and has been tested
+
 ## Compatibility Matrix Format
 
 Document compatibility for each component:
 
-| Component | Current | Target | Breaking Changes | Migration Path |
-|-----------|---------|--------|-----------------|----------------|
-| {name} | {version} | {version} | {list or "none"} | {steps} |
+| Component | Current | Target | Breaking Changes | Project Uses? | Migration Path |
+|-----------|---------|--------|-----------------|---------------|----------------|
+| {name} | {version} | {version} | {list or "none"} | {yes/no + grep evidence} | {steps or "N/A"} |
 
 ## Rollback Protocol
 
@@ -70,6 +105,8 @@ Every migration phase must define:
 
 Before completing a migration phase:
 - [ ] Compatibility matrix documented
+- [ ] Each breaking change verified against actual project usage (grep evidence)
+- [ ] Changelog items not affecting project code marked informational
 - [ ] Forward migration tested and verified
 - [ ] Rollback procedure tested and verified
 - [ ] Data integrity verified (before, after, and after rollback)
