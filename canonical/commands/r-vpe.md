@@ -15,16 +15,27 @@ unchanged. Users who prefer manual control can continue using
 
 ## Task List Protocol
 
-At command startup, create tasks for the full pipeline:
+Create tasks progressively — one stage at a time, not all upfront.
+The task list UI sorts by status bucket (in_progress → pending →
+completed), then by creation order within each bucket. Creating all
+pipeline tasks at startup causes future-stage tasks (Plan, Build,
+Ship) to appear before the current sub-command's tasks (Research,
+Write spec, Phase 2...) in the pending list.
+
+**Rules:**
+- Create only Intake at startup
+- Sub-commands (/r:spec, /r:plan, /r:build) create their own task
+  lists — do NOT create duplicate umbrella tasks for those stages
+- Create Ship only after /r:build completes all phases — this keeps
+  it after all phase tasks in creation order
+
+At startup:
 
 TaskCreate: "Intake: understand outcome and scope"
   activeForm: "Understanding desired outcome"
-TaskCreate: "Design: brainstorm and write spec"
-  activeForm: "Designing solution"
-TaskCreate: "Plan: decompose spec into phases"
-  activeForm: "Planning implementation"
-TaskCreate: "Build: execute implementation phases"
-  activeForm: "Building"
+
+After all build phases pass:
+
 TaskCreate: "Ship: release workflow"
   activeForm: "Shipping"
 
@@ -98,8 +109,6 @@ Mark task "Intake" as completed.
 
 ## Stage 2: Design (invokes /r:spec)
 
-Mark task "Design" as in_progress.
-
 Before invoking /r:spec, check docs/specs/ for existing specs. If a
 recent spec exists and matches the intake topic, present:
   "Found existing spec: {path}. Use this? [Y/new spec]"
@@ -128,11 +137,7 @@ Write state:
   STATUS: complete
   SPEC_PATH: {path}
 
-Mark task "Design" as completed.
-
 ## Stage 3: Plan (invokes /r:plan)
-
-Mark task "Plan" as in_progress.
 
 Invoke /r:plan with the spec path. The user approves the plan as
 normal — VPE does not suppress the /r:plan workflow.
@@ -147,11 +152,7 @@ Write state:
   STATUS: complete
   PLAN_PHASES: {N}
 
-Mark task "Plan" as completed.
-
 ## Stage 4: Build (invokes /r:build --parallel)
-
-Mark task "Build" as in_progress.
 
 Invoke /r:build --parallel. The build command handles all phase
 orchestration: dependency graph reading, batch computation, parallel
@@ -174,7 +175,11 @@ Write state after build completes:
   STATUS: complete
   COMPLETED_PHASES: [1, 2, ..., N]
 
-Mark task "Build" as completed when all phases pass.
+Create the Ship task now (after all phase tasks exist, so it
+appears last in the pending list):
+
+TaskCreate: "Ship: release workflow"
+  activeForm: "Shipping"
 
 ## Stage 5: Ship (invokes /r:ship)
 
