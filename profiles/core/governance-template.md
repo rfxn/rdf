@@ -55,6 +55,26 @@ Working artifacts never committed:
 - `MEMORY.md` -- auto-memory persistence
 - `.rdf/` -- per-project RDF state (governance, work-output, memory)
 
+## CLAUDE.md Content Discipline
+
+CLAUDE.md is constitutional -- it defines HOW to work, not WHAT exists.
+
+**Include:**
+- Architecture boundaries and execution flow
+- Conventions not derivable from code
+- Hard-won gotchas and known pitfalls
+- Integration contracts and data formats
+- Verification commands
+- Security context
+
+**Exclude (derive at runtime or store in MEMORY.md):**
+- Version numbers, test counts, file inventories
+- Line-number regions or code layout maps
+- Branch names, commit hashes, phase status
+- Any value derivable from the codebase in under 3 seconds
+
+State goes stale; conventions do not.
+
 ## Session Safety
 
 - Agent output filenames use integer phase numbers, not labels
