@@ -41,6 +41,43 @@ Key changes:
 
 ---
 
+## Documentation Convention
+
+Adds a cross-project documentation convention to RDF as a brand-agnostic
+product feature. The convention defines README structure, SVG asset
+specifications, badge standards, companion file templates, and a
+progressive documentation level system (floor/level-2/level-3).
+
+Key changes:
+- `reference/documentation-standard.md` (~350 lines): README template with
+  section ordering rules, above-the-fold SVG specs, badge conventions,
+  middle section numbering, companion file requirements, man page
+  cross-referencing, and enforcement check inventory
+- `reference/templates/SECURITY.md`: companion file template with
+  `{{PROJECT}}` and `{{CONTACT_EMAIL}}` placeholders
+- `reference/templates/CONTRIBUTING.md`: companion file template with
+  `{{PROJECT}}`, `{{ORG}}`, and `{{LICENSE}}` placeholders
+- Workspace `reference/brand.md`: rfxn brand definition (palette,
+  typography, project identities) — not committed to RDF
+
+---
+
+## Init: Companion File Generation
+
+Extends `rdf init` to generate SECURITY.md, CONTRIBUTING.md, and
+`.rdf/docs-level` from templates. Companion files use `sed` substitution
+with `|` delimiter for `{{PLACEHOLDER}}` variables.
+
+Key changes:
+- `_generate_companion_files()` creates SECURITY.md and CONTRIBUTING.md
+  from `reference/templates/` if they don't already exist
+- `.rdf/docs-level` created during init with profile-aware inference
+  (products default to `level-2`, libraries to `floor`)
+- Org resolved from `git remote get-url origin` with `rfxn` fallback
+- Dry-run support, idempotent (skips existing files)
+
+---
+
 ## Doctor: Readme Scope
 
 Adds `rdf doctor --scope readme` for documentation convention enforcement.

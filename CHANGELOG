@@ -21,12 +21,23 @@
 [Change] VPE Stage 4: per-phase loop → single /r:build --parallel call
 [Change] Dispatcher: PARALLEL_BATCH flag prevents nested parallelism
 
+### Documentation Convention
+[New] reference/documentation-standard.md — README template, section ordering, SVG asset specs, badge conventions, documentation level system (floor/level-2/level-3)
+[New] reference/templates/SECURITY.md — companion file template with {{PROJECT}} placeholders
+[New] reference/templates/CONTRIBUTING.md — companion file template with {{PROJECT}}/{{ORG}}/{{LICENSE}} placeholders
+[New] Workspace reference/brand.md — rfxn brand definition (palette, typography, project identities)
+
 ### Doctor: Readme Scope
 [New] rdf doctor --scope readme: documentation convention enforcement
 [New] _check_readme() — level-gated README structure validation (floor/level-2/level-3)
 [Change] Floor: badge row, Quick Start, License, numbered sections, Config/Usage sections, exit codes table
 [Change] Level 2: What's New, Contents, Integration, SECURITY.md, CONTRIBUTING.md, banner SVGs, picture tag
 [Change] Level 3: Troubleshooting, pipeline SVG, terminal demo asset
+
+### Init: Companion File Generation
+[New] _generate_companion_files() — creates SECURITY.md and CONTRIBUTING.md from templates
+[New] .rdf/docs-level created during init (products default to level-2, libraries to floor)
+[Change] rdf init calls companion file generation after reference docs copy
 
 ## 3.0.3
 
