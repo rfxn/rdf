@@ -481,6 +481,69 @@ _copy_reference_docs() {
     fi
 }
 
+# Generate SECURITY.md and CONTRIBUTING.md from reference/templates/ with
+# {{VARIABLE}} substitution. Skips if files already exist or templates missing.
+_generate_companion_files() {
+    local path="$1"
+    local dry_run="$2"
+
+    local name
+    name="$(basename "$path")"
+
+    # Resolve org from git remote (fallback: rfxn)
+    local org="rfxn"
+    if [[ -d "${path}/.git" ]]; then
+        local remote_url
+        remote_url="$(git -C "$path" remote get-url origin 2>/dev/null || echo "")"  # stderr: no remote is safe to ignore
+        if [[ -n "$remote_url" ]]; then
+            # Extract org from github.com/ORG/repo or git@github.com:ORG/repo
+            local extracted
+            extracted="$(echo "$remote_url" \
+                | sed 's|.*github\.com[:/]\([^/]*\)/.*|\1|')"
+            if [[ -n "$extracted" ]] && [[ "$extracted" != "$remote_url" ]]; then
+                org="$extracted"
+            fi
+        fi
+    fi
+
+    local contact_email="proj@rfxn.com"
+    local license="GNU GPL v2"
+    local tmpl_dir="${RDF_HOME}/reference/templates"
+
+    # SECURITY.md
+    local sec_tmpl="${tmpl_dir}/SECURITY.md"
+    local sec_dest="${path}/SECURITY.md"
+    if [[ -f "$sec_dest" ]]; then
+        rdf_log "  SECURITY.md already exists — skipping"
+    elif [[ ! -f "$sec_tmpl" ]]; then
+        rdf_log "  SECURITY.md template not found — skipping"
+    elif [[ "$dry_run" -eq 1 ]]; then
+        rdf_log "  WOULD CREATE: SECURITY.md (project=${name}, contact=${contact_email})"
+    else
+        sed -e "s|{{PROJECT}}|${name}|g" \
+            -e "s|{{CONTACT_EMAIL}}|${contact_email}|g" \
+            "$sec_tmpl" > "$sec_dest"
+        rdf_log "  created SECURITY.md"
+    fi
+
+    # CONTRIBUTING.md
+    local con_tmpl="${tmpl_dir}/CONTRIBUTING.md"
+    local con_dest="${path}/CONTRIBUTING.md"
+    if [[ -f "$con_dest" ]]; then
+        rdf_log "  CONTRIBUTING.md already exists — skipping"
+    elif [[ ! -f "$con_tmpl" ]]; then
+        rdf_log "  CONTRIBUTING.md template not found — skipping"
+    elif [[ "$dry_run" -eq 1 ]]; then
+        rdf_log "  WOULD CREATE: CONTRIBUTING.md (project=${name}, org=${org})"
+    else
+        sed -e "s|{{PROJECT}}|${name}|g" \
+            -e "s|{{ORG}}|${org}|g" \
+            -e "s|{{LICENSE}}|${license}|g" \
+            "$con_tmpl" > "$con_dest"
+        rdf_log "  created CONTRIBUTING.md"
+    fi
+}
+
 # Initialize a single project
 _init_one() {
     local path="$1"
@@ -523,8 +586,26 @@ _init_one() {
         fi
     fi
 
+    # 3b. Documentation level
+    if [[ ! -f "${rdf_dir}/docs-level" ]]; then
+        # Infer default: products (files/<name> or bin/<name>) → level-2, libraries → floor
+        local default_level="floor"
+        if [[ -f "${path}/files/${name}" ]] || [[ -f "${path}/bin/${name}" ]]; then
+            default_level="level-2"
+        fi
+        if [[ "$dry_run" -eq 1 ]]; then
+            rdf_log "  WOULD CREATE: .rdf/docs-level (${default_level})"
+        else
+            echo "$default_level" > "${rdf_dir}/docs-level"
+            rdf_log "  created .rdf/docs-level (${default_level})"
+        fi
+    fi
+
     # 4. Reference docs from detected profiles
     _copy_reference_docs "$path" "$profiles" "$dry_run"
+
+    # 4b. Companion files: SECURITY.md, CONTRIBUTING.md
+    _generate_companion_files "$path" "$dry_run"
 
     # 5. MEMORY.md placeholder (unless --no-memory)
     if [[ "$no_memory" -eq 0 ]] && [[ ! -f "${path}/MEMORY.md" ]]; then
