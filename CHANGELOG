@@ -21,6 +21,13 @@
 [Change] VPE Stage 4: per-phase loop → single /r:build --parallel call
 [Change] Dispatcher: PARALLEL_BATCH flag prevents nested parallelism
 
+### Doctor: Readme Scope
+[New] rdf doctor --scope readme: documentation convention enforcement
+[New] _check_readme() — level-gated README structure validation (floor/level-2/level-3)
+[Change] Floor: badge row, Quick Start, License, numbered sections, Config/Usage sections, exit codes table
+[Change] Level 2: What's New, Contents, Integration, SECURITY.md, CONTRIBUTING.md, banner SVGs, picture tag
+[Change] Level 3: Troubleshooting, pipeline SVG, terminal demo asset
+
 ## 3.0.3
 
 ### Gate Simplification & VPE Pipeline Orchestrator

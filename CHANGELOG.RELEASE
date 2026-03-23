@@ -41,6 +41,27 @@ Key changes:
 
 ---
 
+## Doctor: Readme Scope
+
+Adds `rdf doctor --scope readme` for documentation convention enforcement.
+The new `_check_readme()` function validates README.md structure against
+project documentation level (floor, level-2, or level-3), read from
+`.rdf/docs-level`.
+
+Key changes:
+- Floor checks (always run): README.md presence, badge row (shields.io or
+  GitHub Actions), Quick Start section, License section, numbered sections
+  (## N. format), ## 3. and ## 4. sections, exit codes table
+- Level-2 checks: What's New, Contents (ToC), Integration section,
+  SECURITY.md, CONTRIBUTING.md, banner SVGs (dark/light), picture tag
+- Level-3 checks: Troubleshooting section, pipeline/architecture SVG,
+  terminal demo asset
+- `readme` scope added to `_doctor_one()` dispatch and usage text
+- No README → early FAIL and return (no cascade)
+- Unknown docs-level value defaults to floor
+
+---
+
 # RDF 3.0.3 Release Notes
 
 ## Gate Simplification & VPE Pipeline Orchestrator

@@ -16,7 +16,7 @@ Arguments:
 Options:
   --all                 Scan all workspace projects (path = workspace root)
   --scope SCOPE         Check specific category only:
-                        artifacts, drift, memory, plan, github, sync
+                        artifacts, drift, memory, plan, github, sync, readme
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
@@ -371,6 +371,167 @@ _check_sync() {
     fi
 }
 
+# ── Check: readme ──
+_check_readme() {
+    local path="$1"
+
+    # Read documentation level from .rdf/docs-level (default: floor)
+    local docs_level="floor"
+    if [[ -f "${path}/.rdf/docs-level" ]]; then
+        docs_level="$(< "${path}/.rdf/docs-level")"
+        docs_level="${docs_level%%[[:space:]]}"
+        case "$docs_level" in
+            floor|level-2|level-3) ;;
+            *) docs_level="floor" ;;
+        esac
+    fi
+
+    # --- Floor checks (always run) ---
+
+    if [[ ! -f "${path}/README.md" ]]; then
+        _add_result "readme" "$_FAIL" "README.md missing"
+        return 0
+    fi
+
+    local readme="${path}/README.md"
+    local line_count
+    line_count="$(wc -l < "$readme")"
+    _add_result "readme" "$_OK" "README.md present (${line_count} lines)"
+
+    # Badge row: shields.io or GitHub Actions badge
+    if grep -qE 'shields\.io|github\.com/.*badge\.svg|img\.shields' "$readme" 2>/dev/null; then
+        local badge_count
+        badge_count="$(grep -cE 'shields\.io|github\.com/.*badge\.svg|img\.shields' "$readme" 2>/dev/null || echo "0")"
+        _add_result "readme" "$_OK" "badge row detected (${badge_count} badges)"
+    else
+        _add_result "readme" "$_FAIL" "badge row not found (no shields.io or GitHub badge URLs)"
+    fi
+
+    if grep -qi '^## Quick Start' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "## Quick Start present"
+    else
+        _add_result "readme" "$_FAIL" "## Quick Start section missing"
+    fi
+
+    if grep -qi '^## .*License' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "## License present"
+    else
+        _add_result "readme" "$_FAIL" "## License section missing"
+    fi
+
+    local numbered_count
+    numbered_count="$(grep -cE '^## [0-9]+\.' "$readme" 2>/dev/null || echo "0")"
+    if [[ "$numbered_count" -gt 0 ]]; then
+        _add_result "readme" "$_OK" "numbered sections (${numbered_count} found)"
+    else
+        _add_result "readme" "$_FAIL" "no numbered sections (## N. format expected)"
+    fi
+
+    if grep -qE '^## 3\.' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "## 3. Configuration present"
+    else
+        _add_result "readme" "$_FAIL" "## 3. section missing (Configuration expected)"
+    fi
+
+    if grep -qE '^## 4\.' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "## 4. Usage present"
+    else
+        _add_result "readme" "$_FAIL" "## 4. section missing (Usage expected)"
+    fi
+
+    if grep -qiE 'exit.code|exit.status' "$readme" 2>/dev/null && \
+       grep -qE '^\|.*\|.*\|' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "exit codes table found"
+    else
+        _add_result "readme" "$_FAIL" "exit codes table not found in README"
+    fi
+
+    # --- Level 2 checks ---
+    if [[ "$docs_level" == "level-2" ]] || [[ "$docs_level" == "level-3" ]]; then
+        if grep -qi "^## What's New" "$readme" 2>/dev/null; then
+            _add_result "readme" "$_OK" "What's New section present"
+        else
+            _add_result "readme" "$_FAIL" "What's New section missing (level-2 requirement)"
+        fi
+
+        if grep -qi '^## Contents' "$readme" 2>/dev/null; then
+            _add_result "readme" "$_OK" "## Contents (ToC) present"
+        else
+            _add_result "readme" "$_FAIL" "## Contents section missing (level-2 requirement)"
+        fi
+
+        if grep -qi '^## .*Integration' "$readme" 2>/dev/null; then
+            _add_result "readme" "$_OK" "## Integration present"
+        else
+            _add_result "readme" "$_FAIL" "## Integration section missing (level-2 requirement)"
+        fi
+
+        if [[ -f "${path}/SECURITY.md" ]]; then
+            _add_result "readme" "$_OK" "SECURITY.md present"
+        else
+            _add_result "readme" "$_FAIL" "SECURITY.md missing (level-2 requirement)"
+        fi
+
+        if [[ -f "${path}/CONTRIBUTING.md" ]]; then
+            _add_result "readme" "$_OK" "CONTRIBUTING.md present"
+        else
+            _add_result "readme" "$_FAIL" "CONTRIBUTING.md missing (level-2 requirement)"
+        fi
+
+        if [[ -f "${path}/assets/banner-dark.svg" ]]; then
+            _add_result "readme" "$_OK" "assets/banner-dark.svg present"
+        else
+            _add_result "readme" "$_FAIL" "assets/banner-dark.svg missing (level-2 requirement)"
+        fi
+        if [[ -f "${path}/assets/banner-light.svg" ]]; then
+            _add_result "readme" "$_OK" "assets/banner-light.svg present"
+        else
+            _add_result "readme" "$_FAIL" "assets/banner-light.svg missing (level-2 requirement)"
+        fi
+
+        if grep -q '<picture>' "$readme" 2>/dev/null; then
+            _add_result "readme" "$_OK" "<picture> dark/light pattern present"
+        else
+            _add_result "readme" "$_FAIL" "<picture> tag missing in README (level-2 requirement)"
+        fi
+    fi
+
+    # --- Level 3 checks ---
+    if [[ "$docs_level" == "level-3" ]]; then
+        if grep -qi '^## .*Troubleshooting' "$readme" 2>/dev/null; then
+            _add_result "readme" "$_OK" "## Troubleshooting present"
+        else
+            _add_result "readme" "$_FAIL" "## Troubleshooting section missing (level-3 requirement)"
+        fi
+
+        local has_pipeline=0
+        for f in "${path}"/assets/pipeline*.svg "${path}"/assets/architecture*.svg; do
+            if [[ -f "$f" ]]; then
+                has_pipeline=1
+                break
+            fi
+        done
+        if [[ $has_pipeline -eq 1 ]]; then
+            _add_result "readme" "$_OK" "pipeline/architecture SVG present"
+        else
+            _add_result "readme" "$_FAIL" "pipeline/architecture SVG missing in assets/ (level-3 requirement)"
+        fi
+
+        local has_demo=0
+        for f in "${path}"/assets/terminal-demo* "${path}"/assets/demo*; do
+            if [[ -f "$f" ]]; then
+                has_demo=1
+                break
+            fi
+        done
+        if [[ $has_demo -eq 1 ]]; then
+            _add_result "readme" "$_OK" "terminal demo asset present"
+        else
+            _add_result "readme" "$_FAIL" "terminal demo asset missing in assets/ (level-3 requirement)"
+        fi
+    fi
+}
+
 # Version resolver for doctor (avoids sourcing init.sh dependency)
 _resolve_version_for_doctor() {
     local path="$1"
@@ -472,6 +633,7 @@ _doctor_one() {
             _check_plan "$path"
             _check_github "$path"
             _check_sync "$path"
+            _check_readme "$path"
             ;;
         artifacts) _check_artifacts "$path" ;;
         drift)     _check_drift "$path" ;;
@@ -479,7 +641,8 @@ _doctor_one() {
         plan)      _check_plan "$path" ;;
         github)    _check_github "$path" ;;
         sync)      _check_sync "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync" ;;
+        readme)    _check_readme "$path" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, readme" ;;
     esac
 }
 
