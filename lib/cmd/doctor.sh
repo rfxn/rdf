@@ -401,7 +401,7 @@ _check_readme() {
     # Badge row: shields.io or GitHub Actions badge
     if grep -qE 'shields\.io|github\.com/.*badge\.svg|img\.shields' "$readme" 2>/dev/null; then
         local badge_count
-        badge_count="$(grep -cE 'shields\.io|github\.com/.*badge\.svg|img\.shields' "$readme" 2>/dev/null || echo "0")"
+        badge_count="$(grep -cE 'shields\.io|github\.com/.*badge\.svg|img\.shields' "$readme" 2>/dev/null)" || badge_count=0
         _add_result "readme" "$_OK" "badge row detected (${badge_count} badges)"
     else
         _add_result "readme" "$_FAIL" "badge row not found (no shields.io or GitHub badge URLs)"
@@ -420,7 +420,7 @@ _check_readme() {
     fi
 
     local numbered_count
-    numbered_count="$(grep -cE '^## [0-9]+\.' "$readme" 2>/dev/null || echo "0")"
+    numbered_count="$(grep -cE '^## [0-9]+\.' "$readme" 2>/dev/null)" || numbered_count=0
     if [[ "$numbered_count" -gt 0 ]]; then
         _add_result "readme" "$_OK" "numbered sections (${numbered_count} found)"
     else
