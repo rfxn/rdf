@@ -1,5 +1,9 @@
 # RDF 3.0.4 Release Notes
 
+## Pipeline Asset Fix
+Restructure Build stage in pipeline.svg as a numbered list matching the other
+three stages; fix subtitle text that overflowed the box boundary.
+
 ## Starter Profile Promotion & Evidence Verification
 
 Promotes Perl, PHP, and Infrastructure from starter to full-tier profiles

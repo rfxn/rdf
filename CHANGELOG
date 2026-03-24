@@ -2,6 +2,9 @@
 
 ## 3.0.4
 
+### Pipeline Asset Fix
+[Fix] pipeline.svg: restructure Build stage as numbered list matching other stages; fix text overflow
+
 ### Starter Profile Promotion & Evidence Verification
 [New] Perl reference docs: anti-patterns, testing-prove, regex-security
 [New] PHP reference docs: anti-patterns, testing-phpunit, security-web-php
