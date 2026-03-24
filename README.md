@@ -37,7 +37,7 @@ bin/rdf deploy claude-code            # or: bin/rdf deploy gemini-cli
 
 # 4. Initialize a project with governance
 cd /path/to/your/project
-/r:init                               # auto-detects project type, suggests profiles
+/r-init                               # auto-detects project type, suggests profiles
 ```
 
 That's it. Your AI agent now has project-specific governance, quality gates, and domain expertise.
@@ -117,18 +117,18 @@ The reviewer runs 4 adversarial passes: anti-slop, regression, security, perform
 
 | Stage | Command | What Happens | Artifact |
 |-------|---------|-------------|----------|
-| **Design** | `/r:spec` | Discover, brainstorm options, research, write spec, challenge review | `docs/specs/*.md` |
-| **Plan** | `/r:plan` | Read spec, decompose into phases with TDD steps, challenge review | `PLAN.md` |
-| **Build** | `/r:build [N\|--parallel]` | Dispatcher orchestrates: engineer implements, QA verifies, reviewer audits. Parallel dispatch for independent phases. | Committed code |
-| **Ship** | `/r:ship` | Preflight checks, verification, release prep, publish, report | PR + git tag |
-| **VPE** | `/r:vpe` *(optional)* | End-to-end pipeline orchestrator: intake -> spec -> plan -> build -> ship | All of the above |
+| **Design** | `/r-spec` | Discover, brainstorm options, research, write spec, challenge review | `docs/specs/*.md` |
+| **Plan** | `/r-plan` | Read spec, decompose into phases with TDD steps, challenge review | `PLAN.md` |
+| **Build** | `/r-build [N\|--parallel]` | Dispatcher orchestrates: engineer implements, QA verifies, reviewer audits. Parallel dispatch for independent phases. | Committed code |
+| **Ship** | `/r-ship` | Preflight checks, verification, release prep, publish, report | PR + git tag |
+| **VPE** | `/r-vpe` *(optional)* | End-to-end pipeline orchestrator: intake -> spec -> plan -> build -> ship | All of the above |
 
-Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Start with `/r:build`. Each command tells you the next step.
+Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Start with `/r-build`. Each command tells you the next step.
 
 ### Audit Pipeline
 
 ```bash
-/r:audit                              # parallel: 3x reviewer + 1x qa -> AUDIT.md
+/r-audit                              # parallel: 3x reviewer + 1x qa -> AUDIT.md
 ```
 
 ### Agent Roster
@@ -165,47 +165,47 @@ Enter at any point. Have a spec already? Start with `/r:plan`. Have a plan? Star
 
 | Command | Purpose |
 |---------|---------|
-| `/r:init` | Initialize governance for a new or existing project |
-| `/r:start` | Session initialization -- reload context, display project health |
-| `/r:save` | End-of-session state sync -- PLAN.md, MEMORY.md, session log |
-| `/r:mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
-| `/r:status` | Project health dashboard -- pipeline position, plan progress, warnings |
-| `/r:refresh` | Re-scan codebase and update governance files |
-| `/r:sync` | Pull emergency edits from deployed location back to canonical |
+| `/r-init` | Initialize governance for a new or existing project |
+| `/r-start` | Session initialization -- reload context, display project health |
+| `/r-save` | End-of-session state sync -- PLAN.md, MEMORY.md, session log |
+| `/r-mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
+| `/r-status` | Project health dashboard -- pipeline position, plan progress, warnings |
+| `/r-refresh` | Re-scan codebase and update governance files |
+| `/r-sync` | Pull emergency edits from deployed location back to canonical |
 
 ### Design -> Ship Pipeline
 
 | Command | Dispatches | Purpose |
 |---------|-----------|---------|
-| `/r:spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
-| `/r:plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
-| `/r:build [N\|--parallel]` | dispatcher | Execute: TDD cycle per phase with quality gates, parallel batch dispatch |
-| `/r:verify` | qa | QA verification against diff or scope |
-| `/r:test` | uat | User acceptance testing from end-user persona |
-| `/r:review` | reviewer | Adversarial review in challenge or sentinel mode |
-| `/r:audit` | 3x reviewer + qa | Full codebase audit across all domains |
-| `/r:ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
-| `/r:vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
-| `/r:tasks` | -- | Read-only task list status -- check progress of long-running commands |
+| `/r-spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
+| `/r-plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
+| `/r-build [N\|--parallel]` | dispatcher | Execute: TDD cycle per phase with quality gates, parallel batch dispatch |
+| `/r-verify` | qa | QA verification against diff or scope |
+| `/r-test` | uat | User acceptance testing from end-user persona |
+| `/r-review` | reviewer | Adversarial review in challenge or sentinel mode |
+| `/r-audit` | 3x reviewer + qa | Full codebase audit across all domains |
+| `/r-ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
+| `/r-vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
+| `/r-tasks` | -- | Read-only task list status -- check progress of long-running commands |
 
 ### Utilities (14)
 
 | Command | Purpose |
 |---------|---------|
-| `/r:util:mem-compact` | Archive stale MEMORY.md entries |
-| `/r:util:mem-audit` | Fact-check MEMORY.md against live state |
-| `/r:util:chg-gen` | Generate changelog from diff/commits |
-| `/r:util:chg-dedup` | Deduplicate changelog entries |
-| `/r:util:rel-squash` | Release branch squash plan + execution |
-| `/r:util:doc-gen` | Generate publication-ready documentation |
-| `/r:util:ci-gen` | Generate GitHub Actions CI workflow |
-| `/r:util:lib-sync` | Cross-project shared library drift detection |
-| `/r:util:lib-release` | Shared library release lifecycle |
-| `/r:util:proj-cross` | Cross-project convention drift analysis |
-| `/r:util:code-scan` | Structured pattern-class bug finder |
-| `/r:util:code-modernize` | Codebase modernization assessment |
-| `/r:util:test-dedup` | Find duplicate/overlapping tests |
-| `/r:util:test-scope` | Test tier recommendation + impact mapping |
+| `/r-util-mem-compact` | Archive stale MEMORY.md entries |
+| `/r-util-mem-audit` | Fact-check MEMORY.md against live state |
+| `/r-util-chg-gen` | Generate changelog from diff/commits |
+| `/r-util-chg-dedup` | Deduplicate changelog entries |
+| `/r-util-rel-squash` | Release branch squash plan + execution |
+| `/r-util-doc-gen` | Generate publication-ready documentation |
+| `/r-util-ci-gen` | Generate GitHub Actions CI workflow |
+| `/r-util-lib-sync` | Cross-project shared library drift detection |
+| `/r-util-lib-release` | Shared library release lifecycle |
+| `/r-util-proj-cross` | Cross-project convention drift analysis |
+| `/r-util-code-scan` | Structured pattern-class bug finder |
+| `/r-util-code-modernize` | Codebase modernization assessment |
+| `/r-util-test-dedup` | Find duplicate/overlapping tests |
+| `/r-util-test-scope` | Test tier recommendation + impact mapping |
 
 ---
 
@@ -248,7 +248,7 @@ rdf/
 |                                      #   state, refresh, sync, github, deploy, dispatch, migrate
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
-|   |-- commands/                      # 31 commands (/r: namespace)
+|   |-- commands/                      # 31 commands (/r- namespace)
 |   |-- scripts/                       # 10 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
@@ -380,7 +380,7 @@ All projects share: batsman test infrastructure, parent CLAUDE.md conventions, R
 2. `rdf generate claude-code` to deploy
 3. Add to command table in README
 
-Commands use `/r:<name>` (lifecycle) or `/r:util:<subject>` (utility).
+Commands use `/r-<name>` (lifecycle) or `/r-util-<subject>` (utility).
 </details>
 
 <details>

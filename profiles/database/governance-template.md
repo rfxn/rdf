@@ -1,6 +1,6 @@
 # Database Governance Template
 
-> Seed template for /r:init. Provides database engineering best
+> Seed template for /r-init. Provides database engineering best
 > practices for merging with codebase scan results. Engine-agnostic
 > core with engine-specific reference docs. Requires core profile.
 

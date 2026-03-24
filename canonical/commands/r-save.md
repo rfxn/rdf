@@ -1,10 +1,10 @@
-# /r:save — Session State Sync
+# /r-save — Session State Sync
 
 End-of-session state sync. Updates tracking files to reflect what
 actually happened, persists a session summary for the next agent.
 
 Run this before ending a session or swapping context. The counterpart
-to `/r:start` — save writes the journal, start reads it.
+to `/r-start` — save writes the journal, start reads it.
 
 ## Arguments
 
@@ -284,7 +284,7 @@ Standard header for new file:
 
 Cross-session operational wisdom, promoted from session insights.
 Referenced by all AI tools via project CLAUDE.md / GEMINI.md.
-Max 50 entries — run `/r:util:mem-compact` to prune.
+Max 50 entries — run `/r-util-mem-compact` to prune.
 ```
 
 Category headings map from insight tags:
@@ -334,9 +334,9 @@ results into one compact block.
 stage into one line. Pipeline stage shows where you are in the arc:
 - `idle` → no spec or plan
 - `spec` → spec exists, plan next
-- `plan` → plan ready, `/r:build` next
+- `plan` → plan ready, `/r-build` next
 - `build phase 3/7` → actively building
-- `ship` → all phases done, `/r:ship` next
+- `ship` → all phases done, `/r-ship` next
 
 **The diff line** replaces the old 4-column table with a single
 dense line: hash range, commit count, and categorized diff summary.
@@ -353,10 +353,10 @@ More informative in less space.
 
 **Warnings** — append to the Next blockquote only when triggered:
 ```
-> **Next** — `/r:start` to resume.
+> **Next** — `/r-start` to resume.
 > ⚠ {N} unpushed commits — `git push` before switching machines
 > ⚠ {N} dirty files: `{file1}`, `{file2}`, `{file3}`
-> ⚠ MEMORY.md at {N}/200 lines — `/r:util:mem-compact`
+> ⚠ MEMORY.md at {N}/200 lines — `/r-util-mem-compact`
 > ⚠ Context at ~{N}% — consider fresh session or `/half-clone`
 ```
 
@@ -368,11 +368,11 @@ Warning thresholds:
   turns × ~2000 tokens, compare to model context limit)
 
 **Pipeline-aware Next hint:**
-- `idle` → `Spec a feature with /r:spec, or plan directly with /r:plan`
-- `spec` → `Spec ready — /r:plan to create implementation plan`
-- `plan` → `/r:build to start phase 1`
-- `build phase N/M` → `/r:build {N+1} to continue` or `/r:ship if complete`
-- `ship` → `All phases done — /r:ship to release`
+- `idle` → `Spec a feature with /r-spec, or plan directly with /r-plan`
+- `spec` → `Spec ready — /r-plan to create implementation plan`
+- `plan` → `/r-build to start phase 1`
+- `build phase N/M` → `/r-build {N+1} to continue` or `/r-ship if complete`
+- `ship` → `All phases done — /r-ship to release`
 
 **After displaying the report:** If the prompt is shown (not
 auto-commit), wait for the user's response:
@@ -395,5 +395,5 @@ auto-commit), wait for the user's response:
 - Do NOT modify CLAUDE.md — it contains conventions, not volatile
   state
 - Do NOT run tests or lint — this is a state sync, not verification
-- Idempotent: running /r:save twice with no intervening work should
+- Idempotent: running /r-save twice with no intervening work should
   produce no changes on the second run

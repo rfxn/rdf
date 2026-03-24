@@ -56,7 +56,7 @@ If pre-flight passes, execute in sequence (stopping on any failure):
 - Report findings and fixes
 
 **2b. Changelog cleanup**
-- Run changelog deduplication (equivalent to `/r:util:chg-dedup`)
+- Run changelog deduplication (equivalent to `/r-util-chg-dedup`)
 - Report changes made
 
 **2c. User approval gate**
@@ -96,7 +96,7 @@ After user approval:
 ### 4. Consumer notification
 
 After the release merges, run library sync check (equivalent to
-`/r:util:lib-sync`) and display consumer drift as a table:
+`/r-util-lib-sync`) and display consumer drift as a table:
 
 ```
 #### Consumer Drift

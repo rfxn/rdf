@@ -27,7 +27,7 @@ Codex, or AGENTS.md environments.
   Emergency edits to deployed copies are pulled back via `rdf sync`.
 - **Governance-driven agent behavior:** Six universal agents (planner, dispatcher,
   engineer, qa, uat, reviewer) replace the prior 12+ domain-specific agents. Agent
-  behavior is shaped by governance files initialized per-project via `/r:init`, not
+  behavior is shaped by governance files initialized per-project via `/r-init`, not
   by baking domain knowledge into agent prompts. Profiles provide governance seed
   templates, not agent/command bundles.
 - **Unified CLI:** Single `rdf` dispatcher with lazy-sourced subcommand modules
@@ -90,7 +90,7 @@ rdf/                                 # Repository root
 |   |   |-- uat.md                   # User acceptance testing
 |   |   +-- reviewer.md              # Adversarial review (challenge + sentinel)
 |   |
-|   |-- commands/                    # 31 commands under /r: namespace
+|   |-- commands/                    # 31 commands under /r- namespace
 |   |   |-- r-init.md                # Governance initialization
 |   |   |-- r-start.md               # Session initialization
 |   |   |-- r-plan.md                # Planning workflow
@@ -119,7 +119,7 @@ rdf/                                 # Repository root
 |   |-- registry.md                  # Human-readable profile catalog
 |   |-- detection-rules.md           # Auto-detection signals per profile
 |   |-- core/                        # Core profile
-|   |   +-- governance-template.md   # Governance seed for /r:init
+|   |   +-- governance-template.md   # Governance seed for /r-init
 |   |-- shell/                       # Bash/shell projects
 |   |-- python/                      # Python projects
 |   |-- frontend/                    # Web/frontend
@@ -173,11 +173,11 @@ rdf/                                 # Repository root
 
 - Canonical agent/command/script storage with tool-agnostic content
 - 6 universal agents with governance-driven behavior
-- 31 commands under `/r:` namespace (17 lifecycle + 14 utility)
+- 31 commands under `/r-` namespace (17 lifecycle + 14 utility)
 - Unified CLI (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
   `rdf refresh`, `rdf sync`, `rdf github`)
 - Tool-specific adapters (Claude Code, Gemini CLI, Codex, AGENTS.md)
-- Governance initialization via `/r:init` with profile-based templates
+- Governance initialization via `/r-init` with profile-based templates
 - GitHub Issues + Projects v2 integration
 - Health checking (`rdf doctor`) with drift detection
 - Deterministic state helper (`rdf state`)

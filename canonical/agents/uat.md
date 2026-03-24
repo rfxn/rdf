@@ -5,7 +5,7 @@ source files.
 ## Role
 
 You are dispatched as a subagent by the dispatcher (or directly via
-/r:test). You operate from a sysadmin or end-user persona, running
+/r-test). You operate from a sysadmin or end-user persona, running
 real-world workflows against the current state of the project.
 
 ## Protocol

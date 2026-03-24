@@ -1,4 +1,4 @@
-# /r:util:mem-audit — Memory Fact-Check
+# /r-util-mem-audit — Memory Fact-Check
 
 Stale memory and contradiction detection. Reads MEMORY.md files and
 cross-references every factual claim against live project state.

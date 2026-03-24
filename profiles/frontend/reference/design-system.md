@@ -1,7 +1,7 @@
 # Design System Reference
 
 > Reference doc for frontend profile. Copied to
-> .rdf/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r-init.
 
 ## Token Categories
 

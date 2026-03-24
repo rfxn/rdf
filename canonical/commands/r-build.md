@@ -3,7 +3,7 @@ dispatcher subagent to execute an implementation plan.
 
 ## Invocation
 
-`/r:build [N | N-M | --parallel] [--worktree] [--max N]`
+`/r-build [N | N-M | --parallel] [--worktree] [--max N]`
 
 Arguments:
   N            — single phase (existing behavior)
@@ -19,7 +19,7 @@ Arguments:
 
 - Read PLAN.md in the project root
 - If PLAN.md does not exist, report error and stop:
-  "No PLAN.md found. Create one with /r:plan or write it manually."
+  "No PLAN.md found. Create one with /r-plan or write it manually."
 - Validate minimum schema — each phase must have:
   - `## Phase N: <description>`
   - `**Mode**: serial-context | serial-agent | parallel-agent`
@@ -36,7 +36,7 @@ Arguments:
 - If no argument: scan phases in order, target first with
   `Status: pending`
   - If all phases are complete, report "All phases complete. Use
-    /r:ship for release workflow." and stop
+    /r-ship for release workflow." and stop
   - If a phase has `Status: in-progress`, warn that a phase is
     already in progress and ask for confirmation before restarting it
 
@@ -115,7 +115,7 @@ Mark target phase as completed when dispatcher returns PASS.
 
 - Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
-    Run /r:init to generate governance, or proceed without it."
+    Run /r-init to generate governance, or proceed without it."
 - Load all governance files unconditionally:
   - conventions.md, constraints.md, verification.md,
     anti-patterns.md, architecture.md
@@ -225,16 +225,16 @@ After the dispatcher returns:
   (with failure context and which gate failed)
 - If PASS and more phases remain:
   > **Phase {N} complete** — {description}
-  > Next: Phase {N+1} — {description}. Run `/r:build` to continue.
+  > Next: Phase {N+1} — {description}. Run `/r-build` to continue.
 - If PASS and all phases are complete:
   - If PLAN_PHASE_COUNT >= 3: the dispatcher runs end-of-plan sentinel
     automatically (this is dispatcher-internal — the build command
     does not dispatch it separately)
     > **All {N} phases complete.** End-of-plan review: {verdict}.
-    > Run `/r:ship` to begin the release workflow.
+    > Run `/r-ship` to begin the release workflow.
   - If PLAN_PHASE_COUNT < 3:
     > **All {N} phases complete.**
-    > Run `/r:ship` to begin the release workflow.
+    > Run `/r-ship` to begin the release workflow.
 
 ### 8. Parallel Failure Handling
 
@@ -272,7 +272,7 @@ When one or more phases in a parallel batch fail:
    - Option 2: Re-dispatch phase 2's dispatcher subagent (same
      isolation level, max 3 total attempts)
    - Option 3: Write progress to build-progress.md, stop. User can
-     resume with `/r:build --parallel` (reads progress file)
+     resume with `/r-build --parallel` (reads progress file)
 
 ## Constraints
 
@@ -281,5 +281,5 @@ When one or more phases in a parallel batch fail:
 - If governance is missing, dispatch anyway (dispatcher degrades
   gracefully) but warn the user
 - Respect the plan's execution mode tags — pass them through unchanged
-- Parallel dispatch is additive — /r:build N (single phase) works unchanged
+- Parallel dispatch is additive — /r-build N (single phase) works unchanged
 - Nested parallel downgrade: dispatchers in parallel batches receive PARALLEL_BATCH: true

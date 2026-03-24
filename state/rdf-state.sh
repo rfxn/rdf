@@ -4,7 +4,7 @@
 # GNU GPL v2
 # Usage: rdf-state.sh [--full] [project-path]
 # Output: JSON to stdout
-# --full: include extended fields for /r:start dashboard
+# --full: include extended fields for /r-start dashboard
 set -euo pipefail
 
 _full_mode=0

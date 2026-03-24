@@ -1,4 +1,4 @@
-# /r:tasks — Task List Status
+# /r-tasks — Task List Status
 
 Display the current task list state. Use this when a long-running
 command seems stuck, or to check progress at any time.

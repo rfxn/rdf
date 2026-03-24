@@ -1,4 +1,4 @@
-# /r:vpe — Pipeline Orchestrator
+# /r-vpe — Pipeline Orchestrator
 
 Optional end-to-end pipeline orchestrator. Takes outcome-oriented
 conversation from the user and manages the full
@@ -6,12 +6,12 @@ spec → plan → build → ship workflow.
 
 This command is purely additive. It calls existing pipeline commands
 unchanged. Users who prefer manual control can continue using
-/r:spec, /r:plan, /r:build, and /r:ship independently.
+/r-spec, /r-plan, /r-build, and /r-ship independently.
 
 ## Invocation
 
-/r:vpe                — start new pipeline from conversation
-/r:vpe --resume       — resume interrupted pipeline from state file
+/r-vpe                — start new pipeline from conversation
+/r-vpe --resume       — resume interrupted pipeline from state file
 
 ## Task List Protocol
 
@@ -24,9 +24,9 @@ Write spec, Phase 2...) in the pending list.
 
 **Rules:**
 - Create only Intake at startup
-- Sub-commands (/r:spec, /r:plan, /r:build) create their own task
+- Sub-commands (/r-spec, /r-plan, /r-build) create their own task
   lists — do NOT create duplicate umbrella tasks for those stages
-- Create Ship only after /r:build completes all phases — this keeps
+- Create Ship only after /r-build completes all phases — this keeps
   it after all phase tasks in creation order
 
 At startup:
@@ -107,22 +107,22 @@ Write state:
 
 Mark task "Intake" as completed.
 
-## Stage 2: Design (invokes /r:spec)
+## Stage 2: Design (invokes /r-spec)
 
-Before invoking /r:spec, check docs/specs/ for existing specs. If a
+Before invoking /r-spec, check docs/specs/ for existing specs. If a
 recent spec exists and matches the intake topic, present:
   "Found existing spec: {path}. Use this? [Y/new spec]"
 If Y, skip to Stage 3 (Plan).
 
-Otherwise, invoke /r:spec with the synthesized problem statement as
+Otherwise, invoke /r-spec with the synthesized problem statement as
 the seed input. The user participates in brainstorming and design
-questions as normal — VPE does not suppress or shortcut the /r:spec
+questions as normal — VPE does not suppress or shortcut the /r-spec
 workflow.
 
 VPE's role during spec:
 - Ensure the problem statement from intake is the starting context
-- Let /r:spec handle all brainstorming, research, and spec writing
-- After /r:spec completes, read the committed spec path
+- Let /r-spec handle all brainstorming, research, and spec writing
+- After /r-spec completes, read the committed spec path
 
 After spec is committed:
 
@@ -130,17 +130,17 @@ After spec is committed:
  Ready to plan the implementation? [Y/pause]"
 
 If user says pause: write state and stop (user can resume with
-/r:vpe --resume).
+/r-vpe --resume).
 
 Write state:
   STAGE: spec
   STATUS: complete
   SPEC_PATH: {path}
 
-## Stage 3: Plan (invokes /r:plan)
+## Stage 3: Plan (invokes /r-plan)
 
-Invoke /r:plan with the spec path. The user approves the plan as
-normal — VPE does not suppress the /r:plan workflow.
+Invoke /r-plan with the spec path. The user approves the plan as
+normal — VPE does not suppress the /r-plan workflow.
 
 After plan is committed:
 
@@ -152,9 +152,9 @@ Write state:
   STATUS: complete
   PLAN_PHASES: {N}
 
-## Stage 4: Build (invokes /r:build --parallel)
+## Stage 4: Build (invokes /r-build --parallel)
 
-Invoke /r:build --parallel. The build command handles all phase
+Invoke /r-build --parallel. The build command handles all phase
 orchestration: dependency graph reading, batch computation, parallel
 dispatch, merge, quality gates, and failure handling.
 
@@ -162,7 +162,7 @@ VPE receives the aggregate result:
 - All phases passed → continue to ship
 - Failures exist → present to user:
   "Build completed with failures:
-   {failure summary from /r:build}
+   {failure summary from /r-build}
    [retry-failed / pause / continue-to-ship]"
   Wait for user decision.
 
@@ -181,12 +181,12 @@ appears last in the pending list):
 TaskCreate: "Ship: release workflow"
   activeForm: "Shipping"
 
-## Stage 5: Ship (invokes /r:ship)
+## Stage 5: Ship (invokes /r-ship)
 
 Mark task "Ship" as in_progress.
 
-Invoke /r:ship. The user confirms the PR as normal — VPE does not
-suppress the /r:ship workflow.
+Invoke /r-ship. The user confirms the PR as normal — VPE does not
+suppress the /r-ship workflow.
 
 After ship completes:
 
@@ -210,5 +210,5 @@ Clean up: vpe-progress.md retained for session log reference.
 - Never skip approval gates (spec approval, plan approval, ship confirmation)
 - Auto-continue between build phases only (phases are already approved
   as a batch when the plan was approved)
-- Max 4 exchanges during intake — escalate to /r:spec if more exploration needed
+- Max 4 exchanges during intake — escalate to /r-spec if more exploration needed
 - Track state in vpe-progress.md for crash recovery at every stage transition

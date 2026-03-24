@@ -25,7 +25,7 @@
 
   <!-- Profile subtitle -->
   <text x="42" y="114" fill="#7d8590" font-size="11">Permanent. Auto-detected from project structure.</text>
-  <text x="42" y="130" fill="#7d8590" font-size="11">Seeds governance templates at /r:init time.</text>
+  <text x="42" y="130" fill="#7d8590" font-size="11">Seeds governance templates at /r-init time.</text>
 
   <!-- Profile grid — row 1 -->
   <rect x="42" y="146" width="125" height="50" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
@@ -71,7 +71,7 @@
   <text x="720" y="87" text-anchor="middle" fill="#3fb950" font-weight="bold" font-size="14">Mode — "what am I doing right now?"</text>
 
   <!-- Mode subtitle -->
-  <text x="522" y="114" fill="#7d8590" font-size="11">Session-scoped. Switched with /r:mode.</text>
+  <text x="522" y="114" fill="#7d8590" font-size="11">Session-scoped. Switched with /r-mode.</text>
   <text x="522" y="130" fill="#7d8590" font-size="11">Changes how agents think, not what they know.</text>
 
   <!-- Mode rows -->
@@ -93,6 +93,6 @@
 
   <!-- Mode footer -->
   <line x1="522" y1="332" x2="918" y2="332" stroke="#30363d" stroke-width="0.5"/>
-  <text x="522" y="352" fill="#7d8590" font-size="11">/r:mode security | refactoring | debugging | ...</text>
+  <text x="522" y="352" fill="#7d8590" font-size="11">/r-mode security | refactoring | debugging | ...</text>
   <text x="522" y="368" fill="#7d8590" font-size="11">Overlays don't modify governance</text>
 </svg>

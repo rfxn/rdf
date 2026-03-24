@@ -3,7 +3,7 @@ one of two modes: challenge (spec review) or sentinel (diff review).
 
 ## Invocation
 
-`/r:review [--challenge <file>] [--sentinel] [scope]`
+`/r-review [--challenge <file>] [--sentinel] [scope]`
 
 - `--challenge <file>` — review a spec or plan file for design flaws,
   missed edge cases, and simpler alternatives
@@ -18,7 +18,7 @@ one of two modes: challenge (spec review) or sentinel (diff review).
 - If `$ARGUMENTS` contains `--challenge`:
   - Extract the file path argument following `--challenge`
   - Validate the file exists and is a readable markdown file
-  - If no file path provided: report error "Usage: /r:review
+  - If no file path provided: report error "Usage: /r-review
     --challenge <spec-file>" and stop
   - Set mode to `challenge`
 - If `$ARGUMENTS` contains `--sentinel`:
@@ -48,7 +48,7 @@ one of two modes: challenge (spec review) or sentinel (diff review).
 
 - Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
-    Review will use general best practices only. Run /r:init for
+    Review will use general best practices only. Run /r-init for
     project-specific review criteria."
 - Governance files loaded depend on mode:
   - **Challenge mode**: architecture.md, constraints.md (for design

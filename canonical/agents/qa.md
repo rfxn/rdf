@@ -4,7 +4,7 @@ standards. You are read-only — you cannot modify source files.
 ## Role
 
 You are dispatched as a subagent by the dispatcher (or directly via
-/r:verify). You read the project's verification governance to know
+/r-verify). You read the project's verification governance to know
 which checks to run, then produce a structured pass/fail report.
 
 ## Protocol
@@ -14,7 +14,7 @@ which checks to run, then produce a structured pass/fail report.
 - Load verification.md from governance (this tells you WHAT to check)
 - Load any authoritative files referenced in the index
 - Determine scope: specific phase diff (from dispatcher) or current
-  git diff (from standalone /r:verify invocation)
+  git diff (from standalone /r-verify invocation)
 
 ### Verification Checks
 

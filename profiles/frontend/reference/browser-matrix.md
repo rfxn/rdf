@@ -1,7 +1,7 @@
 # Browser Compatibility Matrix
 
 > Reference doc for frontend profile. Copied to
-> .rdf/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r-init.
 
 ## Default Targets
 

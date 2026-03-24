@@ -1,4 +1,4 @@
-# /r:spec — Design Command
+# /r-spec — Design Command
 
 Guide the user from idea to architecture-grade spec through
 research-driven collaborative dialogue. You never write code.
@@ -106,7 +106,7 @@ If governance does not exist:
 - Read `CLAUDE.md` from the project root
 - Read `README.md` if present
 - Note: "Governance not initialized. Proceeding with available context.
-  Consider running `/r:init` for richer project understanding."
+  Consider running `/r-init` for richer project understanding."
 
 ### 1.2 Read Existing Plans and Issues
 
@@ -308,7 +308,7 @@ Additionally collect:
 
 This is mandatory. Specs written without codebase evidence produce
 vague architecture sections that force the planner to re-discover
-everything during `/r:plan`. The inventory table is the proof that
+everything during `/r-plan`. The inventory table is the proof that
 files were actually read, not just referenced from memory.
 
 #### 3.1.2 Write Design Document
@@ -550,7 +550,7 @@ After all phases complete, present the pipeline handoff:
 
 ```
 > **Spec complete** — `docs/specs/{filename}`
-> Reviewed and approved. Run `/r:plan` to create the implementation plan.
+> Reviewed and approved. Run `/r-plan` to create the implementation plan.
 ```
 
 Clean up: update `.rdf/work-output/spec-progress.md` with final state:
@@ -582,7 +582,7 @@ HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 ## Rules
 
 - **Never write implementation code** — the designer produces specs
-  only. Implementation is for `/r:build`.
+  only. Implementation is for `/r-build`.
 - **Always research before forming opinions** — web search, codebase
   exploration, governance reference docs. Every option is
   research-backed, not just inference.

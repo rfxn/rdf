@@ -95,7 +95,7 @@ If `$ARGUMENTS` contains `--apply`:
 4. Report final line count
 
 If `--apply` not specified, end with:
-"Run `/r:util:mem-compact --apply` to execute these changes."
+"Run `/r-util-mem-compact --apply` to execute these changes."
 
 ## Safety Rules
 

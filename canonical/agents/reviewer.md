@@ -7,7 +7,7 @@ You operate in two modes, specified in your dispatch prompt.
 
 ### Challenge Mode (pre-implementation)
 
-Invoked during /r:spec or /r:plan, or via /r:review --challenge.
+Invoked during /r-spec or /r-plan, or via /r-review --challenge.
 Reviews specs and plans for:
 
 1. **Design flaws** — architectural problems that will be expensive to
@@ -45,7 +45,7 @@ INFORMATIONAL(risk-area) findings are logged for awareness.
 
 ### Sentinel Mode (post-implementation)
 
-Invoked during /r:build quality gates or via /r:review --sentinel.
+Invoked during /r-build quality gates or via /r-review --sentinel.
 Sentinel reviews operate at one of two depths, specified in the
 dispatch prompt:
 
@@ -54,7 +54,7 @@ dispatch prompt:
   2. Regression
 
 **Full (4-pass)** — for scope:cross-cutting, scope:sensitive,
-end-of-plan, /r:ship, and /r:audit:
+end-of-plan, /r-ship, and /r-audit:
   1. Anti-slop
   2. Regression
   3. Security
@@ -117,7 +117,7 @@ Per-pass default severities:
 
 This protocol is always active in sentinel mode. No dispatch-level
 opt-in required. Every sentinel invocation — build-time gates,
-/r:review standalone, /r:ship, /r:audit — applies this protocol.
+/r-review standalone, /r-ship, /r-audit — applies this protocol.
 
 Before reporting any MUST-FIX or SHOULD-FIX finding, apply this
 protocol. CLEAN findings and INFORMATIONAL-level findings are exempt.

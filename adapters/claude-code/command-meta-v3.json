@@ -1,6 +1,6 @@
 {
   "r-spec": {
-    "name": "/r:spec",
+    "name": "/r-spec",
     "type": "skill",
     "description": "Design workflow — discover, brainstorm, write spec, challenge review",
     "dispatches": [],
@@ -8,7 +8,7 @@
     "reads_governance": ["index.md", "architecture.md", "constraints.md"]
   },
   "r-start": {
-    "name": "/r:start",
+    "name": "/r-start",
     "type": "skill",
     "description": "Session initialization — reload context, display project health",
     "dispatches": [],
@@ -16,7 +16,7 @@
     "reads_governance": []
   },
   "r-status": {
-    "name": "/r:status",
+    "name": "/r-status",
     "type": "skill",
     "description": "Project health dashboard — pipeline position, plan progress, warnings",
     "dispatches": [],
@@ -24,7 +24,7 @@
     "reads_governance": ["index.md"]
   },
   "r-init": {
-    "name": "/r:init",
+    "name": "/r-init",
     "type": "skill",
     "description": "Initialize governance for a new or existing project",
     "dispatches": [],
@@ -32,7 +32,7 @@
     "reads_governance": []
   },
   "r-mode": {
-    "name": "/r:mode",
+    "name": "/r-mode",
     "type": "skill",
     "description": "Switch operational mode (development, security, performance, etc.)",
     "dispatches": [],
@@ -40,7 +40,7 @@
     "reads_governance": ["index.md"]
   },
   "r-tasks": {
-    "name": "/r:tasks",
+    "name": "/r-tasks",
     "type": "skill",
     "description": "Read-only task list status — check progress of long-running commands",
     "dispatches": [],
@@ -48,7 +48,7 @@
     "reads_governance": []
   },
   "r-vpe": {
-    "name": "/r:vpe",
+    "name": "/r-vpe",
     "type": "skill-with-subagents",
     "description": "End-to-end pipeline orchestrator: intake -> spec -> plan -> build -> ship",
     "dispatches": ["planner", "reviewer", "dispatcher", "qa"],
@@ -56,7 +56,7 @@
     "reads_governance": ["index.md", "architecture.md", "conventions.md", "constraints.md", "verification.md"]
   },
   "r-plan": {
-    "name": "/r:plan",
+    "name": "/r-plan",
     "type": "skill-with-subagents",
     "description": "Planning workflow — decompose spec into PLAN.md, challenge review",
     "dispatches": ["reviewer"],
@@ -64,7 +64,7 @@
     "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md"]
   },
   "r-build": {
-    "name": "/r:build",
+    "name": "/r-build",
     "type": "subagent-foreground",
     "description": "Execute implementation plan phase via dispatcher subagent",
     "dispatches": ["dispatcher"],
@@ -72,7 +72,7 @@
     "reads_governance": ["index.md", "conventions.md", "constraints.md", "verification.md", "anti-patterns.md"]
   },
   "r-ship": {
-    "name": "/r:ship",
+    "name": "/r-ship",
     "type": "skill-with-subagents",
     "description": "Composite release workflow — preflight, verification, release prep, publish, report",
     "dispatches": ["qa", "reviewer"],
@@ -80,7 +80,7 @@
     "reads_governance": ["index.md", "verification.md", "conventions.md"]
   },
   "r-audit": {
-    "name": "/r:audit",
+    "name": "/r-audit",
     "type": "skill-with-subagents",
     "description": "Full codebase audit — dispatches parallel reviewer and qa subagents",
     "dispatches": ["reviewer", "reviewer", "reviewer", "qa"],
@@ -88,7 +88,7 @@
     "reads_governance": ["index.md", "verification.md", "anti-patterns.md", "constraints.md", "architecture.md"]
   },
   "r-refresh": {
-    "name": "/r:refresh",
+    "name": "/r-refresh",
     "type": "skill",
     "description": "Re-scan codebase and update governance files",
     "dispatches": [],
@@ -96,7 +96,7 @@
     "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md", "constraints.md", "anti-patterns.md"]
   },
   "r-sync": {
-    "name": "/r:sync",
+    "name": "/r-sync",
     "type": "skill",
     "description": "Pull emergency edits from ~/.claude/ back to rdf/canonical/",
     "dispatches": [],
@@ -104,7 +104,7 @@
     "reads_governance": []
   },
   "r-save": {
-    "name": "/r:save",
+    "name": "/r-save",
     "type": "skill",
     "description": "End-of-session state sync — updates PLAN.md, MEMORY.md, session log",
     "dispatches": [],
@@ -113,85 +113,85 @@
   },
   "utility-commands": {
     "r-util-mem-compact": {
-      "slash-command": "/r:util:mem-compact",
+      "slash-command": "/r-util-mem-compact",
       "description": "Archive stale MEMORY.md entries",
       "source": "canonical/commands/r-util-mem-compact.md",
       "execution": "skill"
     },
     "r-util-doc-gen": {
-      "slash-command": "/r:util:doc-gen",
+      "slash-command": "/r-util-doc-gen",
       "description": "Generate docs for a specific surface",
       "source": "canonical/commands/r-util-doc-gen.md",
       "execution": "skill"
     },
     "r-util-ci-gen": {
-      "slash-command": "/r:util:ci-gen",
+      "slash-command": "/r-util-ci-gen",
       "description": "Generate CI workflow from test infra",
       "source": "canonical/commands/r-util-ci-gen.md",
       "execution": "skill"
     },
     "r-util-lib-sync": {
-      "slash-command": "/r:util:lib-sync",
+      "slash-command": "/r-util-lib-sync",
       "description": "Cross-project library drift detection",
       "source": "canonical/commands/r-util-lib-sync.md",
       "execution": "skill"
     },
     "r-util-lib-release": {
-      "slash-command": "/r:util:lib-release",
+      "slash-command": "/r-util-lib-release",
       "description": "Shared library release lifecycle",
       "source": "canonical/commands/r-util-lib-release.md",
       "execution": "skill"
     },
     "r-util-code-scan": {
-      "slash-command": "/r:util:code-scan",
+      "slash-command": "/r-util-code-scan",
       "description": "Structured pattern-class bug finder",
       "source": "canonical/commands/r-util-code-scan.md",
       "execution": "skill"
     },
     "r-util-code-modernize": {
-      "slash-command": "/r:util:code-modernize",
+      "slash-command": "/r-util-code-modernize",
       "description": "Assess codebase maturity + plan",
       "source": "canonical/commands/r-util-code-modernize.md",
       "execution": "skill"
     },
     "r-util-test-dedup": {
-      "slash-command": "/r:util:test-dedup",
+      "slash-command": "/r-util-test-dedup",
       "description": "Find duplicate/overlapping tests",
       "source": "canonical/commands/r-util-test-dedup.md",
       "execution": "skill"
     },
     "r-util-chg-gen": {
-      "slash-command": "/r:util:chg-gen",
+      "slash-command": "/r-util-chg-gen",
       "description": "Generate changelog entries from diff",
       "source": "canonical/commands/r-util-chg-gen.md",
       "execution": "skill"
     },
     "r-util-chg-dedup": {
-      "slash-command": "/r:util:chg-dedup",
+      "slash-command": "/r-util-chg-dedup",
       "description": "Deduplicate changelog entries",
       "source": "canonical/commands/r-util-chg-dedup.md",
       "execution": "skill"
     },
     "r-util-rel-squash": {
-      "slash-command": "/r:util:rel-squash",
+      "slash-command": "/r-util-rel-squash",
       "description": "Release branch squash plan + execution",
       "source": "canonical/commands/r-util-rel-squash.md",
       "execution": "skill"
     },
     "r-util-mem-audit": {
-      "slash-command": "/r:util:mem-audit",
+      "slash-command": "/r-util-mem-audit",
       "description": "Fact-check MEMORY.md claims against live state",
       "source": "canonical/commands/r-util-mem-audit.md",
       "execution": "skill"
     },
     "r-util-proj-cross": {
-      "slash-command": "/r:util:proj-cross",
+      "slash-command": "/r-util-proj-cross",
       "description": "Cross-project convention drift and overlap analysis",
       "source": "canonical/commands/r-util-proj-cross.md",
       "execution": "skill"
     },
     "r-util-test-scope": {
-      "slash-command": "/r:util:test-scope",
+      "slash-command": "/r-util-test-scope",
       "description": "Test tier recommendation + function-to-test impact",
       "source": "canonical/commands/r-util-test-scope.md",
       "execution": "skill"

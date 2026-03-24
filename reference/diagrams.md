@@ -178,7 +178,7 @@ flowchart TD
     Decision -->|retries exhausted| Escalate([Surface to User])
 
     MorePhases -->|yes| Dispatch
-    MorePhases -->|no| Ship([/r:ship — Merge])
+    MorePhases -->|no| Ship([/r-ship — Merge])
 
     style User fill:#4a5568,color:#fff,stroke:#2d3748
     style Ship fill:#276749,color:#fff,stroke:#22543d
@@ -197,7 +197,7 @@ flowchart TD
 
 ### Inter-Phase Parallel Dispatch
 
-/r:build --parallel reads the dependency graph and dispatches batches:
+/r-build --parallel reads the dependency graph and dispatches batches:
 
   PLAN.md Phase Dependencies
          │
@@ -315,7 +315,7 @@ sequenceDiagram
     participant QA as qa
     participant UAT as uat
 
-    User->>Planner: /r:plan
+    User->>Planner: /r-plan
     activate Planner
     Planner->>Planner: discover, brainstorm, spec
 
@@ -331,7 +331,7 @@ sequenceDiagram
     Planner->>User: PLAN.md ready
     deactivate Planner
 
-    User->>Dispatcher: /r:build [N]
+    User->>Dispatcher: /r-build [N]
     activate Dispatcher
     Dispatcher->>Dispatcher: read PLAN.md phase N
     Dispatcher->>Dispatcher: load governance, select gates
@@ -459,18 +459,18 @@ flowchart TD
 
 | Mode | Lenses | Focus | Invoked By |
 |------|--------|-------|------------|
-| Challenge | Design, edge cases, alternatives, risk | Specs and plans | planner, `/r:review --challenge` |
-| Sentinel | Anti-slop, regression, security, performance | Diffs | dispatcher, `/r:review --sentinel` |
+| Challenge | Design, edge cases, alternatives, risk | Specs and plans | planner, `/r-review --challenge` |
+| Sentinel | Anti-slop, regression, security, performance | Diffs | dispatcher, `/r-review --sentinel` |
 
 ---
 
 ## 8. Audit Pipeline
 
-`/r:audit` dispatches 4 parallel subagents, deduplicates findings, outputs AUDIT.md.
+`/r-audit` dispatches 4 parallel subagents, deduplicates findings, outputs AUDIT.md.
 
 ```mermaid
 flowchart TD
-    Trigger([/r:audit]) --> Scope[Build audit context\nfrom governance]
+    Trigger([/r-audit]) --> Scope[Build audit context\nfrom governance]
 
     Scope --> Rev1[reviewer sentinel\nregression + anti-slop]
     Scope --> Rev2[reviewer sentinel\nsecurity focus]

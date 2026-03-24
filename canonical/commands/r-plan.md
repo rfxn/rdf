@@ -1,4 +1,4 @@
-# /r:plan — Planning Command
+# /r-plan — Planning Command
 
 Take a spec (or equivalent input) and decompose it into an
 execution-grade implementation plan (PLAN.md). You never write code.
@@ -9,11 +9,11 @@ This is the second stage of the spec-plan-build-ship pipeline.
 `$ARGUMENTS` — input source for the plan:
 
 ```
-/r:plan                          — auto-detect most recent spec in docs/specs/
-/r:plan docs/specs/foo.md        — file path (contains / or ends with .md)
-/r:plan https://github.com/...   — GitHub URL (starts with http/https)
-/r:plan #42                      — issue shorthand (# + digits)
-/r:plan --resume                 — resume interrupted planning session
+/r-plan                          — auto-detect most recent spec in docs/specs/
+/r-plan docs/specs/foo.md        — file path (contains / or ends with .md)
+/r-plan https://github.com/...   — GitHub URL (starts with http/https)
+/r-plan #42                      — issue shorthand (# + digits)
+/r-plan --resume                 — resume interrupted planning session
 ```
 
 **Argument detection logic:**
@@ -29,12 +29,12 @@ This is the second stage of the spec-plan-build-ship pipeline.
 - Issue shorthand: verify `gh` CLI available, fetch issue body
 - Auto-detect: scan `docs/specs/` sorted by mtime descending, use
   most recent. If `docs/specs/` is empty or missing, offer transparent
-  delegation to `/r:spec`:
+  delegation to `/r-spec`:
   ```
-  "No spec found. Would you like to start with /r:spec to design
+  "No spec found. Would you like to start with /r-spec to design
   one first? [Y/n]"
   ```
-  If Y: run the `/r:spec` workflow inline, then continue into
+  If Y: run the `/r-spec` workflow inline, then continue into
   planning when the spec is complete. If N: stop.
 
 ---
@@ -195,7 +195,7 @@ entry. If no test applies, state `N/A (config)` or `N/A (docs)`.
 
 **Phase Dependencies:**
 
-Structured dependency list — required for all plans. `/r:build
+Structured dependency list — required for all plans. `/r-build
 --parallel` reads this to determine which phases can run concurrently.
 
 Format:
@@ -251,7 +251,7 @@ plan — the dispatcher derives these at execution time.
 
 Note: `[parallel-agent]` mode is for INTRA-PHASE parallelism
 (multiple engineers within one phase). INTER-PHASE parallelism
-(multiple phases running concurrently) is handled by `/r:build
+(multiple phases running concurrently) is handled by `/r-build
 --parallel`, which reads the Phase Dependencies list above. The
 planner does not need to think about inter-phase parallelism — the
 build command derives it from the dependency graph.
@@ -419,7 +419,7 @@ Please review the plan. Approve to finalize, or request changes.
 
 Wait for user approval. If the user requests changes:
 - Adjust phases, re-tag, rewrite PLAN.md
-- Do NOT re-run the spec design phases — use `/r:spec` for that
+- Do NOT re-run the spec design phases — use `/r-spec` for that
 
 ### 3.3 Commit Planning Artifacts
 
@@ -446,7 +446,7 @@ After all steps complete, present the pipeline handoff:
 
 ```
 > **Plan ready** — `PLAN.md` ({N} phases)
-> Run `/r:build` to begin execution, or `/r:build 3` for a specific phase.
+> Run `/r-build` to begin execution, or `/r-build 3` for a specific phase.
 ```
 
 ---
@@ -497,7 +497,7 @@ HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 ## Rules
 
 - **Never write implementation code** — the planner produces plans
-  only. Implementation is for `/r:build`.
+  only. Implementation is for `/r-build`.
 - **Always read files before referencing them** — line numbers, function
   names, and patterns must come from reading the actual code, never
   from memory or inference.

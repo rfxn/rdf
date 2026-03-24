@@ -1,6 +1,6 @@
 # Profile Auto-Detection Rules
 
-> Used by /r:init during Phase 2 (codebase scan) to suggest profiles.
+> Used by /r-init during Phase 2 (codebase scan) to suggest profiles.
 > Core profile is always active and not subject to detection.
 
 ## Detection Signals
@@ -128,9 +128,9 @@ without language files activates only the core profile, not infrastructure.
 
 ## Mode Suggestions (not profile activations)
 
-When security artifacts detected during /r:init:
+When security artifacts detected during /r-init:
 - Directory: `redteam/` present
 - File: `threat-model.md` or `security-audit.md` present
 - Config: security-focused CI job (SAST, DAST, dependency scanning)
 
-Suggest: `/r:mode security` for assessment work. Do not activate a profile.
+Suggest: `/r-mode security` for assessment work. Do not activate a profile.

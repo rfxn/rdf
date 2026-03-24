@@ -1,9 +1,9 @@
 # Python Governance Template
 
-> Seed template for /r:init. Provides Python best practices for
+> Seed template for /r-init. Provides Python best practices for
 > merging with codebase scan results. Requires core profile.
 > Assumes Python 3.9+ baseline. Project-specific version floors
-> detected by /r:init override these defaults.
+> detected by /r-init override these defaults.
 
 ## Code Conventions
 
@@ -55,7 +55,7 @@
 
 ## Testing
 
-- `pytest` as default framework (project-specific override via /r:init)
+- `pytest` as default framework (project-specific override via /r-init)
 - Fixtures over `setUp`/`tearDown` -- explicit dependency injection
 - `parametrize` for input variants, not copy-paste test functions
 - Mock at boundaries (I/O, network, time), not internal functions

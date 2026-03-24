@@ -2,8 +2,8 @@ Switch the operational mode for the current session.
 
 ## Usage
 
-/r:mode [name]          Switch to the named mode
-/r:mode                 Show current mode and available modes
+/r-mode [name]          Switch to the named mode
+/r-mode                 Show current mode and available modes
 
 ## Available Modes
 
@@ -47,7 +47,7 @@ When invoked with a mode name:
    - **Reviewer focus** -- which review passes are elevated
 
 4. The mode context is now active for this session. All subsequent
-   agent dispatches (`/r:build`, `/r:verify`, `/r:review`, etc.) will
+   agent dispatches (`/r-build`, `/r-verify`, `/r-review`, etc.) will
    include the mode context in their prompts
 
 When invoked without arguments:
@@ -71,7 +71,7 @@ that changes how agents interpret their existing governance.
 
 | Agent | Mode Effect |
 |-------|-------------|
-| **Spec** (`/r:spec`) | *Research methodology and brainstorming focus change* |
+| **Spec** (`/r-spec`) | *Research methodology and brainstorming focus change* |
 | **Planner** | *Decomposition strategy and phase risk assessment change* |
 | **Dispatcher** | *Quality gate overrides applied* |
 | **Reviewer** | *Pass weighting and blocking thresholds change* |
@@ -82,11 +82,11 @@ that changes how agents interpret their existing governance.
 ## Examples
 
 ```
-/r:mode security        # Switch to security assessment mode
-/r:mode performance     # Switch to performance audit mode
-/r:mode migration       # Switch to migration planning mode
-/r:mode dev             # Switch back to default development mode
-/r:mode                 # Show current mode and available modes
+/r-mode security        # Switch to security assessment mode
+/r-mode performance     # Switch to performance audit mode
+/r-mode migration       # Switch to migration planning mode
+/r-mode dev             # Switch back to default development mode
+/r-mode                 # Show current mode and available modes
 ```
 
 ## Constraints

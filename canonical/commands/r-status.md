@@ -1,4 +1,4 @@
-# /r:status — Project Health Dashboard
+# /r-status — Project Health Dashboard
 
 Display a structured overview of project health: plan progress, phase
 outcomes, governance freshness, and recent activity.
@@ -22,7 +22,7 @@ If present, extract:
 - Current/next pending phase number and description
 - Execution mode tags per phase
 
-If absent, display: "No active plan. Run /r:plan to create one."
+If absent, display: "No active plan. Run /r-plan to create one."
 
 ### 3. Read Phase Status Files
 
@@ -79,7 +79,7 @@ Phase styling:
 - `[ ]` + plain text = *pending*
 - `[ ]` + ~~strikethrough~~ + *(blocked)* italic = blocked
 
-If no PLAN.md: `Plan: none — run /r:plan to create one.`
+If no PLAN.md: `Plan: none — run /r-plan to create one.`
 
 ### Pipeline
 
@@ -144,7 +144,7 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
 
 ```
 > **Warnings**
-> - Governance is {T}h old — run `/r:refresh`
+> - Governance is {T}h old — run `/r-refresh`
 > - {N} uncommitted files
 > - Phase {N} status file is stale (>1h) — likely interrupted
 > - Phase {N} **FAIL** — review `.rdf/work-output/phase-{N}-status.md`
@@ -171,8 +171,8 @@ Thresholds:
 - `{hash}` {message} ({age})
 
 > **Next Steps**
-> - Run `/r:init` to generate governance
-> - Run `/r:plan` to create a plan
+> - Run `/r-init` to generate governance
+> - Run `/r-plan` to create a plan
 ```
 
 ## Formatting Guide

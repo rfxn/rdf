@@ -4,7 +4,7 @@ perspective.
 
 ## Invocation
 
-`/r:test [scope]` where scope is an optional file path, directory,
+`/r-test [scope]` where scope is an optional file path, directory,
 or scenario category.
 
 ## Protocol
@@ -25,7 +25,7 @@ or scenario category.
 
 - Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
-    UAT will use generic test approach. Run /r:init for
+    UAT will use generic test approach. Run /r-init for
     project-specific test configuration."
 - From the index, identify test-relevant governance:
   - architecture.md — system boundaries, components, install method

@@ -1,6 +1,6 @@
 # Rust Governance Template
 
-> Seed template for /r:init. Merged with codebase scan results during
+> Seed template for /r-init. Merged with codebase scan results during
 > governance generation. Not copied verbatim -- scan data overrides
 > where conflicts exist.
 

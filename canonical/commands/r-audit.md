@@ -1,4 +1,4 @@
-You are running the /r:audit full codebase audit. This command
+You are running the /r-audit full codebase audit. This command
 dispatches multiple reviewer and qa subagents in parallel to scan the
 entire codebase for latent issues, then synthesizes findings into a
 structured AUDIT.md.

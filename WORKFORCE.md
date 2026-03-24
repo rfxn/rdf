@@ -10,11 +10,11 @@ RDF 3.0 — UNIVERSAL AGENT WORKFORCE
 
 USER
  │
- ├─► /r:plan ──► planner  (opus)      Research & Planning
+ ├─► /r-plan ──► planner  (opus)      Research & Planning
  │                                     Specs, plans, brainstorming
  │
- ├─► /r:start ─► dispatcher  (sonnet) Plan Execution
- │   /r:build     │                    Phase orchestration, quality gates
+ ├─► /r-start ─► dispatcher  (sonnet) Plan Execution
+ │   /r-build     │                    Phase orchestration, quality gates
  │                │
  │                ├─► engineer  (opus)  Universal Implementation
  │                │                    TDD, governance-driven protocol
@@ -29,15 +29,15 @@ USER
  │                └─► uat  (sonnet)   User Acceptance — read-only
  │                                    End-user persona, real scenarios
  │
- └─► /r:audit ──► reviewer(×3) + qa   Full Codebase Audit
+ └─► /r-audit ──► reviewer(×3) + qa   Full Codebase Audit
                    parallel dispatch
 
 ════════════════════════════════════════════════════════════════════
 LIFECYCLE PIPELINE
-  USER → /r:plan (planner)
-       → [/r:review --challenge (reviewer)]
-       → /r:build [N] (dispatcher → engineer → qa/reviewer/uat gates)
-       → /r:ship → MERGE
+  USER → /r-plan (planner)
+       → [/r-review --challenge (reviewer)]
+       → /r-build [N] (dispatcher → engineer → qa/reviewer/uat gates)
+       → /r-ship → MERGE
 ════════════════════════════════════════════════════════════════════
 ```
 
@@ -56,13 +56,13 @@ LIFECYCLE PIPELINE
 
 Research-driven collaborative planner. Brainstorms ideas, researches best
 practices, challenges assumptions, writes specs and implementation plans.
-Invoked via `/r:plan`.
+Invoked via `/r-plan`.
 
 ### dispatcher (sonnet)
 
 Plan execution orchestrator. Reads PLAN.md, executes phases via TDD,
 dispatches engineer/qa/uat/reviewer subagents, enforces quality gates.
-Invoked via `/r:start` or `/r:build`.
+Invoked via `/r-start` or `/r-build`.
 
 ### engineer (opus)
 
@@ -75,13 +75,13 @@ Dispatched by the dispatcher for plan phase execution.
 
 Verification gate. Reads governance files for project-specific checks
 (lint commands, test commands, anti-pattern patterns). Read-only -- cannot
-modify source files. Dispatched by dispatcher or invoked via `/r:verify`.
+modify source files. Dispatched by dispatcher or invoked via `/r-verify`.
 
 ### uat (sonnet)
 
 User acceptance testing. Runs real-world scenarios from an end-user
 persona. Read-only -- cannot modify source files. Dispatched by
-dispatcher or invoked via `/r:test`.
+dispatcher or invoked via `/r-test`.
 
 ### reviewer (opus)
 
@@ -92,7 +92,7 @@ Adversarial reviewer with two modes:
   regression, security, performance.
 
 Read-only -- cannot modify source files. Dispatched by planner,
-dispatcher, or invoked via `/r:review`.
+dispatcher, or invoked via `/r-review`.
 
 ---
 
@@ -102,42 +102,42 @@ dispatcher, or invoked via `/r:review`.
 
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
-| r-init | /r:init | -- | Governance initialization |
-| r-start | /r:start | dispatcher | Session initialization |
-| r-save | /r:save | -- | Session state sync |
-| r-plan | /r:plan | planner | Planning workflow |
-| r-spec | /r:spec | -- | Specification authoring |
-| r-mode | /r:mode | -- | Switch operational mode |
-| r-status | /r:status | -- | Project health dashboard |
-| r-tasks | /r:tasks | -- | Task list status |
-| r-refresh | /r:refresh | -- | Governance refresh |
-| r-sync | /r:sync | -- | Canonical source sync |
-| r-audit | /r:audit | reviewer, qa | Full codebase audit |
-| r-ship | /r:ship | qa, reviewer | Release workflow |
-| r-build | /r:build | dispatcher | Execute plan phase |
-| r-vpe | /r:vpe | -- | Pipeline orchestrator |
-| r-verify | /r:verify | qa | QA verification |
-| r-test | /r:test | uat | UAT acceptance |
-| r-review | /r:review | reviewer | Adversarial review |
+| r-init | /r-init | -- | Governance initialization |
+| r-start | /r-start | dispatcher | Session initialization |
+| r-save | /r-save | -- | Session state sync |
+| r-plan | /r-plan | planner | Planning workflow |
+| r-spec | /r-spec | -- | Specification authoring |
+| r-mode | /r-mode | -- | Switch operational mode |
+| r-status | /r-status | -- | Project health dashboard |
+| r-tasks | /r-tasks | -- | Task list status |
+| r-refresh | /r-refresh | -- | Governance refresh |
+| r-sync | /r-sync | -- | Canonical source sync |
+| r-audit | /r-audit | reviewer, qa | Full codebase audit |
+| r-ship | /r-ship | qa, reviewer | Release workflow |
+| r-build | /r-build | dispatcher | Execute plan phase |
+| r-vpe | /r-vpe | -- | Pipeline orchestrator |
+| r-verify | /r-verify | qa | QA verification |
+| r-test | /r-test | uat | UAT acceptance |
+| r-review | /r-review | reviewer | Adversarial review |
 
 ### Utility Commands (14)
 
 | Command | Slash | Purpose |
 |---------|-------|---------|
-| r-util-mem-compact | /r:util:mem-compact | Archive stale MEMORY.md entries |
-| r-util-mem-audit | /r:util:mem-audit | Fact-check MEMORY.md against live state |
-| r-util-chg-gen | /r:util:chg-gen | Generate changelog from diff |
-| r-util-chg-dedup | /r:util:chg-dedup | Deduplicate changelog entries |
-| r-util-rel-squash | /r:util:rel-squash | Release branch squash plan + execution |
-| r-util-doc-gen | /r:util:doc-gen | Generate documentation |
-| r-util-ci-gen | /r:util:ci-gen | Generate CI workflow |
-| r-util-lib-sync | /r:util:lib-sync | Cross-project library drift detection |
-| r-util-lib-release | /r:util:lib-release | Shared library release lifecycle |
-| r-util-proj-cross | /r:util:proj-cross | Cross-project convention drift analysis |
-| r-util-code-scan | /r:util:code-scan | Pattern-class bug finder |
-| r-util-code-modernize | /r:util:code-modernize | Codebase modernization assessment |
-| r-util-test-dedup | /r:util:test-dedup | Find duplicate/overlapping tests |
-| r-util-test-scope | /r:util:test-scope | Test tier recommendation + impact mapping |
+| r-util-mem-compact | /r-util-mem-compact | Archive stale MEMORY.md entries |
+| r-util-mem-audit | /r-util-mem-audit | Fact-check MEMORY.md against live state |
+| r-util-chg-gen | /r-util-chg-gen | Generate changelog from diff |
+| r-util-chg-dedup | /r-util-chg-dedup | Deduplicate changelog entries |
+| r-util-rel-squash | /r-util-rel-squash | Release branch squash plan + execution |
+| r-util-doc-gen | /r-util-doc-gen | Generate documentation |
+| r-util-ci-gen | /r-util-ci-gen | Generate CI workflow |
+| r-util-lib-sync | /r-util-lib-sync | Cross-project library drift detection |
+| r-util-lib-release | /r-util-lib-release | Shared library release lifecycle |
+| r-util-proj-cross | /r-util-proj-cross | Cross-project convention drift analysis |
+| r-util-code-scan | /r-util-code-scan | Pattern-class bug finder |
+| r-util-code-modernize | /r-util-code-modernize | Codebase modernization assessment |
+| r-util-test-dedup | /r-util-test-dedup | Find duplicate/overlapping tests |
+| r-util-test-scope | /r-util-test-scope | Test tier recommendation + impact mapping |
 
 ---
 
@@ -145,43 +145,43 @@ dispatcher, or invoked via `/r:review`.
 
 ### Start a New Session
 ```
-/r:start                         # Load context, scan state
-/r:status                        # Project health dashboard
+/r-start                         # Load context, scan state
+/r-status                        # Project health dashboard
 ```
 
 ### Plan and Execute
 ```
-/r:plan                          # Planner researches + writes spec/plan
-/r:build 1                       # Dispatcher executes phase 1
-/r:verify                        # QA verification
-/r:test                          # UAT acceptance
+/r-plan                          # Planner researches + writes spec/plan
+/r-build 1                       # Dispatcher executes phase 1
+/r-verify                        # QA verification
+/r-test                          # UAT acceptance
 ```
 
 ### Pre-Commit Verification
 ```
-/r:verify                        # QA lint + anti-pattern check
+/r-verify                        # QA lint + anti-pattern check
 ```
 
 ### Adversarial Review
 ```
-/r:review --challenge PLAN.md    # Pre-implementation challenge
-/r:review --sentinel             # Post-implementation 4-pass review
+/r-review --challenge PLAN.md    # Pre-implementation challenge
+/r-review --sentinel             # Post-implementation 4-pass review
 ```
 
 ### Release a Project
 ```
-/r:ship                          # Full release workflow
+/r-ship                          # Full release workflow
 ```
 
 ### Full Audit Cycle
 ```
-/r:audit                         # Parallel reviewer + qa audit
+/r-audit                         # Parallel reviewer + qa audit
 ```
 
 ### Cross-Project Maintenance
 ```
-/r:util:lib-sync                 # Check shared library drift
-/r:util:lib-release              # Ship canonical library update
+/r-util-lib-sync                 # Check shared library drift
+/r-util-lib-release              # Ship canonical library update
 ```
 
 ---
@@ -205,20 +205,20 @@ dispatcher, or invoked via `/r:review`.
 
 | v2 Command | v3 Equivalent |
 |------------|---------------|
-| /mgr | /r:start, /r:build |
-| /po | /r:plan |
-| /scope | /r:plan |
-| /sys-eng | /r:build |
-| /sys-qa | /r:verify |
-| /sys-uat | /r:test |
-| /sys-sentinel | /r:review --sentinel |
-| /sys-challenger | /r:review --challenge |
-| /reload | /r:start |
-| /status, /proj-status | /r:status |
-| /audit | /r:audit |
-| /rel-ship | /r:ship |
-| /mem-compact | /r:util:mem-compact |
-| /rel-chg-dedup | /r:util:chg-dedup |
-| /test-dedup | /r:util:test-dedup |
+| /mgr | /r-start, /r-build |
+| /po | /r-plan |
+| /scope | /r-plan |
+| /sys-eng | /r-build |
+| /sys-qa | /r-verify |
+| /sys-uat | /r-test |
+| /sys-sentinel | /r-review --sentinel |
+| /sys-challenger | /r-review --challenge |
+| /reload | /r-start |
+| /status, /proj-status | /r-status |
+| /audit | /r-audit |
+| /rel-ship | /r-ship |
+| /mem-compact | /r-util-mem-compact |
+| /rel-chg-dedup | /r-util-chg-dedup |
+| /test-dedup | /r-util-test-dedup |
 
 **Total: 6 agents + 31 commands + 10 scripts = 47 primitives**

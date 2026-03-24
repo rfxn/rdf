@@ -13,14 +13,14 @@
   },
   "qa": {
     "name": "rdf-qa",
-    "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r:verify."
+    "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-verify."
   },
   "uat": {
     "name": "rdf-uat",
-    "description": "User acceptance testing. Runs real-world scenarios from end-user persona. Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r:test."
+    "description": "User acceptance testing. Runs real-world scenarios from end-user persona. Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-test."
   },
   "reviewer": {
     "name": "rdf-reviewer",
-    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 4-pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r:review."
+    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 4-pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r-review."
   }
 }

@@ -1,4 +1,4 @@
-# /r:util:rel-squash — Release Branch Squash
+# /r-util-rel-squash — Release Branch Squash
 
 Generate a squash plan for the current release branch by grouping
 commits into logical buckets aligned with CHANGELOG.RELEASE entries.

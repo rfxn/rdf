@@ -8,8 +8,8 @@
 This is the implicit mode when no mode is specified. It follows the
 standard RDF workflow:
 
-1. Plan -> spec -> implementation plan (via /r:plan)
-2. Execute phases with TDD cycles (via /r:build)
+1. Plan -> spec -> implementation plan (via /r-plan)
+2. Execute phases with TDD cycles (via /r-build)
 3. Quality gates per scope classification (via dispatcher)
 4. Commit per completed phase
 

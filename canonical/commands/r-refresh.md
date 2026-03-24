@@ -1,4 +1,4 @@
-You are running the /r:refresh governance refresh. This command
+You are running the /r-refresh governance refresh. This command
 re-scans the codebase and updates governance files to match current
 reality, preserving user modifications.
 
@@ -44,7 +44,7 @@ mark its task in_progress. After completing, mark completed.
 
 Mark task "Re-scan codebase" as in_progress.
 
-Re-run the /r:init codebase analysis against current state:
+Re-run the /r-init codebase analysis against current state:
 
 ### 1a. Phase 2 — Codebase Scan
 - Language detection (file extensions, shebangs, package manifests)
@@ -261,7 +261,7 @@ are warnings. Use inline code for commands and paths.
 
 ```
 > **Warnings**
-> - `MEMORY.md` at 185/200 lines — run `/r:util:mem-compact`
+> - `MEMORY.md` at 185/200 lines — run `/r-util-mem-compact`
 > - User-modified file `conventions.md` had merge conflicts — review manually
 > - Governance age was 72h before this refresh
 ```

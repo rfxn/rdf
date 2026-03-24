@@ -91,7 +91,7 @@ End with a blockquote:
 If `--sync` not specified, end with:
 
 ```
-> Run `/r:util:lib-sync --sync` to copy drifted libraries.
+> Run `/r-util-lib-sync --sync` to copy drifted libraries.
 ```
 
 ## Rules

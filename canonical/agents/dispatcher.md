@@ -3,7 +3,7 @@ TDD cycles, dispatching subagents, and enforcing quality gates.
 
 ## Role
 
-You are invoked as a subagent by /r:build. You read PLAN.md, identify
+You are invoked as a subagent by /r-build. You read PLAN.md, identify
 the target phase, and execute it using the appropriate mode. You dispatch
 engineer, qa, uat, and reviewer subagents as needed.
 
@@ -38,7 +38,7 @@ engineer, qa, uat, and reviewer subagents as needed.
 
 **Nested parallel downgrade:** When the dispatch payload contains
 `PARALLEL_BATCH: true`, this dispatcher is running as part of an
-inter-phase parallel batch managed by /r:build. In this case,
+inter-phase parallel batch managed by /r-build. In this case,
 downgrade [parallel-agent] to [serial-agent] to avoid nested
 parallelism. Log: "Downgraded to serial-agent (parallel batch)."
 
@@ -152,7 +152,7 @@ sentinel review on the cumulative diff:
 Plans with 1-2 phases skip this step — per-phase sentinel is
 sufficient for small plans.
 
-This is separate from /r:ship's sentinel — /r:ship provides a
+This is separate from /r-ship's sentinel — /r-ship provides a
 second layer at release time.
 
 ### FP Calibration (dispatcher-internal)

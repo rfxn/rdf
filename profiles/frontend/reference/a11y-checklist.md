@@ -1,7 +1,7 @@
 # WCAG 2.1 AA Compliance Checklist
 
 > Reference doc for frontend profile. Copied to
-> .rdf/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r-init.
 > Covers WCAG 2.1 Level AA. Not exhaustive -- prioritizes criteria
 > most commonly failed in web applications.
 

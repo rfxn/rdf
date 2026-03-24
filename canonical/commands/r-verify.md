@@ -4,7 +4,7 @@ scope.
 
 ## Invocation
 
-`/r:verify [scope]` where scope is an optional file path, directory,
+`/r-verify [scope]` where scope is an optional file path, directory,
 or glob pattern.
 
 ## Protocol
@@ -24,7 +24,7 @@ or glob pattern.
 
 - Read `.rdf/governance/index.md`
   - If governance index does not exist, warn: "No governance found.
-    QA will use default checks only. Run /r:init for project-specific
+    QA will use default checks only. Run /r-init for project-specific
     verification."
 - From the index, identify verification-relevant governance:
   - verification.md — defines which checks to run

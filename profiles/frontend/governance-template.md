@@ -1,6 +1,6 @@
 # Frontend Governance Template
 
-> Seed template for /r:init. Provides web/frontend conventions for
+> Seed template for /r-init. Provides web/frontend conventions for
 > merging with codebase scan results. Framework-agnostic (React, Vue,
 > Svelte, vanilla). Requires core profile.
 > Assumes ES2020+ baseline with "last 2 versions" browser targets.

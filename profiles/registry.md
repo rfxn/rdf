@@ -1,6 +1,6 @@
 # Profile Registry
 
-> Available governance seed profiles for /r:init.
+> Available governance seed profiles for /r-init.
 
 ## Full Profiles
 
@@ -36,7 +36,7 @@
 ## Profile Structure
 
 Each profile directory contains:
-- `governance-template.md` -- seed data for /r:init governance generation
+- `governance-template.md` -- seed data for /r-init governance generation
 - `reference/` -- docs copied to .rdf/governance/reference/ (full tier only)
 
 Profiles do NOT contain:

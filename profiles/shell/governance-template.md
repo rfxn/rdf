@@ -1,9 +1,9 @@
 # Shell Governance Template
 
-> Seed template for /r:init. Provides bash/shell best practices for
+> Seed template for /r-init. Provides bash/shell best practices for
 > merging with codebase scan results. Requires core profile.
 > Assumes bash 4.3+ baseline. Project-specific version floors
-> (e.g., bash 4.1 for CentOS 6) detected by /r:init override these defaults.
+> (e.g., bash 4.1 for CentOS 6) detected by /r-init override these defaults.
 
 ## Code Conventions
 
@@ -68,7 +68,7 @@
 
 ## Testing
 
-- BATS framework (or project-specific test framework detected by /r:init)
+- BATS framework (or project-specific test framework detected by /r-init)
 - Test isolation: `mktemp -d` for temp directories, never scan shared
   directories (`/tmp`, `/var`) -- they contain unpredictable content
 - Always tee output: `cmd 2>&1 | tee /tmp/test.log` -- pipe-only

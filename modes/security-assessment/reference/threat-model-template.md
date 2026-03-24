@@ -1,7 +1,7 @@
 # Threat Model Template
 
 > Reference doc for security-assessment mode. Copied to
-> .rdf/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r-init.
 
 ## Template Structure
 

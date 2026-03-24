@@ -1,9 +1,9 @@
 # Go Governance Template
 
-> Seed template for /r:init. Provides Go best practices for merging
+> Seed template for /r-init. Provides Go best practices for merging
 > with codebase scan results. Requires core profile.
 > Assumes Go 1.21+ baseline. Generics (1.18+) and slog (1.21+) assumed.
-> Project-specific version floors detected by /r:init override these defaults.
+> Project-specific version floors detected by /r-init override these defaults.
 
 ## Code Conventions
 

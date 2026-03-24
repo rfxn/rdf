@@ -1,4 +1,4 @@
-# /r:start — Session Initialization
+# /r-start — Session Initialization
 
 Reload context and display project health. This is the recommended
 first command in any session. It gives the agent a warm handoff —
@@ -114,7 +114,7 @@ hash, age, and pipeline stage. Pipeline stage at the end tells the
 user where they are in the arc (idle/spec/plan/build/ship).
 
 **Status table** — one row, four columns. No multi-row tables.
-If governance doesn't exist, replace that cell with `none — /r:init`.
+If governance doesn't exist, replace that cell with `none — /r-init`.
 
 **In-flight** — show only if signals fire:
 
@@ -184,7 +184,7 @@ Fallback (no session log) — 3 most recent commits:
 **Warnings** — one blockquote line, pipe-separated:
 
 ```
-> ⚠ Governance {T}h old — `/r:refresh` | MEMORY.md {N}/200 — `/r:util:mem-compact`
+> ⚠ Governance {T}h old — `/r-refresh` | MEMORY.md {N}/200 — `/r-util-mem-compact`
 ```
 
 Thresholds:

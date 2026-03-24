@@ -1,7 +1,7 @@
 # RDF Framework Reference
 
 > Reference doc for core profile. Copied to
-> .rdf/governance/reference/ during /r:init.
+> .rdf/governance/reference/ during /r-init.
 
 ## Governance File Taxonomy
 

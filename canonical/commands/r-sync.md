@@ -1,4 +1,4 @@
-You are running the /r:sync canonical source synchronization. This is
+You are running the /r-sync canonical source synchronization. This is
 an RDF-internal command that pulls emergency edits made directly to
 ~/.claude/ back into the rdf canonical source tree.
 
@@ -7,7 +7,7 @@ an RDF-internal command that pulls emergency edits made directly to
 RDF development follows a one-way flow:
 1. Edit files in `rdf/canonical/` (the source of truth)
 2. Run `rdf generate claude-code` to deploy to `~/.claude/`
-3. If emergency edits are made directly to `~/.claude/`, run `/r:sync`
+3. If emergency edits are made directly to `~/.claude/`, run `/r-sync`
    to pull them back
 
 This command handles step 3 — the reverse flow.

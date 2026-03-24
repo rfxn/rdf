@@ -1,4 +1,4 @@
-You are running the /r:ship release workflow. This is a composite
+You are running the /r-ship release workflow. This is a composite
 workflow that verifies readiness, dispatches quality gates, prepares
 release artifacts, and publishes a PR.
 

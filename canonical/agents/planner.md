@@ -59,7 +59,7 @@ engineer from re-discovering the same issue.
 - Fix issues, re-dispatch (max 3 cycles)
 - User reviews and approves plan
 
-Plan is ready for /r:build (dispatcher takes over).
+Plan is ready for /r-build (dispatcher takes over).
 
 ## Plan Quality Standard
 

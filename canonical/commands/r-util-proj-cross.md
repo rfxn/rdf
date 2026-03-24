@@ -1,4 +1,4 @@
-# /r:util:proj-cross — Cross-Project Analysis
+# /r-util-proj-cross — Cross-Project Analysis
 
 Cross-project analysis for rfxn projects. Reads MEMORY.md, PLAN.md,
 AUDIT.md, and CLAUDE.md from all projects to identify shared patterns,

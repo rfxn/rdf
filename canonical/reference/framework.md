@@ -20,8 +20,8 @@ the framework evolves. Never contains volatile data.
 |----------|----------|-------|
 | Parent CLAUDE.md | `/root/admin/work/proj/CLAUDE.md` | Human |
 | Project CLAUDE.md | `<project>/CLAUDE.md` | Human |
-| Governance index | `<project>/.rdf/governance/index.md` | `/r:init` |
-| Governance files | `<project>/.rdf/governance/*.md` | `/r:init`, `/r:refresh` |
+| Governance index | `<project>/.rdf/governance/index.md` | `/r-init` |
+| Governance files | `<project>/.rdf/governance/*.md` | `/r-init`, `/r-refresh` |
 | Shared reference | `/root/admin/work/proj/reference/*.md` | Human |
 | Project reference | `<project>/reference/*.md` | Human |
 
@@ -38,17 +38,17 @@ commit, phase completion, or audit run.
 
 | Artifact | Location | Owner | Mandatory |
 |----------|----------|-------|-----------|
-| MEMORY.md | Auto-memory dir | `/r:save` | All projects |
-| PLAN.md | `<project>/PLAN.md` | `/r:plan`, `/r:save` | When active work |
-| AUDIT.md | `<project>/AUDIT.md` | `/r:audit`, `/r:save` | After audit run |
-| spec-progress.md | `.rdf/work-output/` | `/r:spec` | During design |
-| ship-progress.md | `.rdf/work-output/` | `/r:ship` | During release |
-| vpe-progress.md | `.rdf/work-output/` | `/r:vpe` | During VPE pipeline |
-| build-progress.md | `.rdf/work-output/` | `/r:build` | During parallel build |
-| session-log.jsonl | `.rdf/work-output/` | `/r:save` | When active work |
-| insights.jsonl | `~/.rdf/` | `/r:save` | Rolling 30 entries |
-| lessons-learned.md | `~/.rdf/` | `/r:save` (user-promoted) | Cross-session wisdom |
-| config.json | `~/.rdf/` | `/r:save` (auto setting) | RDF preferences |
+| MEMORY.md | Auto-memory dir | `/r-save` | All projects |
+| PLAN.md | `<project>/PLAN.md` | `/r-plan`, `/r-save` | When active work |
+| AUDIT.md | `<project>/AUDIT.md` | `/r-audit`, `/r-save` | After audit run |
+| spec-progress.md | `.rdf/work-output/` | `/r-spec` | During design |
+| ship-progress.md | `.rdf/work-output/` | `/r-ship` | During release |
+| vpe-progress.md | `.rdf/work-output/` | `/r-vpe` | During VPE pipeline |
+| build-progress.md | `.rdf/work-output/` | `/r-build` | During parallel build |
+| session-log.jsonl | `.rdf/work-output/` | `/r-save` | When active work |
+| insights.jsonl | `~/.rdf/` | `/r-save` | Rolling 30 entries |
+| lessons-learned.md | `~/.rdf/` | `/r-save` (user-promoted) | Cross-session wisdom |
+| config.json | `~/.rdf/` | `/r-save` (auto setting) | RDF preferences |
 
 **`~/.rdf/`:** Tool-agnostic RDF operational state. Never tracked in git.
 Referenced by parent CLAUDE.md / GEMINI.md / AGENTS.md for agent discovery.
@@ -116,8 +116,8 @@ Agent personas, commands, hooks, and scripts that define the pipeline.
 **Agent naming:** `rdf-{role}` (e.g., `rdf-engineer`, `rdf-qa`)
 
 **Command naming:**
-- `/r:{name}` — lifecycle commands (17)
-- `/r:util:{subject}-{verb}` — utility commands (14)
+- `/r-{name}` — lifecycle commands (17)
+- `/r-util-{subject}-{verb}` — utility commands (14)
 
 ### Category 5: Integration (monitoring)
 
@@ -182,7 +182,7 @@ automatically. See dispatcher.md for the full derivation logic.
 - QA runs across full diff after merge
 
 **Inter-phase parallelism:**
-- `/r:build --parallel` reads the plan dependency graph
+- `/r-build --parallel` reads the plan dependency graph
 - Independent phases dispatch concurrently (max 4)
 - Isolation auto-derived from scope: file-gated or git worktree
 - Results merge in plan order (deterministic)
@@ -190,11 +190,11 @@ automatically. See dispatcher.md for the full derivation logic.
 
 ### Cross-Session Continuity
 
-The `/r:save` → `/r:start` loop provides structured session handoff:
+The `/r-save` → `/r-start` loop provides structured session handoff:
 
 ```
-Session N:  work → /r:save (syncs PLAN.md, MEMORY.md, writes session-log)
-Session N+1: /r:start (reads session-log, shows plan progress, last session summary)
+Session N:  work → /r-save (syncs PLAN.md, MEMORY.md, writes session-log)
+Session N+1: /r-start (reads session-log, shows plan progress, last session summary)
 ```
 
 State sources, in order of reliability:
@@ -202,14 +202,14 @@ State sources, in order of reliability:
 | Source | Reliability | What it provides |
 |--------|-------------|-----------------|
 | `git log` + `git diff` | Authoritative | Committed and uncommitted state |
-| PLAN.md | High | Phase completion status (synced by `/r:save`) |
+| PLAN.md | High | Phase completion status (synced by `/r-save`) |
 | session-log.jsonl | High | Session summaries (commits, phases completed) |
 | MEMORY.md | High (if saved) | State summary, open items |
 | AUDIT.md | High | Outstanding findings |
 | .rdf/work-output/ | Forensic | In-flight state at session end |
 
-Git is the true record. `/r:save` creates convenience summaries.
-`/r:start` reads them for a warm handoff.
+Git is the true record. `/r-save` creates convenience summaries.
+`/r-start` reads them for a warm handoff.
 
 ---
 

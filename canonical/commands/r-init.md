@@ -8,8 +8,8 @@ current working directory). Can be a subdirectory for monorepo scoping.
 ### Options
 
 - `--force` — delete existing `.rdf/governance/` and regenerate
-  from scratch. Without this flag, /r:init refuses to run when
-  governance already exists (directs to `/r:refresh` instead).
+  from scratch. Without this flag, /r-init refuses to run when
+  governance already exists (directs to `/r-refresh` instead).
 
 ## Progress Tracking
 
@@ -57,7 +57,7 @@ Then update each `[ ]` → `[x]` as phases complete.
 
 ## Overview
 
-/r:init runs 5 phases in sequence:
+/r-init runs 5 phases in sequence:
 
 1. **Ingest** — scan for existing convention .md files (highest priority)
 2. **Codebase scan** — detect languages, frameworks, directory structure
@@ -355,10 +355,10 @@ generate from scan data where gaps exist, never duplicate.
 mkdir -p .rdf/governance
 ```
 
-If `.rdf/governance/` already exists (from a prior /r:init or
-/r:refresh):
+If `.rdf/governance/` already exists (from a prior /r-init or
+/r-refresh):
 
-- **Without `--force`:** stop and direct the user to `/r:refresh`
+- **Without `--force`:** stop and direct the user to `/r-refresh`
   (see Error Handling #4). DO NOT modify existing files.
 - **With `--force`:** delete the existing `.rdf/governance/`
   directory entirely, then proceed with fresh generation. Log the
@@ -690,14 +690,14 @@ Only show what was actually found — absence is not information.
 {only if LOW > 0 or conflicts:}
 > **Review**: {N} low-confidence items — {1-line summary of top concern}
 
-> **Ready** — `/r:start` to begin | `/r:spec` to design | `/r:plan` to plan
+> **Ready** — `/r-start` to begin | `/r-spec` to design | `/r-plan` to plan
 ```
 
 **Pipeline-aware Ready line:** If PLAN.md or specs already exist,
 adjust the hint:
-- Specs exist, no PLAN.md → `> **Ready** — `/r:plan` to create implementation plan`
-- PLAN.md exists → `> **Ready** — `/r:build` to start phase 1`
-- Nothing exists → `> **Ready** — `/r:start` to begin | `/r:spec` to design`
+- Specs exist, no PLAN.md → `> **Ready** — `/r-plan` to create implementation plan`
+- PLAN.md exists → `> **Ready** — `/r-build` to start phase 1`
+- Nothing exists → `> **Ready** — `/r-start` to begin | `/r-spec` to design`
 
 **Adaptation rules:**
 - The heading includes the project name and a count — makes the
@@ -729,7 +729,7 @@ not committed source. Do not prompt the user; this is the default.
 
 1. **NEVER modify existing convention files** — CLAUDE.md, AGENTS.md,
    GEMINI.md, MEMORY.md, PLAN.md, .cursorrules, and
-   .github/copilot-instructions.md are read-only inputs to /r:init.
+   .github/copilot-instructions.md are read-only inputs to /r-init.
 2. **NEVER duplicate content** — if an existing file covers a topic,
    the governance file MUST cross-reference it by section name and
    line range instead of copying the content.
@@ -748,16 +748,16 @@ not committed source. Do not prompt the user; this is the default.
    the directory appears empty and stop.
 4. If `.rdf/governance/` already exists with files AND `--force`
    is NOT set, warn the user:
-   - "Governance files already exist. To update, use `/r:refresh`."
-   - "To regenerate from scratch, use `/r:init --force`."
+   - "Governance files already exist. To update, use `/r-refresh`."
+   - "To regenerate from scratch, use `/r-init --force`."
    - Stop without modifying existing governance files.
    If `--force` IS set, delete `.rdf/governance/` and continue.
 
 ### Monorepo Behavior
 
-1. `/r:init .` at the repo root produces governance for the dominant
+1. `/r-init .` at the repo root produces governance for the dominant
    patterns across the whole repository.
-2. `/r:init ./services/api` scopes Phases 2-3 to that subdirectory
+2. `/r-init ./services/api` scopes Phases 2-3 to that subdirectory
    but still checks parent directories for convention files (Phase 1).
 3. Scoped governance is written to `{subdir}/.rdf/governance/`,
    NOT to the repo root's `.rdf/governance/`.
@@ -766,12 +766,12 @@ not committed source. Do not prompt the user; this is the default.
 
 ### Re-Init vs Refresh
 
-- `/r:init` is for first-time governance generation. It refuses to
+- `/r-init` is for first-time governance generation. It refuses to
   run if `.rdf/governance/` already exists (see Error Handling #4).
-- `/r:init --force` deletes existing governance and regenerates from
+- `/r-init --force` deletes existing governance and regenerates from
   scratch. Use when governance is stale, corrupt, or after major
-  codebase restructuring that `/r:refresh` can't handle.
-- `/r:refresh` is for updating governance after codebase changes.
+  codebase restructuring that `/r-refresh` can't handle.
+- `/r-refresh` is for updating governance after codebase changes.
   It preserves user modifications and updates scan-derived content.
 
 ### Performance
@@ -810,8 +810,8 @@ bash commands for stats over reading files into context.
 
 ### Idempotency
 
-If /r:init is run and produces governance files, running /r:init
+If /r-init is run and produces governance files, running /r-init
 again (without `--force`) will NOT modify anything — it detects
-existing governance and directs the user to `/r:refresh`.
+existing governance and directs the user to `/r-refresh`.
 With `--force`, idempotency is explicitly broken — existing
 governance is deleted and regenerated from the current codebase state.
