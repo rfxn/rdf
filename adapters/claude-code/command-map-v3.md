@@ -32,10 +32,8 @@ v3 commands live in `canonical/commands/` and are deployed to
 Claude Code derives the slash command name from the filename:
 - `r-start.md` -> `/r-start`
 
-The `/r-` colon namespace in the spec is the user-facing name. The
-actual Claude Code command uses a hyphen: `/r-start`. Documentation
-and help text should reference `/r-start` but note the actual
-invocation as `/r-start`.
+The `/r-` namespace is the user-facing name. Claude Code derives the
+slash command directly from the filename: `r-start.md` → `/r-start`.
 
 ## Agent Registration
 

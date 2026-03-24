@@ -15,13 +15,13 @@
 [Change] Add evidence verification discipline to all 7 operational modes
 
 ### Parallel Plan Execution
-[New] /r:build --parallel: inter-phase parallel dispatch via dependency graph
-[New] /r:build N-M: range dispatch for specific phase sets
+[New] /r-build --parallel: inter-phase parallel dispatch via dependency graph
+[New] /r-build N-M: range dispatch for specific phase sets
 [New] Structured dependency list format in PLAN.md (machine-parseable)
 [New] Scope-derived isolation: file-gated (multi-file) vs git worktree (cross-cutting/sensitive)
 [New] Parallel failure handling with gate-aware recommendations
 [New] build-progress.md state file for resume and in-flight signals
-[Change] VPE Stage 4: per-phase loop → single /r:build --parallel call
+[Change] VPE Stage 4: per-phase loop → single /r-build --parallel call
 [Change] Dispatcher: PARALLEL_BATCH flag prevents nested parallelism
 
 ### Documentation Convention
@@ -49,7 +49,7 @@
 [Change] Finding vocabulary: shared severity spine + agent-scoped qualifiers (v2 routing restored)
 [Change] Plan metadata: 7 mandatory fields → 4 (Risk/Type/Gates removed)
 [Change] CONCERN reverted to SHOULD-FIX, SUGGESTION reverted to INFORMATIONAL
-[New] /r:vpe — optional end-to-end pipeline orchestrator (spec→plan→build→ship)
+[New] /r-vpe — optional end-to-end pipeline orchestrator (spec→plan→build→ship)
 [New] Scope classification: docs, focused, multi-file, cross-cutting, sensitive
 [New] Finding qualifiers: merge-block, fix-or-refute, workflow-breaking, blocking-concern, etc.
 [New] VPE adaptive intake conversation (1-4 exchanges)
@@ -96,7 +96,7 @@
 [Change] registry.json: tier (full/starter) and detect fields on all profiles
 [Change] init.sh: _detect_profiles() replaces _detect_project_type(), governance merge
 [Remove] _type_to_template(), _type_to_profile(): dead code
-[Remove] security type from init: use /r:mode security instead
+[Remove] security type from init: use /r-mode security instead
 
 ## 3.0.0
 
@@ -104,7 +104,7 @@
 [Change] Universal agent architecture — 6 domain-agnostic agents replace
          12 domain-specific agents
 [Change] Governance initialization model — project data drives agent behavior
-[Change] /r: command namespace — 13 lifecycle + 10 utility commands
+[Change] /r- command namespace — 13 lifecycle + 10 utility commands
 [Change] Profiles become governance seed templates, not agent bundles
 [Change] CC agent name prefix rfxn- -> rdf-
 [Remove] Domain-prefixed agents (sys-eng, fe-qa, sec-eng, etc.)
@@ -120,31 +120,31 @@
 [New] reviewer — adversarial review, challenge + sentinel modes (opus)
 
 ### Lifecycle Commands
-[New] /r:init — governance initialization
-[New] /r:start — session initialization with context anchor
-[New] /r:plan — 5-phase planner workflow
-[New] /r:mode — session-scoped mode switching
-[New] /r:status — project health dashboard
-[New] /r:refresh — governance-aware codebase re-scan
-[New] /r:sync — canonical source pull-back
-[New] /r:audit — full codebase audit with parallel dispatch
-[New] /r:ship — composite release workflow
+[New] /r-init — governance initialization
+[New] /r-start — session initialization with context anchor
+[New] /r-plan — 5-phase planner workflow
+[New] /r-mode — session-scoped mode switching
+[New] /r-status — project health dashboard
+[New] /r-refresh — governance-aware codebase re-scan
+[New] /r-sync — canonical source pull-back
+[New] /r-audit — full codebase audit with parallel dispatch
+[New] /r-ship — composite release workflow
 [New] /build — plan phase execution via dispatcher
 [New] /verify — QA verification via qa subagent
 [New] /test — UAT acceptance via uat subagent
 [New] /review — adversarial review in challenge or sentinel mode
 
 ### Utility Commands
-[New] /r:util:mem-compact — archive stale MEMORY.md entries
-[New] /r:util:doc-gen — generate documentation for specific surfaces
-[New] /r:util:ci-gen — generate CI workflow from test infrastructure
-[New] /r:util:lib-sync — cross-project shared library drift detection
-[New] /r:util:lib-release — shared library release lifecycle
-[New] /r:util:code-scan — structured pattern-class bug finder
-[New] /r:util:code-modernize — codebase maturity assessment
-[New] /r:util:test-dedup — find duplicate/overlapping tests
-[New] /r:util:chg-gen — generate changelog entries from diff
-[New] /r:util:chg-dedup — deduplicate changelog entries
+[New] /r-util-mem-compact — archive stale MEMORY.md entries
+[New] /r-util-doc-gen — generate documentation for specific surfaces
+[New] /r-util-ci-gen — generate CI workflow from test infrastructure
+[New] /r-util-lib-sync — cross-project shared library drift detection
+[New] /r-util-lib-release — shared library release lifecycle
+[New] /r-util-code-scan — structured pattern-class bug finder
+[New] /r-util-code-modernize — codebase maturity assessment
+[New] /r-util-test-dedup — find duplicate/overlapping tests
+[New] /r-util-chg-gen — generate changelog entries from diff
+[New] /r-util-chg-dedup — deduplicate changelog entries
 
 ### Profiles & Modes
 [Change] Profiles restructured from agent bundles to governance seed

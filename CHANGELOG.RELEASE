@@ -27,20 +27,20 @@ Key changes:
 
 ## Parallel Plan Execution
 
-Adds inter-phase parallel dispatch to `/r:build`. The build command
+Adds inter-phase parallel dispatch to `/r-build`. The build command
 reads a structured dependency graph from PLAN.md, computes parallel
 batches, validates file ownership, and dispatches multiple dispatcher
 subagents concurrently with scope-derived isolation.
 
 Key changes:
-- `/r:build --parallel` auto-batches all pending phases by dependency graph
-- `/r:build N-M` dispatches a specific range of phases in parallel
+- `/r-build --parallel` auto-batches all pending phases by dependency graph
+- `/r-build N-M` dispatches a specific range of phases in parallel
 - Isolation auto-derived from scope: file-gated for multi-file, git
   worktree for cross-cutting/sensitive phases. `--worktree` flag overrides.
 - Parallel failure handling with gate-aware recommendations
 - Structured dependency list format (`- Phase N: none` / `- Phase N: [deps]`)
   replaces free-text ASCII dependency graphs
-- VPE Stage 4 calls `/r:build --parallel` once (replaces per-phase loop)
+- VPE Stage 4 calls `/r-build --parallel` once (replaces per-phase loop)
 - Dispatcher PARALLEL_BATCH flag prevents nested parallelism
 
 ---
@@ -110,7 +110,7 @@ Key changes:
 Replaces the risk×type gate selection matrix with a 5-level scope
 classification derived automatically by the dispatcher from phase content.
 Restores v2-style per-agent finding qualifiers for self-routing.
-Adds /r:vpe as an optional end-to-end pipeline orchestrator.
+Adds /r-vpe as an optional end-to-end pipeline orchestrator.
 
 Key changes:
 - Scope classification: dispatcher auto-derives scope (docs, focused,
@@ -121,7 +121,7 @@ Key changes:
   (merge-block, fix-or-refute, workflow-breaking, blocking-concern, etc.)
 - Plan metadata simplified: 7 mandatory fields → 4 (Mode, Accept, Test,
   Edge cases) — Risk, Type, Gates removed from planner surface
-- /r:vpe: optional pipeline orchestrator managing spec→plan→build→ship
+- /r-vpe: optional pipeline orchestrator managing spec→plan→build→ship
   with adaptive intake (1-4 exchanges), approval gates between stages,
   and crash recovery via vpe-progress.md
 
@@ -142,7 +142,7 @@ scaling. The developer surface simplifies to ~6 concepts.
 Key changes:
 - Tiered sentinel depth: lite (2-pass: anti-slop + regression) for
   routine phases, full (4-pass) for scope:cross-cutting, scope:sensitive,
-  end-of-plan, /r:ship, and /r:audit
+  end-of-plan, /r-ship, and /r-audit
 - Counter-hypothesis protocol (unconditional in sentinel mode) prevents
   false positives — every MUST-FIX/CONCERN finding is evaluated against
   location-specific counter-evidence before reporting
@@ -202,17 +202,17 @@ files initialized per-project).
 - **uat** (sonnet) -- user acceptance testing
 - **reviewer** (opus) -- adversarial review (challenge + sentinel modes)
 
-### /r: Command Namespace
+### /r- Command Namespace
 24 commands replace the prior ~68:
-- 14 lifecycle commands: /r:init, /r:start, /r:spec, /r:plan, /r:mode,
-  /r:status, /r:refresh, /r:sync, /r:audit, /r:ship, /build, /verify,
+- 14 lifecycle commands: /r-init, /r-start, /r-spec, /r-plan, /r-mode,
+  /r-status, /r-refresh, /r-sync, /r-audit, /r-ship, /build, /verify,
   /test, /review
-- 10 utility commands under /r:util: namespace
+- 10 utility commands under /r-util- namespace
 
 ### Governance-Driven Profiles
 Profiles no longer bundle agents and commands. All 6 agents and 24 commands
 are always available. Profiles provide governance seed templates that
-/r:init uses to initialize per-project governance files. The governance
+/r-init uses to initialize per-project governance files. The governance
 files shape agent behavior at runtime.
 
 ## Migration from 2.x
@@ -222,7 +222,7 @@ Run `rdf generate claude-code` to regenerate. Symlinks remain unchanged.
 
 ### What Changed
 - Agent names: `rfxn-` prefix replaced by `rdf-` (e.g., `rdf-engineer`)
-- Commands: old slash commands replaced by `/r:` namespace equivalents
+- Commands: old slash commands replaced by `/r-` namespace equivalents
 - Profiles: `profile.json` manifests removed (governance-template.md only)
 - Dispatch: `lib/dispatch-agents.json` and `lib/dispatch-tasks.json` removed
 
