@@ -39,6 +39,5 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 ## Naming Convention
 - Agents: role-only names (`planner`, `engineer`, `qa`, etc.)
 - CC agent names: `rdf-{file-stem}` (e.g., `rdf-engineer`, `rdf-qa`)
-- Lifecycle commands: `/r:{name}` (e.g., `/r:start`, `/r:plan`)
-- Utility commands: `/r:util:{subject}-{verb}` (e.g., `/r:util:mem-compact`)
-- CC slash commands use hyphens: `/r-start`, `/r-util-mem-compact`
+- Lifecycle commands: `/r-{name}` (e.g., `/r-start`, `/r-plan`)
+- Utility commands: `/r-util-{subject}-{verb}` (e.g., `/r-util-mem-compact`)
