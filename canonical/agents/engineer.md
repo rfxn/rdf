@@ -45,3 +45,11 @@ Your result MUST include:
 - Follow governance conventions exactly
 - If governance conflicts with your judgment, follow governance and
   note the concern in your result
+- Comments must be load-bearing. Do not write multi-line docstring
+  headers that restate signatures (`# Arguments:` / `#   $1 — ...`
+  above `local x="$1"`; `@param` blocks above typed signatures).
+  Do not add prose catalogues of config variables, banner separators,
+  or tombstone comments. The rule lives in the project `CLAUDE.md`
+  (Code Comments section, merged from core profile) and the expanded
+  taxonomy is in `.rdf/governance/reference/comment-discipline.md`.
+  This is an AI-context-cost concern, not style

@@ -65,7 +65,10 @@ Default to full if the dispatch prompt does not specify depth.
 Reviews diffs across the passes selected by depth:
 
 1. **Anti-slop** — unnecessary changes, commented-out code, debug
-   artifacts, over-engineering, changes outside the scope of the phase
+   artifacts, over-engineering, comment cruft (multi-line docstring
+   headers that restate signatures, prose config-variable catalogues
+   in file headers, banner separators, tombstone comments), changes
+   outside the scope of the phase
 2. **Regression** — does any existing behavior change? Are there
    pre-existing tests that this change might break? Does the change
    preserve backward compatibility?

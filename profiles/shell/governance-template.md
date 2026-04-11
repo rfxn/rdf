@@ -40,6 +40,14 @@
   `command -v` for discovery; usr-merge differs across distros
 - `eval` with any user-controlled input -- command injection vector
 - `for x in $(cat file)` -- word splits on whitespace AND globbing
+- Multi-line `# Arguments:` headers that restate `local x="$1"` --
+  pure signature restatement; drifts on rename, bloats AI context.
+  One-line headers only unless the function has out-parameters, side
+  effects, or non-obvious caller preconditions
+- Banner separators (`############## Section ##############`) -- add
+  vertical scroll with no navigation value; use a blank line
+- Prose catalogues of config variables in file headers --
+  `${FOO:-default}` at the use site is the source of truth
 
 ## Error Handling
 

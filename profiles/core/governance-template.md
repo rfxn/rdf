@@ -115,6 +115,44 @@ State goes stale; conventions do not.
 - Search for existing helpers before writing new logic -- call
   them, do not re-implement
 
+## Code Comments
+
+Comments explain *why*, not *what*. Code restatement is dead weight in
+every language -- it drifts on rename, bloats AI context on every edit,
+and doubles grep hits for every identifier. Under AI-assisted development
+this is a first-class cost, not a style preference. See
+`reference/comment-discipline.md` for the cost model and per-language
+examples.
+
+Rules (apply to bash, Python, Go, Rust, TypeScript, PHP, Perl alike):
+
+- **One-line function headers only.** `# name args -- purpose` or the
+  language equivalent. Multi-line reserved for out-parameter contracts,
+  side effects, or non-obvious caller preconditions
+- **No signature restatement.** If the next line of code already names
+  the parameter (`local x="$1"`, `def f(x: int):`, `func F(x int)`,
+  `function f(x: number)`), a comment describing `x` is cruft. Delete
+  it. This is the single highest-value rule -- grep for it
+- **No prose catalogues** of config variables, flags, or constants in
+  file headers. The declaration at the use site is the source of truth
+- **No banner separators** (`##### Section #####`, `// ==== Section ====`).
+  One blank line between logical sections
+- **Inline comments** explain intent, not language semantics. Keep
+  short; if the explanation needs prose, move it above the line.
+  Exception: suppression justifications (`2>/dev/null # safe: ...`,
+  `|| true # safe: ...`) must stay on the same line as the suppressed
+  command, no length cap -- the point is to co-locate the reason with
+  the suppression
+- **Tombstone comments** (`# removed`, `// was: foo()`) forbidden --
+  git blame and CHANGELOG are the source of truth for history
+
+Load-bearing comments (keep these): platform quirks, language gotchas
+that surprise readers, suppression justifications (`2>/dev/null # safe: ...`),
+ticket/CVE/upstream-bug references, non-obvious invariants
+(`caller holds $lock -- do not re-acquire`), compatibility floors
+(`bash 4.1: no mapfile -d`). These explain knowledge the reader cannot
+derive from the code.
+
 ## Context Window Hygiene
 
 - Batch independent tool calls into single messages
