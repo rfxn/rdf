@@ -17,6 +17,8 @@ Analyze my Claude Code session history to evaluate prompt cache health.
 
 DATA LOCATION: Parse all JSONL transcript files under ~/.claude/projects/. Recurse into subdirectories but skip any path containing /subagents/. If no JSONL files are found, check if ~/.claude/sessions.db exists and report that the data may be in SQLite format instead.
 
+SESSION GROUPING: A single session can span multiple JSONL files. Group all turns by the sessionId field at the top level of each JSON line. Do NOT treat each JSONL file as a separate session. The session count in the report must reflect unique sessionId values, not file count. When computing per-session metrics (turns per session, context at session end, idle gaps between turns), merge all files sharing the same sessionId and sort their turns by timestamp before analysis.
+
 SCHEMA VERIFICATION: Before the full scan, parse the first 3 JSONL files found. Confirm that:
 - Top-level fields include "timestamp" (ISO string) and "message" (object)
 - message.usage contains cache_read_input_tokens, cache_creation_input_tokens, input_tokens
