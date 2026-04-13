@@ -105,8 +105,10 @@ Gap bucket turns vs expected (total - 2*sessions, within 5%)  [PASS ✓ / FAIL �
 Idle gap distribution (>80% of turns in <1m bucket)           [PASS ✓ / FAIL ✗]
 Zero-total turns (cache_read+create+fresh = 0)                [PASS ✓ / FAIL ✗] (<N> found)
 Weekly continuity (no missing weeks in date range)            [PASS ✓ / FAIL ✗]
+Session grouping (JSONL files vs unique sessionIds)           [PASS ✓ / FAIL ✗] (<N> files, <N> sessions)
+Worst misses turn numbers (no T1 entries unless single-turn)  [PASS ✓ / FAIL ✗]
 
-If any check FAILs, print the failing detail and rerun the analysis before trusting the diagnosis.
+If any check FAILs, diagnose the root cause, fix it, and rerun the full analysis from scratch. Do not print a diagnosis based on data that failed verification.
 
 ===== END AUDIT =====
 ```
