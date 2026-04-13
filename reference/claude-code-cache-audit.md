@@ -30,7 +30,11 @@ PRICING: Detect the model from the message.model field in the JSONL data. Apply 
 If the model string does not match any above, default to Sonnet pricing and flag it in the overview.
 If mixed models are present, report per-model and use a weighted blend for the summary tables.
 
-OUTPUT FORMAT: Render the report exactly as shown below. Do not add narrative paragraphs, commentary, or interpretation between sections. Each section is a header followed by a fixed-width table or key-value block. No prose. Tables only. Save all analysis, interpretation, and recommendations for the DIAGNOSIS section at the end.
+OUTPUT FORMAT: Print the report directly to the conversation as your response. Do not wrap it in a script, do not write it to a file, do not use the Read tool to display it. Render it inline as your reply text.
+
+Do not add narrative paragraphs, commentary, or interpretation between sections. Each section is a header followed by a fixed-width table or key-value block. No prose. Tables only. Save all analysis for the DIAGNOSIS section.
+
+After printing ===== END AUDIT ===== stop. Do not add callouts, notes, summaries, or commentary after the report. The report is the complete response.
 
 ===== CLAUDE CODE CACHE HEALTH AUDIT =====
 
