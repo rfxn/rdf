@@ -1,7 +1,7 @@
 # RDF -- rfxn Development Framework
 
 ![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
-![Version](https://img.shields.io/badge/version-3.0.4-green.svg)
+![Version](https://img.shields.io/badge/version-3.0.5-green.svg)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
@@ -137,10 +137,12 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 |-------|-------|------|-------|
 | **rdf-planner** | opus | Design specs, implementation plans | Full read/write |
 | **rdf-dispatcher** | sonnet | Phase orchestration, TDD cycles | Full read/write |
-| **rdf-engineer** | opus | Implementation via governance protocol | Full read/write |
+| **rdf-engineer** | opus* | Implementation via governance protocol | Full read/write |
 | **rdf-qa** | sonnet | Verification gate (read-only) | Read + execute |
-| **rdf-reviewer** | opus | Adversarial review -- challenge + sentinel (read-only) | Read + execute |
+| **rdf-reviewer** | opus* | Adversarial review -- challenge + sentinel (read-only) | Read + execute |
 | **rdf-uat** | sonnet | User acceptance from end-user persona (read-only) | Read + execute |
+
+*\*Dynamic model routing: dispatcher downgrades engineer to sonnet for `scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet, sentinel stays opus.*
 
 ### Scripts (10)
 

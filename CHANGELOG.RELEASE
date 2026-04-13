@@ -1,3 +1,32 @@
+# RDF 3.0.5 Release Notes
+
+## Model Cost Optimization
+
+Adds scope-based model routing to the dispatcher and challenge-mode
+Sonnet overrides to command dispatch points. The default session model
+shifts from Opus to Sonnet 4.6, with Opus reserved for high-complexity
+agent work (engineer multi-file+, sentinel review, planner subagent).
+
+Key changes:
+- Dispatcher model routing table: scope:docs and scope:focused downgrade
+  engineer to sonnet via Agent model override; multi-file, cross-cutting,
+  and sensitive use the engineer's opus default
+- Reviewer routing: sentinel dispatches stay opus (agent default);
+  challenge dispatches from r-review, r-spec, and r-plan pass
+  model: "sonnet" override
+- Default session model: settings.json gets "model": "claude-sonnet-4-6"
+  — all interactive work, informational commands, and slash commands
+  run on Sonnet; agents with explicit model: frontmatter override
+  the session default at dispatch time
+
+Design rationale: shell constraint density (Bash 4.1 floor, 8+ distros,
+13+ anti-patterns) warrants Opus for implementation and adversarial
+review. Mechanical tasks (docs, changelogs, challenge review) run at
+full quality on Sonnet. Failure mode of a missing override is Opus on
+simple work (waste), never Sonnet on complex work (quality risk).
+
+---
+
 # RDF 3.0.4 Release Notes
 
 ## Pipeline Asset Fix

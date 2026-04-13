@@ -362,8 +362,9 @@ Mark task "Challenge review and user approval" as `in_progress`.
 ### 3.1 Plan Review
 
 After writing the full plan, dispatch the reviewer agent in challenge
-mode. The dispatch prompt must include the quality standard as an
-explicit checklist:
+mode with `model: "sonnet"`. Challenge review is structural
+pattern-matching — Sonnet handles it at full quality. The dispatch prompt
+must include the quality standard as an explicit checklist:
 
 ```
 Review this implementation plan against the quality standard. Each

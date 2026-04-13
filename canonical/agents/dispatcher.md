@@ -108,6 +108,27 @@ User-facing modifier (any scope level):
 
 Default (cannot determine scope): scope:multi-file
 
+Model routing (engineer dispatch):
+  scope:docs          → pass model: "sonnet" to engineer dispatch
+  scope:focused       → pass model: "sonnet" to engineer dispatch
+  scope:multi-file    → no override (engineer default: opus)
+  scope:cross-cutting → no override (engineer default: opus)
+  scope:sensitive     → no override (engineer default: opus)
+
+  When dispatching the engineer subagent, include the model parameter
+  in the Agent call if the scope requires a downgrade. Omit the model
+  parameter for multi-file and above — the agent's frontmatter default
+  (opus) applies automatically.
+
+Model routing (reviewer dispatch):
+  Gate 3 (sentinel)     → no override (reviewer default: opus)
+  End-of-plan sentinel  → no override (reviewer default: opus)
+
+  Note: challenge-mode reviewer dispatches originate from commands
+  (r-review, r-spec, r-plan), not from the dispatcher. Those commands
+  pass model: "sonnet" for challenge mode. The dispatcher only
+  dispatches sentinel reviews.
+
 ### Parallel Gate Execution (dispatcher-internal)
 
 When both Gate 2 (QA) and Gate 3 (sentinel) are triggered, dispatch

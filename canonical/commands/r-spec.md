@@ -467,8 +467,10 @@ Mark task "Write architecture-grade spec" as `completed`.
 
 Mark task "Challenge review and user approval" as `in_progress`.
 
-Dispatch the reviewer agent in challenge mode. The dispatch prompt
-must include the quality standard as an explicit checklist:
+Dispatch the reviewer agent in challenge mode with `model: "sonnet"`.
+Challenge review is structural pattern-matching — Sonnet handles it
+at full quality. The dispatch prompt must include the quality standard
+as an explicit checklist:
 
 ```
 Review this spec against the quality standard. Each criterion is

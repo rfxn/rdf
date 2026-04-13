@@ -1,5 +1,15 @@
 # RDF Changelog
 
+## 3.0.5
+
+### Model Cost Optimization
+[New] Dispatcher: scope-based model routing for engineer dispatch (sonnet for docs/focused, opus for multi-file+)
+[New] Dispatcher: reviewer model routing documentation (sentinel stays opus, challenge dispatches on sonnet)
+[Change] r-review: challenge mode dispatches reviewer on sonnet via model override
+[Change] r-spec: challenge review dispatches reviewer on sonnet via model override
+[Change] r-plan: challenge review dispatches reviewer on sonnet via model override
+[Change] Default session model: claude-sonnet-4-6 (settings.json)
+
 ## 3.0.4
 
 ### Pipeline Asset Fix
