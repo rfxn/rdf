@@ -24,12 +24,10 @@ SCHEMA VERIFICATION: Before the full scan, parse the first 3 JSONL files found. 
 If the schema does not match, stop and report what you found instead of proceeding with bad data.
 
 PRICING: Detect the model from the message.model field in the JSONL data. Apply the correct 5-minute cache tier pricing (per 1M tokens):
-- Opus 4.6/4.5:   input $5,    cache_create $6.25,   cache_read $0.50
-- Opus 4.1/4.0:   input $15,   cache_create $18.75,  cache_read $1.50
-- Sonnet 4.x/3.7: input $3,    cache_create $3.75,   cache_read $0.30
-- Haiku 4.5:      input $1,    cache_create $1.25,   cache_read $0.10
-- Haiku 3.5:      input $0.80, cache_create $1,      cache_read $0.08
-If the model string does not match any above, default to Sonnet 4.x pricing and flag it in the overview.
+- Opus (claude-opus-4-6, claude-opus-4-5):     input $5,  cache_create $6.25,  cache_read $0.50
+- Sonnet (claude-sonnet-4-6, claude-sonnet-4-5, claude-sonnet-4-*): input $3,  cache_create $3.75,  cache_read $0.30
+- Haiku (claude-haiku-4-5):                     input $1,  cache_create $1.25,  cache_read $0.10
+If the model string does not match any above, default to Sonnet pricing and flag it in the overview.
 If mixed models are present, report per-model and use a weighted blend for the summary tables.
 
 OUTPUT FORMAT: Render the report exactly as shown below. Do not add narrative paragraphs, commentary, or interpretation between sections. Each section is a header followed by a fixed-width table or key-value block. No prose. Tables only. Save all analysis, interpretation, and recommendations for the DIAGNOSIS section at the end.
@@ -122,9 +120,9 @@ Idle-gap cost as % of total         <N>%
 
 **The Cliff**: Cache hit rate does not decay gradually. It drops from ~87% to ~3% between the 30-60 minute and 60+ minute idle windows. This is a cliff, not a curve.
 
-**Rebuild Cost**: When cache expires, the full conversation context rebuilds at cache creation pricing (12.5x read rate, same ratio across all models). A 145k session on Opus 4.6 costs ~$0.91 to rebuild vs ~$0.08 when cached. On Opus 4.1: ~$2.72 vs ~$0.25.
+**Rebuild Cost**: When cache expires, the full conversation context rebuilds at cache creation pricing (12.5x read rate, same ratio across all models). A 145k session on Opus 4.6 costs ~$0.91 to rebuild vs ~$0.08 when cached.
 
-**Fixed Overhead**: Claude Code loads ~15k tokens of system prompt and tool schemas on every turn. This overhead is cached during active use but rebuilds on every cache miss, adding ~$0.09 (Opus 4.6) or ~$0.28 (Opus 4.1) to every idle-gap penalty.
+**Fixed Overhead**: Claude Code loads ~15k tokens of system prompt and tool schemas on every turn. This overhead is cached during active use but rebuilds on every cache miss, adding ~$0.09 (Opus 4.6) to every idle-gap penalty.
 
 ## Workflow Recommendations
 
