@@ -72,24 +72,12 @@ Gap          Turns    AvgRead    AvgCreate    Hit%     $/turn    Verdict
 
 Verdict column: 🟢 hit% >90, 🟡 hit% 50-90, 🔴 hit% <50
 
-⏱️ CACHE CLIFF DETECTION
-Minute    Samples    Hit%     Visual
-──────────────────────────────────────
-<N>m      <N>        <N>%     <bar of █ chars, 20 wide, proportional to hit%>
-
-Show from cliff-5 to cliff+5. Minimum 2 samples per bucket. Mark the cliff row with ← CLIFF.
-
 💀 WORST CACHE MISSES
 Date         Project                  Turn    Gap       Context    Created    Read
 ─────────────────────────────────────────────────────────────────────────────────
 MM-DD HH:MM  <name>                   T<N>    <N>m      <N>k       <N>k       <N>k
 
 Filter: context >100k AND cache_create >50% of total AND gap >5 min. Top 10 by created.
-
-✅ VERIFICATION CHECKSUMS
-- Weekly table total vs overview total: [PASS ✓ / FAIL ✗] (delta: <N>%)
-- Gap bucket turns vs expected (total turns - 2*sessions): [PASS ✓ / FAIL ✗] (delta: <N>%)
-If either FAIL, rerun the analysis before printing diagnosis.
 
 🩺 DIAGNOSIS
 Metric                              Value
@@ -102,6 +90,17 @@ Idle-gap cost as % of total         <N>%
 
 → Top recommendation:              <one sentence>
 → Biggest risk:                     <one sentence>
+
+✅ VERIFICATION CHECKSUMS
+Check                                                         Result
+──────────────────────────────────────────────────────────────────────
+Weekly totals vs overview total (within 1%)                   [PASS ✓ / FAIL ✗]
+Gap bucket turns vs expected (total - 2*sessions, within 5%)  [PASS ✓ / FAIL ✗]
+Idle gap distribution (>80% of turns in <1m bucket)           [PASS ✓ / FAIL ✗]
+Zero-total turns (cache_read+create+fresh = 0)                [PASS ✓ / FAIL ✗] (<N> found)
+Weekly continuity (no missing weeks in date range)            [PASS ✓ / FAIL ✗]
+
+If any check FAILs, print the failing detail and rerun the analysis before trusting the diagnosis.
 
 ===== END AUDIT =====
 ```
