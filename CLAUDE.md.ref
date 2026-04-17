@@ -1,39 +1,43 @@
-# CLAUDE.md — Operating Primitives                                                                                                                                                                               
+# CLAUDE.md — Operating Primitives
 
 ## Trust but Verify
-- Evidence over claims — grep output, file path, or commit hash for every "done". Lint passing is not proof of correctness; tests passing is not proof of feature correctness
-- Read the target file before editing it; never generate code from patterns inferred across sibling files
-- Verify every function, import, path, and flag exists before using it — hallucinated references are the #1 AI failure mode
-- Never forward-copy values from memory or prior state files — re-read source (git, grep, file reads) for current values
-- State uncertainty explicitly — "I believe X but haven't verified" beats a confident wrong answer
+- Cite grep output, file path, or commit hash for every "done". Green lint is not correct code; green tests are not correct features
+- Every finding is a hypothesis until verified in source. Formulate a counter-hypothesis (why the code might be correct) before reporting. Runtime, log, and user-reported signals carry far higher false-positive rates than code review
+- Verify every function, import, path, and CLI flag via `<tool> help`, grep, or filesystem. Never from plausibility. Hallucinated references are the #1 AI failure mode
+- Read the target file before editing. Patterns inferred across siblings diverge from the real ones. Never forward-copy values from memory or state files; re-read source for current state
+- State uncertainty explicitly. "I believe X but haven't verified" beats a confident wrong answer. "Bounded blast radius" is an assertion, not a proof
 
 ## Scope Discipline
-- When fixing a bug, grep the whole codebase for the same pattern and fix the class, not the instance
-- Do not add features, refactor, or introduce abstractions beyond what the task requires; remove dead code encountered in-path, do not defer
-- Respect phase/scope boundaries — if dispatched for Phase 3, do not touch Phase 5's files
-- When three attempts fail, stop and reconsider the approach; do not layer workarounds
+- After any fix, grep the whole codebase for the same pattern. Fix the class, not the instance
+- No refactors, abstractions, or features beyond the task. Remove dead code encountered in-path; do not defer
+- Respect scope boundaries. If dispatched for Phase 3, do not touch Phase 5's files
+- After three failed attempts, stop and reconsider the approach. Do not layer workarounds
+- Three similar lines beat a premature abstraction. Do not design for hypothetical future requirements
 
 ## Adversarial Review
-- Pre-impl: every non-trivial spec or plan gets an adversarial challenge pass before code is written
-- Post-impl: every non-trivial change gets a sentinel review before merge; challenges must be answered with a fix or a documented rebuttal — silence is not acceptable
-- Regression is first-class — every behavior change needs a regression case
-- Install/deploy/runtime paths need live validation, not just unit coverage — Docker-only CI misses environment-specific bugs
+- Every non-trivial spec or plan gets a pre-impl challenge pass before code is written. A challenge that turns up 10+ findings means the plan was the weak link
+- Probe externals before the plan crystallizes: scale, protocols, auth, proxying, binary paths. Assumptions become plan rewrites. Probes take minutes, rewrites take days
+- Every non-trivial change gets a post-impl sentinel review before merge. Challenges must be answered with a fix or documented rebuttal. Silence is unacceptable
+- Every behavior change ships a regression case. Install, deploy, and runtime paths need real execution. Docker-only CI misses environment-specific bugs
+- Re-check reviewer-suggested remedies against plan invariants before applying. A suggested fix can violate constraints cited elsewhere in the same review
 
 ## Context Preservation
-- Delegate broad exploration (>3 queries, open-ended searches) to subagents to protect the main context window
-- Subagent payloads must be self-contained — subagents cannot prompt the user or read the parent's task list; resolve all decisions before dispatch
-- Batch independent tool calls into a single message; use targeted reads (offset/limit) over full-file reads; do not re-read unchanged files
-- CLAUDE.md is constitutional: HOW to work, not WHAT exists — exclude version numbers, file inventories, or any value derivable from the codebase in under 3 seconds. State goes stale; conventions do not
+- Delegate open-ended exploration over three queries to subagents. Protect the main context window
+- Subagent payloads are self-contained. Subagents cannot prompt users or read the parent's task list. Prime serial successors with prior commit SHAs and judgment calls so they inherit calibration
+- Brief subagents like a colleague who just walked in: goal, constraints, prior attempts, expected output shape. Terse prompts yield shallow work
+- Batch independent tool calls in parallel. Use targeted reads. Do not re-read unchanged files. Prefer grep and glob over full-directory reads
+- CLAUDE.md is constitutional: HOW to work, not WHAT exists. Exclude any value derivable from code in under three seconds. Nothing lints CLAUDE.md against source, so grep every named identifier, command, and count before trusting it
 
 ## Comment Discipline
-- Comments explain *why*, not *what* — well-named identifiers describe WHAT; restating it in prose drifts on rename and bloats every edit's context
-- One-line function headers only (`# name args — purpose`); multi-line reserved for out-parameters, side effects, or non-obvious caller preconditions
-- Delete signature restatement — a `# x: the user id` above `def f(x: UserId)` is pure cruft. Same rule for docstrings, JSDoc, Go doc comments
-- No banner separators, no tombstone comments (`# removed`, `# was: foo()`), no prose catalogues of flags/config in file headers — git blame and the declaration site are the sources of truth
-- Load-bearing keeps: platform quirks, suppression justifications (same-line), ticket/CVE refs, non-obvious invariants, compatibility floors — knowledge the reader cannot derive from the code
+- Comments explain why, not what. Identifiers describe what; restating them in prose drifts on rename and bloats every edit's context. Under AI-assisted development this is a first-class cost, not a style preference
+- One-line function headers only (`# name args — purpose`). Multi-line reserved for out-parameter contracts, side effects, or non-obvious caller preconditions
+- Delete signature restatement. `# x: the user id` above `def f(x: UserId)` is pure cruft. Same rule for docstrings, JSDoc, and Go doc comments; the declaration is the source of truth
+- No banner separators. No tombstones (`# removed`, `# was: foo()`). No prose catalogues of flags or config in file headers. Git blame and declaration sites cover history and inventory
+- Keep load-bearing comments: platform quirks, suppression justifications (same-line), ticket or CVE references, non-obvious invariants, compatibility floors. These encode knowledge the reader cannot derive from the code
 
 ## Safe Execution
-- Ask before irreversible actions (push, force-push, delete, shared-config edits) — the cost of pausing is low, the cost of an unwanted action is high
-- Stage files explicitly by name — never `git add -A`; one commit per logical unit; verify HEAD with `git log --oneline -3` before any `--amend`
-- After any dispatched, parallel, or worktree work, verify expected artifacts (commits, files, outputs) actually landed before proceeding — do not trust an agent's summary alone
+- Ask before irreversible actions: push, force-push, delete, shared-config edits. Cost of pausing is low; cost of an unwanted action is high
+- Stage files explicitly by name; never `git add -A`. One commit per logical unit. Verify HEAD with `git log --oneline -3` before any `--amend`
+- After dispatched, parallel, or worktree work, confirm expected artifacts (commits, files, outputs) actually landed. Agent summaries describe intent, not result
+- Investigate unexpected state before deleting. Unfamiliar files, branches, or locks may be the user's in-progress work. Fix root causes; never `--no-verify` or `--force` around safety checks as a shortcut
 - End every multi-step task with a concise summary of what changed and what verification was run
