@@ -1,4 +1,4 @@
-# CLAUDE.md — Operating Primitives
+# CLAUDE.md — Operating Primitives                                                                                                                                                                               
 
 ## Trust but Verify
 - Evidence over claims — grep output, file path, or commit hash for every "done". Lint passing is not proof of correctness; tests passing is not proof of feature correctness
@@ -24,6 +24,13 @@
 - Subagent payloads must be self-contained — subagents cannot prompt the user or read the parent's task list; resolve all decisions before dispatch
 - Batch independent tool calls into a single message; use targeted reads (offset/limit) over full-file reads; do not re-read unchanged files
 - CLAUDE.md is constitutional: HOW to work, not WHAT exists — exclude version numbers, file inventories, or any value derivable from the codebase in under 3 seconds. State goes stale; conventions do not
+
+## Comment Discipline
+- Comments explain *why*, not *what* — well-named identifiers describe WHAT; restating it in prose drifts on rename and bloats every edit's context
+- One-line function headers only (`# name args — purpose`); multi-line reserved for out-parameters, side effects, or non-obvious caller preconditions
+- Delete signature restatement — a `# x: the user id` above `def f(x: UserId)` is pure cruft. Same rule for docstrings, JSDoc, Go doc comments
+- No banner separators, no tombstone comments (`# removed`, `# was: foo()`), no prose catalogues of flags/config in file headers — git blame and the declaration site are the sources of truth
+- Load-bearing keeps: platform quirks, suppression justifications (same-line), ticket/CVE refs, non-obvious invariants, compatibility floors — knowledge the reader cannot derive from the code
 
 ## Safe Execution
 - Ask before irreversible actions (push, force-push, delete, shared-config edits) — the cost of pausing is low, the cost of an unwanted action is high
