@@ -1,0 +1,32 @@
+# CLAUDE.md — Operating Primitives
+
+## Trust but Verify
+- Evidence over claims — grep output, file path, or commit hash for every "done". Lint passing is not proof of correctness; tests passing is not proof of feature correctness
+- Read the target file before editing it; never generate code from patterns inferred across sibling files
+- Verify every function, import, path, and flag exists before using it — hallucinated references are the #1 AI failure mode
+- Never forward-copy values from memory or prior state files — re-read source (git, grep, file reads) for current values
+- State uncertainty explicitly — "I believe X but haven't verified" beats a confident wrong answer
+
+## Scope Discipline
+- When fixing a bug, grep the whole codebase for the same pattern and fix the class, not the instance
+- Do not add features, refactor, or introduce abstractions beyond what the task requires; remove dead code encountered in-path, do not defer
+- Respect phase/scope boundaries — if dispatched for Phase 3, do not touch Phase 5's files
+- When three attempts fail, stop and reconsider the approach; do not layer workarounds
+
+## Adversarial Review
+- Pre-impl: every non-trivial spec or plan gets an adversarial challenge pass before code is written
+- Post-impl: every non-trivial change gets a sentinel review before merge; challenges must be answered with a fix or a documented rebuttal — silence is not acceptable
+- Regression is first-class — every behavior change needs a regression case
+- Install/deploy/runtime paths need live validation, not just unit coverage — Docker-only CI misses environment-specific bugs
+
+## Context Preservation
+- Delegate broad exploration (>3 queries, open-ended searches) to subagents to protect the main context window
+- Subagent payloads must be self-contained — subagents cannot prompt the user or read the parent's task list; resolve all decisions before dispatch
+- Batch independent tool calls into a single message; use targeted reads (offset/limit) over full-file reads; do not re-read unchanged files
+- CLAUDE.md is constitutional: HOW to work, not WHAT exists — exclude version numbers, file inventories, or any value derivable from the codebase in under 3 seconds. State goes stale; conventions do not
+
+## Safe Execution
+- Ask before irreversible actions (push, force-push, delete, shared-config edits) — the cost of pausing is low, the cost of an unwanted action is high
+- Stage files explicitly by name — never `git add -A`; one commit per logical unit; verify HEAD with `git log --oneline -3` before any `--amend`
+- After any dispatched, parallel, or worktree work, verify expected artifacts (commits, files, outputs) actually landed before proceeding — do not trust an agent's summary alone
+- End every multi-step task with a concise summary of what changed and what verification was run
