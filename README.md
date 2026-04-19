@@ -440,7 +440,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
 | **[CHANGELOG](CHANGELOG)** | Development history |
-| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.4) |
+| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.5) |
 
 ---
 
