@@ -5,6 +5,11 @@ Inherits conventions from the parent workspace CLAUDE.md at
 testing norms). Project-specific rules below override parent defaults where
 explicit.
 
+Also read `CLAUDE.md.ref` in this directory — a condensed 6-section operating-
+primitives reference (Trust but Verify, Scope Discipline, Adversarial Review,
+Context Preservation, Comment Discipline, Safe Execution). These are
+cross-cutting behavioral invariants, not RDF-specific conventions.
+
 ## About
 RDF (rfxn Development Framework) — convention governance, agent pipelines,
 and project orchestration for the rfxn ecosystem. Tool-agnostic by design.

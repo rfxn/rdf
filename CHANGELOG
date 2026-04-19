@@ -2,6 +2,9 @@
 
 ## 3.0.5
 
+### CLAUDE.md.ref Integration
+[Change] CLAUDE.md: reference CLAUDE.md.ref (operating primitives — Trust but Verify, Scope Discipline, Adversarial Review, Context Preservation, Comment Discipline, Safe Execution); file was added via GitHub UI on 2026-04-17 but never wired into the workflow; this commit takes local ownership going forward and makes it discoverable from the project's top-level CLAUDE.md
+
 ### Docs Quality Overhaul
 [Change] README.md: restructured to numbered sections (## 1-11), new `## 3. Configuration` section covering environment variables + per-project setup + convention inheritance chain, new `## 4. Usage` section consolidating Command Reference + CLI Reference + exit codes table, new `## License` section; updated counts from 31 commands / 10 scripts to 33 / 12; added 2 new scripts to table (comment-metrics.sh, comment-snapshot.sh); updated utility commands list to include /r-audit-slop and /r-context-audit; updated directory tree to show state/ helpers (rdf-state.sh, context-audit.sh, rotate-work-output.sh); updated doctor scope count to 7 checks (added content-drift)
 [Change] lib/cmd/doctor.sh: relax README section checks to accept optional `## N. ` numbered prefix on Quick Start / Configuration / Usage — consistent with the same file's numbered-sections requirement; prior regex required literal `## Quick Start` which conflicted with numbered-section convention
