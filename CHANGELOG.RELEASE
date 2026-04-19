@@ -1,5 +1,16 @@
 # RDF 3.0.5 Release Notes
 
+## Stale Artifact Cleanup
+
+Backlog sweep of stale files identified in the 2026-04-19 framework audit.
+Deleted `.pytest_cache/` from the RDF repo (no Python tests). Removed a
+521 KB APF branch-diff patch (34 days old) and a 60 KB s3perf misfiled
+plan from `.rdf/memory/`. Ran `rotate-work-output.sh` live against four
+high-file-count projects: LMD (227 pruned), BFD (175), Sigforge (150),
+APF (119). Two conditional targets — `session-safety.md` and
+`docs/superpowers/` — were preserved after grep confirmed active
+references in `docs/`.
+
 ## Work-Output Rotation
 
 Introduces `state/rotate-work-output.sh`, a defensive automation script

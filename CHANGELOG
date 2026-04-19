@@ -2,6 +2,13 @@
 
 ## 3.0.5
 
+### Stale Artifact Cleanup
+[Remove] .pytest_cache/: deleted from RDF repo root — RDF has no Python tests; stale artifact from an aborted path
+[Remove] advanced-policy-firewall: full-branch-diff.patch (521 KB, 34 days old) deleted from .rdf/work-output/
+[Remove] s3perf: PLAN-tier0-909cbaa-239722c.md (60 KB) deleted from .rdf/memory/ — misfiled plan
+[Change] Run live rotation via rotate-work-output.sh against 4 projects (LMD: 227 pruned, BFD: 175, Sigforge: 150, APF: 119)
+[Change] session-safety.md and docs/superpowers/: SKIPPED — both have active references in docs/; preserved per governance (grep evidence in phase report)
+
 ### Work-Output Rotation
 [New] state/rotate-work-output.sh: age-based pruning of *.md result files (default 14-day mtime threshold) with PLAN.md cross-reference guard to preserve active phase files; size-based truncation of agent-feed.log to last 1000 lines when file exceeds 100 KB; --dry-run, --age, and --size-cap flags
 [Change] rdf generate claude-code: deploys rotate-work-output.sh to ~/.rdf/state/ alongside rdf-state.sh and context-audit.sh
