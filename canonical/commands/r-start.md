@@ -6,16 +6,11 @@ enough context to continue where the last session left off.
 
 ## Progress Tracking
 
-**If TaskCreate tool is available** (Claude Code):
-```
-TaskCreate: subject: "Initialize session"
-  activeForm: "Loading project context"
-```
+See [reference/progress-tracking.md](../reference/progress-tracking.md).
+Single task: `Initialize session` / activeForm: `Loading project context`.
 Mark `in_progress` at start, `completed` before the dashboard.
 
-**If TaskCreate is NOT available** (Gemini CLI, Codex):
-Output `- [ ] Loading project context...` before starting.
-Replace with `- [x] Session loaded` when complete.
+Fallback (Gemini CLI, Codex): `- [ ] Loading project context...` → `- [x] Session loaded`.
 
 ## Protocol
 

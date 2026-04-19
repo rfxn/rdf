@@ -2,6 +2,12 @@
 
 ## 3.0.5
 
+### Progress Tracking Reference
+[New] canonical/reference/progress-tracking.md: canonical superset of the Progress Tracking protocol — CRITICAL batch-creation rule, TaskCreate branch with activeForm example, in_progress/completed guidance, >30s spinner note, N/A phase handling, checkbox fallback for Gemini CLI/Codex
+[Change] canonical/commands/r-init.md: replace 36-line inline Progress Tracking block with reference link + compact task-name list for /r-init's 5 phases
+[Change] canonical/commands/r-start.md: replace 12-line inline Progress Tracking block with reference link + single-task spec (Initialize session) and fallback note
+[Change] canonical/commands/r-save.md: replace 35-line inline Progress Tracking block with reference link + compact task-name list for /r-save's 6 phases
+
 ### Doctor Content-Drift Detection
 [New] adapters/claude-code/adapter.sh: emit .rdf-hash sidecar next to each deployed agent and command file during 'rdf generate claude-code'; sidecar contains SHA-256 of canonical source body (pre-frontmatter); sha1sum fallback if sha256sum absent
 [New] lib/cmd/doctor.sh: add content-drift check scope; hashes deployed file body (YAML frontmatter stripped for agents) and compares to .rdf-hash sidecar; FAIL with specific file name on mismatch; WARN on missing sidecar (directs user to regenerate); usable as --scope content-drift or as part of full 'rdf doctor' run

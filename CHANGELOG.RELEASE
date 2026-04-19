@@ -1,5 +1,13 @@
 # RDF 3.0.5 Release Notes
 
+## Progress Tracking Reference
+
+Consolidates the duplicated "Progress Tracking" block from `r-init`, `r-start`,
+and `r-save` into a single canonical reference file at
+`canonical/reference/progress-tracking.md`. Each command now links to the shared
+protocol and retains only its command-specific task names. Eliminates ~53 lines
+of duplicated boilerplate across the three command files.
+
 ## Doctor Content-Drift Detection
 
 `rdf generate claude-code` now writes a `.rdf-hash` sidecar file next to each
