@@ -102,7 +102,7 @@ If arguments contain a range (N-M) or --parallel:
 Read all phases from PLAN.md and create a task for each one:
 
 ```
-For each phase in PLAN.md:
+For each phase in PLAN.md, in phase order, one TaskCreate per message:
   TaskCreate:
     subject: "Phase {N}: {description}"
     activeForm: "Building Phase {N}: {short desc}"
@@ -110,6 +110,12 @@ Mark already-complete phases as completed immediately.
 Mark target phase as in_progress before dispatching.
 Mark target phase as completed when dispatcher returns PASS.
 ```
+
+Issue each `TaskCreate` in its own message — see
+[reference/progress-tracking.md](../reference/progress-tracking.md).
+Do NOT batch phase TaskCreates in a single message: parallel
+execution produces non-deterministic display order (e.g. Phase 1,
+7, 6, 5, 3, 4, 2 instead of 1-7).
 
 ### 4. Load Governance Context
 

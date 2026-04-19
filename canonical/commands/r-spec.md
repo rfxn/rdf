@@ -44,6 +44,10 @@ TaskCreate:
   activeForm: "Reviewing spec"
 ```
 
+Issue each `TaskCreate` in its own message, in the order shown — see
+[reference/progress-tracking.md](../reference/progress-tracking.md)
+for why parallel batches break display order.
+
 Lifecycle: all tasks start `pending`. Before starting each phase,
 mark its task `in_progress` (shows spinner with activeForm text).
 After completing each phase, mark its task `completed`.

@@ -41,6 +41,10 @@ TaskCreate:
   activeForm: "Presenting summary"
 ```
 
+Issue each `TaskCreate` in its own message, in the order shown — see
+[reference/progress-tracking.md](../reference/progress-tracking.md)
+for why parallel batches break display order.
+
 Lifecycle: all tasks start pending. Before starting each stage,
 mark its task in_progress. After completing, mark completed.
 
