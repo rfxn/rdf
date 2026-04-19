@@ -1,5 +1,16 @@
 # RDF 3.0.5 Release Notes
 
+## Hang Prevention
+
+Wraps all 14 git invocations in `rdf-state.sh` with a `TIMEOUT_PREFIX`
+variable ("timeout 30") to prevent indefinite stalls. Affected scenarios:
+`HEAD...@{u}` on an orphaned tracking branch, `.git/index.lock` held by a
+crashed process, or a slow/unreachable remote. The `|| echo "<fallback>"`
+patterns already silenced error output; they now also catch the non-zero
+exit from a fired timeout, so each field degrades gracefully to its
+fallback value. On systems without the `timeout` binary (CentOS 6 minimal),
+`TIMEOUT_PREFIX` is empty and git calls behave as before.
+
 ## Session Startup Fix
 
 Eliminates the `find /` fallback in `/r-start` that caused 120s sandbox

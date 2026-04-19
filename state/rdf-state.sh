@@ -2,16 +2,24 @@
 # state/rdf-state.sh — Deterministic project state snapshot
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
-# Usage: rdf-state.sh [--full] [project-path]
+# Usage: rdf-state.sh [--full] [--no-insights] [project-path]
 # Output: JSON to stdout
 # --full: include extended fields for /r-start dashboard
+# --no-insights: omit global insights array (caller reads once)
 set -euo pipefail
 
+# timeout wrapper — empty on systems without the binary (CentOS 6 minimal)
+if command -v timeout >/dev/null 2>&1; then TIMEOUT_PREFIX="timeout 30"; else TIMEOUT_PREFIX=""; fi
+
 _full_mode=0
-if [[ "${1:-}" == "--full" ]]; then
-    _full_mode=1
-    shift
-fi
+_skip_insights=0
+while [[ "${1:-}" == --* ]]; do
+    case "$1" in
+        --full) _full_mode=1; shift ;;
+        --no-insights) _skip_insights=1; shift ;;
+        *) break ;;
+    esac
+done
 
 _project_path="${1:-.}"
 
@@ -66,37 +74,37 @@ _unpushed=0
 _dirty_files="[]"
 _recent_commits="[]"
 
-if git -C "$_project_path" rev-parse --git-dir >/dev/null 2>&1; then
+if $TIMEOUT_PREFIX git -C "$_project_path" rev-parse --git-dir >/dev/null 2>&1; then
     _is_git="true"
-    _branch="$(git -C "$_project_path" branch --show-current 2>/dev/null || echo "")"
+    _branch="$($TIMEOUT_PREFIX git -C "$_project_path" branch --show-current 2>/dev/null || echo "")"
 
-    if ! git -C "$_project_path" diff --quiet 2>/dev/null || \
-       ! git -C "$_project_path" diff --cached --quiet 2>/dev/null; then
+    if ! $TIMEOUT_PREFIX git -C "$_project_path" diff --quiet 2>/dev/null || \
+       ! $TIMEOUT_PREFIX git -C "$_project_path" diff --cached --quiet 2>/dev/null; then
         _dirty="true"
     fi
 
-    _uncommitted="$(git -C "$_project_path" status --porcelain 2>/dev/null | wc -l)"
+    _uncommitted="$($TIMEOUT_PREFIX git -C "$_project_path" status --porcelain 2>/dev/null | wc -l)"
     _uncommitted="${_uncommitted##* }"
 
-    _last_hash="$(git -C "$_project_path" rev-parse --short HEAD 2>/dev/null || echo "")"
+    _last_hash="$($TIMEOUT_PREFIX git -C "$_project_path" rev-parse --short HEAD 2>/dev/null || echo "")"
 
-    local_epoch="$(git -C "$_project_path" log -1 --format='%ct' 2>/dev/null || echo "0")"
+    local_epoch="$($TIMEOUT_PREFIX git -C "$_project_path" log -1 --format='%ct' 2>/dev/null || echo "0")"
     now_epoch="$(date +%s)"
     if [[ "$local_epoch" -gt 0 ]]; then
         _last_age_hours=$(( (now_epoch - local_epoch) / 3600 ))
     fi
 
-    _last_age_human="$(git -C "$_project_path" log -1 --format='%cr' 2>/dev/null || echo "unknown")"
+    _last_age_human="$($TIMEOUT_PREFIX git -C "$_project_path" log -1 --format='%cr' 2>/dev/null || echo "unknown")"
 
-    _tag="$(git -C "$_project_path" describe --tags --abbrev=0 2>/dev/null || echo "")"
+    _tag="$($TIMEOUT_PREFIX git -C "$_project_path" describe --tags --abbrev=0 2>/dev/null || echo "")"
     if [[ -n "$_tag" ]]; then
-        _commits_since_tag="$(git -C "$_project_path" rev-list "${_tag}..HEAD" --count 2>/dev/null || echo "0")"
+        _commits_since_tag="$($TIMEOUT_PREFIX git -C "$_project_path" rev-list "${_tag}..HEAD" --count 2>/dev/null || echo "0")"
     else
-        _commits_since_tag="$(git -C "$_project_path" rev-list HEAD --count 2>/dev/null || echo "0")"
+        _commits_since_tag="$($TIMEOUT_PREFIX git -C "$_project_path" rev-list HEAD --count 2>/dev/null || echo "0")"
     fi
 
     # Upstream status
-    _unpushed="$(git -C "$_project_path" rev-list --count HEAD...@{u} 2>/dev/null || echo "0")"
+    _unpushed="$($TIMEOUT_PREFIX git -C "$_project_path" rev-list --count HEAD...@{u} 2>/dev/null || echo "0")"
 
     # Full mode: dirty file names, recent commits
     if [[ "$_full_mode" -eq 1 ]]; then
@@ -106,7 +114,7 @@ if git -C "$_project_path" rev-parse --git-dir >/dev/null 2>&1; then
             [[ -z "$_df" ]] && continue
             _df="${_df:3}"  # strip status prefix
             _df_list="${_df_list}\"$(_json_str "$_df")\","
-        done < <(git -C "$_project_path" status --porcelain 2>/dev/null | head -5)
+        done < <($TIMEOUT_PREFIX git -C "$_project_path" status --porcelain 2>/dev/null | head -5)
         _df_list="${_df_list%,}"
         _dirty_files="[${_df_list}]"
 
@@ -117,7 +125,7 @@ if git -C "$_project_path" rev-parse --git-dir >/dev/null 2>&1; then
             _hash="${_rc%% *}"
             _msg="${_rc#* }"
             _rc_list="${_rc_list}{\"hash\":\"$(_json_str "$_hash")\",\"message\":\"$(_json_str "$_msg")\"},"
-        done < <(git -C "$_project_path" log --oneline -5 2>/dev/null)
+        done < <($TIMEOUT_PREFIX git -C "$_project_path" log --oneline -5 2>/dev/null)
         _rc_list="${_rc_list%,}"
         _recent_commits="[${_rc_list}]"
     fi
@@ -156,11 +164,11 @@ if [[ "$_plan_exists" == "true" ]]; then
     [[ -z "$_plan_pending" ]] && _plan_pending=0
 fi
 
-# Work output files
-_work_output_files="[]"
+# Work output file count (filenames omitted — no consumers)
+_work_output_count=0
 if [[ -d "${_project_path}/.rdf/work-output" ]]; then
-    _wo_list="$(command find "${_project_path}/.rdf/work-output" -maxdepth 1 -type f -name '*.md' -printf '"%f",' 2>/dev/null | sed 's/,$//' || echo "")"
-    _work_output_files="[${_wo_list}]"
+    _work_output_count="$(command find "${_project_path}/.rdf/work-output" -maxdepth 1 -name '*.md' ! -type d 2>/dev/null | wc -l)"
+    _work_output_count="${_work_output_count##* }"
 fi
 
 # --- Full mode: extended fields ---
@@ -220,10 +228,23 @@ if [[ "$_full_mode" -eq 1 ]]; then
         _pipeline="idle"
     fi
 
-    # Last session log entry
+    # Last session summary (extract only rendered fields, not raw JSONL)
     _session_file="${_project_path}/.rdf/work-output/session-log.jsonl"
     if [[ -f "$_session_file" ]]; then
-        _session_last="$(tail -1 "$_session_file" 2>/dev/null || echo "")"
+        _raw_session="$(tail -1 "$_session_file" 2>/dev/null || echo "")"
+        if [[ -n "$_raw_session" ]] && command -v python3 >/dev/null 2>&1; then
+            _session_last="$(echo "$_raw_session" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    keep = ('timestamp','head_before','head_after','commits','diff_summary','pipeline','insight')
+    out = {k: d[k] for k in keep if k in d}
+    print(json.dumps(out, separators=(',',':')))
+except: print('')
+" 2>/dev/null || echo "$_raw_session")"
+        else
+            _session_last="$_raw_session"
+        fi
     fi
 
     # In-flight signals
@@ -244,17 +265,19 @@ if [[ "$_full_mode" -eq 1 ]]; then
     _if_list="${_if_list%,}"
     _in_flight="[${_if_list}]"
 
-    # Insights (last 5 from global insights file)
-    _insights_file="${HOME}/.rdf/insights.jsonl"
-    _ins_list=""
-    if [[ -f "$_insights_file" ]]; then
-        while IFS= read -r _ins_line; do
-            [[ -z "$_ins_line" ]] && continue
-            _ins_list="${_ins_list}${_ins_line},"
-        done < <(tail -5 "$_insights_file" 2>/dev/null)
-        _ins_list="${_ins_list%,}"
+    # Insights (last 5 from global insights file, skipped with --no-insights)
+    if [[ "$_skip_insights" -eq 0 ]]; then
+        _insights_file="${HOME}/.rdf/insights.jsonl"
+        _ins_list=""
+        if [[ -f "$_insights_file" ]]; then
+            while IFS= read -r _ins_line; do
+                [[ -z "$_ins_line" ]] && continue
+                _ins_list="${_ins_list}${_ins_line},"
+            done < <(tail -5 "$_insights_file" 2>/dev/null)
+            _ins_list="${_ins_list%,}"
+        fi
+        _insights="[${_ins_list}]"
     fi
-    _insights="[${_ins_list}]"
 fi
 
 # Output JSON
@@ -284,7 +307,7 @@ cat <<JSONEOF
     "pending": ${_plan_pending}
   },
   "audit_exists": ${_audit_exists},
-  "work_output_files": ${_work_output_files},
+  "work_output_count": ${_work_output_count},
   "governance_exists": ${_governance_exists},
   "governance_files": ${_governance_files},
   "governance_age_hours": ${_governance_age_hours},

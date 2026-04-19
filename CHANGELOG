@@ -2,6 +2,9 @@
 
 ## 3.0.5
 
+### Hang Prevention
+[Fix] rdf-state.sh: wrap all 14 git invocations with TIMEOUT_PREFIX variable ("timeout 30") to prevent indefinite stalls on locked repos, orphaned tracking branches, or slow remotes; TIMEOUT_PREFIX is empty on systems without the timeout binary (CentOS 6 minimal) for zero-regression fallback
+
 ### Session Startup Fix
 [Fix] r-start: replace broken relative-path + undefined RDF_HOME + implicit find fallback with explicit probe order: ~/.rdf/state/rdf-state.sh → /root/admin/work/proj/rdf/state/rdf-state.sh → inline git fallback
 [New] rdf generate claude-code: deploy rdf-state.sh and context-audit.sh to ~/.rdf/state/ with executable bit; creates directory if absent
