@@ -14,6 +14,7 @@
 | /r-review  | canonical/commands/r-review.md   | /sys-sentinel, /sys-challenger |
 | /r-ship    | canonical/commands/r-ship.md     | /rel-ship                |
 | /r-audit   | canonical/commands/r-audit.md    | /audit                   |
+| /r-audit-slop | canonical/commands/r-audit-slop.md | /r-util-slop-scan (promoted, +sentinel/+engineer FP) |
 | /r-save    | canonical/commands/r-save.md     | *(new in 3.0)*           |
 | /r-mode    | canonical/commands/r-mode.md     | *(new in 3.0)*           |
 | /r-init    | canonical/commands/r-init.md     | *(new in 3.0)*           |

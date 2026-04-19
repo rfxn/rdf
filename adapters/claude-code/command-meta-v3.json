@@ -5,7 +5,11 @@
     "description": "Design workflow — discover, brainstorm, write spec, challenge review",
     "dispatches": [],
     "dispatch_mode": "none",
-    "reads_governance": ["index.md", "architecture.md", "constraints.md"]
+    "reads_governance": [
+      "index.md",
+      "architecture.md",
+      "constraints.md"
+    ]
   },
   "r-start": {
     "name": "/r-start",
@@ -21,7 +25,9 @@
     "description": "Project health dashboard — pipeline position, plan progress, warnings",
     "dispatches": [],
     "dispatch_mode": "none",
-    "reads_governance": ["index.md"]
+    "reads_governance": [
+      "index.md"
+    ]
   },
   "r-init": {
     "name": "/r-init",
@@ -37,7 +43,9 @@
     "description": "Switch operational mode (development, security, performance, etc.)",
     "dispatches": [],
     "dispatch_mode": "none",
-    "reads_governance": ["index.md"]
+    "reads_governance": [
+      "index.md"
+    ]
   },
   "r-tasks": {
     "name": "/r-tasks",
@@ -51,41 +59,85 @@
     "name": "/r-vpe",
     "type": "skill-with-subagents",
     "description": "End-to-end pipeline orchestrator: intake -> spec -> plan -> build -> ship",
-    "dispatches": ["planner", "reviewer", "dispatcher", "qa"],
+    "dispatches": [
+      "planner",
+      "reviewer",
+      "dispatcher",
+      "qa"
+    ],
     "dispatch_mode": "sequential",
-    "reads_governance": ["index.md", "architecture.md", "conventions.md", "constraints.md", "verification.md"]
+    "reads_governance": [
+      "index.md",
+      "architecture.md",
+      "conventions.md",
+      "constraints.md",
+      "verification.md"
+    ]
   },
   "r-plan": {
     "name": "/r-plan",
     "type": "skill-with-subagents",
     "description": "Planning workflow — decompose spec into PLAN.md, challenge review",
-    "dispatches": ["reviewer"],
+    "dispatches": [
+      "reviewer"
+    ],
     "dispatch_mode": "sequential",
-    "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md"]
+    "reads_governance": [
+      "index.md",
+      "architecture.md",
+      "conventions.md",
+      "verification.md"
+    ]
   },
   "r-build": {
     "name": "/r-build",
     "type": "subagent-foreground",
     "description": "Execute implementation plan phase via dispatcher subagent",
-    "dispatches": ["dispatcher"],
+    "dispatches": [
+      "dispatcher"
+    ],
     "dispatch_mode": "sequential",
-    "reads_governance": ["index.md", "conventions.md", "constraints.md", "verification.md", "anti-patterns.md"]
+    "reads_governance": [
+      "index.md",
+      "conventions.md",
+      "constraints.md",
+      "verification.md",
+      "anti-patterns.md"
+    ]
   },
   "r-ship": {
     "name": "/r-ship",
     "type": "skill-with-subagents",
     "description": "Composite release workflow — preflight, verification, release prep, publish, report",
-    "dispatches": ["qa", "reviewer"],
+    "dispatches": [
+      "qa",
+      "reviewer"
+    ],
     "dispatch_mode": "parallel",
-    "reads_governance": ["index.md", "verification.md", "conventions.md"]
+    "reads_governance": [
+      "index.md",
+      "verification.md",
+      "conventions.md"
+    ]
   },
   "r-audit": {
     "name": "/r-audit",
     "type": "skill-with-subagents",
     "description": "Full codebase audit — dispatches parallel reviewer and qa subagents",
-    "dispatches": ["reviewer", "reviewer", "reviewer", "qa"],
+    "dispatches": [
+      "reviewer",
+      "reviewer",
+      "reviewer",
+      "qa"
+    ],
     "dispatch_mode": "parallel",
-    "reads_governance": ["index.md", "verification.md", "anti-patterns.md", "constraints.md", "architecture.md"]
+    "reads_governance": [
+      "index.md",
+      "verification.md",
+      "anti-patterns.md",
+      "constraints.md",
+      "architecture.md"
+    ]
   },
   "r-refresh": {
     "name": "/r-refresh",
@@ -93,7 +145,14 @@
     "description": "Re-scan codebase and update governance files",
     "dispatches": [],
     "dispatch_mode": "none",
-    "reads_governance": ["index.md", "architecture.md", "conventions.md", "verification.md", "constraints.md", "anti-patterns.md"]
+    "reads_governance": [
+      "index.md",
+      "architecture.md",
+      "conventions.md",
+      "verification.md",
+      "constraints.md",
+      "anti-patterns.md"
+    ]
   },
   "r-sync": {
     "name": "/r-sync",
@@ -160,12 +219,6 @@
       "source": "canonical/commands/r-util-test-dedup.md",
       "execution": "skill"
     },
-    "r-util-slop-scan": {
-      "slash-command": "/r-util-slop-scan",
-      "description": "AI slop audit (dead/orphan/noop/redundant code) with discovery-first verification",
-      "source": "canonical/commands/r-util-slop-scan.md",
-      "execution": "skill"
-    },
     "r-util-chg-gen": {
       "slash-command": "/r-util-chg-gen",
       "description": "Generate changelog entries from diff",
@@ -202,5 +255,22 @@
       "source": "canonical/commands/r-util-test-scope.md",
       "execution": "skill"
     }
+  },
+  "r-audit-slop": {
+    "name": "/r-audit-slop",
+    "type": "skill-with-subagents",
+    "description": "AI slop audit — discovery-first scan with sentinel + engineer FP-validation passes",
+    "dispatches": [
+      "reviewer",
+      "engineer"
+    ],
+    "dispatch_mode": "sequential",
+    "reads_governance": [
+      "index.md",
+      "anti-patterns.md",
+      "constraints.md",
+      "conventions.md",
+      "architecture.md"
+    ]
   }
 }

@@ -1,5 +1,15 @@
 # RDF 3.0.5 Release Notes
 
+## Slop Audit Command Promotion
+
+Promotes `/r-util-slop-scan` to `/r-audit-slop` with two additional verification
+passes over HIGH findings: an independent sentinel peer-review pass
+(`rdf-reviewer`) and an engineer FP-validation pass (`rdf-engineer`, read-only).
+Only findings that survive both passes appear in the final report, substantially
+reducing false positives. The `--quick` flag restores single-agent behavior
+equivalent to the former command. Discovery-first protocol and density safeguards
+are unchanged.
+
 ## BATS Adapter Test Suite
 
 Adds a hermetic BATS test suite (`tests/adapter.bats`) with 7 tests covering

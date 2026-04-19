@@ -49,7 +49,8 @@
 [New] rdf generate claude-code: deploy rdf-state.sh and context-audit.sh to ~/.rdf/state/ with executable bit; creates directory if absent
 
 ### New Commands
-[New] /r-util-slop-scan — AI slop audit (dead code, orphan helpers, noop functions, tautological guards, redundant implementations, over-engineered abstractions). Uses discovery-first protocol: Phase 0 builds a per-project call-site manifest (runtime-sourced templates, CLI dispatch targets, entry points, canonical vendored-lib refs, tests, packaging scriptlets) before scanning, preventing the false-positive wall that hits naive dead-code scanners. Confidence gated on attached grep evidence; density safeguard triggers re-scan when >10 HIGH findings in a category.
+[New] /r-audit-slop — AI slop audit (dead code, orphan helpers, noop functions, tautological guards, redundant implementations, over-engineered abstractions). Promoted from /r-util-slop-scan with two additional verification passes: independent sentinel peer-review of HIGH findings and engineer FP-validation pass (read-only). --quick flag restores single-agent behavior. Discovery-first protocol: Phase 0 builds a per-project call-site manifest before scanning, preventing the false-positive wall that hits naive dead-code scanners. Confidence gated on attached grep evidence; density safeguard triggers re-scan when >10 HIGH findings in a category.
+[Remove] /r-util-slop-scan — superseded by /r-audit-slop (use --quick for equivalent single-agent behavior)
 
 ### Model Cost Optimization
 [New] Dispatcher: scope-based model routing for engineer dispatch (sonnet for docs/focused, opus for multi-file+)

@@ -6,10 +6,21 @@ false-positive wall that hits naive dead-code scanners when projects use
 runtime-sourced templates, CLI dispatch tables, or vendored shared
 libraries.
 
+After candidate verification, dispatches an independent **sentinel**
+peer-review pass (rdf-reviewer) and an **engineer** FP-validation pass
+(rdf-engineer, read-only) over HIGH findings. Final report includes only
+findings that survive both passes.
+
 ## Arguments
-- `$ARGUMENTS` — optional: category filter (`dead`, `orphan`, `noop`,
-  `redundant`, `over-engineered`) or single file/directory to scope the
-  scan. Default: all categories across all primary sources.
+- `$ARGUMENTS` — optional flags and category filter:
+  - `--quick` — single-agent mode (skip sentinel + engineer FP passes,
+    behavior of the legacy `/r-util-slop-scan`)
+  - `--no-sentinel` — skip Phase 5 (sentinel peer review)
+  - `--no-engineer` — skip Phase 6 (engineer FP-validation)
+  - Category filter: `dead`, `orphan`, `noop`, `redundant`,
+    `over-engineered`
+  - Single file or directory path to scope the scan
+  - Default: all categories across all primary sources, both FP passes ON
 
 ## Setup
 
@@ -183,7 +194,9 @@ Variable candidates:
 **Density safeguard:** if HIGH findings in a single category exceed 10,
 or total HIGH findings exceed 25, STOP and self-audit. At those densities
 in a maintained codebase, Phase 0 probably missed an extended-scope
-class. Re-run discovery with a wider net before emitting.
+class. Re-run discovery with a wider net before emitting. **Do not
+dispatch sentinel or engineer passes on a discovery-failure result** —
+re-run Phase 0 first.
 
 ## Phase 4 — Self-Challenge Gate
 
@@ -195,13 +208,141 @@ If you cannot describe what a live caller would look like, downgrade to
 MED. This forces the scanner to reason about the call graph rather than
 rely on grep negatives alone.
 
-## Phase 5 — Output
+## Phase 5 — Sentinel Peer Review (default ON)
+
+**Skip if:**
+- `--quick` or `--no-sentinel` was passed
+- Phase 4 produced zero HIGH findings (nothing to review)
+- Phase 3 density safeguard triggered (re-run discovery first)
+
+Dispatch the `rdf-reviewer` subagent in **sentinel mode** with a
+read-only adversarial review payload. The reviewer attempts to disprove
+each HIGH finding using independent grep / source reading.
+
+**Dispatch payload:**
+
+```
+MODE: sentinel
+DEPTH: full
+SCOPE: AI-slop audit findings (read-only review of static-analysis output)
+TARGET_FINDINGS: <inline copy of the HIGH findings table from Phase 4>
+DISCOVERY_MANIFEST: <inline copy of Phase 0 manifest>
+PROJECT_ROOT: <absolute path>
+
+GOVERNANCE:
+  index: .rdf/governance/index.md
+  anti-patterns: .rdf/governance/anti-patterns.md
+  constraints: .rdf/governance/constraints.md
+  conventions: .rdf/governance/conventions.md
+
+REVIEW_TASK:
+  For each HIGH finding, perform an independent adversarial cross-check:
+  1. Re-grep for the symbol with a fresh pattern (word boundary, including
+     mid-line and inside $() / `` substitutions).
+  2. Check for indirect references — eval, ${!var}, dispatch tables,
+     config-driven exec (BAN_COMMAND, ALERT_*, etc.), template
+     expansion, alert variants (_JSON, _TG suffixes).
+  3. Identify any extended-scope file the discovery agent likely skipped
+     (cron.daily, install.sh, importconf, postinst, postrm, RPM/DEB
+     scriptlets, man pages, sample configs).
+  4. For each finding, return one of:
+     - SENTINEL-CONFIRMED-DEAD — independent check agrees, action stands
+     - SENTINEL-FALSE-POSITIVE — found a live reference, with file:line
+     - SENTINEL-NEEDS-ENGINEER — ambiguous; engineer pass should verify
+
+REPORT_FORMAT:
+  Per finding: file:line · symbol · sentinel verdict · evidence (one
+  line, with grep cmd or file:line of the contradicting reference).
+  Footer: counts by verdict, plus any new findings discovered during
+  the cross-check (extended-scope misses).
+```
+
+**On reviewer return:**
+- Drop SENTINEL-FALSE-POSITIVE items from the HIGH set; log them in the
+  FP-filter log with the reviewer's evidence.
+- Pass SENTINEL-CONFIRMED-DEAD items to Phase 6 (or directly to Phase 7
+  if `--no-engineer`).
+- Pass SENTINEL-NEEDS-ENGINEER items to Phase 6; if `--no-engineer` is
+  set, downgrade them to MED in the final report rather than emitting
+  HIGH without engineer verification.
+
+## Phase 6 — Engineer FP-Validation (default ON)
+
+**Skip if:**
+- `--quick` or `--no-engineer` was passed
+- Phase 5 produced zero items needing engineer verification
+- Phase 3 density safeguard triggered
+
+Dispatch the `rdf-engineer` subagent with **explicit read-only
+constraints** (no edits, no commits, no test execution beyond verification
+greps). Engineer is dispatched here for its toolset (Bash for `git log
+-S`, Read for source files, Grep for cross-references), not its TDD
+protocol.
+
+**Dispatch payload:**
+
+```
+MODE: read-only verification (do NOT modify any file, do NOT commit,
+      do NOT run tests, do NOT invoke /r-build or any write workflow)
+SCOPE: Final FP-validation pass for AI-slop audit
+TARGET_ITEMS: <inline list of SENTINEL-CONFIRMED-DEAD +
+              SENTINEL-NEEDS-ENGINEER findings from Phase 5>
+DISCOVERY_MANIFEST: <inline copy of Phase 0 manifest>
+SENTINEL_NOTES: <inline copy of Phase 5 evidence per item>
+PROJECT_ROOT: <absolute path>
+
+GOVERNANCE:
+  index: .rdf/governance/index.md
+  architecture: .rdf/governance/architecture.md
+  conventions: .rdf/governance/conventions.md
+
+VALIDATION_TASK:
+  For each TARGET_ITEM, run and report:
+  1. git log -S '<symbol>' -- '<path>' — was it added in a recent commit
+     with a deferred consumer? Was it removed and re-added?
+  2. Package manifest scan — grep for the symbol in pkg/rpm/*.spec,
+     pkg/deb/debian/*, pkg/symlink-manifest, Makefile recipes.
+  3. Public surface scan — grep in man pages (*.1, *.5, *.8), README*,
+     docs/, sample config files, completion scripts (*.bash-completion).
+  4. External-config scan — for variables: check if the name is part of
+     a documented public config surface that consumers may set without
+     source visibility.
+  5. Final per-item verdict (one of):
+     - DEAD-SAFE-TO-REMOVE — all checks zero, action stands
+     - KEEP-PUBLIC-API — public CLI/config surface, deletion would break
+     - KEEP-PACKAGED — referenced in package scriptlets / install path
+     - KEEP-DESIGN-SYMMETRY — part of intentional dispatch parity (e.g.,
+       N-backend × M-op matrix); deletion would break the pattern
+     - KEEP-FUTURE-CONSUMER — git log shows recent add with planned use
+
+OUTPUT_FORMAT:
+  Per item: file:line · symbol · final verdict · one-line evidence
+  (specific grep result, commit hash, or man-page reference).
+  Strictly read-only. No file modifications. No commits.
+```
+
+**On engineer return:**
+- Items verdict DEAD-SAFE-TO-REMOVE remain in the final HIGH set.
+- All KEEP-* verdicts move to the FP-filter log with the engineer's
+  reason; they are removed from the final HIGH set.
+
+## Phase 7 — Output
 
 ```
 # AI Slop Audit — <project>
 
 ## Discovery Manifest
 <Phase 0 summary — reviewer uses this to audit scan scope>
+
+## Pipeline Summary
+| Phase                       | Count | Notes |
+|-----------------------------|-------|-------|
+| Phase 1 raw candidates      |   N   |       |
+| Phase 3 HIGH (pre-challenge)|   N   |       |
+| Phase 4 HIGH (post-challenge)|  N   |       |
+| Phase 5 sentinel filtered   |   N   | <skipped if --no-sentinel> |
+| Phase 6 engineer filtered   |   N   | <skipped if --no-engineer> |
+| **Final HIGH**              |   N   |       |
 
 ## Summary
 | Category          | HIGH | MED | LOW | Total |
@@ -213,7 +354,7 @@ rely on grep negatives alone.
 | Over-engineered   |  N   |  N  |  N  |   N   |
 | **Total**         |  N   |  N  |  N  |   N   |
 
-## Findings
+## Findings (post-sentinel + post-engineer)
 
 ### <Category>
 
@@ -227,8 +368,24 @@ Evidence:
   V6 (packaging): <grep cmd> → <count>
   V7 (canonical): <N/A or canonical grep result>
 Challenge attempted: <one line>
-Confidence: HIGH | MED | LOW
+Sentinel: SENTINEL-CONFIRMED-DEAD — <evidence>
+Engineer: DEAD-SAFE-TO-REMOVE — <evidence>
+Confidence: HIGH
 Action: DELETE | PARAMETERIZE | LEAVE | CANONICAL-FIRST
+
+## FP Filter Log
+
+Items dropped by sentinel or engineer passes, with the disqualifying
+reference. This section is the audit trail for everything the discovery
+phase wanted to flag but the FP passes vetoed.
+
+### Dropped by Sentinel
+- **[file:line] symbol** — SENTINEL-FALSE-POSITIVE: <evidence>
+
+### Dropped by Engineer
+- **[file:line] symbol** — KEEP-PUBLIC-API: man bfd.1 line 240
+- **[file:line] symbol** — KEEP-PACKAGED: pkg/rpm/bfd.spec %install
+- **[file:line] symbol** — KEEP-DESIGN-SYMMETRY: 8-backend × 4-op matrix
 
 ## Skipped (known-alive, verified in Phase 0)
 - <N> functions reachable via DISPATCH_TARGETS
@@ -238,7 +395,7 @@ Action: DELETE | PARAMETERIZE | LEAVE | CANONICAL-FIRST
 ```
 
 ## Rules
-- Read-only — do NOT modify any files
+- Read-only — do NOT modify any files at any phase
 - Phase 0 discovery is mandatory; do not skip even for scoped scans
 - Every HIGH finding must attach grep evidence for each relevant check
 - Density safeguard triggers a re-run, not a downgrade — if >10 HIGH in
@@ -249,3 +406,13 @@ Action: DELETE | PARAMETERIZE | LEAVE | CANONICAL-FIRST
 - When uncertain, classify as MED — never emit HIGH without evidence
 - Output the Discovery Manifest at the top of every report so the
   reviewer can audit scan scope before trusting findings
+- Sentinel and engineer dispatch payloads must be self-contained — copy
+  the HIGH findings table inline; do not assume subagents read external
+  state files
+- Engineer dispatch must explicitly state read-only constraints (no
+  edits, no commits, no /r-build) — the agent's default mode is TDD
+  with file modifications
+- If sentinel returns SENTINEL-NEEDS-ENGINEER but `--no-engineer` is
+  set, downgrade those items to MED in the final report — never emit
+  HIGH without the engineer pass when the reviewer specifically
+  requested it
