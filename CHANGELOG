@@ -2,6 +2,12 @@
 
 ## 3.0.5
 
+### Docs Quality Overhaul
+[Change] README.md: restructured to numbered sections (## 1-11), new `## 3. Configuration` section covering environment variables + per-project setup + convention inheritance chain, new `## 4. Usage` section consolidating Command Reference + CLI Reference + exit codes table, new `## License` section; updated counts from 31 commands / 10 scripts to 33 / 12; added 2 new scripts to table (comment-metrics.sh, comment-snapshot.sh); updated utility commands list to include /r-audit-slop and /r-context-audit; updated directory tree to show state/ helpers (rdf-state.sh, context-audit.sh, rotate-work-output.sh); updated doctor scope count to 7 checks (added content-drift)
+[Change] lib/cmd/doctor.sh: relax README section checks to accept optional `## N. ` numbered prefix on Quick Start / Configuration / Usage — consistent with the same file's numbered-sections requirement; prior regex required literal `## Quick Start` which conflicted with numbered-section convention
+[Change] CLAUDE.md: added one-paragraph parent-CLAUDE.md reference at top — satisfies `rdf doctor` drift check and documents inheritance explicitly
+[Change] VERSION + RDF.md: bumped to 3.0.5 to match CHANGELOG section header
+
 ### Context Audit Command
 [New] canonical/commands/r-context-audit.md: command driver for `state/context-audit.sh` (committed in Phase 3) — runs the measurement script, parses JSON, renders a scored report (0-100 CLEAN/NEEDS_WORK/BLOATED/CRITICAL) with boot-cost breakdown, rdf-state.sh field analysis, work-output accumulation, session history totals, and prioritized 3-tier fix recommendations; supports `--fix` for Tier 1 auto-remediation and `--save-baseline` for drift tracking via `~/.rdf/context-audit-baseline.json`
 

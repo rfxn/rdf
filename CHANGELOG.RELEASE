@@ -1,5 +1,24 @@
 # RDF 3.0.5 Release Notes
 
+## Docs Quality Overhaul
+
+README.md restructured with numbered sections and expanded coverage: a new
+Configuration section documents environment variables, per-project `rdf init`
+outputs, and the convention inheritance chain; a new Usage section consolidates
+the prior Command Reference and CLI Reference with a new exit codes table. A
+License section was added. Command and script counts updated to reflect the
+current canonical tree (33 commands, 12 scripts — including the new
+`/r-audit-slop`, `/r-context-audit`, `comment-metrics.sh`, and
+`comment-snapshot.sh`).
+
+`lib/cmd/doctor.sh` README section regexes relaxed to accept the `## N. `
+numbered prefix that its own numbered-sections requirement demands. Prior
+version required literal `## Quick Start` (etc.) which contradicted the
+numbered-section rule.
+
+Project `CLAUDE.md` gained an explicit parent reference so `rdf doctor` drift
+check recognizes the inheritance without heuristic matching.
+
 ## Context Audit Command
 
 Adds `/r-context-audit` as the command driver for the existing `state/context-audit.sh`

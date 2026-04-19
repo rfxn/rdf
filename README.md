@@ -13,7 +13,7 @@ RDF is a convention governance layer for AI coding agents. It sits between the h
 
 ---
 
-## How It Works
+## 1. How It Works
 
 <p align="center">
   <img src="assets/pipeline.svg" alt="RDF Pipeline: spec -> plan -> build -> ship" width="100%"/>
@@ -23,7 +23,7 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 
 ---
 
-## Quick Start
+## 2. Quick Start
 
 ```bash
 # 1. Clone
@@ -49,7 +49,152 @@ bin/rdf doctor                        # health check: artifacts, drift, sync
 
 ---
 
-## What Makes RDF Different
+## 3. Configuration
+
+### Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `RDF_HOME` | resolved from `bin/rdf` | RDF install root (canonical/, lib/, bin/, state/) |
+| `RDF_CANONICAL` | `$RDF_HOME/canonical` | Canonical content source tree |
+| `RDF_TARGET` | `~/.claude` | Deploy target for claude-code adapter |
+
+Most users do not need to override these — `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
+
+### Per-Project Setup
+
+```bash
+cd /path/to/project
+/r-init                               # auto-detects profiles, generates governance
+```
+
+`rdf init` creates (inside the target project):
+
+| Path | Purpose |
+|------|---------|
+| `CLAUDE.md` | Project working instructions (typically excluded from commits) |
+| `.rdf/governance/` | conventions, constraints, verification, anti-patterns, architecture |
+| `.rdf/memory/MEMORY.md` | Session-persistent project facts |
+| `.git/info/exclude` entries | Working-file exclusions (CLAUDE.md, PLAN*.md, .rdf/, etc.) |
+
+### Convention Inheritance
+
+The most specific rule wins:
+
+```
+project CLAUDE.md   >   workspace CLAUDE.md   >   profile defaults   >   core defaults
+```
+
+Agents read the chain at session start and apply it hierarchically. A project CLAUDE.md rule overrides a profile default; a workspace CLAUDE.md rule overrides core.
+
+### Deployment Model
+
+Emergency edits (direct changes to `~/.claude/`) are permitted but must be pulled back to canonical via `rdf sync`. Drift is detected by `rdf doctor --scope content-drift` using per-file `.rdf-hash` sidecars.
+
+```
+canonical edits  -->  rdf generate  -->  deployed (~/.claude/, ~/.gemini/, etc.)
+deployed edits  <--   rdf sync     <--   (emergency path)
+```
+
+---
+
+## 4. Usage
+
+### 4.1. Session Lifecycle Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/r-init` | Initialize governance for a new or existing project |
+| `/r-start` | Session initialization -- reload context, display project health |
+| `/r-save` | End-of-session state sync -- PLAN.md, MEMORY.md, session log |
+| `/r-mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
+| `/r-status` | Project health dashboard -- pipeline position, plan progress, warnings |
+| `/r-refresh` | Re-scan codebase and update governance files |
+| `/r-sync` | Pull emergency edits from deployed location back to canonical |
+| `/r-context-audit` | Measure Claude Code context overhead; scored report + drift detection |
+
+### 4.2. Design → Ship Pipeline Commands
+
+| Command | Dispatches | Purpose |
+|---------|-----------|---------|
+| `/r-spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
+| `/r-plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
+| `/r-build [N\|--parallel]` | dispatcher | Execute: TDD cycle per phase with quality gates, parallel batch dispatch |
+| `/r-verify` | qa | QA verification against diff or scope |
+| `/r-test` | uat | User acceptance testing from end-user persona |
+| `/r-review` | reviewer | Adversarial review in challenge or sentinel mode |
+| `/r-audit` | 3x reviewer + qa | Full codebase audit across all domains |
+| `/r-audit-slop` | 3x engineer + sentinel | Discovery-first AI slop audit with FP calibration |
+| `/r-ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
+| `/r-vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
+| `/r-tasks` | -- | Read-only task list status -- check progress of long-running commands |
+
+### 4.3. Utility Commands (14)
+
+| Command | Purpose |
+|---------|---------|
+| `/r-util-mem-compact` | Archive stale MEMORY.md entries |
+| `/r-util-mem-audit` | Fact-check MEMORY.md against live state |
+| `/r-util-chg-gen` | Generate changelog from diff/commits |
+| `/r-util-chg-dedup` | Deduplicate changelog entries |
+| `/r-util-rel-squash` | Release branch squash plan + execution |
+| `/r-util-doc-gen` | Generate publication-ready documentation |
+| `/r-util-ci-gen` | Generate GitHub Actions CI workflow |
+| `/r-util-lib-sync` | Cross-project shared library drift detection |
+| `/r-util-lib-release` | Shared library release lifecycle |
+| `/r-util-proj-cross` | Cross-project convention drift analysis |
+| `/r-util-code-scan` | Structured pattern-class bug finder |
+| `/r-util-code-modernize` | Codebase modernization assessment |
+| `/r-util-test-dedup` | Find duplicate/overlapping tests |
+| `/r-util-test-scope` | Test tier recommendation + impact mapping |
+
+### 4.4. `rdf` CLI
+
+```
+Usage: rdf <command> [subcommand] [options]
+
+Commands:
+  generate   Build tool-specific output from canonical sources
+  deploy     Symlink generated output to tool deployment target
+  profile    Manage active domain profiles
+  init       Initialize projects with governance
+  doctor     Check project health and convention drift
+  state      Deterministic project state snapshot (JSON)
+  refresh    Agent-driven governance and state updates
+  sync       Pull deployed edits back to canonical sources
+  github     GitHub Issues + Projects integration
+
+Run 'rdf <command> help' for details.
+```
+
+| Command | Key Operations |
+|---------|----------------|
+| `rdf generate <target>` | `claude-code`, `gemini-cli`, `codex`, `agents-md`, `all` |
+| `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
+| `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
+| `rdf init <path> [--type] [--tools] [--github]` | Project initialization with governance templates |
+| `rdf doctor [--scope] [--all]` | 7 checks: artifacts, drift, memory, plan, github, sync, content-drift |
+| `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
+| `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
+| `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
+| `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
+
+### 4.5. Exit Codes
+
+| Exit Code | Meaning |
+|-----------|---------|
+| 0 | Success |
+| 1 | Generic error — command failed, check failed, or FAIL findings reported |
+| 2 | Invalid usage — bad arguments or unrecognized subcommand |
+| 3 | Missing dependency — required binary (git, jq, sha256sum, etc.) not in PATH |
+| 4 | File I/O error — expected file or directory not found / not readable |
+| 5 | Drift or sync conflict — `rdf doctor` found divergence that requires user action |
+
+Run `rdf <command> help` for per-command exit semantics.
+
+---
+
+## 5. What Makes RDF Different
 
 ### Governance as Code
 
@@ -111,7 +256,7 @@ The reviewer runs 4 adversarial passes: anti-slop, regression, security, perform
 
 ---
 
-## The Pipeline
+## 6. The Pipeline
 
 ### Design -> Plan -> Build -> Ship
 
@@ -129,6 +274,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 ```bash
 /r-audit                              # parallel: 3x reviewer + 1x qa -> AUDIT.md
+/r-audit-slop                         # 3x engineer discovery -> sentinel peer-review -> FP validation
 ```
 
 ### Agent Roster
@@ -144,7 +290,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 *\*Dynamic model routing: dispatcher downgrades engineer to sonnet for `scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet, sentinel stays opus.*
 
-### Scripts (10)
+### Scripts (12)
 
 | Script | Purpose |
 |--------|---------|
@@ -158,60 +304,12 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | subagent-stop.sh | Capture agent completion events |
 | pre-commit-validate.sh | Pre-commit lint + anti-pattern greps |
 | post-edit-lint.sh | Post-edit shellcheck on modified files |
+| comment-metrics.sh | Per-file comment cruft metrics for shell source |
+| comment-snapshot.sh | Comment metrics snapshot across shared library set |
 
 ---
 
-## Command Reference
-
-### Session Lifecycle
-
-| Command | Purpose |
-|---------|---------|
-| `/r-init` | Initialize governance for a new or existing project |
-| `/r-start` | Session initialization -- reload context, display project health |
-| `/r-save` | End-of-session state sync -- PLAN.md, MEMORY.md, session log |
-| `/r-mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
-| `/r-status` | Project health dashboard -- pipeline position, plan progress, warnings |
-| `/r-refresh` | Re-scan codebase and update governance files |
-| `/r-sync` | Pull emergency edits from deployed location back to canonical |
-
-### Design -> Ship Pipeline
-
-| Command | Dispatches | Purpose |
-|---------|-----------|---------|
-| `/r-spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
-| `/r-plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
-| `/r-build [N\|--parallel]` | dispatcher | Execute: TDD cycle per phase with quality gates, parallel batch dispatch |
-| `/r-verify` | qa | QA verification against diff or scope |
-| `/r-test` | uat | User acceptance testing from end-user persona |
-| `/r-review` | reviewer | Adversarial review in challenge or sentinel mode |
-| `/r-audit` | 3x reviewer + qa | Full codebase audit across all domains |
-| `/r-ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
-| `/r-vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
-| `/r-tasks` | -- | Read-only task list status -- check progress of long-running commands |
-
-### Utilities (14)
-
-| Command | Purpose |
-|---------|---------|
-| `/r-util-mem-compact` | Archive stale MEMORY.md entries |
-| `/r-util-mem-audit` | Fact-check MEMORY.md against live state |
-| `/r-util-chg-gen` | Generate changelog from diff/commits |
-| `/r-util-chg-dedup` | Deduplicate changelog entries |
-| `/r-util-rel-squash` | Release branch squash plan + execution |
-| `/r-util-doc-gen` | Generate publication-ready documentation |
-| `/r-util-ci-gen` | Generate GitHub Actions CI workflow |
-| `/r-util-lib-sync` | Cross-project shared library drift detection |
-| `/r-util-lib-release` | Shared library release lifecycle |
-| `/r-util-proj-cross` | Cross-project convention drift analysis |
-| `/r-util-code-scan` | Structured pattern-class bug finder |
-| `/r-util-code-modernize` | Codebase modernization assessment |
-| `/r-util-test-dedup` | Find duplicate/overlapping tests |
-| `/r-util-test-scope` | Test tier recommendation + impact mapping |
-
----
-
-## Architecture
+## 7. Architecture
 
 ### Core Principles
 
@@ -237,7 +335,7 @@ canonical/          Adapter            Tool Deployment
 
 **Normal:** Edit `canonical/` -> `rdf generate` -> symlinks auto-update.
 **Emergency:** Edit `~/.claude/` -> `rdf sync` -> back to canonical.
-**Drift check:** `rdf doctor --scope sync` -> detects divergence.
+**Drift check:** `rdf doctor --scope content-drift` -> detects divergence via `.rdf-hash` sidecars.
 
 ### Directory Structure
 
@@ -250,8 +348,8 @@ rdf/
 |                                      #   state, refresh, sync, github, deploy, dispatch, migrate
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
-|   |-- commands/                      # 31 commands (/r- namespace)
-|   |-- scripts/                       # 10 hook scripts (bash)
+|   |-- commands/                      # 33 commands (/r- namespace)
+|   |-- scripts/                       # 12 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
 |   |-- registry.json                  # Machine-readable profile catalog
@@ -281,46 +379,16 @@ rdf/
 |   |-- gemini-cli/                    # Gemini CLI adapter (TOML)
 |   |-- codex/                         # Codex adapter (AGENTS.md)
 |   +-- agents-md/                     # Cross-tool AGENTS.md
-|-- state/rdf-state.sh                 # Project state -> JSON (<1s)
+|-- state/
+|   |-- rdf-state.sh                   # Project state -> JSON (<1s, timeout-guarded)
+|   |-- context-audit.sh               # Context weight audit -> JSON
+|   +-- rotate-work-output.sh          # Age/size-based work-output rotation
 +-- reference/                         # Diagrams, architecture docs
 ```
 
 ---
 
-## CLI Reference
-
-```
-Usage: rdf <command> [subcommand] [options]
-
-Commands:
-  generate   Build tool-specific output from canonical sources
-  deploy     Symlink generated output to tool deployment target
-  profile    Manage active domain profiles
-  init       Initialize projects with governance
-  doctor     Check project health and convention drift
-  state      Deterministic project state snapshot (JSON)
-  refresh    Agent-driven governance and state updates
-  sync       Pull deployed edits back to canonical sources
-  github     GitHub Issues + Projects integration
-
-Run 'rdf <command> help' for details.
-```
-
-| Command | Key Operations |
-|---------|----------------|
-| `rdf generate <target>` | `claude-code`, `gemini-cli`, `codex`, `agents-md`, `all` |
-| `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
-| `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
-| `rdf init <path> [--type] [--tools] [--github]` | Project initialization with governance templates |
-| `rdf doctor [--scope] [--all]` | 6 checks: artifacts, drift, memory, plan, github, sync |
-| `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
-| `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
-| `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
-| `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
-
----
-
-## Production Context
+## 8. Production Context
 
 RDF governs development of security infrastructure deployed across ~350,000 active servers:
 
@@ -361,7 +429,7 @@ All projects share: batsman test infrastructure, parent CLAUDE.md conventions, R
 
 ---
 
-## Philosophy
+## 9. Philosophy
 
 **Governance overhead is proportional to blast radius.** Security tools running on 350,000 servers need more quality gates than a weekend project. RDF scales governance to risk.
 
@@ -373,7 +441,7 @@ All projects share: batsman test infrastructure, parent CLAUDE.md conventions, R
 
 ---
 
-## Extending RDF
+## 10. Extending RDF
 
 <details>
 <summary><strong>Add a Command</strong></summary>
@@ -432,7 +500,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 
 ---
 
-## Documentation
+## 11. Documentation
 
 | Document | Purpose |
 |----------|---------|
@@ -444,6 +512,16 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 
 ---
 
-**6 agents -- 31 commands -- 10 scripts -- 11 profiles -- 4 adapters -- 7 modes**
+## License
+
+RDF is released under the **GNU General Public License v2.0** (GPL v2).
+
+See [LICENSE](LICENSE) for the full text of the license.
+
+Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
+
+---
+
+**6 agents -- 33 commands -- 12 scripts -- 11 profiles -- 4 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

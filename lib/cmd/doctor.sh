@@ -525,7 +525,7 @@ _check_readme() {
         _add_result "readme" "$_FAIL" "badge row not found (no shields.io or GitHub badge URLs)"
     fi
 
-    if grep -qi '^## Quick Start' "$readme" 2>/dev/null; then
+    if grep -qiE '^## ([0-9]+\. +)?Quick Start' "$readme" 2>/dev/null; then
         _add_result "readme" "$_OK" "## Quick Start present"
     else
         _add_result "readme" "$_FAIL" "## Quick Start section missing"
@@ -545,16 +545,16 @@ _check_readme() {
         _add_result "readme" "$_FAIL" "no numbered sections (## N. format expected)"
     fi
 
-    if grep -qE '^## 3\.' "$readme" 2>/dev/null; then
-        _add_result "readme" "$_OK" "## 3. Configuration present"
+    if grep -qiE '^## ([0-9]+\. +)?Configuration' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "## Configuration present"
     else
-        _add_result "readme" "$_FAIL" "## 3. section missing (Configuration expected)"
+        _add_result "readme" "$_FAIL" "## Configuration section missing"
     fi
 
-    if grep -qE '^## 4\.' "$readme" 2>/dev/null; then
-        _add_result "readme" "$_OK" "## 4. Usage present"
+    if grep -qiE '^## ([0-9]+\. +)?Usage' "$readme" 2>/dev/null; then
+        _add_result "readme" "$_OK" "## Usage present"
     else
-        _add_result "readme" "$_FAIL" "## 4. section missing (Usage expected)"
+        _add_result "readme" "$_FAIL" "## Usage section missing"
     fi
 
     if grep -qiE 'exit.code|exit.status' "$readme" 2>/dev/null && \

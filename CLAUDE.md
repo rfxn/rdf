@@ -1,5 +1,10 @@
 # RDF — Project CLAUDE.md
 
+Inherits conventions from the parent workspace CLAUDE.md at
+`/root/admin/work/proj/CLAUDE.md` (rfxn-wide shell standards, commit protocol,
+testing norms). Project-specific rules below override parent defaults where
+explicit.
+
 ## About
 RDF (rfxn Development Framework) — convention governance, agent pipelines,
 and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
