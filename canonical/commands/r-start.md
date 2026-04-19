@@ -27,23 +27,29 @@ Run /clear to reset conversation context before loading fresh state.
 
 **Single-project** (cwd is a git repo):
 
-Run ONE command to gather all state:
+Run ONE command to gather all state. Resolve `rdf-state.sh` using
+this probe order — use the first path that exists:
+
+1. `~/.rdf/state/rdf-state.sh` — deployed by `rdf generate claude-code`
+2. `/root/admin/work/proj/rdf/state/rdf-state.sh` — canonical install
+
 ```bash
-bash state/rdf-state.sh --full .
+bash ~/.rdf/state/rdf-state.sh --full .
 ```
+
+If neither path exists, skip to **Supplemental reads** below.
 
 This returns a JSON blob with: project name, version, branch, HEAD,
 dirty count + file names, recent commits, plan phases, governance
 status, pipeline position, in-flight signals, session log last entry,
 and insights. Parse the JSON — do NOT make additional git/stat calls.
 
-The script lives at `{RDF_HOME}/state/rdf-state.sh` where RDF_HOME
-is the RDF installation directory. If the script is not found, fall
-back to individual git commands (backward compatibility).
-
 **Parent workspace** (cwd is NOT a git repo):
 - Enumerate sub-project repos: directories containing `.git/`
-- Run `rdf-state.sh --full` on each (or the 5 most recently modified)
+- Resolve `rdf-state.sh` using the same probe order as single-project
+- Run `~/.rdf/state/rdf-state.sh --full --no-insights` on each (or the 5 most recently modified)
+- Read insights once globally: `tail -5 ~/.rdf/insights.jsonl` (do NOT
+  rely on per-repo insights — they are identical global data)
 - Aggregate: total repos, active (commits <24h), total dirty
 
 **Supplemental reads** (only if rdf-state.sh is unavailable):

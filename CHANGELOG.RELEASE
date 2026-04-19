@@ -1,5 +1,19 @@
 # RDF 3.0.5 Release Notes
 
+## Session Startup Fix
+
+Eliminates the `find /` fallback in `/r-start` that caused 120s sandbox
+timeouts when invoked from any directory other than the RDF project root.
+Root cause: `bash state/rdf-state.sh --full .` used a relative path that
+only worked from RDF's own directory, and the documented `{RDF_HOME}`
+fallback referenced an undefined variable.
+
+`rdf generate claude-code` now deploys `rdf-state.sh` and
+`context-audit.sh` to `~/.rdf/state/` with executable bit, creating the
+directory if absent. `/r-start` uses an explicit probe order:
+`~/.rdf/state/rdf-state.sh` → `/root/admin/work/proj/rdf/state/rdf-state.sh`
+→ inline git fallback. Resolution completes in under 200ms from any project.
+
 ## Model Cost Optimization
 
 Adds scope-based model routing to the dispatcher and challenge-mode

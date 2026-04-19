@@ -32,6 +32,24 @@ Examples:
 USAGE
 }
 
+# Deploy rdf-state.sh and context-audit.sh to ~/.rdf/state/ so /r-start
+# can resolve them without a relative path or find fallback.
+_generate_deploy_state_helpers() {
+    local state_dst="${HOME}/.rdf/state"
+    local _helper src
+    command mkdir -p "$state_dst"
+    for _helper in rdf-state.sh context-audit.sh; do
+        src="${RDF_HOME}/state/${_helper}"
+        if [[ -f "$src" ]]; then
+            command cp "$src" "${state_dst}/${_helper}"
+            command chmod +x "${state_dst}/${_helper}"
+            rdf_log "deployed state helper: ${state_dst}/${_helper}"
+        else
+            rdf_warn "state helper not found: ${src} — skipped"
+        fi
+    done
+}
+
 # Source and run a single adapter
 # Args: $1 = adapter script relative to RDF_ADAPTERS, $2 = generation function name
 _generate_adapter() {
@@ -60,6 +78,7 @@ cmd_generate() {
     case "${1:-}" in
         claude-code)
             _generate_adapter "claude-code/adapter.sh" "cc_generate_all"
+            _generate_deploy_state_helpers
             if [[ $deploy_after -eq 1 ]]; then
                 # shellcheck disable=SC1090,SC1091
                 source "${RDF_LIBDIR}/cmd/deploy.sh"
