@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint (bash -n + shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Collect shell files
+        id: shell-files
+        run: |
+          # Gather source shell files only — exclude generated adapter output
+          mapfile -t FILES < <(
+            find bin/ lib/ state/ -name "*.sh" -o -name "rdf" |
+            sort
+          )
+          # Top-level adapter scripts (not output/)
+          mapfile -t ADAPTER_FILES < <(
+            find adapters -maxdepth 2 -name "*.sh" -not -path "*/output/*" |
+            sort
+          )
+          # Canonical scripts
+          mapfile -t CANONICAL_FILES < <(
+            find canonical/scripts/ -name "*.sh" 2>/dev/null |
+            sort
+          )
+          ALL=("${FILES[@]}" "${ADAPTER_FILES[@]}" "${CANONICAL_FILES[@]}")
+          printf '%s\n' "${ALL[@]}" > /tmp/shell-files.txt
+          echo "Found $(wc -l < /tmp/shell-files.txt) shell files"
+          cat /tmp/shell-files.txt
+
+      - name: bash -n syntax check
+        run: |
+          FAIL=0
+          while IFS= read -r f; do
+            if ! bash -n "$f"; then
+              echo "SYNTAX ERROR: $f"
+              FAIL=1
+            fi
+          done < /tmp/shell-files.txt
+          exit "$FAIL"
+
+      - name: shellcheck (errors only)
+        run: |
+          # -S error: report only errors, not warnings or style issues
+          # SC1090/SC1091: dynamic source paths are expected (governance pattern)
+          xargs shellcheck -S error --exclude=SC1090,SC1091 < /tmp/shell-files.txt
+
+  doctor:
+    name: Doctor (adapter health)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (jq)
+        run: sudo apt-get install -y jq
+
+      - name: Generate adapter output
+        # Generate output/ so content-drift check has files to hash against sidecars.
+        # Uses repo-relative path; HOME/.rdf/state/ is created as a side effect.
+        run: ./bin/rdf generate claude-code
+
+      - name: rdf doctor (content-drift scope)
+        # Checks that deployed adapter files match their canonical sources via
+        # .rdf-hash sidecars written during generate. Skips checks that require
+        # production state (sync, readme, github, memory) which are CI-inappropriate.
+        run: ./bin/rdf doctor --scope content-drift
+
+  tests:
+    name: Tests (BATS)
+    runs-on: ubuntu-latest
+    # Phase 10 adds the BATS adapter test suite. This job is a stub that
+    # becomes live once tests/Makefile exists. If the file is absent the
+    # job is skipped rather than failing the workflow.
+    if: ${{ hashFiles('tests/Makefile') != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install test dependencies
+        run: sudo apt-get install -y bats shellcheck
+
+      - name: Run BATS tests
+        run: make -C tests test

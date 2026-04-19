@@ -1,5 +1,13 @@
 # RDF 3.0.5 Release Notes
 
+## GitHub Actions CI Workflow
+
+Adds `.github/workflows/ci.yml` with three parallel jobs: `lint` (bash -n +
+shellcheck on all source shell files), `doctor` (generates adapter output then
+runs `rdf doctor --scope content-drift` to verify canonical/generated integrity),
+and `tests` (BATS suite, conditional on `tests/Makefile` — stub for Phase 10).
+Workflow triggers on push to main and pull requests targeting main.
+
 ## Progress Tracking Reference
 
 Consolidates the duplicated "Progress Tracking" block from `r-init`, `r-start`,

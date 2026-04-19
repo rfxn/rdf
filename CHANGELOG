@@ -2,6 +2,9 @@
 
 ## 3.0.5
 
+### GitHub Actions CI Workflow
+[New] .github/workflows/ci.yml: minimal CI workflow on push/PR to main; lint job runs bash -n syntax check and shellcheck -S error on all source shell files (bin/, lib/, state/, adapters/*/*.sh, canonical/scripts/); doctor job runs rdf generate claude-code then rdf doctor --scope content-drift to verify adapter health; tests job conditional on tests/Makefile (stub for Phase 10 BATS suite)
+
 ### Progress Tracking Reference
 [New] canonical/reference/progress-tracking.md: canonical superset of the Progress Tracking protocol — CRITICAL batch-creation rule, TaskCreate branch with activeForm example, in_progress/completed guidance, >30s spinner note, N/A phase handling, checkbox fallback for Gemini CLI/Codex
 [Change] canonical/commands/r-init.md: replace 36-line inline Progress Tracking block with reference link + compact task-name list for /r-init's 5 phases
