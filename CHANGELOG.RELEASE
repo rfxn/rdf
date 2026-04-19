@@ -1,5 +1,26 @@
 # RDF 3.0.5 Release Notes
 
+## Work-Output Rotation
+
+Introduces `state/rotate-work-output.sh`, a defensive automation script
+that prunes accumulated `.rdf/work-output/` directories across any
+RDF-using project.
+
+Age-based pruning deletes `*.md` result files with mtime older than 14 days
+(configurable via `--age`). Files whose basename appears in the project's
+`PLAN.md` are always preserved regardless of age, protecting in-progress
+phase results. If `PLAN.md` is absent, pruning proceeds on age alone.
+
+Size-based truncation keeps `agent-feed.log` bounded: if the file exceeds
+100 KB (configurable via `--size-cap`), it is truncated to the last 1000
+lines via an atomic `mv` — no data corruption on partial writes.
+
+Flags: `--dry-run` (prints candidates, no modifications), `--age <days>`,
+`--size-cap <kb>`. Silently exits 0 when `.rdf/work-output/` does not exist.
+
+`rdf generate claude-code` now deploys `rotate-work-output.sh` to
+`~/.rdf/state/` alongside `rdf-state.sh` and `context-audit.sh`.
+
 ## Context Audit Timeout Guards
 
 Adds `TIMEOUT_PREFIX` ("timeout 30") to `context-audit.sh` using the same

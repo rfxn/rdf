@@ -2,6 +2,10 @@
 
 ## 3.0.5
 
+### Work-Output Rotation
+[New] state/rotate-work-output.sh: age-based pruning of *.md result files (default 14-day mtime threshold) with PLAN.md cross-reference guard to preserve active phase files; size-based truncation of agent-feed.log to last 1000 lines when file exceeds 100 KB; --dry-run, --age, and --size-cap flags
+[Change] rdf generate claude-code: deploys rotate-work-output.sh to ~/.rdf/state/ alongside rdf-state.sh and context-audit.sh
+
 ### Context Audit Timeout Guards
 [New] context-audit.sh: add TIMEOUT_PREFIX ("timeout 30") — same pattern as rdf-state.sh — wrapping the git log call in the per-repo recency sort and both python3 invocations (field breakdown + baseline comparison)
 [New] context-audit.sh: extract _count_md_files() helper replacing 8 near-duplicate find+wc patterns across skills, agents, memory, and work-output sections
