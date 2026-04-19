@@ -2,6 +2,9 @@
 
 ## 3.0.5
 
+### Context Audit Command
+[New] canonical/commands/r-context-audit.md: command driver for `state/context-audit.sh` (committed in Phase 3) — runs the measurement script, parses JSON, renders a scored report (0-100 CLEAN/NEEDS_WORK/BLOATED/CRITICAL) with boot-cost breakdown, rdf-state.sh field analysis, work-output accumulation, session history totals, and prioritized 3-tier fix recommendations; supports `--fix` for Tier 1 auto-remediation and `--save-baseline` for drift tracking via `~/.rdf/context-audit-baseline.json`
+
 ### BATS Adapter Test Suite
 [New] tests/adapter.bats: hermetic BATS test suite for the claude-code adapter round-trip; 7 tests covering: expected file tree generation, canonical body preservation in deployed output, .rdf-hash sidecar emission (Phase 7 regression), idempotency on second generate run, and drift detection (corrupted deployed file causes doctor content-drift FAIL with file cited)
 [New] tests/Makefile: minimal make test target; system bats (no batsman submodule); documents install instructions for apt and brew

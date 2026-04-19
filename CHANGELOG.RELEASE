@@ -1,5 +1,16 @@
 # RDF 3.0.5 Release Notes
 
+## Context Audit Command
+
+Adds `/r-context-audit` as the command driver for the existing `state/context-audit.sh`
+measurement script. Produces a scored health report (0-100, CLEAN/NEEDS_WORK/BLOATED/
+CRITICAL) covering always-loaded boot cost, rdf-state.sh field waste detection,
+work-output accumulation across projects, and session history totals. Findings
+are sorted by impact with one-line fix suggestions. Supports `--save-baseline` for
+drift tracking (`~/.rdf/context-audit-baseline.json`) and `--fix` to auto-apply
+Tier 1 quick wins. Designed for weekly health checks, post-refresh verification,
+and quarterly baseline comparisons.
+
 ## Slop Audit Command Promotion
 
 Promotes `/r-util-slop-scan` to `/r-audit-slop` with two additional verification
