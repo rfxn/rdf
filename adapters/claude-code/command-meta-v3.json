@@ -160,6 +160,12 @@
       "source": "canonical/commands/r-util-test-dedup.md",
       "execution": "skill"
     },
+    "r-util-slop-scan": {
+      "slash-command": "/r-util-slop-scan",
+      "description": "AI slop audit (dead/orphan/noop/redundant code) with discovery-first verification",
+      "source": "canonical/commands/r-util-slop-scan.md",
+      "execution": "skill"
+    },
     "r-util-chg-gen": {
       "slash-command": "/r-util-chg-gen",
       "description": "Generate changelog entries from diff",

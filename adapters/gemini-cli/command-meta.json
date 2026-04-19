@@ -28,5 +28,6 @@
   "r-util-code-scan": "Structured pattern-class bug finder across project files",
   "r-util-code-modernize": "Assess codebase modernization maturity and generate remediation plan",
   "r-util-test-dedup": "Find duplicate, overlapping, tautological, dead, and low-value tests",
-  "r-util-test-scope": "Test tier recommendation and function-to-test impact mapping"
+  "r-util-test-scope": "Test tier recommendation and function-to-test impact mapping",
+  "r-util-slop-scan": "AI slop audit — dead, orphan, noop, redundant, over-engineered code with discovery-first verification"
 }
