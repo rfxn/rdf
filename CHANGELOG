@@ -2,6 +2,9 @@
 
 ## 3.0.5
 
+### Release Packaging
+[New] .gitattributes: export-ignore rules for docs/, assets/, tests/, .github/, .rdf/, .claude/, .pytest_cache/, and working files (CLAUDE.md, PLAN.md, MEMORY.md, AUDIT.md) — prevents dev-only artifacts from shipping in git archive / GitHub release tarballs
+
 ### Stale Artifact Cleanup
 [Remove] .pytest_cache/: deleted from RDF repo root — RDF has no Python tests; stale artifact from an aborted path
 [Remove] advanced-policy-firewall: full-branch-diff.patch (521 KB, 34 days old) deleted from .rdf/work-output/

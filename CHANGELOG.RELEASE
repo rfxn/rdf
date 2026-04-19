@@ -1,5 +1,14 @@
 # RDF 3.0.5 Release Notes
 
+## Release Packaging
+
+Adds `.gitattributes` with `export-ignore` rules to prevent dev-only artifacts
+from appearing in `git archive` tarballs and GitHub "Download" releases.
+Excluded paths: `docs/`, `assets/`, `tests/`, `.github/`, `.rdf/`, `.claude/`,
+`.pytest_cache/`, and working files (`CLAUDE.md`, `PLAN.md`, `MEMORY.md`,
+`AUDIT.md`). Core consumer-facing content (`canonical/`, `lib/`, `state/`,
+`bin/`, `README.md`, `CHANGELOG`) continues to ship.
+
 ## Stale Artifact Cleanup
 
 Backlog sweep of stale files identified in the 2026-04-19 framework audit.

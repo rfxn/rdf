@@ -1,0 +1,42 @@
+# Export-ignore rules: paths excluded from git archive / GitHub "Download" tarballs.
+# Core shipped content (canonical/, lib/, state/, bin/, README.md, CHANGELOG, etc.)
+# is not listed here and ships to release consumers.
+#
+# Each directory uses two patterns: the trailing-slash form excludes the directory
+# entry itself from the archive; the /** form excludes all file paths within.
+
+# Documentation, specs, plans (dev-time reference only)
+docs/                       export-ignore
+docs/**                     export-ignore
+
+# Binary/media assets (not needed by consumers)
+assets/                     export-ignore
+assets/**                   export-ignore
+
+# Test infrastructure (added in Phase 10)
+tests/                      export-ignore
+tests/**                    export-ignore
+
+# GitHub CI/CD workflows (added in Phase 9)
+.github/                    export-ignore
+.github/**                  export-ignore
+
+# Per-project RDF state directory
+.rdf/                       export-ignore
+.rdf/**                     export-ignore
+
+# Claude Code working-files directory
+.claude/                    export-ignore
+.claude/**                  export-ignore
+
+# Python cache guard (no Python in RDF, but pattern is future-safe)
+.pytest_cache/              export-ignore
+.pytest_cache/**            export-ignore
+
+# Working files (excluded from git tracking via .git/info/exclude; listed
+# here as a parallel defence for archive consumers)
+CLAUDE.md                   export-ignore
+PLAN.md                     export-ignore
+PLAN-*.md                   export-ignore
+MEMORY.md                   export-ignore
+AUDIT.md                    export-ignore
