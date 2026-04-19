@@ -1,5 +1,19 @@
 # RDF 3.0.5 Release Notes
 
+## Context Audit Timeout Guards
+
+Adds `TIMEOUT_PREFIX` ("timeout 30") to `context-audit.sh` using the same
+idiom as `rdf-state.sh`: the git call in the per-repo recency sort and both
+`python3` invocations are now guarded. On systems without `timeout`, the
+variable is empty and the calls behave as before.
+
+Introduces `_count_md_files()` helper replacing 8 near-duplicate
+`find … -name "*.md" … | wc -l` patterns across the skills, agents, memory,
+and work-output sections. Also fixes the JSONL byte-accumulation loop: the
+previous approach called `stat` once per file; on machines with thousands of
+session JSONL files this caused 15+ second stalls. Replaced with
+`find -printf '%s\n'` piped to `awk`, reducing Section 8 from ~15s to <0.1s.
+
 ## Hang Prevention
 
 Wraps all 14 git invocations in `rdf-state.sh` with a `TIMEOUT_PREFIX`

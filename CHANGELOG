@@ -2,6 +2,11 @@
 
 ## 3.0.5
 
+### Context Audit Timeout Guards
+[New] context-audit.sh: add TIMEOUT_PREFIX ("timeout 30") — same pattern as rdf-state.sh — wrapping the git log call in the per-repo recency sort and both python3 invocations (field breakdown + baseline comparison)
+[New] context-audit.sh: extract _count_md_files() helper replacing 8 near-duplicate find+wc patterns across skills, agents, memory, and work-output sections
+[Fix] context-audit.sh: replace per-file stat loop over JSONL session files with find -printf byte sum; reduces Section 8 from ~15s to <0.1s on machines with thousands of JSONL files
+
 ### Hang Prevention
 [Fix] rdf-state.sh: wrap all 14 git invocations with TIMEOUT_PREFIX variable ("timeout 30") to prevent indefinite stalls on locked repos, orphaned tracking branches, or slow remotes; TIMEOUT_PREFIX is empty on systems without the timeout binary (CentOS 6 minimal) for zero-regression fallback
 
