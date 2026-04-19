@@ -2,6 +2,13 @@
 
 ## 3.0.5
 
+### BATS Adapter Test Suite
+[New] tests/adapter.bats: hermetic BATS test suite for the claude-code adapter round-trip; 7 tests covering: expected file tree generation, canonical body preservation in deployed output, .rdf-hash sidecar emission (Phase 7 regression), idempotency on second generate run, and drift detection (corrupted deployed file causes doctor content-drift FAIL with file cited)
+[New] tests/Makefile: minimal make test target; system bats (no batsman submodule); documents install instructions for apt and brew
+[New] tests/README.md: explains BATS strategy decision (system bats over batsman submodule), test coverage summary, hermeticity contract
+[New] tests/fixtures/canonical/commands/r-example.md: minimal frontmatter-free command fixture with RDF_TEST_MARKER_r_example for grep assertions
+[New] tests/fixtures/canonical/agents/example.md: minimal frontmatter-free agent fixture with RDF_TEST_MARKER_example_agent for grep assertions
+
 ### GitHub Actions CI Workflow
 [New] .github/workflows/ci.yml: minimal CI workflow on push/PR to main; lint job runs bash -n syntax check and shellcheck -S error on all source shell files (bin/, lib/, state/, adapters/*/*.sh, canonical/scripts/); doctor job runs rdf generate claude-code then rdf doctor --scope content-drift to verify adapter health; tests job conditional on tests/Makefile (stub for Phase 10 BATS suite)
 

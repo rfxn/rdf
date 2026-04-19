@@ -1,5 +1,17 @@
 # RDF 3.0.5 Release Notes
 
+## BATS Adapter Test Suite
+
+Adds a hermetic BATS test suite (`tests/adapter.bats`) with 7 tests covering
+the full `rdf generate claude-code` round-trip: file tree generation, canonical
+body preservation, `.rdf-hash` sidecar emission (Phase 7 regression), idempotency
+on second run, and drift detection (corrupted deployed file cited in
+`rdf doctor --scope content-drift` output). Tests use `mktemp -d` for isolation
+and do not pollute `/root/.claude/` or `~/.rdf/`. Includes `tests/Makefile` with
+`make test` target using system bats (no batsman submodule — rationale documented
+in `tests/README.md`). Phase 9's CI `tests` job activates automatically now that
+`tests/Makefile` exists.
+
 ## GitHub Actions CI Workflow
 
 Adds `.github/workflows/ci.yml` with three parallel jobs: `lint` (bash -n +
