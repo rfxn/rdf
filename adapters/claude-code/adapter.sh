@@ -11,6 +11,31 @@ _CC_OUTPUT_DIR="${_CC_ADAPTER_DIR}/output"
 _CC_AGENT_META="${_CC_ADAPTER_DIR}/agent-meta.json"
 _CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta-v3.json"
 
+# Resolve sha256sum or sha1sum, whichever is available first.
+# Prefers sha256sum (64-char hex); falls back to sha1sum (40-char hex).
+# Sets _CC_HASH_CMD to the binary name. Dies if neither present.
+_cc_resolve_hash_cmd() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        _CC_HASH_CMD="sha256sum"
+    elif command -v sha1sum >/dev/null 2>&1; then
+        _CC_HASH_CMD="sha1sum"
+    else
+        rdf_die "neither sha256sum nor sha1sum found — cannot generate .rdf-hash sidecars"
+    fi
+}
+
+# Write a .rdf-hash sidecar next to $2 containing the hash of canonical source $1.
+# The hash is over the canonical body (pre-adapter content), so it matches
+# what doctor can re-derive from canonical/ at check time.
+# Args: $1 = canonical source file path, $2 = deployed output file path
+_cc_write_hash_sidecar() {
+    local src="$1"
+    local dst="$2"
+    local hash
+    hash="$("$_CC_HASH_CMD" < "$src" | command awk '{print $1}')"
+    printf '%s\n' "$hash" > "${dst}.rdf-hash"
+}
+
 # Generate YAML frontmatter block from agent-meta.json entry
 # Args: $1 = canonical agent basename (no extension)
 # Output: YAML frontmatter to stdout, or empty if agent not in metadata
@@ -83,6 +108,8 @@ cc_generate_agents() {
             command cp "$src_file" "$dst_file"
             command rm -f "${dst_file}.tmp"
         fi
+        # Hash the canonical body so doctor can detect post-deploy drift
+        _cc_write_hash_sidecar "$src_file" "$dst_file"
         count=$((count + 1))
     done
     rdf_log "generated ${count} agent files"
@@ -102,7 +129,10 @@ cc_generate_commands() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
-        command cp "$src_file" "${dst_dir}/${basename_f}"
+        local dst_file="${dst_dir}/${basename_f}"
+        command cp "$src_file" "$dst_file"
+        # Hash the canonical source so doctor can detect post-deploy drift
+        _cc_write_hash_sidecar "$src_file" "$dst_file"
         count=$((count + 1))
     done
     rdf_log "generated ${count} command files"
@@ -173,6 +203,7 @@ cc_generate_all() {
     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
     rdf_require_file "$_CC_AGENT_META" "agent-meta.json"
     rdf_require_bin jq
+    _cc_resolve_hash_cmd
 
     local _output_final="$_CC_OUTPUT_DIR"
     local _output_new="${_CC_OUTPUT_DIR}.new"

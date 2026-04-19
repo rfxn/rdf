@@ -1,5 +1,17 @@
 # RDF 3.0.5 Release Notes
 
+## Doctor Content-Drift Detection
+
+`rdf generate claude-code` now writes a `.rdf-hash` sidecar file next to each
+deployed agent and command markdown file. The sidecar contains the SHA-256 hash
+of the canonical source body (pre-frontmatter injection). `rdf doctor` gains a
+new `content-drift` check that hashes the deployed file body (stripping YAML
+frontmatter for agents) and compares it against the sidecar. A mismatch means
+the deployed file was modified after the last generate — `rdf doctor` reports
+FAIL with the specific file name. A missing sidecar (older deployed trees)
+reports WARN and prompts the user to run `rdf generate claude-code`. Run
+`rdf doctor --scope content-drift` to check only this category.
+
 ## Release Packaging
 
 Adds `.gitattributes` with `export-ignore` rules to prevent dev-only artifacts

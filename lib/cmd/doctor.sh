@@ -16,7 +16,8 @@ Arguments:
 Options:
   --all                 Scan all workspace projects (path = workspace root)
   --scope SCOPE         Check specific category only:
-                        artifacts, drift, memory, plan, github, sync, readme
+                        artifacts, drift, memory, plan, github, sync,
+                        content-drift, readme
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
@@ -290,6 +291,123 @@ _check_github() {
         _add_result "github" "$_OK" "project board '${project_title}' exists (#${project_exists})"
     else
         _add_result "github" "$_WARN" "no project board '${project_title}' found"
+    fi
+}
+
+# ── Check: content-drift (RDF-specific) ──
+# Verifies that deployed agent/command files match their canonical sources by
+# comparing .rdf-hash sidecars (written by 'rdf generate claude-code') against
+# a freshly computed hash of the deployed file body.
+#
+# Sidecar stores hash(canonical body at generate time).
+# Doctor hashes the deployed file body (YAML frontmatter stripped for agents).
+# Mismatch means the deployed file was modified after the last generate.
+_check_content_drift() {
+    local path="$1"
+
+    local canonical_dir="${path}/canonical"
+    local output_dir="${path}/adapters/claude-code/output"
+
+    if [[ ! -d "$canonical_dir" ]]; then
+        # Not the RDF project — content-drift check N/A
+        return 0
+    fi
+
+    if [[ ! -d "$output_dir" ]]; then
+        _add_result "content-drift" "$_WARN" "no generated output — run 'rdf generate claude-code'"
+        return 0
+    fi
+
+    # Resolve hash command — prefer sha256sum (64-char), fall back to sha1sum (40-char)
+    local hash_cmd=""
+    if command -v sha256sum >/dev/null 2>&1; then
+        hash_cmd="sha256sum"
+    elif command -v sha1sum >/dev/null 2>&1; then
+        hash_cmd="sha1sum"
+    else
+        _add_result "content-drift" "$_WARN" "neither sha256sum nor sha1sum found — cannot verify content drift"
+        return 0
+    fi
+
+    local drift_count=0
+    local missing_sidecar_count=0
+    local checked_count=0
+
+    # Hash the body of a deployed file. For agents (has YAML frontmatter added
+    # by the adapter), strip the leading --- ... --- block and the blank line
+    # that follows before hashing, so the result matches hash(canonical source).
+    # For commands (direct copy, no frontmatter), hash the file directly.
+    # Args: $1 = deployed file path, $2 = "agent" or "command"
+    _hash_deployed_body() {
+        local deployed="$1"
+        local kind="$2"
+        if [[ "$kind" == "agent" ]]; then
+            # Strip YAML frontmatter: lines from line 1 (---) through the closing ---,
+            # plus the one blank line separator, then hash the remainder.
+            awk '/^---/{if(fm==0){fm=1;next}else{fm=2;skip=1;next}} fm==2&&skip{skip=0;next} fm!=1{print}' \
+                "$deployed" | "$hash_cmd" | command awk '{print $1}'
+        else
+            "$hash_cmd" < "$deployed" | command awk '{print $1}'
+        fi
+    }
+
+    # Check agents: hash deployed body (frontmatter stripped) vs sidecar
+    local dst_file sidecar basename_f
+    for dst_file in "${output_dir}/agents"/*.md; do
+        [[ -f "$dst_file" ]] || continue
+        basename_f="$(basename "$dst_file" .md)"
+        sidecar="${dst_file}.rdf-hash"
+
+        if [[ ! -f "$sidecar" ]]; then
+            missing_sidecar_count=$((missing_sidecar_count + 1))
+            continue
+        fi
+
+        local stored_hash actual_hash
+        stored_hash="$(< "$sidecar")"
+        actual_hash="$(_hash_deployed_body "$dst_file" "agent")"
+
+        if [[ "$stored_hash" != "$actual_hash" ]]; then
+            _add_result "content-drift" "$_FAIL" \
+                "deployed file modified since last generate: agents/${basename_f}.md"
+            drift_count=$((drift_count + 1))
+        fi
+        checked_count=$((checked_count + 1))
+    done
+
+    # Check commands: hash deployed file vs sidecar
+    for dst_file in "${output_dir}/commands"/*.md; do
+        [[ -f "$dst_file" ]] || continue
+        basename_f="$(basename "$dst_file")"
+        sidecar="${dst_file}.rdf-hash"
+
+        if [[ ! -f "$sidecar" ]]; then
+            missing_sidecar_count=$((missing_sidecar_count + 1))
+            continue
+        fi
+
+        local stored_hash actual_hash
+        stored_hash="$(< "$sidecar")"
+        actual_hash="$(_hash_deployed_body "$dst_file" "command")"
+
+        if [[ "$stored_hash" != "$actual_hash" ]]; then
+            _add_result "content-drift" "$_FAIL" \
+                "deployed file modified since last generate: commands/${basename_f}"
+            drift_count=$((drift_count + 1))
+        fi
+        checked_count=$((checked_count + 1))
+    done
+
+    if [[ $missing_sidecar_count -gt 0 ]]; then
+        _add_result "content-drift" "$_WARN" \
+            "${missing_sidecar_count} file(s) missing .rdf-hash sidecar — run 'rdf generate claude-code'"
+    fi
+
+    if [[ $drift_count -eq 0 ]] && [[ $checked_count -gt 0 ]]; then
+        _add_result "content-drift" "$_OK" \
+            "all ${checked_count} deployed files match canonical sources"
+    elif [[ $checked_count -eq 0 ]] && [[ $missing_sidecar_count -eq 0 ]]; then
+        _add_result "content-drift" "$_WARN" "no files with sidecars found — run 'rdf generate claude-code'"
     fi
 }
 
@@ -633,16 +751,18 @@ _doctor_one() {
             _check_plan "$path"
             _check_github "$path"
             _check_sync "$path"
+            _check_content_drift "$path"
             _check_readme "$path"
             ;;
-        artifacts) _check_artifacts "$path" ;;
-        drift)     _check_drift "$path" ;;
-        memory)    _check_memory "$path" ;;
-        plan)      _check_plan "$path" ;;
-        github)    _check_github "$path" ;;
-        sync)      _check_sync "$path" ;;
-        readme)    _check_readme "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, readme" ;;
+        artifacts)      _check_artifacts "$path" ;;
+        drift)          _check_drift "$path" ;;
+        memory)         _check_memory "$path" ;;
+        plan)           _check_plan "$path" ;;
+        github)         _check_github "$path" ;;
+        sync)           _check_sync "$path" ;;
+        content-drift)  _check_content_drift "$path" ;;
+        readme)         _check_readme "$path" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, content-drift, readme" ;;
     esac
 }
 
