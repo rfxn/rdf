@@ -26,7 +26,27 @@ Arguments:
   - `**Accept**: <acceptance criteria>`
   - `**Test**: <test file + test names, or verification commands>`
   - `**Edge cases**: <spec edge cases covered, or "none">`
+  - `**Regression-case**: <named-test-ref | N/A — <category> — <reason>>`
 - If schema validation fails, report which fields are missing and stop
+- For Regression-case: if the value is N/A, validate the category is
+  one of {docs, performance, logging, refactor, security}. Unknown
+  category → stop with error "Regression-case category '<value>' not
+  in allowed set {docs, performance, logging, refactor, security}".
+- For Regression-case: if the value is a test reference, validate the
+  shape matches `<path>::@test "<name>"` or similar known framework
+  syntax (e.g. `<path>::<function>` for pytest/go). Shape mismatch
+  → stop with error "Regression-case '<value>' does not match a
+  known test reference pattern".
+- For Regression-case with category `security`: the reason field must contain a CVE identifier
+  (`CVE-YYYY-NNNNN`), upstream bug reference, or internal issue reference (`#<digits>`). Absent
+  → stop with error "Regression-case security N/A requires CVE/bug/issue reference in reason".
+
+**Plan-version awareness:** Before running Regression-case
+validation, check the plan preamble for `**Plan Version:** 3.0.6`
+or higher. If absent (legacy pre-3.0.6 plan), skip Regression-case
+validation with INFO log "Legacy plan detected (no Plan Version
+marker); Regression-case not enforced." All other schema checks
+still fire.
 
 ### 2. Identify Target Phase
 

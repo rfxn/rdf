@@ -151,7 +151,13 @@ Every plan starts with four sections before any phases:
 **Spec:** docs/specs/{filename}
 
 **Phases:** {N}
+
+**Plan Version:** 3.0.6
 ```
+
+The `**Plan Version:** 3.0.6` marker is what `/r-build` keys on for
+version-aware schema validation. Pre-3.0.6 plans lack this marker; for
+them, /r-build skips the Regression-case check with an INFO log.
 
 The `**Phases:** {N}` line enables crash recovery — compare against
 actual phase headings to detect missing phases on resume.
@@ -322,6 +328,12 @@ The complete format for each phase:
 - **Accept**: {acceptance criteria — concrete, testable, pass/fail}
 - **Test**: {test file + test names, or verification commands with expected output}
 - **Edge cases**: {spec edge cases covered by this phase, or "none"}
+- **Regression-case**: {tests/foo.bats::@test "named test" | N/A — <category> — <reason>}
+  - Category must be one of: docs | performance | logging | refactor | security
+  - Named test MUST reference a test that exists at plan time OR is
+    created as part of this phase. `# TODO: add test` is rejected.
+  - Category `security` requires a CVE identifier, upstream bug
+    reference, or internal issue reference in the reason field.
 
 - [ ] **Step 1: {action}**
 
@@ -341,7 +353,7 @@ The complete format for each phase:
 ---
 ```
 
-**Mandatory phase metadata fields:** Mode, Accept, Test, Edge cases.
+**Mandatory phase metadata fields:** Mode, Accept, Test, Edge cases, Regression-case.
 Omitting any field is a plan quality failure.
 
 **Accept criteria** must be concrete and testable — "governance works"
@@ -378,8 +390,8 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    Check: steps have exact code blocks, not references to "the spec"
 2. Every verification step includes expected output?
    Check: every verify step has "# expect:" comment
-3. Every phase has all 4 metadata fields?
-   Check: Mode, Accept, Test, Edge cases present
+3. Every phase has all 5 metadata fields?
+   Check: Mode, Accept, Test, Edge cases, Regression-case present
 4. Accept criteria are concrete and testable?
    Check: Accept lines contain commands or measurable conditions
 5. Test field names specific tests?
@@ -390,6 +402,13 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    Check: Phase Dependencies section has `- Phase N: none` or `- Phase N: [deps]` for every phase
 8. File Map has test column?
    Check: every new/modified file has a test file entry or "N/A (reason)"
+9. Regression-case field present on every phase?
+   Check: every phase has a Regression-case field with either a
+   named test reference or a closed-category N/A entry (docs,
+   performance, logging, refactor, or security). Category
+   `security` must include a CVE, bug, or issue reference.
+10. Plan Version marker present in preamble?
+   Check: preamble contains `**Plan Version:** 3.0.6` or higher.
 
 Also review for:
 - Steps that are vague or ambiguous (missing code, missing line refs)
@@ -469,12 +488,14 @@ is MUST-FIX.
 5. Line references point to current file state (verified by reading)
 6. Commit messages are pre-written with proper tag format
 7. Every phase ends with a `---` crash safety marker
-8. Every phase has all 4 metadata fields (Mode, Accept, Test, Edge cases)
+8. Every phase has all 5 metadata fields (Mode, Accept, Test, Edge cases, Regression-case)
 9. Accept criteria are concrete and testable (grep/wc/diff commands)
 10. Test field names specific test files or verification commands
 11. Edge cases from the spec are mapped to phases (none missed)
 12. File Map includes test file column for every new/modified file
 13. Structured dependency list present (all plans)
+14. Every phase has a Regression-case field with named test or closed-category N/A
+15. Plan preamble contains `**Plan Version:** 3.0.6` or higher marker
 
 A plan that says "extract functions to new file" is an outline.
 A plan that says "cut lines 61-173 from functions.apf, paste after
