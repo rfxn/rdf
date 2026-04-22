@@ -123,6 +123,7 @@ deployed edits  <--   rdf sync     <--   (emergency path)
 | `/r-verify` | qa | QA verification against diff or scope |
 | `/r-test` | uat | User acceptance testing from end-user persona |
 | `/r-review` | reviewer | Adversarial review in challenge or sentinel mode |
+| `/r-verify-claim` | -- | Falsifiable claim verification (5 classes) — invoked by reviewer on MUST-FIX assertions |
 | `/r-audit` | 3x reviewer + qa | Full codebase audit across all domains |
 | `/r-audit-slop` | 3x engineer + sentinel | Discovery-first AI slop audit with FP calibration |
 | `/r-ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |

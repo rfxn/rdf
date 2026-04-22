@@ -87,7 +87,9 @@ dispatcher or invoked via `/r-test`.
 
 Adversarial reviewer with two modes:
 - **Challenge mode** (pre-impl): Reviews specs and plans for design flaws,
-  edge cases, missing considerations, and simpler alternatives.
+  edge cases, missing considerations, and simpler alternatives. In Challenge
+  mode, falsifiable MUST-FIX assertions require a `/r-verify-claim` probe
+  before the finding is emitted.
 - **Sentinel mode** (post-impl): 4-pass code review -- anti-slop,
   regression, security, performance.
 
@@ -98,7 +100,7 @@ dispatcher, or invoked via `/r-review`.
 
 ## 3. Command Reference
 
-### Lifecycle Commands (17)
+### Lifecycle Commands (20)
 
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
@@ -112,11 +114,14 @@ dispatcher, or invoked via `/r-review`.
 | r-tasks | /r-tasks | -- | Task list status |
 | r-refresh | /r-refresh | -- | Governance refresh |
 | r-sync | /r-sync | -- | Canonical source sync |
+| r-context-audit | /r-context-audit | -- | Context-window overhead audit |
 | r-audit | /r-audit | reviewer, qa | Full codebase audit |
+| r-audit-slop | /r-audit-slop | 3x engineer + sentinel | Discovery-first AI slop audit |
 | r-ship | /r-ship | qa, reviewer | Release workflow |
 | r-build | /r-build | dispatcher | Execute plan phase |
 | r-vpe | /r-vpe | -- | Pipeline orchestrator |
 | r-verify | /r-verify | qa | QA verification |
+| r-verify-claim | /r-verify-claim | -- | Falsifiable claim verification (5 classes) |
 | r-test | /r-test | uat | UAT acceptance |
 | r-review | /r-review | reviewer | Adversarial review |
 
