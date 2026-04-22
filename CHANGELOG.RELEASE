@@ -1,3 +1,75 @@
+# RDF 3.0.6 Release Notes
+
+## Harness Primitives Release
+
+Five primitives from the 2026-04-21 harness research promote RDF's
+constitutional operating primitives (from `CLAUDE.md.ref`) into
+mechanical contracts at artifact boundaries.
+
+**`/r-verify-claim` slash command.** Take a falsifiable claim,
+produce a structured triage report with probe commands and a
+PASS/FAIL/UNVERIFIABLE verdict. Five closed-set claim classes
+(commit-landed, pattern-absent, pattern-present, file-unchanged,
+behavior-observable) use pre-written probe templates; the model
+chooses the class, not the command. Integrates with the reviewer
+Challenge Mode — reviewers invoke it before asserting falsifiable
+MUST-FIX findings about current state.
+
+**EVIDENCE schema on engineer result files.** Engineer result files
+now carry a mandatory `EVIDENCE:` block (when STATUS: DONE) with
+one citation line per phase claim. Dispatcher Gate 1 checks
+structural presence; QA re-runs the commands for scope >= multi-file.
+The existing TDD_EVIDENCE field is unchanged — the new block
+operates at a different level (TDD_EVIDENCE proves tests exist;
+EVIDENCE proves claims in the phase description).
+
+**`.rdf/governance/ignore.md` — path exclusion primitive.** A
+governance-declared list of paths that agents and grep-based
+tooling skip. Ships with conservative defaults (`node_modules/`,
+`vendor/`, `dist/`, `build/`, `target/`, `__pycache__/`, `.venv/`,
+`venv/`, `*.pyc`, `.rdf/work-output/`, `docs/specs/`). Generated
+by `/r-init` on first run; refreshed by `/r-refresh` with
+user-modified-merge semantics.
+
+**`REGRESSION_CASE:` field on plan phases.** Every phase in a 3.0.6+
+plan declares either a named test reference (`tests/foo.bats::@test
+"bar"`) or a closed-category N/A (`N/A — <category> — <reason>`
+where category is one of `docs`, `performance`, `logging`,
+`refactor`, `security`). Security category requires a CVE, bug,
+or issue reference. `/r-build` validates at dispatch; pre-3.0.6 plans
+(no `**Plan Version:**` preamble marker) are exempt with an INFO
+log. Addresses a measurable gap: post-merge regressions were the
+most common source of revert commits in the 2026-03 and 2026-04
+ship logs.
+
+**Fixed `adapters/agents-md/`.** The prior adapter called
+`_amd_extract_governance_section` on `profiles/<x>/governance.md`
+— a path that did not exist — and emitted "(governance file not
+found)" on every invocation. Replaced with
+`_amd_extract_canonical_section` sourcing from
+`canonical/reference/framework.md` and `CLAUDE.md.ref`. New
+sections: Operating Primitives (whole-file inline of CLAUDE.md.ref),
+Architecture Overview, Result File Artifacts, Commands. Output
+grows from 11 lines of broken content to ~100 lines of canonical
+reference.
+
+## Kill Criteria
+
+Field data from the first 4 weeks of 3.0.6 deployment drives whether
+each primitive keeps its spot (recorded to MEMORY.md at each
+measurement point):
+
+- `/r-verify-claim` — drop if > 30% of invocations produce commands
+  that error (tool failure, not claim falsification)
+- EVIDENCE schema — drop or redesign if QA EVIDENCE_CHECK FAIL rate
+  < 5% after 4 weeks (a gate that never bites is ceremony)
+- `.rdf/governance/ignore.md` — drop or narrow defaults if a
+  post-mortem ever cites "bug was in an ignored path"
+- `REGRESSION_CASE` — drop if qa verdicts with regression-PASS are
+  accompanied by real-world regressions landing
+- `agents-md` adapter — lowest-stakes; primarily maintenance
+  infrastructure
+
 # RDF 3.0.5 Release Notes
 
 ## Docs Quality Overhaul

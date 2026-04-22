@@ -9,7 +9,7 @@ adapter generation. RDF is the single source of truth for all agent definitions,
 commands, scripts, and governance deployed into Claude Code, Gemini CLI,
 Codex, or AGENTS.md environments.
 
-**Version:** 3.0.5
+**Version:** 3.0.6
 **License:** GNU GPL v2
 
 ---
@@ -90,7 +90,7 @@ rdf/                                 # Repository root
 |   |   |-- uat.md                   # User acceptance testing
 |   |   +-- reviewer.md              # Adversarial review (challenge + sentinel)
 |   |
-|   |-- commands/                    # 31 commands under /r- namespace
+|   |-- commands/                    # 34 commands under /r- namespace
 |   |   |-- r-init.md                # Governance initialization
 |   |   |-- r-start.md               # Session initialization
 |   |   |-- r-plan.md                # Planning workflow
@@ -157,7 +157,7 @@ rdf/                                 # Repository root
 |   +-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
 |
 |-- CLAUDE.md                        # RDF project's own instructions
-|-- VERSION                          # "3.0.5"
+|-- VERSION                          # "3.0.6"
 |-- CHANGELOG
 |-- CHANGELOG.RELEASE
 |-- RDF.md                           # Architecture doc (this file)
@@ -173,7 +173,7 @@ rdf/                                 # Repository root
 
 - Canonical agent/command/script storage with tool-agnostic content
 - 6 universal agents with governance-driven behavior
-- 31 commands under `/r-` namespace (17 lifecycle + 14 utility)
+- 34 commands under `/r-` namespace (17 lifecycle + 14 utility)
 - Unified CLI (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
   `rdf refresh`, `rdf sync`, `rdf github`)
 - Tool-specific adapters (Claude Code, Gemini CLI, Codex, AGENTS.md)
@@ -207,7 +207,7 @@ rdf/                                 # Repository root
 ## Success Metrics
 
 - All active projects pass `rdf doctor --all` with OK status
-- `rdf generate claude-code` produces 6 agents + 31 commands
+- `rdf generate claude-code` produces 6 agents + 34 commands
 - `rdf state` returns accurate JSON for any project in <1 second
 - Zero convention drift between canonical source and deployed copies
 - Zero stale v2 references in active code

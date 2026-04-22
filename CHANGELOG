@@ -1,5 +1,32 @@
 # RDF Changelog
 
+## 3.0.6
+
+### Harness Primitives (5-item release)
+
+[New] canonical/commands/r-verify-claim.md: slash command for evidence verification; 5 closed-set claim classes (commit-landed, pattern-absent, pattern-present, file-unchanged, behavior-observable); UNVERIFIABLE verdict for unclassifiable claims; produces evidence lines suitable for engineer result files
+[New] canonical/reference/framework.md: EVIDENCE block in engineer result schema — one line per phase claim; citation forms <path>:<line>, <cmd> → <output>, <sha> <message>; required for STATUS: DONE; arrow accepted as → or ->
+[Change] canonical/agents/engineer.md §Evidence: structured TDD_EVIDENCE + EVIDENCE two-section description replacing narrative list
+[New] canonical/agents/dispatcher.md Gate 1: structural EVIDENCE check — empty or missing block on DONE produces NEEDS_CONTEXT verdict
+[Change] canonical/agents/dispatcher.md §Load: parse Regression-case from target phase and pass to engineer; pass phase N to QA for result file path derivation
+[New] canonical/agents/qa.md §Protocol: EVIDENCE re-validation step (scope-gated) — derive result file from .rdf/work-output/phase-<N>-result.md; re-run commands and compare output; scope {docs,focused} records SKIPPED
+[New] canonical/agents/qa.md report format: EVIDENCE row in ### Checks table with PASS/FAIL/SKIPPED outcomes
+[Change] canonical/agents/reviewer.md §Challenge Mode: Verification protocol subsection — require /r-verify-claim on MUST-FIX assertions about current state; exempt design opinions and SHOULD-FIX findings
+[New] canonical/commands/r-plan.md preamble template: **Plan Version:** 3.0.6 marker for version-aware schema validation
+[New] canonical/commands/r-plan.md phase template: **Regression-case** field — named test reference OR N/A with closed-set category (docs/performance/logging/refactor/security); security category requires CVE/bug/issue reference
+[Change] canonical/commands/r-plan.md mandatory fields: add Regression-case to Mode/Accept/Test/Edge cases set
+[New] canonical/commands/r-plan.md quality checklist: checks #9 (Regression-case) and #10 (Plan Version); Plan Quality Standard items #14, #15
+[New] canonical/commands/r-build.md minimum schema validation: include Regression-case; reject unknown category; reject security N/A without CVE/bug/issue reference; skip validation on pre-3.0.6 plans (no Plan Version preamble marker)
+[New] profiles/core/reference/ignore-defaults.md: seed content for .rdf/governance/ignore.md with conservative defaults (node_modules, vendor, dist, build, target, __pycache__, .venv, venv, *.pyc, .rdf/work-output/, docs/specs/)
+[New] canonical/commands/r-init.md §Generate: ignore.md: first-time generation from defaults with user-modified-merge behavior
+[Change] canonical/commands/r-refresh.md Stage 3b: add ignore.md row; create on pre-3.0.6 consumer projects; append missing defaults under "# Added by /r-refresh" heading
+[Remove] adapters/agents-md/adapter.sh: _amd_extract_governance_section (broken — produced "(governance file not found)" on every invocation)
+[New] adapters/agents-md/adapter.sh: _amd_extract_canonical_section (heading-based extraction from canonical/reference/framework.md or CLAUDE.md.ref; visible "section not found" marker on rename)
+[Change] adapters/agents-md/sections.json: replace governance sources with canonical sources; new sections (Operating Primitives, Architecture Overview, Result File Artifacts, Commands); max_lines 150 → 200
+[Change] adapters/agents-md/output/AGENTS.md: regenerated from new sources — 60+ lines, zero "(governance file not found)" strings
+[New] tests/adapter.bats: +8 @test cases covering r-verify-claim file existence, engineer EVIDENCE declaration, dispatcher Gate 1 references, r-plan Regression-case field, r-build schema validation, ignore-defaults structural check (Goal 4), agents-md clean output, rdf doctor zero FAILs after generate (Goal 8)
+[Change] VERSION, RDF.md, README.md: bumped to 3.0.6; command count 33 → 34 in README.md
+
 ## 3.0.5
 
 ### CLAUDE.md.ref Integration

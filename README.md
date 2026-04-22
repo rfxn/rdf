@@ -1,7 +1,7 @@
 # RDF -- rfxn Development Framework
 
 ![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
-![Version](https://img.shields.io/badge/version-3.0.5-green.svg)
+![Version](https://img.shields.io/badge/version-3.0.6-green.svg)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
@@ -348,7 +348,7 @@ rdf/
 |                                      #   state, refresh, sync, github, deploy, dispatch, migrate
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
-|   |-- commands/                      # 33 commands (/r- namespace)
+|   |-- commands/                      # 34 commands (/r- namespace)
 |   |-- scripts/                       # 12 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
@@ -508,7 +508,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
 | **[CHANGELOG](CHANGELOG)** | Development history |
-| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.5) |
+| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.6) |
 
 ---
 
@@ -522,6 +522,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 33 commands -- 12 scripts -- 11 profiles -- 4 adapters -- 7 modes**
+**6 agents -- 34 commands -- 12 scripts -- 11 profiles -- 4 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

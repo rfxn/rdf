@@ -15,14 +15,14 @@
       "heading": "Architecture Overview",
       "source": "canonical",
       "path": "canonical/reference/framework.md",
-      "extract": "Categories",
+      "extract": "Artifact Taxonomy",
       "max_lines": 40
     },
     {
       "heading": "Result File Artifacts",
       "source": "canonical",
       "path": "canonical/reference/framework.md",
-      "extract": "Engineer result schema",
+      "extract": "Handoff Model",
       "max_lines": 30
     },
     {
@@ -32,10 +32,8 @@
     },
     {
       "heading": "Commands",
-      "source": "canonical",
-      "path": "canonical/reference/framework.md",
-      "extract": "Command naming",
-      "max_lines": 20
+      "source": "static",
+      "content": "Lifecycle: /r-{name} (e.g. /r-init, /r-plan, /r-build, /r-ship, /r-review). Utility: /r-util-{subject}-{verb} (e.g. /r-util-mem-compact, /r-util-chg-gen). Run /r-build N to execute phase N of the active PLAN.md."
     },
     {
       "heading": "Constraints & Boundaries",

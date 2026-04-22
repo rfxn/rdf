@@ -190,3 +190,112 @@ teardown() {
     # Output must cite the corrupted file
     [[ "$output" == *"r-example.md"* ]]
 }
+
+# ── Test 6: /r-verify-claim command file exists in canonical ──────────────────
+
+@test "r-verify-claim command file exists with Invocation section" {
+    local cmd_file="${RDF_SRC}/canonical/commands/r-verify-claim.md"
+    [ -f "$cmd_file" ]
+    # Structural: must have an Invocation section and at least 80 lines
+    run grep -c '^## Invocation' "$cmd_file"
+    [ "$status" -eq 0 ]
+    [ "$output" = "1" ]
+    run wc -l < "$cmd_file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 80 ]
+}
+
+# ── Test 7: Engineer persona declares EVIDENCE block with grammar reference ──
+
+@test "engineer persona declares EVIDENCE block with grammar reference" {
+    local file="${RDF_SRC}/canonical/agents/engineer.md"
+    run grep -c 'EVIDENCE' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 3 ]
+    run grep -c 'TDD_EVIDENCE' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+# ── Test 8: Dispatcher Gate 1 references EVIDENCE structural check ───────────
+
+@test "dispatcher Gate 1 references EVIDENCE structural check" {
+    local file="${RDF_SRC}/canonical/agents/dispatcher.md"
+    run grep -c 'EVIDENCE block' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c 'Regression-case' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+# ── Test 9: r-plan template declares Regression-case field ───────────────────
+
+@test "r-plan template declares Regression-case field" {
+    local file="${RDF_SRC}/canonical/commands/r-plan.md"
+    run grep -c 'Plan Version' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c 'Regression-case' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 2 ]
+}
+
+# ── Test 10: r-build schema validation includes Regression-case ──────────────
+
+@test "r-build schema validation includes Regression-case and category set" {
+    local file="${RDF_SRC}/canonical/commands/r-build.md"
+    run grep -c 'Regression-case' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 3 ]
+    run grep -c 'docs, performance, logging, refactor, security' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c 'Plan Version' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+# ── Test 11: agents-md output contains no governance-not-found strings ───────
+
+@test "agents-md output contains no governance-not-found strings" {
+    local out_file="${RDF_SRC}/adapters/agents-md/output/AGENTS.md"
+    [ -f "$out_file" ]
+    run grep -c 'governance file not found' "$out_file"
+    # grep -c prints 0 when no matches; success is "0"
+    [ "$output" = "0" ]
+    run wc -l < "$out_file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 60 ]
+}
+
+# ── Test 12: ignore-defaults.md structural check (Goal 4) ─────────────────────
+
+@test "ignore-defaults.md contains at least 6 exclusion entries" {
+    local file="${RDF_SRC}/profiles/core/reference/ignore-defaults.md"
+    [ -f "$file" ]
+    # Count non-comment, non-heading, non-blank exclusion lines in the Default Body
+    # Excludes: lines starting with #, lines starting with >, blank lines, lines with 4+ backticks
+    run bash -c "grep -vE '^#|^>|^\s*$|^\`\`\`' '$file' | grep -c '/$\|\*' || true"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 6 ]
+    # Confirm representative defaults are present
+    run grep -c 'node_modules/' "$file"
+    [ "$output" = "1" ]
+    run grep -c '.rdf/work-output/' "$file"
+    [ "$output" = "1" ]
+}
+
+# ── Test 13: rdf doctor returns zero FAILs after generate ────────────────────
+
+@test "rdf doctor returns zero FAILs after generate" {
+    run "${RDF_SRC}/bin/rdf" generate agents-md
+    # generate may print informational output; exit code is what matters
+    [ "$status" -eq 0 ]
+    run bash -c "'${RDF_SRC}/bin/rdf' doctor '${RDF_SRC}' 2>&1 | grep -c '\[FAIL\]' || true"
+    # grep -c prints 0 when no [FAIL] markers; || true ensures status 0 when FAIL-free
+    # Use [FAIL] pattern (not bare FAIL) to avoid matching the summary line
+    # Pass RDF_SRC explicitly so doctor checks the right project dir regardless of CWD
+    [ "$status" -eq 0 ]
+    [ "$output" = "0" ]
+}
