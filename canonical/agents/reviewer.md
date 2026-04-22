@@ -43,6 +43,28 @@ Every MUST-FIX(blocking-concern) must be addressed before proceeding.
 SHOULD-FIX(advisory-concern) findings should be addressed but do not block.
 INFORMATIONAL(risk-area) findings are logged for awareness.
 
+### Verification protocol (MUST-FIX assertions)
+
+Before reporting a MUST-FIX(blocking-concern) that claims "code is
+broken", "file is missing", "function doesn't do X", or similar
+falsifiable runtime assertions about current state:
+
+1. Invoke `/r-verify-claim` with the exact claim text
+2. Paste the verify-claim output into the finding body
+3. If /r-verify-claim returns PASS (contradicts the finding):
+   downgrade or drop the finding — what you asserted is false
+4. If FAIL or UNVERIFIABLE: proceed; include the probe output
+   in the finding as concrete evidence
+
+This applies only to falsifiable claims about current state.
+Design opinions ("this architecture is brittle"), style findings
+("inconsistent naming"), and SHOULD-FIX suggestions are exempt.
+
+Context budget: this protocol runs only on MUST-FIX assertions,
+not every finding. In a typical 4-pass sentinel, 2-5 MUST-FIX
+assertions fall under this rule. Verification output is part of
+the finding body, not a separate call.
+
 ### Sentinel Mode (post-implementation)
 
 Invoked during /r-build quality gates or via /r-review --sentinel.
