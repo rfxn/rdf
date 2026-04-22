@@ -70,6 +70,41 @@ Re-run the /r-init codebase analysis against current state:
 - Identify: new findings, removed findings, changed findings
 - Track drift (governance says X but codebase now shows Y)
 
+### 1d. Anti-Pattern Drift Delta
+
+Run `/r-util-code-scan all` and parse the per-pattern row counts from
+its `## Per-Pattern Summary` table (one row per pattern class with
+total match count). Compare against `.rdf/governance/.scan-baseline.json`
+(the snapshot from the prior refresh or /r-init run).
+
+Snapshot schema — one entry per pattern class:
+
+```json
+{
+  "version": "3.0.7",
+  "timestamp": "2026-04-22T00:00:00Z",
+  "patterns": {
+    "bare-coreutils": 12,
+    "silent-error": 3,
+    "backtick-usage": 0
+  }
+}
+```
+
+Delta surface: only pattern classes where the count changed since
+the snapshot. Surface in Stage 6c (Drift Detection) — do NOT emit a
+full findings table here.
+
+After comparison, overwrite `.scan-baseline.json` with the new
+counts so the next refresh measures drift from the current state.
+
+First-run behavior (no snapshot file): create the baseline, emit
+`*Baseline created — {N} pattern classes, {M} total hits*` in the
+Stage 6 summary, and skip the delta block.
+
+This stage is skipped when `$ARGUMENTS` is `state` or `github` —
+anti-pattern drift is governance-scope, not state-scope.
+
 Mark task "Re-scan codebase" as completed.
 
 ## Stage 2: Re-Ingest Authoritative Files (init phase 1, partial)
@@ -204,10 +239,14 @@ was detected — omit entirely when clean.
 > - `constraints.md` says Bash 4.2+ but `files/internals.conf` uses `${var,,}` (Bash 4.0+)
 > - `conventions.md` lists pytest but no Python files remain in tree
 > - `architecture.md` references `lib/legacy/` which was removed in `a3f1b2c`
+> - Anti-pattern drift: `bare-coreutils` +3 since last refresh, `silent-error` -1
 ```
 
 Each drift item: inline code for file paths and commits, plain text
-for the description.
+for the description. Anti-pattern drift lines come from Stage 1d
+delta — one summary line listing every pattern class whose count
+changed, sign-prefixed (`+N` / `-N`). Do NOT list per-file hits
+here — direct the user to `/r-util-code-scan <class>` for detail.
 
 ### 6d. State Files
 

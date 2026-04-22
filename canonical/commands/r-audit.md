@@ -69,6 +69,25 @@ Mark task "Load governance context and determine scope" as `in_progress`.
 - Scoped audit: files matching the provided path argument
 - Quick audit: inline checks only, no subagent dispatch
 
+### 1c. Baseline Pattern Scan
+
+Run `/r-util-code-scan all` against the audit scope and write the
+report to `.rdf/work-output/audit-baseline-patterns.md`. This gives
+Stage 2 subagents a pre-computed anti-pattern inventory so they do
+not each re-derive the same grep results.
+
+The baseline covers the built-in pattern library (backtick-usage,
+unquoted-var, bare-which, deprecated-egrep, dollar-bracket,
+for-in-cat, silent-error, unsafe-temp, eval-usage, bare-coreutils,
+missing-cd-guard, local-mask) plus any project-specific patterns
+loaded from `governance/anti-patterns.md`. AUDIT.md cross-reference
+marks each hit TRACKED or UNTRACKED.
+
+Findings from this pass are surfaced to Stage 2a (regression +
+anti-slop) as extra context. Stage 2a promotes UNTRACKED hits into
+formal audit findings; TRACKED hits pass through unless the reviewer
+identifies new context.
+
 Mark task "Load governance context and determine scope" as `completed`.
 
 ## Stage 2: Dispatch Parallel Subagents
@@ -82,7 +101,13 @@ from Stage 1 plus focus-specific instructions.
 Dispatch reviewer subagent in sentinel mode:
 - Focus passes: anti-slop (pass 1) and regression (pass 2)
 - Scope: entire codebase (not just a diff)
-- Extra context: governance/anti-patterns.md
+- Extra context: governance/anti-patterns.md,
+  .rdf/work-output/audit-baseline-patterns.md (Stage 1c output —
+  UNTRACKED hits must be promoted to findings; TRACKED hits may
+  be deepened with new context)
+- Large-file discipline: for any source file over 500 lines in the
+  audit scope, invoke `/r-util-code-map` before reading — scope full
+  reads to specific symbol ranges
 - Write results to: .rdf/work-output/reviewer-regression.md
 
 ### 2b. Reviewer — Security Focus
@@ -213,8 +238,12 @@ Mark task "Present audit summary" as `completed`.
 
 When `--quick` is passed, skip Stage 2 entirely:
 - Run lint/shellcheck inline (from governance/verification.md)
-- Grep for anti-patterns inline (from governance/anti-patterns.md)
-- Produce a lightweight AUDIT.md with inline-only findings
+- Run `/r-util-code-scan all` inline — canonical anti-pattern check
+  (supersedes ad-hoc grep; writes to
+  `.rdf/work-output/audit-baseline-patterns.md`)
+- Produce a lightweight AUDIT.md that folds baseline-pattern hits
+  directly into the findings table (UNTRACKED → Major, TRACKED →
+  passthrough with reference ID)
 - No subagent dispatch, no deduplication stage
 
 ## Constraints

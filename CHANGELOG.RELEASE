@@ -1,499 +1,70 @@
-# RDF 3.0.6 Release Notes
-
-## Harness Primitives Release
-
-Five primitives from the 2026-04-21 harness research promote RDF's
-constitutional operating primitives (from `CLAUDE.md.ref`) into
-mechanical contracts at artifact boundaries.
-
-**`/r-verify-claim` slash command.** Take a falsifiable claim,
-produce a structured triage report with probe commands and a
-PASS/FAIL/UNVERIFIABLE verdict. Five closed-set claim classes
-(commit-landed, pattern-absent, pattern-present, file-unchanged,
-behavior-observable) use pre-written probe templates; the model
-chooses the class, not the command. Integrates with the reviewer
-Challenge Mode — reviewers invoke it before asserting falsifiable
-MUST-FIX findings about current state.
-
-**EVIDENCE schema on engineer result files.** Engineer result files
-now carry a mandatory `EVIDENCE:` block (when STATUS: DONE) with
-one citation line per phase claim. Dispatcher Gate 1 checks
-structural presence; QA re-runs the commands for scope >= multi-file.
-The existing TDD_EVIDENCE field is unchanged — the new block
-operates at a different level (TDD_EVIDENCE proves tests exist;
-EVIDENCE proves claims in the phase description).
-
-**`.rdf/governance/ignore.md` — path exclusion primitive.** A
-governance-declared list of paths that agents and grep-based
-tooling skip. Ships with conservative defaults (`node_modules/`,
-`vendor/`, `dist/`, `build/`, `target/`, `__pycache__/`, `.venv/`,
-`venv/`, `*.pyc`, `.rdf/work-output/`, `docs/specs/`). Generated
-by `/r-init` on first run; refreshed by `/r-refresh` with
-user-modified-merge semantics.
-
-**`REGRESSION_CASE:` field on plan phases.** Every phase in a 3.0.6+
-plan declares either a named test reference (`tests/foo.bats::@test
-"bar"`) or a closed-category N/A (`N/A — <category> — <reason>`
-where category is one of `docs`, `performance`, `logging`,
-`refactor`, `security`). Security category requires a CVE, bug,
-or issue reference. `/r-build` validates at dispatch; pre-3.0.6 plans
-(no `**Plan Version:**` preamble marker) are exempt with an INFO
-log. Addresses a measurable gap: post-merge regressions were the
-most common source of revert commits in the 2026-03 and 2026-04
-ship logs.
-
-**Fixed `adapters/agents-md/`.** The prior adapter called
-`_amd_extract_governance_section` on `profiles/<x>/governance.md`
-— a path that did not exist — and emitted "(governance file not
-found)" on every invocation. Replaced with
-`_amd_extract_canonical_section` sourcing from
-`canonical/reference/framework.md` and `CLAUDE.md.ref`. New
-sections: Operating Primitives (whole-file inline of CLAUDE.md.ref),
-Architecture Overview, Result File Artifacts, Commands. Output
-grows from 11 lines of broken content to ~100 lines of canonical
-reference.
-
-## Kill Criteria
-
-Field data from the first 4 weeks of 3.0.6 deployment drives whether
-each primitive keeps its spot (recorded to MEMORY.md at each
-measurement point):
-
-- `/r-verify-claim` — drop if > 30% of invocations produce commands
-  that error (tool failure, not claim falsification)
-- EVIDENCE schema — drop or redesign if QA EVIDENCE_CHECK FAIL rate
-  < 5% after 4 weeks (a gate that never bites is ceremony)
-- `.rdf/governance/ignore.md` — drop or narrow defaults if a
-  post-mortem ever cites "bug was in an ignored path"
-- `REGRESSION_CASE` — drop if qa verdicts with regression-PASS are
-  accompanied by real-world regressions landing
-- `agents-md` adapter — lowest-stakes; primarily maintenance
-  infrastructure
-
-# RDF 3.0.5 Release Notes
-
-## Docs Quality Overhaul
-
-README.md restructured with numbered sections and expanded coverage: a new
-Configuration section documents environment variables, per-project `rdf init`
-outputs, and the convention inheritance chain; a new Usage section consolidates
-the prior Command Reference and CLI Reference with a new exit codes table. A
-License section was added. Command and script counts updated to reflect the
-current canonical tree (33 commands, 12 scripts — including the new
-`/r-audit-slop`, `/r-context-audit`, `comment-metrics.sh`, and
-`comment-snapshot.sh`).
-
-`lib/cmd/doctor.sh` README section regexes relaxed to accept the `## N. `
-numbered prefix that its own numbered-sections requirement demands. Prior
-version required literal `## Quick Start` (etc.) which contradicted the
-numbered-section rule.
-
-Project `CLAUDE.md` gained an explicit parent reference so `rdf doctor` drift
-check recognizes the inheritance without heuristic matching.
-
-## Context Audit Command
-
-Adds `/r-context-audit` as the command driver for the existing `state/context-audit.sh`
-measurement script. Produces a scored health report (0-100, CLEAN/NEEDS_WORK/BLOATED/
-CRITICAL) covering always-loaded boot cost, rdf-state.sh field waste detection,
-work-output accumulation across projects, and session history totals. Findings
-are sorted by impact with one-line fix suggestions. Supports `--save-baseline` for
-drift tracking (`~/.rdf/context-audit-baseline.json`) and `--fix` to auto-apply
-Tier 1 quick wins. Designed for weekly health checks, post-refresh verification,
-and quarterly baseline comparisons.
-
-## Slop Audit Command Promotion
-
-Promotes `/r-util-slop-scan` to `/r-audit-slop` with two additional verification
-passes over HIGH findings: an independent sentinel peer-review pass
-(`rdf-reviewer`) and an engineer FP-validation pass (`rdf-engineer`, read-only).
-Only findings that survive both passes appear in the final report, substantially
-reducing false positives. The `--quick` flag restores single-agent behavior
-equivalent to the former command. Discovery-first protocol and density safeguards
-are unchanged.
-
-## BATS Adapter Test Suite
-
-Adds a hermetic BATS test suite (`tests/adapter.bats`) with 7 tests covering
-the full `rdf generate claude-code` round-trip: file tree generation, canonical
-body preservation, `.rdf-hash` sidecar emission (Phase 7 regression), idempotency
-on second run, and drift detection (corrupted deployed file cited in
-`rdf doctor --scope content-drift` output). Tests use `mktemp -d` for isolation
-and do not pollute `/root/.claude/` or `~/.rdf/`. Includes `tests/Makefile` with
-`make test` target using system bats (no batsman submodule — rationale documented
-in `tests/README.md`). Phase 9's CI `tests` job activates automatically now that
-`tests/Makefile` exists.
-
-## GitHub Actions CI Workflow
-
-Adds `.github/workflows/ci.yml` with three parallel jobs: `lint` (bash -n +
-shellcheck on all source shell files), `doctor` (generates adapter output then
-runs `rdf doctor --scope content-drift` to verify canonical/generated integrity),
-and `tests` (BATS suite, conditional on `tests/Makefile` — stub for Phase 10).
-Workflow triggers on push to main and pull requests targeting main.
-
-## Progress Tracking Reference
-
-Consolidates the duplicated "Progress Tracking" block from `r-init`, `r-start`,
-and `r-save` into a single canonical reference file at
-`canonical/reference/progress-tracking.md`. Each command now links to the shared
-protocol and retains only its command-specific task names. Eliminates ~53 lines
-of duplicated boilerplate across the three command files.
-
-## Doctor Content-Drift Detection
-
-`rdf generate claude-code` now writes a `.rdf-hash` sidecar file next to each
-deployed agent and command markdown file. The sidecar contains the SHA-256 hash
-of the canonical source body (pre-frontmatter injection). `rdf doctor` gains a
-new `content-drift` check that hashes the deployed file body (stripping YAML
-frontmatter for agents) and compares it against the sidecar. A mismatch means
-the deployed file was modified after the last generate — `rdf doctor` reports
-FAIL with the specific file name. A missing sidecar (older deployed trees)
-reports WARN and prompts the user to run `rdf generate claude-code`. Run
-`rdf doctor --scope content-drift` to check only this category.
-
-## Release Packaging
-
-Adds `.gitattributes` with `export-ignore` rules to prevent dev-only artifacts
-from appearing in `git archive` tarballs and GitHub "Download" releases.
-Excluded paths: `docs/`, `assets/`, `tests/`, `.github/`, `.rdf/`, `.claude/`,
-`.pytest_cache/`, and working files (`CLAUDE.md`, `PLAN.md`, `MEMORY.md`,
-`AUDIT.md`). Core consumer-facing content (`canonical/`, `lib/`, `state/`,
-`bin/`, `README.md`, `CHANGELOG`) continues to ship.
-
-## Stale Artifact Cleanup
-
-Backlog sweep of stale files identified in the 2026-04-19 framework audit.
-Deleted `.pytest_cache/` from the RDF repo (no Python tests). Removed a
-521 KB APF branch-diff patch (34 days old) and a 60 KB s3perf misfiled
-plan from `.rdf/memory/`. Ran `rotate-work-output.sh` live against four
-high-file-count projects: LMD (227 pruned), BFD (175), Sigforge (150),
-APF (119). Two conditional targets — `session-safety.md` and
-`docs/superpowers/` — were preserved after grep confirmed active
-references in `docs/`.
-
-## Work-Output Rotation
-
-Introduces `state/rotate-work-output.sh`, a defensive automation script
-that prunes accumulated `.rdf/work-output/` directories across any
-RDF-using project.
-
-Age-based pruning deletes `*.md` result files with mtime older than 14 days
-(configurable via `--age`). Files whose basename appears in the project's
-`PLAN.md` are always preserved regardless of age, protecting in-progress
-phase results. If `PLAN.md` is absent, pruning proceeds on age alone.
-
-Size-based truncation keeps `agent-feed.log` bounded: if the file exceeds
-100 KB (configurable via `--size-cap`), it is truncated to the last 1000
-lines via an atomic `mv` — no data corruption on partial writes.
-
-Flags: `--dry-run` (prints candidates, no modifications), `--age <days>`,
-`--size-cap <kb>`. Silently exits 0 when `.rdf/work-output/` does not exist.
-
-`rdf generate claude-code` now deploys `rotate-work-output.sh` to
-`~/.rdf/state/` alongside `rdf-state.sh` and `context-audit.sh`.
-
-## Context Audit Timeout Guards
-
-Adds `TIMEOUT_PREFIX` ("timeout 30") to `context-audit.sh` using the same
-idiom as `rdf-state.sh`: the git call in the per-repo recency sort and both
-`python3` invocations are now guarded. On systems without `timeout`, the
-variable is empty and the calls behave as before.
-
-Introduces `_count_md_files()` helper replacing 8 near-duplicate
-`find … -name "*.md" … | wc -l` patterns across the skills, agents, memory,
-and work-output sections. Also fixes the JSONL byte-accumulation loop: the
-previous approach called `stat` once per file; on machines with thousands of
-session JSONL files this caused 15+ second stalls. Replaced with
-`find -printf '%s\n'` piped to `awk`, reducing Section 8 from ~15s to <0.1s.
-
-## Hang Prevention
-
-Wraps all 14 git invocations in `rdf-state.sh` with a `TIMEOUT_PREFIX`
-variable ("timeout 30") to prevent indefinite stalls. Affected scenarios:
-`HEAD...@{u}` on an orphaned tracking branch, `.git/index.lock` held by a
-crashed process, or a slow/unreachable remote. The `|| echo "<fallback>"`
-patterns already silenced error output; they now also catch the non-zero
-exit from a fired timeout, so each field degrades gracefully to its
-fallback value. On systems without the `timeout` binary (CentOS 6 minimal),
-`TIMEOUT_PREFIX` is empty and git calls behave as before.
-
-## Session Startup Fix
-
-Eliminates the `find /` fallback in `/r-start` that caused 120s sandbox
-timeouts when invoked from any directory other than the RDF project root.
-Root cause: `bash state/rdf-state.sh --full .` used a relative path that
-only worked from RDF's own directory, and the documented `{RDF_HOME}`
-fallback referenced an undefined variable.
-
-`rdf generate claude-code` now deploys `rdf-state.sh` and
-`context-audit.sh` to `~/.rdf/state/` with executable bit, creating the
-directory if absent. `/r-start` uses an explicit probe order:
-`~/.rdf/state/rdf-state.sh` → `/root/admin/work/proj/rdf/state/rdf-state.sh`
-→ inline git fallback. Resolution completes in under 200ms from any project.
-
-## Model Cost Optimization
-
-Adds scope-based model routing to the dispatcher and challenge-mode
-Sonnet overrides to command dispatch points. The default session model
-shifts from Opus to Sonnet 4.6, with Opus reserved for high-complexity
-agent work (engineer multi-file+, sentinel review, planner subagent).
-
-Key changes:
-- Dispatcher model routing table: scope:docs and scope:focused downgrade
-  engineer to sonnet via Agent model override; multi-file, cross-cutting,
-  and sensitive use the engineer's opus default
-- Reviewer routing: sentinel dispatches stay opus (agent default);
-  challenge dispatches from r-review, r-spec, and r-plan pass
-  model: "sonnet" override
-- Default session model: settings.json gets "model": "claude-sonnet-4-6"
-  — all interactive work, informational commands, and slash commands
-  run on Sonnet; agents with explicit model: frontmatter override
-  the session default at dispatch time
-
-Design rationale: shell constraint density (Bash 4.1 floor, 8+ distros,
-13+ anti-patterns) warrants Opus for implementation and adversarial
-review. Mechanical tasks (docs, changelogs, challenge review) run at
-full quality on Sonnet. Failure mode of a missing override is Opus on
-simple work (waste), never Sonnet on complex work (quality risk).
-
----
-
-# RDF 3.0.4 Release Notes
-
-## Pipeline Asset Fix
-Restructure Build stage in pipeline.svg as a numbered list matching the other
-three stages; fix subtitle text that overflowed the box boundary.
-
-## Starter Profile Promotion & Evidence Verification
-
-Promotes Perl, PHP, and Infrastructure from starter to full-tier profiles
-by adding 3 reference docs each (anti-patterns, testing, domain-specific).
-Introduces two new evidence conventions: Verification Preamble (context-gate
-for anti-pattern findings) and "When this is safe" inline annotations to
-reduce false positives. Adds Evidence Discipline section to all testing
-reference docs. Updates all 7 operational modes with evidence verification
-discipline.
-
-Key changes:
-- 9 new reference docs across Perl, PHP, Infrastructure profiles
-- Anti-patterns docs include Verification Preamble: scan→verify two-pass
-- Inline "When this is safe" annotations prevent false positives
-- Testing docs include Evidence Discipline: tests as evidence, not ceremony
-- All modes (security, performance, migration, debugging, refactoring,
-  documentation, development) gain evidence-backed verification requirements
-- Registry updated: 0 starter profiles remain, all 11 profiles are full tier
-
----
-
-## Parallel Plan Execution
-
-Adds inter-phase parallel dispatch to `/r-build`. The build command
-reads a structured dependency graph from PLAN.md, computes parallel
-batches, validates file ownership, and dispatches multiple dispatcher
-subagents concurrently with scope-derived isolation.
-
-Key changes:
-- `/r-build --parallel` auto-batches all pending phases by dependency graph
-- `/r-build N-M` dispatches a specific range of phases in parallel
-- Isolation auto-derived from scope: file-gated for multi-file, git
-  worktree for cross-cutting/sensitive phases. `--worktree` flag overrides.
-- Parallel failure handling with gate-aware recommendations
-- Structured dependency list format (`- Phase N: none` / `- Phase N: [deps]`)
-  replaces free-text ASCII dependency graphs
-- VPE Stage 4 calls `/r-build --parallel` once (replaces per-phase loop)
-- Dispatcher PARALLEL_BATCH flag prevents nested parallelism
-
----
-
-## Documentation Convention
-
-Adds a cross-project documentation convention to RDF as a brand-agnostic
-product feature. The convention defines README structure, SVG asset
-specifications, badge standards, companion file templates, and a
-progressive documentation level system (floor/level-2/level-3).
-
-Key changes:
-- `reference/documentation-standard.md` (~350 lines): README template with
-  section ordering rules, above-the-fold SVG specs, badge conventions,
-  middle section numbering, companion file requirements, man page
-  cross-referencing, and enforcement check inventory
-- `reference/templates/SECURITY.md`: companion file template with
-  `{{PROJECT}}` and `{{CONTACT_EMAIL}}` placeholders
-- `reference/templates/CONTRIBUTING.md`: companion file template with
-  `{{PROJECT}}`, `{{ORG}}`, and `{{LICENSE}}` placeholders
-- Workspace `reference/brand.md`: rfxn brand definition (palette,
-  typography, project identities) — not committed to RDF
-
----
-
-## Init: Companion File Generation
-
-Extends `rdf init` to generate SECURITY.md, CONTRIBUTING.md, and
-`.rdf/docs-level` from templates. Companion files use `sed` substitution
-with `|` delimiter for `{{PLACEHOLDER}}` variables.
-
-Key changes:
-- `_generate_companion_files()` creates SECURITY.md and CONTRIBUTING.md
-  from `reference/templates/` if they don't already exist
-- `.rdf/docs-level` created during init with profile-aware inference
-  (products default to `level-2`, libraries to `floor`)
-- Org resolved from `git remote get-url origin` with `rfxn` fallback
-- Dry-run support, idempotent (skips existing files)
-
----
-
-## Doctor: Readme Scope
-
-Adds `rdf doctor --scope readme` for documentation convention enforcement.
-The new `_check_readme()` function validates README.md structure against
-project documentation level (floor, level-2, or level-3), read from
-`.rdf/docs-level`.
-
-Key changes:
-- Floor checks (always run): README.md presence, badge row (shields.io or
-  GitHub Actions), Quick Start section, License section, numbered sections
-  (## N. format), ## 3. and ## 4. sections, exit codes table
-- Level-2 checks: What's New, Contents (ToC), Integration section,
-  SECURITY.md, CONTRIBUTING.md, banner SVGs (dark/light), picture tag
-- Level-3 checks: Troubleshooting section, pipeline/architecture SVG,
-  terminal demo asset
-- `readme` scope added to `_doctor_one()` dispatch and usage text
-- No README → early FAIL and return (no cascade)
-- Unknown docs-level value defaults to floor
-
----
-
-# RDF 3.0.3 Release Notes
-
-## Gate Simplification & VPE Pipeline Orchestrator
-
-Replaces the risk×type gate selection matrix with a 5-level scope
-classification derived automatically by the dispatcher from phase content.
-Restores v2-style per-agent finding qualifiers for self-routing.
-Adds /r-vpe as an optional end-to-end pipeline orchestrator.
-
-Key changes:
-- Scope classification: dispatcher auto-derives scope (docs, focused,
-  multi-file, cross-cutting, sensitive) from file list and governance
-  context — replaces planner-tagged risk/type/gates matrix
-- Finding qualifiers: shared severity spine (MUST-FIX/SHOULD-FIX/
-  INFORMATIONAL) plus agent-scoped qualifiers that carry routing signals
-  (merge-block, fix-or-refute, workflow-breaking, blocking-concern, etc.)
-- Plan metadata simplified: 7 mandatory fields → 4 (Mode, Accept, Test,
-  Edge cases) — Risk, Type, Gates removed from planner surface
-- /r-vpe: optional pipeline orchestrator managing spec→plan→build→ship
-  with adaptive intake (1-4 exchanges), approval gates between stages,
-  and crash recovery via vpe-progress.md
-
-Developer surface: 4 concepts (PASS, MUST-FIX, SHOULD-FIX, phase status
-file). Scope classification is visible in framework.md for transparency
-but requires no developer action.
-
----
-
-# RDF 3.0.2 Release Notes
-
-## Sentinel Integration & Quality Gate Redesign
-
-Dispatcher-owned quality gate resolution restores the RDF 2.x mgr model.
-Sentinel is now active on all non-trivial phases with automatic depth
-scaling. The developer surface simplifies to ~6 concepts.
-
-Key changes:
-- Tiered sentinel depth: lite (2-pass: anti-slop + regression) for
-  routine phases, full (4-pass) for scope:cross-cutting, scope:sensitive,
-  end-of-plan, /r-ship, and /r-audit
-- Counter-hypothesis protocol (unconditional in sentinel mode) prevents
-  false positives — every MUST-FIX/CONCERN finding is evaluated against
-  location-specific counter-evidence before reporting
-- Parallel QA+sentinel execution: both agents run simultaneously, findings
-  deduplicated by file:line proximity
-- End-of-plan sentinel: mandatory full 4-pass review of cumulative diff
-  after the last phase of any 3+ phase plan
-- Dispatcher-owned finding resolution: fix/refute cycle (max 3 iterations)
-  before escalating to the developer
-- FP calibration: dispatcher re-dispatches sentinel at full depth when
-  zero findings are reported on a 50+ line diff
-- SHOULD-FIX renamed to CONCERN across all surfaces (later reverted to SHOULD-FIX in 3.0.3)
-
----
-
-# RDF 3.0.1 Release Notes
-
-## .rdf/ Directory Migration
-
-All per-project RDF state consolidates into a single `.rdf/` directory:
-- `.rdf/governance/` — governance files (was `.claude/governance/`)
-- `.rdf/work-output/` — session state (was `work-output/`)
-- `.rdf/memory/` — agent memory (was CC auto-memory path)
-- `.rdf/scopes/` — sub-scope governance overrides
-
-New `rdf migrate` command handles transition from old layout.
-`rdf doctor` detects legacy state and recommends migration.
-
-## Profile & Mode Expansion
-
-Five new profiles (Rust, TypeScript, Perl, PHP, Infrastructure) and three
-new modes (refactoring, debugging, documentation). Profiles are now
-stackable — `rdf init` auto-detects multiple profiles and merges their
-governance templates. Two tiers: full (template + reference docs) and
-starter (template only).
-
-Core governance template expanded with AI Agent Discipline, Code
-Generation Standards, Context Window Hygiene, and Collaboration Protocol
-sections that apply to every project.
-
----
-
-# RDF 3.0.0 Release Notes
-
-## What's New
-
-RDF 3.0.0 is a complete architecture redesign. The prior domain-specific
-agent model (12 agents with baked-in domain knowledge) is replaced by a
-universal agent model (6 agents whose behavior is shaped by governance
-files initialized per-project).
-
-### Universal Agents
-- **planner** (opus) -- research, specs, implementation plans
-- **dispatcher** (sonnet) -- plan execution orchestrator
-- **engineer** (opus) -- universal implementation, governance-driven
-- **qa** (sonnet) -- verification gate
-- **uat** (sonnet) -- user acceptance testing
-- **reviewer** (opus) -- adversarial review (challenge + sentinel modes)
-
-### /r- Command Namespace
-24 commands replace the prior ~68:
-- 14 lifecycle commands: /r-init, /r-start, /r-spec, /r-plan, /r-mode,
-  /r-status, /r-refresh, /r-sync, /r-audit, /r-ship, /build, /verify,
-  /test, /review
-- 10 utility commands under /r-util- namespace
-
-### Governance-Driven Profiles
-Profiles no longer bundle agents and commands. All 6 agents and 24 commands
-are always available. Profiles provide governance seed templates that
-/r-init uses to initialize per-project governance files. The governance
-files shape agent behavior at runtime.
-
-## Migration from 2.x
-
-### Automatic
-Run `rdf generate claude-code` to regenerate. Symlinks remain unchanged.
-
-### What Changed
-- Agent names: `rfxn-` prefix replaced by `rdf-` (e.g., `rdf-engineer`)
-- Commands: old slash commands replaced by `/r-` namespace equivalents
-- Profiles: `profile.json` manifests removed (governance-template.md only)
-- Dispatch: `lib/dispatch-agents.json` and `lib/dispatch-tasks.json` removed
-
-### Preserved Artifacts
-- `canonical/agents-v2-archived/` -- all 12 v2 agent definitions
-- `canonical/commands-v2-archived/` -- all 68 v2 command definitions
-- `adapters/claude-code/agent-meta-v2.json` -- v2 agent metadata
-
-### Breaking Changes
-- v2 slash commands (`/mgr`, `/sys-eng`, `/audit`, etc.) no longer exist
-- `profile.json` files removed from all profiles
-- `rdf_profile_includes` no longer gates agent/command generation
-- `dispatch-agents.json` and `dispatch-tasks.json` removed
+# RDF 3.0.7 Release Notes
+
+## Context-Efficient Reads Release
+
+Three changes that target the single biggest source of wasted tokens
+in long-running RDF sessions: full-file reads of large source files
+when the agent only needs one symbol.
+
+**`/r-util-code-map` slash command.** Structural map of a source
+file — classes, functions, methods with per-symbol line ranges.
+Inspired by GitHub issue anthropics/claude-code#34304 (measured
+80% context reduction on a 6-file call-chain trace). Language
+dispatch covers Python (via the `ast` module, high fidelity),
+shell (awk-based function extraction, medium fidelity), TypeScript
+/ JavaScript (ctags preferred, grep fallback), Go, Rust, C/C++,
+Ruby, with tree-sitter preferred when the binary is installed.
+Threshold is configurable per project via
+`governance/conventions.md:code-map-threshold` (default 500
+lines). The skill is composable: other skills and agents invoke
+it before reading large files.
+
+**`/r-util-code-scan` wired into `/r-audit` as baseline.** A new
+Stage 1c runs the full pattern-class scan up front and writes the
+results to `.rdf/work-output/audit-baseline-patterns.md`. Stage 2
+subagents receive the baseline as extra context rather than
+re-deriving the same grep matches. UNTRACKED pattern hits are
+promoted to formal findings by the regression/anti-slop reviewer;
+TRACKED hits pass through unless the reviewer identifies new
+context. `--quick` mode now uses `/r-util-code-scan all` as its
+canonical anti-pattern check, replacing the previous ad-hoc
+`grep governance/anti-patterns.md` pass.
+
+**Anti-pattern drift delta in `/r-refresh`.** A new Stage 1d
+compares the current `/r-util-code-scan all` counts against a
+snapshot at `.rdf/governance/.scan-baseline.json` and surfaces
+only the delta — one summary line in Drift Detection listing each
+pattern class whose count changed, sign-prefixed. No findings
+table in refresh output; users follow up with
+`/r-util-code-scan <class>` for detail. Skipped for `state` and
+`github` scopes. First-run behavior creates the baseline without
+emitting a delta.
+
+**Why this shape.** The code-map skill is the primitive; `/r-audit`
+and `/r-refresh` are its first consumers. Large-file discipline
+(code-map before Read) is also written into the reviewer dispatch
+payload in Stage 2a so subagents in the audit pipeline inherit
+the same efficiency behavior. The refresh delta is intentionally
+narrow — snapshot-based, counts-only, one line — because full
+findings tables belong in `/r-audit`, and refresh should remain
+a cheap drift-sync step.
+
+**Consumers.** Projects that update to 3.0.7 gain:
+
+- A faster `/r-audit` that doesn't redo grep work across subagents
+- `/r-refresh` tracking whether codebase hygiene is improving or
+  regressing between governance syncs
+- A reusable primitive (`/r-util-code-map`) that downstream utility
+  skills can compose on (`/r-util-test-scope`, `/r-util-doc-gen`,
+  `/r-util-code-scan` can all narrow their own work with it)
+
+**File changes.**
+
+- `canonical/commands/r-util-code-map.md` (new)
+- `canonical/commands/r-audit.md` (Stage 1c, Stage 2a, `--quick`)
+- `canonical/commands/r-refresh.md` (Stage 1d, Stage 6c)
+- `README.md` (utility table, counts)
+- `RDF.md` (tree layout, counts)
+- `CHANGELOG`, `CHANGELOG.RELEASE`, `VERSION`
+
+**Command count:** 34 → 35. Utility commands: 14 → 15.

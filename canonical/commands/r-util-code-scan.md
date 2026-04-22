@@ -80,7 +80,22 @@ Mark as TRACKED (with finding ID) or UNTRACKED.
     - Untracked (new): <N>
     - In comments/strings (likely FP): <N>
 
-For `all` mode, produce a combined report with per-pattern summary table.
+For `all` mode, produce a combined report with a per-pattern summary
+table ahead of the per-file sections:
+
+    ## Per-Pattern Summary
+
+    | Pattern Class | Matches | Tracked | Untracked |
+    |---|---|---|---|
+    | backtick-usage | 0 | 0 | 0 |
+    | bare-coreutils | 12 | 9 | 3 |
+    | silent-error | 3 | 0 | 3 |
+    ...
+
+This table is the machine-parseable surface for callers that need
+counts-only (e.g., `/r-refresh` Stage 1d drift delta). One row per
+pattern class, including classes with zero matches — downstream
+consumers rely on a stable, complete row set.
 
 ## Rules
 - Read-only — do NOT modify any files
