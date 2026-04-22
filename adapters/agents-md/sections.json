@@ -1,5 +1,5 @@
 {
-  "max_lines": 150,
+  "max_lines": 200,
   "sections": [
     {
       "heading": "Project Context",
@@ -7,27 +7,35 @@
       "content": "rfxn Development Framework (RDF) — convention governance, agent pipelines, and project orchestration for the rfxn ecosystem (APF, BFD, LMD, Sigforge, shared libraries). All projects are Bash 4.1+ targeting CentOS 6 through modern distros."
     },
     {
-      "heading": "Build & Test",
-      "source": "governance",
-      "profile": "shell",
-      "extract": "testing"
+      "heading": "Operating Primitives",
+      "source": "canonical",
+      "path": "CLAUDE.md.ref"
     },
     {
-      "heading": "Code Style & Conventions",
-      "source": "governance",
-      "profile": "shell",
-      "extract": "shell-standards"
+      "heading": "Architecture Overview",
+      "source": "canonical",
+      "path": "canonical/reference/framework.md",
+      "extract": "Categories",
+      "max_lines": 40
     },
     {
-      "heading": "Git Workflows",
-      "source": "governance",
-      "profile": "core",
-      "extract": "commit-protocol"
+      "heading": "Result File Artifacts",
+      "source": "canonical",
+      "path": "canonical/reference/framework.md",
+      "extract": "Engineer result schema",
+      "max_lines": 30
     },
     {
       "heading": "Agent Roster",
       "source": "agents",
       "format": "bullet-list"
+    },
+    {
+      "heading": "Commands",
+      "source": "canonical",
+      "path": "canonical/reference/framework.md",
+      "extract": "Command naming",
+      "max_lines": 20
     },
     {
       "heading": "Constraints & Boundaries",

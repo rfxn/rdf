@@ -10,53 +10,50 @@ _AMD_ADAPTER_DIR="${RDF_ADAPTERS}/agents-md"
 _AMD_OUTPUT_DIR="${_AMD_ADAPTER_DIR}/output"
 _AMD_SECTIONS="${_AMD_ADAPTER_DIR}/sections.json"
 
-# Extract a section summary from a governance doc
-# This produces a condensed version suitable for AGENTS.md
-# Args: $1 = governance file path, $2 = section keyword to extract
-_amd_extract_governance_section() {
-    local gov_file="$1"
-    local keyword="$2"
+# _amd_extract_canonical_section file heading max_lines — extract a section
+_amd_extract_canonical_section() {
+    local src_file="$1"
+    local heading="$2"
+    local max_lines="${3:-30}"
 
-    if [[ ! -f "$gov_file" ]]; then
-        echo "(governance file not found)"
+    if [[ ! -f "$src_file" ]]; then
+        echo "(source file not found: $src_file)"
         return 1
     fi
 
-    # Find the section by keyword in headings, extract content until next heading
+    # Match top-level section heading (## or #) containing the keyword
+    # Extract body until the next heading of the same or higher level
     local in_section=0
     local lines_out=0
-    local max_lines=15
+    local heading_re="^##? .*${heading}"
+    local next_heading_re="^##? "
 
     while IFS= read -r line; do
-        # Check for heading containing keyword (case-insensitive)
-        local lower_line
-        lower_line="$(echo "$line" | tr '[:upper:]' '[:lower:]')"
-        local lower_key
-        lower_key="$(echo "$keyword" | tr '[:upper:]' '[:lower:]')"
-
-        local heading_re="^##.*${lower_key}"
-        if [[ "$lower_line" =~ $heading_re ]]; then
+        if [[ "$line" =~ $heading_re ]] && [[ $in_section -eq 0 ]]; then
             in_section=1
             continue
         fi
 
-        # Stop at next heading of same or higher level
-        local next_heading_re="^##"
         if [[ $in_section -eq 1 ]] && [[ "$line" =~ $next_heading_re ]]; then
             break
         fi
 
-        if [[ $in_section -eq 1 ]] && [[ -n "$line" ]]; then
+        if [[ $in_section -eq 1 ]]; then
             echo "$line"
             lines_out=$((lines_out + 1))
             if [[ $lines_out -ge $max_lines ]]; then
                 break
             fi
         fi
-    done < "$gov_file"
+    done < "$src_file"
+
+    if [[ $in_section -eq 0 ]]; then
+        echo "(section not found: $heading)"
+        return 1
+    fi
 }
 
-# Generate agent roster as bullet list
+# _amd_agent_roster — emit canonical agents as bullet list
 _amd_agent_roster() {
     for agent_file in "${RDF_CANONICAL}/agents"/*.md; do
         [[ -f "$agent_file" ]] || continue
@@ -65,7 +62,6 @@ _amd_agent_roster() {
         local agent_desc
         agent_desc="$(sed -n '/^[^#[:space:]]/{ p; q; }' "$agent_file")"
         [[ -z "$agent_desc" ]] && agent_desc="Specialized agent"
-        # Truncate long descriptions
         if [[ ${#agent_desc} -gt 100 ]]; then
             agent_desc="${agent_desc:0:97}..."
         fi
@@ -73,19 +69,17 @@ _amd_agent_roster() {
     done
 }
 
-# Full AGENTS.md generation
+# amd_generate_all — generate AGENTS.md from canonical sources
 amd_generate_all() {
     rdf_log "generating AGENTS.md (cross-tool)..."
     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
     rdf_require_file "$_AMD_SECTIONS" "sections.json"
     rdf_require_bin jq
 
-    # Clean output directory
     command rm -rf "$_AMD_OUTPUT_DIR"
     command mkdir -p "$_AMD_OUTPUT_DIR"
 
     local dst_file="${_AMD_OUTPUT_DIR}/AGENTS.md"
-    local profiles_dir="${RDF_HOME}/profiles"
     local max_lines
     max_lines="$(jq -r '.max_lines' "$_AMD_SECTIONS")"
 
@@ -96,7 +90,6 @@ amd_generate_all() {
         echo ""
     } > "$dst_file"
 
-    # Process each section from sections.json
     local section_count
     section_count="$(jq '.sections | length' "$_AMD_SECTIONS")"
     local i=0
@@ -115,15 +108,26 @@ amd_generate_all() {
                 content="$(jq -r ".sections[$i].content" "$_AMD_SECTIONS")"
                 echo "$content" >> "$dst_file"
                 ;;
-            governance)
-                local profile extract gov_file
-                profile="$(jq -r ".sections[$i].profile" "$_AMD_SECTIONS")"
-                extract="$(jq -r ".sections[$i].extract" "$_AMD_SECTIONS")"
-                gov_file="${profiles_dir}/${profile}/governance.md"
-                _amd_extract_governance_section "$gov_file" "$extract" >> "$dst_file"
+            canonical)
+                local path extract section_max
+                path="$(jq -r ".sections[$i].path" "$_AMD_SECTIONS")"
+                extract="$(jq -r ".sections[$i].extract // empty" "$_AMD_SECTIONS")"
+                section_max="$(jq -r ".sections[$i].max_lines // empty" "$_AMD_SECTIONS")"
+                section_max="${section_max:-30}"
+                local src_path="${RDF_HOME}/${path}"
+                if [[ -z "$extract" ]]; then
+                    # Whole-file inline (used for CLAUDE.md.ref etc.)
+                    command cat "$src_path" >> "$dst_file"
+                else
+                    _amd_extract_canonical_section "$src_path" "$extract" "$section_max" >> "$dst_file"
+                fi
                 ;;
             agents)
                 _amd_agent_roster >> "$dst_file"
+                ;;
+            governance)
+                rdf_warn "agents-md: source 'governance' deprecated in 3.0.6; use 'canonical'"
+                echo "(deprecated source; regenerate sections.json)" >> "$dst_file"
                 ;;
             *)
                 rdf_warn "agents-md: unknown section source: $source"
@@ -134,7 +138,6 @@ amd_generate_all() {
         i=$((i + 1))
     done
 
-    # Verify line count
     local line_count
     line_count="$(wc -l < "$dst_file")"
     if [[ "$line_count" -gt "$max_lines" ]]; then
