@@ -104,6 +104,12 @@ For each governance file in .rdf/governance/:
 - verification.md — update check list from detected tools
 - constraints.md — update platform targets, version floors
 - anti-patterns.md — update from codebase patterns
+- ignore.md — refresh from profiles/core/reference/ignore-defaults.md
+  using the same user-modified-merge rule: preserve existing entries,
+  append only new defaults under a `# Added by /r-refresh` heading
+  if any default is missing from the current file. If ignore.md does
+  not exist (pre-3.0.6 project), create it with the full default set
+  from ignore-defaults.md.
 
 ### 3c. Track Changes
 - Record what changed in each file

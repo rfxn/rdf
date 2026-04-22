@@ -505,6 +505,45 @@ Structure:
 {performance constraints from existing docs if any}
 ```
 
+### Generate: ignore.md
+
+Content sources: Phase 2 directory scan for known noise patterns
+(node_modules/, vendor/, dist/, build/, target/, __pycache__/,
+.venv/, venv/), Phase 3 CI config for artifact directories,
+profiles/core/reference/ignore-defaults.md for conservative defaults
+that apply to every project.
+
+Structure:
+````
+# Excluded Paths
+
+> Paths that agents and grep-based tooling should skip.
+> .gitignore-style glob syntax. Comments begin with #.
+
+# Build / dependency trees
+node_modules/
+vendor/
+dist/
+build/
+target/
+
+# Python / virtualenvs
+__pycache__/
+.venv/
+venv/
+*.pyc
+
+# RDF working state (never contains source)
+.rdf/work-output/
+
+# Generated spec/plan state (user-local)
+docs/specs/
+````
+
+Merge behavior: if `ignore.md` already exists, treat as user-modified
+(preserve entries, append any missing defaults under a heading
+`# Added by /r-init`).
+
 ### Generate: anti-patterns.md
 
 Content sources: Phase 1 anti-pattern sections from existing .md files,
