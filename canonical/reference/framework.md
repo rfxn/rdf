@@ -22,6 +22,7 @@ the framework evolves. Never contains volatile data.
 | Project CLAUDE.md | `<project>/CLAUDE.md` | Human |
 | Governance index | `<project>/.rdf/governance/index.md` | `/r-init` |
 | Governance files | `<project>/.rdf/governance/*.md` | `/r-init`, `/r-refresh` |
+| `ignore.md` | `<project>/.rdf/governance/ignore.md` | `/r-init`, `/r-refresh` (agents consume: grep-exclude input) |
 | Shared reference | `/root/admin/work/proj/reference/*.md` | Human |
 | Project reference | `<project>/reference/*.md` | Human |
 
@@ -85,9 +86,25 @@ FILES_CHANGED: <list>
 TDD_EVIDENCE:
   TESTS: <test names, red/green output>
   COVERAGE_DELTA: <if measurable>
+EVIDENCE:
+  - <claim>: <path>:<line> | <cmd> → <output> | <sha> <message>
+  - <claim>: <path>:<line> | <cmd> → <output> | <sha> <message>
 GOVERNANCE_APPLIED: <constraints and how>
 CONCERNS: <if DONE_WITH_CONCERNS>
 ```
+
+**EVIDENCE block grammar:**
+- Each line is one claim with ≥1 citation
+- Citation forms: `<path>:<line>` | `<cmd> → <output>` | `<sha> <message>`
+- Arrow accepted as U+2192 (`→`) or ASCII (`->`)
+- Multiple citations per claim joined with ` | ` (space-pipe-space)
+- Required for STATUS: DONE or DONE_WITH_CONCERNS (≥1 non-empty line)
+- Optional for STATUS: BLOCKED or NEEDS_CONTEXT
+
+**Structural check** (dispatcher Gate 1, implemented in Phase 2):
+- Block exists (`^EVIDENCE:` followed by indented `-` lines)
+- Non-empty when STATUS requires it
+- Empty EVIDENCE on DONE → verdict NEEDS_CONTEXT with feedback "EVIDENCE block missing required citation"
 
 **QA verdict schema:**
 ```

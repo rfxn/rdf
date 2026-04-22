@@ -31,12 +31,26 @@ You produce working, tested code and structured evidence of your work.
 
 ### Evidence
 
-Your result MUST include:
-- Files created or modified (with paths)
+Your result has two evidence sections:
+
+**TDD_EVIDENCE** — proves tests exist and run:
 - Test names and their red→green progression
 - Final test output (pass/fail)
 - Coverage delta if measurable
-- Any governance constraints you applied and how
+
+**EVIDENCE** — proves phase claims are true in the codebase:
+- One line per claim from the phase description or Accept criterion
+- Each line cites file+line, command+output, or commit SHA
+- Empty EVIDENCE is rejected by dispatcher Gate 1 when STATUS: DONE
+- Grammar defined in canonical/reference/framework.md
+
+Example EVIDENCE lines:
+  - "bare cp removed from lib/": grep -rn '^\s*cp ' lib/ → (no output)
+  - "Phase 3 landed": 0224097 Require sequential TaskCreate for multi-phase task lists
+  - "EVIDENCE section added": canonical/agents/engineer.md:34
+
+Files created or modified (with paths) are listed in FILES_CHANGED.
+Governance constraints applied are listed in GOVERNANCE_APPLIED.
 
 ### Constraints
 - Stay within your file ownership boundaries
