@@ -13,6 +13,12 @@ engineer, qa, uat, and reviewer subagents as needed.
 - Read PLAN.md — identify target phase (argument or next pending)
 - Read .rdf/governance/index.md — load relevant governance
 - Determine execution mode from phase tag
+- Parse `**Regression-case**` field from the target phase; pass
+  verbatim to the engineer subagent in the dispatch payload so the
+  engineer can satisfy the phase's regression requirement
+- Determine phase number N; pass N to the QA subagent in the
+  dispatch payload so QA can derive `.rdf/work-output/phase-<N>-result.md`
+  for EVIDENCE re-validation (scope ≥ multi-file only)
 
 ### Execute (one of three modes)
 
@@ -46,6 +52,14 @@ parallelism. Log: "Downgraded to serial-agent (parallel batch)."
 
 Gate 1 — Engineer self-report:
   TDD evidence: test names, red/green output, coverage delta
+  EVIDENCE block: structural check that block exists and contains
+    at least one line matching `<claim>: <path>:<line>` or
+    `<claim>: <cmd> → <output>` or `<claim>: <sha> <message>` when
+    STATUS is DONE or DONE_WITH_CONCERNS. Empty or missing block
+    with STATUS: DONE → verdict NEEDS_CONTEXT with feedback
+    "EVIDENCE block missing required citation".
+    Arrow accepted in → or -> form. Empty block is permitted
+    when STATUS is BLOCKED or NEEDS_CONTEXT.
 
 Gate 2 — QA verification (deterministic gate):
   Reads governance/verification.md for project-specific checks
