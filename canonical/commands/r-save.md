@@ -233,7 +233,15 @@ Tags are 1-3 categories from: `git`, `naming`, `testing`, `commands`,
 `context`, `planning`, `review`, `performance`, `workflow`, `scope`.
 
 **Cap at 30 entries.** If the file exceeds 30 lines after appending,
-trim the oldest entries (from the top) to keep 30.
+trim the oldest entries from the top in-place. Use `sed -i` — NOT
+`tail -30 file > tmp && mv tmp file` — because interactive shells
+commonly alias `mv` to `mv -i`, which stalls waiting for overwrite
+confirmation. In-place editing sidesteps the alias entirely:
+
+```bash
+lines=$(wc -l < ~/.rdf/insights.jsonl)
+[ "$lines" -gt 30 ] && sed -i "1,$((lines - 30))d" ~/.rdf/insights.jsonl
+```
 
 ### 7. Lessons Learned Prompt
 

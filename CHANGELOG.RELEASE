@@ -68,3 +68,15 @@ a cheap drift-sync step.
 - `CHANGELOG`, `CHANGELOG.RELEASE`, `VERSION`
 
 **Command count:** 34 → 35. Utility commands: 14 → 15.
+
+---
+
+## Post-release patch
+
+**`/r-save` insights trim no longer stalls on `mv -i` alias.** Section 6
+trimming previously used `tail -30 file > tmp && mv tmp file`, which
+hung on interactive shells that alias `mv` to `mv -i` — the overwrite
+prompt blocked the non-interactive Bash tool call. Replaced with an
+in-place `sed -i "1,\$((lines-30))d"` edit that sidesteps the alias
+entirely. No behavior change on fresh shells; fixes /r-save for users
+whose shell rc sets the common `mv`/`cp`/`rm` interactive aliases.

@@ -13,6 +13,7 @@
 [Change] README.md: utility command count 14 → 15; added /r-util-code-map row; totals updated (34 → 35 commands)
 [Change] RDF.md: command counts (34 → 35, 14 utility → 15 utility); VERSION reference (3.0.6 → 3.0.7)
 [Change] VERSION: 3.0.7
+[Fix] canonical/commands/r-save.md §6: insights.jsonl trim now uses `sed -i` in-place edit instead of `tail -N > tmp && mv tmp file`; interactive shells alias `mv` to `mv -i`, which stalled /r-save waiting for overwrite confirmation — in-place editing sidesteps the alias entirely
 
 ## 3.0.6
 
