@@ -14,6 +14,10 @@
 [Change] RDF.md: command counts (34 → 35, 14 utility → 15 utility); VERSION reference (3.0.6 → 3.0.7)
 [Change] VERSION: 3.0.7
 [Fix] canonical/commands/r-save.md §6: insights.jsonl trim now uses `sed -i` in-place edit instead of `tail -N > tmp && mv tmp file`; interactive shells alias `mv` to `mv -i`, which stalled /r-save waiting for overwrite confirmation — in-place editing sidesteps the alias entirely
+[New] canonical/reference/plan-schema.md: authoritative validation rules for PLAN.md cited by /r-plan, reviewer (challenge mode), and /r-build; Plan-Version Awareness + Rules 1-7 covering phase heading shape, mandatory metadata fields, crash-safety markers, Regression-case shape (named-test or `N/A — category — reason`), forbidden shapes (whole-file invariants, deferred refs, free-form prose), category allowed set, category disambiguation (pure test-addition phases use `refactor` not `security`; halo-category mistakes; `refactor` requires no behavior change), and security CVE/bug/issue identifier requirement
+[New] canonical/commands/r-plan.md Step 2.7: schema validation pass run after writing the plan and before reviewer dispatch — walks every rule in reference/plan-schema.md against every phase, fixes violations in-place, blocks Step 3 if any remain; saves a reviewer cycle and a downstream /r-build dispatch failure
+[Change] canonical/commands/r-plan.md reviewer checklist + Plan Quality Standard: collapsed schema-mechanical items (metadata field presence, Regression-case shape/category, Plan Version marker) into single cite-by-reference items pointing at reference/plan-schema.md; phase format inline pointer added near Regression-case template line
+[Change] canonical/commands/r-build.md Section 1: replaced ~32 lines of inline Regression-case validation prose with one cite-by-reference paragraph pointing at reference/plan-schema.md; same rules now applied in the same order at all three call sites (planner Step 2.7, reviewer challenge mode, build dispatch)
 
 ## 3.0.6
 

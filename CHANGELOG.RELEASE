@@ -80,3 +80,20 @@ prompt blocked the non-interactive Bash tool call. Replaced with an
 in-place `sed -i "1,\$((lines-30))d"` edit that sidesteps the alias
 entirely. No behavior change on fresh shells; fixes /r-save for users
 whose shell rc sets the common `mv`/`cp`/`rm` interactive aliases.
+
+**Plan schema rules extracted into a single source of truth.** The
+Regression-case validation prose previously inlined in `/r-build`
+Section 1 has been lifted into `canonical/reference/plan-schema.md`
+(Plan-Version Awareness + Rules 1-7), and `/r-plan` gained a Step 2.7
+that runs the same validation pass after writing the plan and before
+reviewer dispatch. Three call sites — planner pre-reviewer pass,
+reviewer challenge mode, and `/r-build` Section 1 — now apply the
+same rules in the same order from the same file. Schema errors that
+previously surfaced only at dispatch time (wrong category for pure
+test-addition phases, whole-file invariant shorthand in Regression-case,
+deferred CVE references) are caught while the author is still in the
+planning loop. New rules (4c forbidden shapes, 6 category
+disambiguation) codify the exact author mistakes observed in recent
+sessions. No bash script — markdown-first by design, so the LLM keeps
+judgment for genuine edge cases and a single edit to the schema doc
+updates all three callers.

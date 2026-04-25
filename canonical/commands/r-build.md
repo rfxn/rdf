@@ -20,33 +20,17 @@ Arguments:
 - Read PLAN.md in the project root
 - If PLAN.md does not exist, report error and stop:
   "No PLAN.md found. Create one with /r-plan or write it manually."
-- Validate minimum schema — each phase must have:
-  - `## Phase N: <description>`
-  - `**Mode**: serial-context | serial-agent | parallel-agent`
-  - `**Accept**: <acceptance criteria>`
-  - `**Test**: <test file + test names, or verification commands>`
-  - `**Edge cases**: <spec edge cases covered, or "none">`
-  - `**Regression-case**: <named-test-ref | N/A — <category> — <reason>>`
-- If schema validation fails, report which fields are missing and stop
-- For Regression-case: if the value is N/A, validate the category is
-  one of {docs, performance, logging, refactor, security}. Unknown
-  category → stop with error "Regression-case category '<value>' not
-  in allowed set {docs, performance, logging, refactor, security}".
-- For Regression-case: if the value is a test reference, validate the
-  shape matches `<path>::@test "<name>"` or similar known framework
-  syntax (e.g. `<path>::<function>` for pytest/go). Shape mismatch
-  → stop with error "Regression-case '<value>' does not match a
-  known test reference pattern".
-- For Regression-case with category `security`: the reason field must contain a CVE identifier
-  (`CVE-YYYY-NNNNN`), upstream bug reference, or internal issue reference (`#<digits>`). Absent
-  → stop with error "Regression-case security N/A requires CVE/bug/issue reference in reason".
+- Validate the plan against
+  [reference/plan-schema.md](../reference/plan-schema.md). Apply
+  Plan-Version Awareness first, then Rules 1-7 in order. On the first
+  violation, print the rule number and the exact failure message from
+  the schema doc, then stop without dispatching.
 
-**Plan-version awareness:** Before running Regression-case
-validation, check the plan preamble for `**Plan Version:** 3.0.6`
-or higher. If absent (legacy pre-3.0.6 plan), skip Regression-case
-validation with INFO log "Legacy plan detected (no Plan Version
-marker); Regression-case not enforced." All other schema checks
-still fire.
+  /r-plan Step 2.7 should have caught any schema violations before the
+  plan was committed. If validation fails here, the plan was authored
+  manually, edited after planning, or the pre-reviewer pass was skipped
+  — either fix the plan and re-run /r-build, or re-run /r-plan to
+  regenerate.
 
 ### 2. Identify Target Phase
 

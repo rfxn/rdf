@@ -155,9 +155,11 @@ Every plan starts with four sections before any phases:
 **Plan Version:** 3.0.6
 ```
 
-The `**Plan Version:** 3.0.6` marker is what `/r-build` keys on for
-version-aware schema validation. Pre-3.0.6 plans lack this marker; for
-them, /r-build skips the Regression-case check with an INFO log.
+The `**Plan Version:** 3.0.6` marker is what schema validators key on
+for version-aware checks — see Plan-Version Awareness in
+[reference/plan-schema.md](../reference/plan-schema.md). New plans must
+carry the current marker; legacy plans without it bypass the strictest
+rules with an INFO log.
 
 The `**Phases:** {N}` line enables crash recovery — compare against
 actual phase headings to detect missing phases on resume.
@@ -329,11 +331,11 @@ The complete format for each phase:
 - **Test**: {test file + test names, or verification commands with expected output}
 - **Edge cases**: {spec edge cases covered by this phase, or "none"}
 - **Regression-case**: {tests/foo.bats::@test "named test" | N/A — <category> — <reason>}
-  - Category must be one of: docs | performance | logging | refactor | security
-  - Named test MUST reference a test that exists at plan time OR is
-    created as part of this phase. `# TODO: add test` is rejected.
-  - Category `security` requires a CVE identifier, upstream bug
-    reference, or internal issue reference in the reason field.
+  - Full shape, category, and disambiguation rules:
+    [reference/plan-schema.md](../reference/plan-schema.md) Rules 4-7.
+  - Quick reference: category ∈ {docs, performance, logging, refactor,
+    security}; pure test-addition phases use `refactor` (not `security`);
+    `security` requires CVE/bug/issue ref in reason.
 
 - [ ] **Step 1: {action}**
 
@@ -367,6 +369,19 @@ Every phase MUST end with a `---` horizontal rule. This is the crash
 safety marker — a phase without a trailing `---` is considered
 truncated and will be regenerated on `--resume`.
 
+### 2.7 Validate Schema
+
+Validate the drafted PLAN.md against
+[reference/plan-schema.md](../reference/plan-schema.md). Walk every rule
+(Plan-Version Awareness, then Rules 1-7) against every phase. List any
+violations to the user with the rule number and exact failure message,
+fix them in-place, and re-run the pass until clean.
+
+Do not proceed to Step 3 (Review) with outstanding schema violations —
+the reviewer and `/r-build` apply the same rules and would reject the
+plan downstream. Catching violations here saves a reviewer cycle and a
+dispatch failure.
+
 Mark task "Write execution-grade implementation phases" as `completed`.
 
 ---
@@ -390,8 +405,12 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    Check: steps have exact code blocks, not references to "the spec"
 2. Every verification step includes expected output?
    Check: every verify step has "# expect:" comment
-3. Every phase has all 5 metadata fields?
-   Check: Mode, Accept, Test, Edge cases, Regression-case present
+3. All schema rules satisfied per `reference/plan-schema.md`?
+   Check: walk Plan-Version Awareness + Rules 1-7 against every phase.
+   Covers metadata field presence, Regression-case shape and category,
+   security CVE/bug/issue requirement, and Plan Version marker.
+   Step 2.7 should have caught these — flag any miss as MUST-FIX so the
+   author knows the pre-reviewer pass was skipped or incomplete.
 4. Accept criteria are concrete and testable?
    Check: Accept lines contain commands or measurable conditions
 5. Test field names specific tests?
@@ -402,13 +421,6 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    Check: Phase Dependencies section has `- Phase N: none` or `- Phase N: [deps]` for every phase
 8. File Map has test column?
    Check: every new/modified file has a test file entry or "N/A (reason)"
-9. Regression-case field present on every phase?
-   Check: every phase has a Regression-case field with either a
-   named test reference or a closed-category N/A entry (docs,
-   performance, logging, refactor, or security). Category
-   `security` must include a CVE, bug, or issue reference.
-10. Plan Version marker present in preamble?
-   Check: preamble contains `**Plan Version:** 3.0.6` or higher.
 
 Also review for:
 - Steps that are vague or ambiguous (missing code, missing line refs)
@@ -487,15 +499,15 @@ is MUST-FIX.
 4. No step says "update X" without showing what the update is
 5. Line references point to current file state (verified by reading)
 6. Commit messages are pre-written with proper tag format
-7. Every phase ends with a `---` crash safety marker
-8. Every phase has all 5 metadata fields (Mode, Accept, Test, Edge cases, Regression-case)
-9. Accept criteria are concrete and testable (grep/wc/diff commands)
-10. Test field names specific test files or verification commands
-11. Edge cases from the spec are mapped to phases (none missed)
-12. File Map includes test file column for every new/modified file
-13. Structured dependency list present (all plans)
-14. Every phase has a Regression-case field with named test or closed-category N/A
-15. Plan preamble contains `**Plan Version:** 3.0.6` or higher marker
+7. All schema rules in `reference/plan-schema.md` satisfied (covers
+   crash-safety markers, mandatory metadata fields, Regression-case
+   shape and category, security CVE/bug/issue requirement, and Plan
+   Version marker)
+8. Accept criteria are concrete and testable (grep/wc/diff commands)
+9. Test field names specific test files or verification commands
+10. Edge cases from the spec are mapped to phases (none missed)
+11. File Map includes test file column for every new/modified file
+12. Structured dependency list present (all plans)
 
 A plan that says "extract functions to new file" is an outline.
 A plan that says "cut lines 61-173 from functions.apf, paste after
