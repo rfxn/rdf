@@ -405,12 +405,15 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    Check: steps have exact code blocks, not references to "the spec"
 2. Every verification step includes expected output?
    Check: every verify step has "# expect:" comment
-3. All schema rules satisfied per `reference/plan-schema.md`?
-   Check: walk Plan-Version Awareness + Rules 1-7 against every phase.
-   Covers metadata field presence, Regression-case shape and category,
-   security CVE/bug/issue requirement, and Plan Version marker.
-   Step 2.7 should have caught these — flag any miss as MUST-FIX so the
-   author knows the pre-reviewer pass was skipped or incomplete.
+3. Step 2.7 schema validation pass ran clean?
+   Check: confirm Step 2.7 was executed (task transcript / planner
+   notes) and reported no outstanding violations. Spot-check 1-2 phases
+   for obvious schema breaks (missing metadata field, malformed
+   Regression-case). Do not re-walk every rule — /r-build Section 1 is
+   the independent late-binding check, and same-context re-validation
+   by a weaker model is not real defense in depth. Flag MUST-FIX only
+   if Step 2.7 appears to have been skipped or a spot-check reveals an
+   obvious miss.
 4. Accept criteria are concrete and testable?
    Check: Accept lines contain commands or measurable conditions
 5. Test field names specific tests?

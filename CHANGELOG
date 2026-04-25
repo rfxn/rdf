@@ -18,6 +18,7 @@
 [New] canonical/commands/r-plan.md Step 2.7: schema validation pass run after writing the plan and before reviewer dispatch — walks every rule in reference/plan-schema.md against every phase, fixes violations in-place, blocks Step 3 if any remain; saves a reviewer cycle and a downstream /r-build dispatch failure
 [Change] canonical/commands/r-plan.md reviewer checklist + Plan Quality Standard: collapsed schema-mechanical items (metadata field presence, Regression-case shape/category, Plan Version marker) into single cite-by-reference items pointing at reference/plan-schema.md; phase format inline pointer added near Regression-case template line
 [Change] canonical/commands/r-build.md Section 1: replaced ~32 lines of inline Regression-case validation prose with one cite-by-reference paragraph pointing at reference/plan-schema.md; same rules now applied in the same order at all three call sites (planner Step 2.7, reviewer challenge mode, build dispatch)
+[Change] canonical/commands/r-plan.md reviewer item 3: trimmed full schema re-walk to a Step-2.7-trust-but-verify check (confirm pre-pass ran, spot-check 1-2 phases) — same-context re-validation by a weaker model isn't real defense in depth; /r-build Section 1 is the independent late-binding check that actually runs in a fresh context against on-disk truth
 
 ## 3.0.6
 
