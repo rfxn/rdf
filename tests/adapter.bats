@@ -244,14 +244,17 @@ teardown() {
 # ── Test 10: r-build schema validation includes Regression-case ──────────────
 
 @test "r-build schema validation includes Regression-case and category set" {
-    local file="${RDF_SRC}/canonical/commands/r-build.md"
-    run grep -c 'Regression-case' "$file"
+    # Schema rules were extracted from r-build.md into plan-schema.md (ce7e6ef).
+    # r-build.md now cites plan-schema.md; the rule content lives there.
+    local schema="${RDF_SRC}/canonical/reference/plan-schema.md"
+    local rbuild="${RDF_SRC}/canonical/commands/r-build.md"
+    run grep -c 'Regression-case' "$schema"
     [ "$status" -eq 0 ]
     [ "$output" -ge 3 ]
-    run grep -c 'docs, performance, logging, refactor, security' "$file"
+    run grep -c 'docs, performance, logging, refactor, security' "$schema"
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
-    run grep -c 'Plan Version' "$file"
+    run grep -c 'plan-schema' "$rbuild"
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }
@@ -298,4 +301,43 @@ teardown() {
     # Pass RDF_SRC explicitly so doctor checks the right project dir regardless of CWD
     [ "$status" -eq 0 ]
     [ "$output" = "0" ]
+}
+
+# ── Tests 14-16: Wave A adapter regression tests ──────────────────────────────
+
+@test "regenerated dispatcher mentions RDF_SESSION_ID, Tests-may-touch, hook installation" {
+    # Use RDF_SRC as home so rdf_init finds the real canonical directory.
+    # The adapter derives the output filename from the canonical basename:
+    # canonical/agents/dispatcher.md -> output/agents/dispatcher.md
+    output_dir="$(mktemp -d)"
+    _generate "$RDF_SRC" "$output_dir"
+    grep -q 'RDF_SESSION_ID' "$output_dir/agents/dispatcher.md"
+    grep -q 'rdf_scoped_filename' "$output_dir/agents/dispatcher.md"
+    grep -q 'Worktree Pre-Commit Hook Installation' "$output_dir/agents/dispatcher.md"
+    grep -q 'Post-Merge Scope Check' "$output_dir/agents/dispatcher.md"
+    grep -q 'Tests-may-touch' "$output_dir/agents/dispatcher.md"
+    grep -q 'phase-<N>-status-<RDF_SESSION_ID>' "$output_dir/agents/dispatcher.md"
+    command rm -rf "$output_dir"
+}
+
+@test "regenerated r-build mentions UUIDv7 worktree session-id and controller cd" {
+    # Use RDF_SRC as home so rdf_init finds the real canonical directory.
+    output_dir="$(mktemp -d)"
+    _generate "$RDF_SRC" "$output_dir"
+    grep -q 'RDF_SESSION_ID' "$output_dir/commands/r-build.md"
+    grep -q 'state/git-hooks/pre-commit' "$output_dir/commands/r-build.md"
+    grep -q 'cd \.worktrees\|cd into the worktree' "$output_dir/commands/r-build.md"
+    grep -q 'build-progress-\${RDF_SESSION_ID}' "$output_dir/commands/r-build.md"
+    ! grep -q '8-char random hex' "$output_dir/commands/r-build.md"
+    command rm -rf "$output_dir"
+}
+
+@test "regenerated consumers (r-start, r-status) glob scoped progress files" {
+    # Use RDF_SRC as home so rdf_init finds the real canonical directory.
+    output_dir="$(mktemp -d)"
+    _generate "$RDF_SRC" "$output_dir"
+    grep -q 'rdf_session_init\|RDF_SESSION_ID' "$output_dir/commands/r-start.md"
+    grep -q 'rdf_session_init\|RDF_SESSION_ID' "$output_dir/commands/r-status.md"
+    grep -q 'phase-<N>-status-<SESSION_ID>' "$output_dir/commands/r-status.md"
+    command rm -rf "$output_dir"
 }

@@ -1,3 +1,43 @@
+# RDF 3.1.0 Release Notes
+
+## 3.1.0 — Concurrent Sessions Wave A
+
+This release ships the foundation primitives for multi-session safety
+on a single repository. RDF previously assumed serial execution within
+one controller session; in practice, parallel Claude Code sessions
+against the same project (e.g., advancing different milestones in
+different terminals) produced state-file collisions, worktree leakage
+(75% leak rate observed in M11 B3), and aggregation builds absorbing
+uncommitted parallel work.
+
+Wave A introduces:
+- **Session identity** — every session generates a UUIDv7
+  (`RDF_SESSION_ID`), inheritable by subagents
+- **Scoped state filenames** — phase-result, vpe-progress,
+  spec-progress, ship-progress files all suffixed with the session ID
+- **Structurally-enforced worktree scope** — pre-commit hook installed
+  in every worktree physically rejects out-of-scope commits; dispatcher
+  post-merge check is the defense-in-depth backstop
+- **Pre-aggregation dirty check** — engineers fail fast on out-of-scope
+  dirty files before running aggregation/build steps
+- **Tests-may-touch scope-flex zone** — optional plan-schema.md Rule 8
+  that pre-authorizes paths for trivial test-infra drift (≤30 lines,
+  ≤3 files), making the structural enforcement livable
+
+Backwards compatibility: legacy un-suffixed progress files are detected
+on resume and offered for one-shot import. Older dispatcher invocations
+(no RDF_SESSION_ID in payload) fall back to un-suffixed paths with a
+warning. Phases without `**Tests-may-touch:**` get strict Files-only
+enforcement (current behavior).
+
+Waves B (cross-session bus + status broadcast + `/r-msg`) and C (atomic
+write helpers + OFD locks + worktree liveness sweeper) are planned
+follow-ons.
+
+Design: docs/specs/2026-04-25-concurrent-sessions-design.md
+
+---
+
 # RDF 3.0.7 Release Notes
 
 ## Context-Efficient Reads Release

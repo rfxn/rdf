@@ -1,5 +1,45 @@
 # RDF Changelog
 
+## 3.1.0 — Concurrent Sessions Wave A (Stop the Bleeding)
+
+Foundation for multi-session safety. Establishes session identity, scoped
+state filenames, structurally-enforced worktree boundary (pre-commit hook
++ dispatcher backstop), pre-aggregation dirty check, and the Tests-may-touch
+scope-flex zone that makes the enforcement livable. Addresses six recurring
+incidents observed in blacklight (M6–M13); validated against active running
+session feedback (M13 dispatch, 5/5 prose-instruction violations).
+See docs/specs/2026-04-25-concurrent-sessions-design.md.
+
+[New] state/rdf-bus.sh — helper library: rdf_session_init (UUIDv7),
+  rdf_scoped_filename, rdf_session_short, rdf_parse_phase_scope
+[New] state/git-hooks/pre-commit — worktree pre-commit hook physically
+  rejecting out-of-scope commits before they land (P8 layer 1 enforcement)
+[New] tests/rdf-bus.bats — 10 unit + integration tests
+[New] framework.md — Session Identity subsection documenting RDF_SESSION_ID;
+  Category 2 + Category 3 transient-state tables now use session-suffixed names
+[New] plan-schema.md Rule 8 — Tests-may-touch scope-flex zone with per-file
+  (≤30 lines) and global (≤3 files) ceilings
+[New] dispatcher.md — Worktree Pre-Commit Hook Installation step + Post-Merge
+  Scope Check (defense-in-depth backstop, addresses 75% leak rate from M11 B3)
+[New] engineer.md — Pre-aggregation Precondition: git status --porcelain
+  before any aggregation/build step; honors Tests-may-touch zone (M10 P4 fix)
+[New] r-build.md §6b — pre-commit hook installation step after git worktree add;
+  explicit controller `cd` into worktree before each Task dispatch (the actual
+  mechanism per workspace CLAUDE.md "Worktree CWD" note — closes non-deterministic
+  CWD class; `Task` tool does not accept a cwd parameter);
+  nested-invocation constraint note; build-progress.md writes scoped to ${RDF_SESSION_ID}
+[New] tests/adapter.bats — regression test verifying regenerated dispatcher
+  surfaces RDF_SESSION_ID, rdf_scoped_filename, hook installation, scope check,
+  Tests-may-touch
+[Change] dispatcher.md, qa.md — phase-N-result and phase-N-status paths now
+  scoped via rdf_scoped_filename (was un-suffixed; collided across sessions)
+[Change] r-build.md §6b — worktree path and branch use full RDF_SESSION_ID
+  UUIDv7 (was 8-char ad-hoc hex)
+[Change] r-vpe.md, r-spec.md, r-ship.md — vpe-progress.md, spec-progress.md,
+  ship-progress.md write paths now scoped with ${RDF_SESSION_ID}; resume
+  protocols look for scoped form first, prompt to import legacy un-suffixed
+  file if present
+
 ## 3.0.7
 
 ### Context-Efficient Reads (AST primitives + audit wiring)
