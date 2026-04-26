@@ -34,7 +34,7 @@
 
 **Shell standards:** `#!/usr/bin/env bash`, `set -euo pipefail`, `command cp/mv/rm/cat`, double-quote variables.
 
-**Version bump:** 3.1.0 → 3.1.1. Patch — additive primitives. Rule 9 is conditional (existing plans without count assertions are unaffected). Target-class defaults to `code` (current 4-pass behavior). Pre-commit hook patterns are opt-in per-project via `governance/ignore.md`.
+**Version bump:** 3.1.0 → 3.1.1. Patch — additive primitives. Rule 9 is conditional (existing plans without count assertions are unaffected). Target-class defaults to `code` (current 3-pass behavior). Pre-commit hook patterns are opt-in per-project via `governance/ignore.md`.
 
 **CRITICAL — do NOT:**
 - Touch Wave B / Wave C primitives.
@@ -42,7 +42,7 @@
 - Modify `lib/cmd/`, `bin/rdf`, or `adapters/*/adapter.sh`.
 - Edit `~/.claude/` directly — canonical only, regen in P5.
 - Land Rule 9 as STRICT — must be CONDITIONAL on count-assertion presence.
-- Change reviewer behavior on existing `code`-class dispatches — target-class defaults preserve current 4-pass.
+- Change reviewer behavior on existing `code`-class dispatches — target-class defaults preserve current 3-pass.
 
 ---
 
@@ -60,7 +60,7 @@
 |------|---------|-----------|
 | `canonical/reference/plan-schema.md` | Add Rule 9: phase test-count self-consistency. Conditional rule (fires only when phase asserts a test count). Failure-message format and three-call-site enforcement parity with Rule 8. | `tests/adapter.bats` |
 | `canonical/agents/planner.md` | Add Step 1.5 ("RC-contract evidence"): for every caller-helper-fn referenced in the plan, planner reads the helper's body in source and pastes a per-call-site rc table into the plan preamble. Inline grep instructions — no separate skill. | `tests/adapter.bats` |
-| `canonical/agents/reviewer.md` | Sentinel Mode: add `target-class` switch (`prose | code | schema | mixed`) with per-class default severity ladders; add Early-Exit rubric (Pass 1+2 clean + diff <300 lines + no security/hot-path file → skip Pass 3+4). Challenge Mode: reference Rule 9 + verify "RC Contract Evidence" presence. | `tests/adapter.bats` |
+| `canonical/agents/reviewer.md` | Sentinel Mode: add `target-class` switch (`prose | code | schema | mixed`) with per-class default severity ladders; add Early-Exit rubric (Pass 1+2 clean + diff <300 lines + no security/hot-path file → skip Pass 3). Challenge Mode: reference Rule 9 + verify "RC Contract Evidence" presence. | `tests/adapter.bats` |
 | `canonical/agents/dispatcher.md` | Sentinel-dispatch: derive `target-class` from phase scope + file extensions (`.md` → prose, `.json/.yaml` → schema, source files → code, mixed → mixed); pass via dispatch payload. | `tests/adapter.bats` |
 | `canonical/agents/engineer.md` | Setup: add step 7 ("Boundary-guard sweep"). On `scope:cross-cutting` or `scope:sensitive` phases, engineer greps schema directories for input fields lacking `pattern`/`enum`/`format` constraints, cross-references against call-site sinks (filesystem path, shell command, JSONL append), and pastes the result table into EVIDENCE. Inline grep instructions — no separate skill. | `tests/adapter.bats` |
 | `canonical/commands/r-plan.md` | Step 2.7: add Rule 9 check + RC-contract-evidence section presence check; halt before reviewer dispatch on either failure. | `tests/adapter.bats` |
@@ -128,21 +128,21 @@ Bundle all Area A changes into one phase. Add Rule 9 to plan-schema.md (conditio
 
 ### Phase 2: Scope-aware sentinel — target-class switch + early-exit + dispatcher derivation
 
-Bundle Area B. Add `target-class` switch to reviewer.md Sentinel Mode with per-class default severity ladders (`prose | code | schema | mixed`). Add Early-Exit rubric (Pass 1+2 clean + diff <300 lines + no security/hot-path file → skip Pass 3+4). Update dispatcher.md to derive target-class from phase scope + file extensions and pass via the sentinel dispatch payload. All edits are markdown only.
+Bundle Area B. Add `target-class` switch to reviewer.md Sentinel Mode with per-class default severity ladders (`prose | code | schema | mixed`). Add Early-Exit rubric (Pass 1+2 clean + diff <300 lines + no security/hot-path file → skip Pass 3). Update dispatcher.md to derive target-class from phase scope + file extensions and pass via the sentinel dispatch payload. All edits are markdown only.
 
 **Files:**
 - Modify: `canonical/agents/reviewer.md` (test: `tests/adapter.bats`)
 - Modify: `canonical/agents/dispatcher.md` (test: `tests/adapter.bats`)
 
 - **Mode**: serial-agent
-- **Accept**: reviewer.md Sentinel Mode contains target-class switch table (per-class default severities for each pass) + Early-Exit rubric subsection (four required conditions) + verdict marker `passes_3_4_skipped: true` when applicable. dispatcher.md sentinel-dispatch section contains target-class derivation pseudocode (extension table + fallback rule) + payload example showing `target_class: <derived>`. Adapter regen produces matching output.
+- **Accept**: reviewer.md Sentinel Mode contains target-class switch table (per-class default severities for each pass) + Early-Exit rubric subsection (four required conditions) + verdict marker `pass_3_skipped: true` when applicable. dispatcher.md sentinel-dispatch section contains target-class derivation pseudocode (extension table + fallback rule) + payload example showing `target_class: <derived>`. Adapter regen produces matching output.
 - **Test**: `tests/adapter.bats::@test "reviewer target-class switch present"`, `::@test "reviewer Early-Exit rubric present"`, `::@test "dispatcher target-class derivation present"`, `::@test "dispatcher payload includes target_class"`. Run with `bats tests/adapter.bats` — expect 4 tests pass.
-- **Edge cases**: target-class default is `code` (preserves current 4-pass behavior on every dispatch that does not specify target-class); Early-Exit requires ALL four conditions; mismatched signal — reviewer falls back to `code` and logs warning; phase touches only `.md` → `prose`; phase has no Files declaration (legacy plan) → `code` fallback; mixed source + schema → `mixed` (max-of-any default ladder).
+- **Edge cases**: target-class default is `code` (preserves current 3-pass behavior on every dispatch that does not specify target-class); Early-Exit requires ALL four conditions; mismatched signal — reviewer falls back to `code` and logs warning; phase touches only `.md` → `prose`; phase has no Files declaration (legacy plan) → `code` fallback; mixed source + schema → `mixed` (max-of-any default ladder).
 - **Regression-case**: N/A — refactor — additive switch with default that preserves current behavior.
 
-- [ ] **Step 1: Edit reviewer.md** — Sentinel Mode section: insert target-class switch table (4 rows × 4 passes); Early-Exit rubric subsection with the four conditions and the `passes_3_4_skipped` verdict marker; for the `prose` row, push anti-slop and regression severities to INFO defaults.
+- [ ] **Step 1: Edit reviewer.md** — Sentinel Mode section: insert target-class switch table (4 rows × 3 passes); Early-Exit rubric subsection with the four conditions and the `pass_3_skipped` verdict marker; for the `prose` row, push anti-slop and regression severities to INFO defaults.
 - [ ] **Step 2: Edit dispatcher.md** — sentinel-dispatch section: insert target-class derivation pseudocode (extension dispatch table: `.md`→prose, `.json/.yaml/.proto`→schema, source files→code, mixed→mixed; fallback `code` if all extensions unrecognized); update payload example to include `target_class: <derived>`.
-- [ ] **Step 3: Verify** — markdown-only; grep `target-class`, `target_class:`, `passes_3_4_skipped`.
+- [ ] **Step 3: Verify** — markdown-only; grep `target-class`, `target_class:`, `pass_3_skipped`.
 - [ ] **Step 4: Commit** — message: `Sentinel: target-class switch + early-exit rubric + dispatcher derivation`. Body tags: `[New]` for target-class + Early-Exit, `[Change]` for sentinel-dispatch payload.
 
 ---
@@ -242,7 +242,7 @@ Aggregate release. Run `rdf generate claude-code` to regenerate adapter output; 
 - 5 phases land on main (or feature branch then merged) — one commit per phase + 1 release commit (+ optional sentinel fixup).
 - `rdf doctor --all` returns 0 after P5.
 - End-of-plan sentinel returns APPROVE.
-- Smoke test against blacklight reviewer-findings corpus: Rule 9 catches the PLAN-M8 13-vs-14 typo; planner Step 1.5 catches the `bl_api_call` 65-vs-71 rc mismatch; target-class skips Pass 3+4 on the M6 P1 clean diff; hook blocks the bare-`sha256sum` from spM8 finding 5; engineer Setup step 7 flags the `step_id`/`case_id`/`--user`/`--reason` paths from M9.5.
+- Smoke test against blacklight reviewer-findings corpus: Rule 9 catches the PLAN-M8 13-vs-14 typo; planner Step 1.5 catches the `bl_api_call` 65-vs-71 rc mismatch; target-class skips Pass 3 on the M6 P1 clean diff; hook blocks the bare-`sha256sum` from spM8 finding 5; engineer Setup step 7 flags the `step_id`/`case_id`/`--user`/`--reason` paths from M9.5.
 
 ---
 

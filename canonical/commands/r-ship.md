@@ -91,8 +91,7 @@ Dispatch qa subagent with:
 ### 2b. Reviewer Sentinel
 Dispatch reviewer subagent in sentinel mode with:
 - Scope: full branch diff against base
-- Instruction: run all 4 passes (anti-slop, regression, security,
-  performance)
+- Instruction: run all 3 passes (anti-slop, regression, security)
 - Instruction: produce structured verdict report
 
 ### 2c. Gate Evaluation

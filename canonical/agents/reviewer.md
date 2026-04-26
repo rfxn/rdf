@@ -93,7 +93,7 @@ Design opinions ("this architecture is brittle"), style findings
 ("inconsistent naming"), and SHOULD-FIX suggestions are exempt.
 
 Context budget: this protocol runs only on MUST-FIX assertions,
-not every finding. In a typical 4-pass sentinel, 2-5 MUST-FIX
+not every finding. In a typical 3-pass sentinel, 2-5 MUST-FIX
 assertions fall under this rule. Verification output is part of
 the finding body, not a separate call.
 
@@ -107,12 +107,11 @@ dispatch prompt:
   1. Anti-slop
   2. Regression
 
-**Full (4-pass)** — for scope:cross-cutting, scope:sensitive,
+**Full (3-pass)** — for scope:cross-cutting, scope:sensitive,
 end-of-plan, /r-ship, and /r-audit:
   1. Anti-slop
   2. Regression
   3. Security
-  4. Performance
 
 Default to full if the dispatch prompt does not specify depth.
 
@@ -128,8 +127,6 @@ Reviews diffs across the passes selected by depth:
    preserve backward compatibility?
 3. **Security** — injection vectors, auth bypass, data exposure,
    secrets in code, unsafe deserialization, path traversal
-4. **Performance** — O(n²) or worse in hot paths, unnecessary
-   allocations, missing pagination, unbounded queries
 
 ### Target-Class Switch
 
@@ -137,35 +134,33 @@ The `target-class` field in the dispatch prompt selects the default
 severity ladder for each pass. The dispatcher derives target-class from
 the phase file extensions and passes it as `target_class: <class>` in
 the sentinel dispatch payload. Default is `code` when the field is
-absent or unrecognized (preserves current 4-pass behavior on all
+absent or unrecognized (preserves current 3-pass behavior on all
 existing dispatches).
 
 If the dispatch prompt contains an unrecognized `target_class` value,
 fall back to `code` and log: "target_class unrecognized — falling back
 to code class defaults."
 
-| target_class | Pass 1 Anti-Slop default  | Pass 2 Regression default | Pass 3 Security default       | Pass 4 Performance default       |
-|--------------|---------------------------|---------------------------|-------------------------------|----------------------------------|
-| `prose`      | INFORMATIONAL             | INFORMATIONAL             | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
-| `code`       | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
-| `schema`     | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
-| `mixed`      | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
+| target_class | Pass 1 Anti-Slop default  | Pass 2 Regression default | Pass 3 Security default       |
+|--------------|---------------------------|---------------------------|-------------------------------|
+| `prose`      | INFORMATIONAL             | INFORMATIONAL             | MUST-FIX(fix-or-refute)       |
+| `code`       | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       |
+| `schema`     | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       |
+| `mixed`      | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       |
 
 Notes on `prose` class: anti-slop and regression severities are lowered
 to INFORMATIONAL because markdown rewrites carry near-zero behavioral
 regression risk. Security remains MUST-FIX — documentation can leak
-credential patterns or misguide operators. Performance remains
-SHOULD-FIX as a formality (prose has no runtime perf concern).
+credential patterns or misguide operators.
 
 Notes on `mixed` class: uses the max-of-any-class default ladder above
 (equivalent to `code`). When a phase touches both prose and source
 files, code-class defaults govern.
 
-### Early-Exit Rubric (skip Pass 3 + Pass 4)
+### Early-Exit Rubric (skip Pass 3)
 
 When ALL four conditions below are satisfied, skip Pass 3 (Security)
-and Pass 4 (Performance) and emit the `passes_3_4_skipped` verdict
-marker in the report:
+and emit the `pass_3_skipped` verdict marker in the report:
 
 1. **Pass 1 clean** — Pass 1 (Anti-Slop) produced zero MUST-FIX or
    SHOULD-FIX findings (INFORMATIONAL-only is clean).
@@ -180,8 +175,8 @@ marker in the report:
    `governance/anti-patterns.md` as security-sensitive; or the
    dispatcher marked the phase `scope:sensitive`.
 
-ALL four conditions must hold. If any condition fails, Pass 3 and
-Pass 4 run normally.
+ALL four conditions must hold. If any condition fails, Pass 3
+runs normally.
 
 Report format when Early-Exit applies:
 
@@ -189,7 +184,7 @@ Report format when Early-Exit applies:
 
     **Target:** [diff or branch]
     **Verdict:** APPROVE | MUST-FIX | CONCERNS
-    **passes_3_4_skipped: true**
+    **pass_3_skipped: true**
     **early_exit_reason:** all four Early-Exit conditions met
 
     ### Pass 1: Anti-Slop
@@ -199,9 +194,6 @@ Report format when Early-Exit applies:
     - [CLEAN] {details}
 
     ### Pass 3: Security
-    SKIPPED — Early-Exit conditions satisfied.
-
-    ### Pass 4: Performance
     SKIPPED — Early-Exit conditions satisfied.
 
     ### Summary
@@ -226,10 +218,6 @@ Report format (standard, no early exit):
     - [CLEAN/FINDING] {details}
       Severity: MUST-FIX(fix-or-refute)
 
-    ### Pass 4: Performance
-    - [CLEAN/FINDING] {details}
-      Severity: SHOULD-FIX(pass:performance)
-
     ### Summary
     MUST-FIX: {count} | SHOULD-FIX: {count} | INFORMATIONAL: {count}
 
@@ -243,8 +231,6 @@ Per-pass default severities (for `code` class — the default):
 - Regression: MUST-FIX(fix-or-refute). Always — concrete evidence of behavioral
   change.
 - Security: MUST-FIX(fix-or-refute). Always — concrete exploit path.
-- Performance: SHOULD-FIX(pass:performance). Elevate to MUST-FIX(fix-or-refute)
-  when observable degradation under production loads.
 
 See Target-Class Switch table above for per-class overrides.
 

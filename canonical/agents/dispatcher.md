@@ -165,7 +165,7 @@ Gate 2 — QA verification (deterministic gate):
 Gate 3 — Reviewer sentinel (adversarial gate, auto-scaled):
   Dispatcher selects depth based on scope classification:
     lite (2-pass): anti-slop + regression — for scope:multi-file
-    full (4-pass): anti-slop, regression, security, performance — for scope:cross-cutting and scope:sensitive
+    full (3-pass): anti-slop, regression, security — for scope:cross-cutting and scope:sensitive
   Scope is derived from phase content, not planner tags.
 
 Gate 4 — UAT (conditional):
@@ -210,8 +210,8 @@ Gate mapping:
   scope:docs          → Gate 1 only
   scope:focused       → Gates 1 + 2
   scope:multi-file    → Gates 1 + 2 + Gate 3 (sentinel-lite, 2-pass)
-  scope:cross-cutting → Gates 1 + 2 + Gate 3 (sentinel-full, 4-pass)
-  scope:sensitive     → Gates 1 + 2 + Gate 3 (sentinel-full, 4-pass)
+  scope:cross-cutting → Gates 1 + 2 + Gate 3 (sentinel-full, 3-pass)
+  scope:sensitive     → Gates 1 + 2 + Gate 3 (sentinel-full, 3-pass)
 
 User-facing modifier (any scope level):
   If the file list contains CLI entry points, help text, or man pages,
@@ -329,11 +329,11 @@ from either agent enters the Finding Resolution loop.
 ### End-of-Plan Sentinel
 
 After the last phase of a plan completes (all phases status: complete),
-if the plan contained 3 or more phases, run a mandatory full 4-pass
+if the plan contained 3 or more phases, run a mandatory full 3-pass
 sentinel review on the cumulative diff:
 
 1. Compute diff: git diff from the commit before phase 1 to HEAD
-2. Dispatch reviewer in sentinel mode (full 4-pass) with scope set
+2. Dispatch reviewer in sentinel mode (full 3-pass) with scope set
    to the cumulative diff
 3. Apply the Finding Resolution protocol to results
 4. If MUST-FIX findings exist: dispatch engineer to resolve, then
@@ -357,7 +357,7 @@ cannot resolve them.
 1. Zero-finding anomaly:
    IF sentinel report has 0 findings AND 0 discarded findings
    AND the phase diff is 50+ changed lines
-   THEN: re-dispatch sentinel at full depth (4-pass) automatically.
+   THEN: re-dispatch sentinel at full depth (3-pass) automatically.
    If full-depth review also produces 0 findings: accept as clean,
    log "zero-finding verified at full depth" to status file.
    If full-depth finds issues: process findings normally.

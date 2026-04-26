@@ -443,7 +443,7 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
     # verdict marker present
-    run grep -c 'passes_3_4_skipped' "$reviewer"
+    run grep -c 'pass_3_skipped' "$reviewer"
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }

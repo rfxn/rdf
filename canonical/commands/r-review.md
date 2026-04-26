@@ -108,8 +108,8 @@ pattern-matching — Sonnet handles it at full quality. If mode is
 
 - Challenge mode: reviewer performs design review and produces a
   challenge report with MUST-FIX(blocking-concern) / SHOULD-FIX(advisory-concern) / INFORMATIONAL(risk-area) findings
-- Sentinel mode: reviewer performs 4-pass adversarial review
-  (anti-slop, regression, security, performance) and produces a
+- Sentinel mode: reviewer performs 3-pass adversarial review
+  (anti-slop, regression, security) and produces a
   sentinel report with MUST-FIX(fix-or-refute) | SHOULD-FIX(pass:<name>) findings
 
 ### 6. Report Result
