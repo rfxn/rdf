@@ -192,6 +192,71 @@ is a bug in this document, not in the caller.
 
 ---
 
+## Rule 8: Tests-may-touch (optional)
+
+Phases that add or extend tests MAY declare a scope-flex zone of paths
+that the engineer is pre-authorized to touch without surfacing as an
+out-of-scope finding:
+
+```
+**Tests-may-touch:** tests/fixtures/*.json, tests/helpers/*.bash
+```
+
+### 8a. Syntax
+
+Comma-separated list of glob expressions or directory prefixes. Globs
+use shell-style `*` (matches a single path component, no `/`). Examples:
+- `tests/fixtures/*.json` — any JSON file directly in `tests/fixtures/`
+- `tests/helpers/` — any file under `tests/helpers/` (recursive)
+- `tests/**` — rejected (recursive `**` is too permissive; use a
+  specific subdirectory)
+
+### 8b. Ceilings
+
+Drift inside the flex zone is bounded:
+
+- **Per-file ceiling:** ≤30 lines added/changed (counted via
+  `git diff --cached --numstat | awk '{print $1+$2}'`)
+- **Global ceiling:** ≤3 files touched per phase in the flex zone
+
+Drift exceeding either ceiling is rejected — same handling as
+out-of-scope drift. The intent is to legitimize *trivial* test-infra
+additions (a fixture, a helper); substantive test rewrites still
+require explicit `**Files:**` declaration.
+
+### 8c. Default
+
+Empty (no flex zone). Phases without the `**Tests-may-touch:**` field
+get strict `**Files:**`-only enforcement.
+
+### 8d. Enforcement
+
+Three call sites consume this rule:
+
+- **Pre-commit hook** (`state/git-hooks/pre-commit`, installed in
+  worktrees by dispatcher): primary gate; rejects `git commit` if
+  staged files violate the union of `**Files:**` and `**Tests-may-touch:**`,
+  or if either ceiling is exceeded.
+- **Dispatcher post-merge check** (defense-in-depth): runs
+  `git diff-tree --name-only` after engineer returns; same union check.
+- **Engineer dirty check** (`canonical/agents/engineer.md` Setup):
+  runs `git status --porcelain` before any aggregation/build step;
+  same union check.
+
+All three derive scope via `rdf_parse_phase_scope` from
+`state/rdf-bus.sh`.
+
+**Failure (out of scope):** *"Phase N: file <path> not in **Files:**
+list and not matched by **Tests-may-touch:** glob."*
+
+**Failure (per-file ceiling):** *"Phase N: file <path> in flex zone
+changed <K> lines (ceiling 30)."*
+
+**Failure (global ceiling):** *"Phase N: <K> files in flex zone
+(ceiling 3)."*
+
+---
+
 ## Adding a New Rule
 
 When extending this schema:
