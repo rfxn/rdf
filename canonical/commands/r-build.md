@@ -22,9 +22,17 @@ Arguments:
   "No PLAN.md found. Create one with /r-plan or write it manually."
 - Validate the plan against
   [reference/plan-schema.md](../reference/plan-schema.md). Apply
-  Plan-Version Awareness first, then Rules 1-7 in order. On the first
+  Plan-Version Awareness first, then Rules 1-9 in order. On the first
   violation, print the rule number and the exact failure message from
   the schema doc, then stop without dispatching.
+
+  Rule 9 (test-count self-consistency) is conditional — it fires only
+  when a phase contains an explicit test-count assertion. Apply the same
+  trigger check as `/r-plan` Step 2.7: scan each phase's `**Test**`
+  field and step prose for an integer adjacent to a test noun; if found
+  and not marked `TODO`, verify the declared count matches the `@test`
+  references in the phase body. On mismatch, stop with the Rule 9
+  failure message before dispatching.
 
   /r-plan Step 2.7 should have caught any schema violations before the
   plan was committed. If validation fails here, the plan was authored

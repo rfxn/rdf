@@ -341,3 +341,69 @@ teardown() {
     grep -q 'phase-<N>-status-<SESSION_ID>' "$output_dir/commands/r-status.md"
     command rm -rf "$output_dir"
 }
+
+# ── Tests 17-21: Phase 1 — Plan validation discipline (Rule 9 + Step 1.5) ──────
+
+@test "plan-schema Rule 9 regenerates" {
+    local schema="${RDF_SRC}/canonical/reference/plan-schema.md"
+    run grep -c 'Rule 9: Phase Test-Count Self-Consistency' "$schema"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Trigger condition present
+    run grep -c 'count assertion' "$schema"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Counter logic present
+    run grep -c '@test' "$schema"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Enforcement table with three call sites present (parity with Rule 8)
+    run grep -c 'pre-commit hook\|Pre-commit hook\|Dispatcher\|dispatcher\|Engineer\|engineer' "$schema"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 3 ]
+}
+
+@test "planner Step 1.5 regenerates" {
+    local planner="${RDF_SRC}/canonical/agents/planner.md"
+    run grep -c 'Step 1.5' "$planner"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # RC-contract evidence label present
+    run grep -c 'RC.contract\|RC Contract' "$planner"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Inline grep instructions present (no skill reference)
+    run grep -c 'grep' "$planner"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+@test "reviewer challenge cites Rule 9" {
+    local reviewer="${RDF_SRC}/canonical/agents/reviewer.md"
+    # Rule 9 reference present in Challenge Mode
+    run grep -c 'Rule 9' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # RC Contract Evidence presence check
+    run grep -c 'RC Contract Evidence\|RC-contract evidence\|RC.contract' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+@test "r-plan Step 2.7 cites Rule 9" {
+    local rplan="${RDF_SRC}/canonical/commands/r-plan.md"
+    run grep -c 'Rule 9' "$rplan"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # RC Contract Evidence presence check
+    run grep -c 'RC Contract Evidence\|RC-contract evidence\|RC.contract' "$rplan"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+@test "r-build §1 cites Rule 9" {
+    local rbuild="${RDF_SRC}/canonical/commands/r-build.md"
+    run grep -c 'Rule 9' "$rbuild"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}

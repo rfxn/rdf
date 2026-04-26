@@ -15,6 +15,50 @@ touched. Collect exact line numbers, function signatures, existing
 patterns, and boilerplate conventions. Plans without codebase evidence
 produce vague phases that block engineers.
 
+### Step 1.5: RC-Contract Evidence
+
+For every caller-helper function pair referenced in the plan (e.g., a
+phase that calls `rdf_parse_phase_scope` or dispatches to a helper that
+returns structured exit codes), pin the helper's return-code contract
+into the plan preamble's **RC Contract Evidence** section.
+
+**When to run:** any plan referencing named functions that have explicit
+return-code contracts. Short-circuit with a one-line note if no
+caller-helper-fn names appear in the plan.
+
+**How to find helpers:**
+
+```bash
+# Bash: find function definition
+grep -n '^<name> *()' <source-file>
+# Python: find function definition
+grep -n '^def <name>' <source-file>
+# Go: find function definition
+grep -n '^func <name>' <source-file>
+```
+
+**How to extract rc contracts:**
+
+- Bash: read the function body for `return <N>` paths and `case`/`if`
+  branches that set exit status; note each caller call site's
+  expected rc.
+- Python: grep `return` tuples and `raise` paths; note expected values.
+- Go: grep `return ..., err` and `return ..., nil` paths.
+
+**Output table format** (paste into plan preamble under
+`## RC Contract Evidence`):
+
+```
+| call-site-file:line | helper | expected-rc | rc-source |
+|---------------------|--------|-------------|-----------|
+| path/to/caller.sh:42 | rdf_parse_phase_scope | 0=ok, 1=not-found | state/rdf-bus.sh:120 return paths |
+```
+
+**Ambiguity rule:** if the same function name is defined more than once
+across the codebase (multiple matches from the grep above), use the first
+match and log: *"RC Contract: ambiguous helper '<name>' — used first
+match at <path>:<line>; verify if multiple versions exist."*
+
 ### 2. Write Plan Preamble
 Every plan starts with:
 - **Header**: goal, architecture summary, tech stack, spec link

@@ -373,9 +373,25 @@ truncated and will be regenerated on `--resume`.
 
 Validate the drafted PLAN.md against
 [reference/plan-schema.md](../reference/plan-schema.md). Walk every rule
-(Plan-Version Awareness, then Rules 1-7) against every phase. List any
+(Plan-Version Awareness, then Rules 1-9) against every phase. List any
 violations to the user with the rule number and exact failure message,
 fix them in-place, and re-run the pass until clean.
+
+**Rule 9 check (test-count self-consistency):** For each phase, scan the
+`**Test**` field and step prose for an explicit test-count assertion (an
+integer adjacent to a test noun — e.g., *"expect 5 tests pass"*,
+*"14 new tests"*, or a `# expect: <N>` comment). If a count assertion is
+found and is not marked `TODO`, count the `@test` references and
+`# expect:` lines in the phase body. If the declared count does not match
+the asserted count, report the mismatch with the exact failure message
+from Rule 9 and halt before proceeding to Step 3 (reviewer dispatch).
+
+**RC Contract Evidence check:** Verify the plan preamble contains an
+`## RC Contract Evidence` section when the plan references named
+helper functions with explicit return-code contracts (as per planner
+Step 1.5). If the section is absent and the plan names caller-helper-fn
+pairs, report: *"Plan preamble missing RC Contract Evidence section —
+run planner Step 1.5 to generate it."* Halt before reviewer dispatch.
 
 Do not proceed to Step 3 (Review) with outstanding schema violations —
 the reviewer and `/r-build` apply the same rules and would reject the

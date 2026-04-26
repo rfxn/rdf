@@ -257,6 +257,72 @@ changed <K> lines (ceiling 30)."*
 
 ---
 
+## Rule 9: Phase Test-Count Self-Consistency
+
+This rule is **conditional** — it fires only when a phase explicitly
+asserts a test count. Phases that make no count assertion are unaffected.
+
+### 9a. Trigger condition
+
+A phase triggers Rule 9 when its `**Test**` field or step prose contains
+a count assertion in one of these forms:
+
+- Integer + test noun: *"expect 5 tests pass"*, *"11 tests cover this"*,
+  *"14 new tests"*
+- `# expect: <N>` comment on a `@test`-adjacent line
+- Heredoc inline count: *"5 BATS tests: …"* in a spec-style bullet list
+
+Count assertions preceded by `**TODO:**` or `# TODO` are deferred —
+Rule 9 skips them and emits an INFO log:
+*"Rule 9 skipped for Phase N: count assertion is marked TODO."*
+
+### 9b. Counter logic
+
+When the trigger fires, count all test evidence present in the phase:
+
+1. `@test` blocks declared in a `**Test**` code block or step body
+2. `# expect:` lines immediately following a verification command
+3. Heredoc bullet lists of test names (count bullet items matching
+   `@test` or `"test name"` syntax)
+
+Sum these counts. Call the result the **declared count**.
+
+Compare against the **asserted count** extracted from the trigger text
+(parse the first integer adjacent to a test noun).
+
+### 9c. Mismatch detection and failure message
+
+If `declared count ≠ asserted count`:
+
+**Failure:** *"Phase N: test-count mismatch — plan asserts <A> tests but
+<D> test references found. Adjust the count assertion or add the missing
+test names. (Rule 9)"*
+
+If `declared count = 0` (counter found no test evidence) and the trigger
+fired, the rule treats this as a **missing evidence** case:
+
+**Failure:** *"Phase N: test-count assertion present (<A>) but no test
+references found in phase body. Add @test names or # expect: lines. (Rule
+9)"*
+
+Ambiguous prose (e.g., *"several tests"*, *"a few tests"*) does not
+trigger Rule 9 — only explicit integers adjacent to a test noun.
+
+### 9d. Enforcement call sites
+
+Three call sites enforce Rule 9 (parity with Rule 8):
+
+| Call site | When it runs | On failure |
+|-----------|--------------|------------|
+| **`/r-plan` Step 2.7** | After PLAN.md write, as part of schema validation | Report violation to user; halt before reviewer dispatch |
+| **`reviewer` (challenge mode)** | During plan review, after schema spot-check | Emit `MUST-FIX(blocking-concern)` citing Rule 9 with the count delta |
+| **`/r-build` Section 1** | After PLAN.md read, before phase dispatch | Print error with rule number and failure message; stop without dispatching |
+
+All three apply Rule 9 conditionally (trigger check first). A plan with
+no count assertions passes all three sites with no action.
+
+---
+
 ## Adding a New Rule
 
 When extending this schema:
