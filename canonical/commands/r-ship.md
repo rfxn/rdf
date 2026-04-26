@@ -16,14 +16,20 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 
 ## Resume Detection
 
-If `.rdf/work-output/ship-progress.md` exists on startup:
+Source `state/rdf-bus.sh` and call `rdf_session_init`. Then look for
+`.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md`. If not found, glob
+`.rdf/work-output/ship-progress-*.md` and present candidates ordered by mtime.
+If exactly one un-suffixed `.rdf/work-output/ship-progress.md` exists (legacy
+from pre-3.1.0), prompt: "Found legacy progress file. Import? [Y/n]".
+
+If a progress file is found:
 
 1. Read the STAGE and STATUS fields
 2. Offer: "Found interrupted ship session at stage {stage}. Resume from here? [Y/n]"
 3. If Y: skip stages already marked complete, resume from the current stage
-4. If N: delete `ship-progress.md` and start fresh
+4. If N: delete `ship-progress-${RDF_SESSION_ID}.md` and start fresh
 
-After each stage completes, write state to `.rdf/work-output/ship-progress.md`:
+After each stage completes, write state to `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md`:
 ```
 STAGE: {preflight|verify|prep|publish|report}
 STATUS: {complete|in-progress}
@@ -262,7 +268,7 @@ After presenting the final report, output the completion handoff:
 > **Released** — PR `{url}`
 > Merge when CI passes. Pipeline complete.
 
-Delete `.rdf/work-output/ship-progress.md` after successful completion.
+Delete `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md` after successful completion.
 
 ## Formatting Guide
 

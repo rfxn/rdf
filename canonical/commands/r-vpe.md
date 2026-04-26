@@ -41,7 +41,13 @@ TaskCreate: "Ship: release workflow"
 
 ## Resume Protocol
 
-If --resume is specified or .rdf/work-output/vpe-progress.md exists:
+If --resume is specified, source `state/rdf-bus.sh`, call
+`rdf_session_init`, and look for
+`.rdf/work-output/vpe-progress-${RDF_SESSION_ID}.md`. If not
+found, glob `.rdf/work-output/vpe-progress-*.md` and present
+candidates ordered by mtime. If exactly one un-suffixed
+`.rdf/work-output/vpe-progress.md` exists (legacy from pre-3.1.0),
+prompt: "Found legacy progress file. Import? [Y/n]".
 
 1. Read the state file
 2. Determine pipeline stage reached
@@ -96,8 +102,7 @@ Ready to design? [Y/adjust]"
 
 Wait for user confirmation.
 
-Write state:
-  .rdf/work-output/vpe-progress.md:
+Write state to .rdf/work-output/vpe-progress-${RDF_SESSION_ID}.md:
     TOPIC: {topic}
     STAGE: intake
     STATUS: complete
@@ -201,7 +206,7 @@ Write state:
 
 Mark task "Ship" as completed.
 
-Clean up: vpe-progress.md retained for session log reference.
+Clean up: vpe-progress-${RDF_SESSION_ID}.md retained for session log reference.
 
 ## Constraints
 
@@ -211,4 +216,4 @@ Clean up: vpe-progress.md retained for session log reference.
 - Auto-continue between build phases only (phases are already approved
   as a batch when the plan was approved)
 - Max 4 exchanges during intake — escalate to /r-spec if more exploration needed
-- Track state in vpe-progress.md for crash recovery at every stage transition
+- Track state in vpe-progress-${RDF_SESSION_ID}.md for crash recovery at every stage transition

@@ -50,13 +50,14 @@ After a crash or new session start:
 5. **Check for stale status files:** `.rdf/work-output/phase-*-status.md` files with
    mtime >1 hour indicate interrupted work.
 6. **Check for progress files** that indicate interrupted workflows:
-   - `.rdf/work-output/spec-progress.md` -- design session in progress; contains topic,
+   *Per Wave A (RDF 3.1.0), each progress file is suffixed with the writing session's UUIDv7 RDF_SESSION_ID. Glob `<basename>-*.md` to enumerate across sessions.*
+   - `.rdf/work-output/spec-progress-<SESSION_ID>.md` -- design session in progress; contains topic,
      phase, and decisions made so far. Resume with `/r-spec --resume`.
-   - `.rdf/work-output/ship-progress.md` -- release workflow in progress; contains stage
+   - `.rdf/work-output/ship-progress-<SESSION_ID>.md` -- release workflow in progress; contains stage
      and PR URL. Resume with `/r-ship` (auto-detects).
-   - `.rdf/work-output/vpe-progress.md` -- VPE pipeline state; contains current stage
+   - `.rdf/work-output/vpe-progress-<SESSION_ID>.md` -- VPE pipeline state; contains current stage
      and per-repo status. Resume with `/r-vpe --resume`.
-   - `.rdf/work-output/build-progress.md` -- parallel build state; contains batch
+   - `.rdf/work-output/build-progress-<SESSION_ID>.md` -- parallel build state; contains batch
      progress and session ID. Resume with `/r-build --parallel`.
 7. **If uncommitted changes exist:** review and either commit or stash before resuming.
 8. **If resume fails:** `/r-start` + PLAN.md provide enough continuity to restart

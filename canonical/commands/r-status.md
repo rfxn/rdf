@@ -27,7 +27,10 @@ If absent, display: "No active plan. Run /r-plan to create one."
 ### 3. Read Phase Status Files
 
 Scan `.rdf/work-output/` for phase status files written by the dispatcher.
-These files follow the pattern `.rdf/work-output/phase-N-status.md`.
+These files follow the pattern
+`.rdf/work-output/phase-<N>-status-<SESSION_ID>.md`. The status
+command globs `phase-*-status-*.md` and groups by session ID
+for display.
 
 For each status file found, extract:
 - Phase number
@@ -96,10 +99,17 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
 ```
 
 **Detection logic:**
+Source `state/rdf-bus.sh` and call `rdf_session_init`. For each progress file
+below, look for the current-session scoped file first, then glob for any
+session-scoped file (other sessions may be in progress), then fall back to
+the legacy un-suffixed file (pre-3.1.0) with a one-shot import prompt.
+
 - **Spec**: scan `docs/specs/` for spec files. If any exist, show the
   most recent file path as the artifact. Status: *complete* if the file
-  exists and is not referenced by `.rdf/work-output/spec-progress.md`,
-  *in-progress* if `spec-progress.md` exists, *pending* otherwise.
+  exists and is not referenced by
+  `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` (or glob
+  `.rdf/work-output/spec-progress-*.md`), *in-progress* if a
+  `spec-progress-*.md` file exists, *pending* otherwise.
 - **Plan**: check for `PLAN.md` in the project root. If present, show
   total phase count as the artifact. Status: *complete* if all phases
   are complete, *in-progress* if any phase is in-progress, *pending*
@@ -108,15 +118,19 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
   number and total as the artifact. Status: *complete* if all phases
   are complete, *in-progress* if any phase is in-progress or has
   commits, *pending* if no phases have started.
-- **Ship**: check for `.rdf/work-output/ship-progress.md`. If present,
-  read the `STAGE` line for the current stage. Status: *complete*
-  if stage is "released", *in-progress* if the file exists with
-  an active stage, *pending* otherwise.
-- **VPE** (conditional — only shown when `.rdf/work-output/vpe-progress.md`
-  exists): read the current stage and status from the file. Show as:
+- **Ship**: source `state/rdf-bus.sh`; `rdf_session_init`. Check for
+  `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md`; if absent,
+  glob `.rdf/work-output/ship-progress-*.md`. If present, read the
+  `STAGE` line for the current stage. Status: *complete* if stage is
+  "released", *in-progress* if the file exists with an active stage,
+  *pending* otherwise.
+- **VPE** (conditional — only shown when `.rdf/work-output/vpe-progress-*.md`
+  exists): glob `.rdf/work-output/vpe-progress-*.md`; read the current stage
+  and status from the most-recent file. Show as:
   `| **VPE** | *managing* | Stage: {current stage} |`
-- **Build** (conditional — only shown when `.rdf/work-output/build-progress.md`
-  exists and `DISPATCH_MODE` is `parallel`): read the current batch and phase
+- **Build** (conditional — only shown when `.rdf/work-output/build-progress-*.md`
+  exists and `DISPATCH_MODE` is `parallel`): glob
+  `.rdf/work-output/build-progress-*.md`; read the current batch and phase
   counts. This entry *replaces* the standard Build line above (not shown
   alongside it). Show as:
   `| **Build** | *parallel* | Batch {N}/{total}: Phases {list} |`

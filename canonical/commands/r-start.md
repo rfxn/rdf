@@ -139,11 +139,17 @@ For 3+ signals, use bulleted blockquote:
 Signal priority: Handoff > Spec > VPE > Ship > Build > Plan (in-progress) >
 Plan (pending) > Dispatch (stale).
 
-Signals and their display text:
-- `spec-progress.md` exists → `Spec — {topic}, Phase {N}`
-- `vpe-progress.md` exists → `VPE pipeline: {stage} — {status}`
-- `ship-progress.md` exists → `Ship — {stage}, PR {url}`
-- `build-progress.md` exists → `Build: batch {N}/{total}, {completed}/{total} phases`
+Signals and their display text (source `state/rdf-bus.sh`; call `rdf_session_init`
+first; look for the current-session scoped file, glob for any session-scoped file
+if absent, fall back to the legacy un-suffixed file with a one-shot import prompt):
+- `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` exists (or glob
+  `.rdf/work-output/spec-progress-*.md`) → `Spec — {topic}, Phase {N}`
+- `.rdf/work-output/vpe-progress-${RDF_SESSION_ID}.md` exists (or glob
+  `.rdf/work-output/vpe-progress-*.md`) → `VPE pipeline: {stage} — {status}`
+- `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md` exists (or glob
+  `.rdf/work-output/ship-progress-*.md`) → `Ship — {stage}, PR {url}`
+- `.rdf/work-output/build-progress-${RDF_SESSION_ID}.md` exists (or glob
+  `.rdf/work-output/build-progress-*.md`) → `Build: batch {N}/{total}, {completed}/{total} phases`
 
 **Plan progress** — task list, capped at 5 visible phases:
 

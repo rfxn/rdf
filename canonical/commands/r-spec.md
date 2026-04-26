@@ -10,7 +10,11 @@ This is the first stage of the spec-plan-build-ship pipeline.
 - No args → start fresh design session
 - GitHub URL (starts with `http`/`https`) → fetch as design seed
 - Issue shorthand (`#` + digits) → `gh issue view {N}` as design seed
-- `--resume` → resume interrupted session from `.rdf/work-output/spec-progress.md`
+- `--resume` → source `state/rdf-bus.sh`, call `rdf_session_init`, and look for
+  `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`. If not found, glob
+  `.rdf/work-output/spec-progress-*.md` (other sessions). If exactly one
+  un-suffixed `.rdf/work-output/spec-progress.md` exists (legacy from pre-3.1.0),
+  prompt: "Found legacy progress file. Import? [Y/n]".
 
 **Argument detection logic:**
 - Starts with `http` or `https` → GitHub URL → fetch with `gh`
@@ -69,8 +73,15 @@ PHASE 3: SPEC         — write formal design document, get it reviewed
 
 ## Resume Protocol
 
-If `--resume` is specified or `.rdf/work-output/spec-progress.md` exists
-on startup:
+If `--resume` is specified, source `state/rdf-bus.sh`, call `rdf_session_init`,
+and look for `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`. If not
+found, glob `.rdf/work-output/spec-progress-*.md` and present candidates ordered
+by mtime. If exactly one legacy `.rdf/work-output/spec-progress.md` exists (un-suffixed,
+pre-3.1.0), prompt: "Found legacy progress file. Import? [Y/n]".
+
+On startup (no `--resume` flag), also check for an existing
+`.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` to detect mid-session
+crashes for the current session.
 
 1. Read the state file
 2. Present prior decisions with rationale to the user:
@@ -225,7 +236,7 @@ trade-off.
 
 **Step D: Record decision to crash safety state.**
 
-After each resolved question, append to `.rdf/work-output/spec-progress.md`:
+After each resolved question, append to `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`:
 
 ```
 TOPIC: {topic}
@@ -459,7 +470,7 @@ failure is MUST-FIX.
 11. Test strategy maps every goal to at least one test (Section 10a)
 12. No-touch files are explicitly listed if the change involves rename/migration
 
-Update crash safety state:
+Update crash safety state in `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`:
 ```
 PHASE: spec
 SPEC_PATH: docs/specs/{filename}
@@ -559,7 +570,7 @@ After all phases complete, present the pipeline handoff:
 > Reviewed and approved. Run `/r-plan` to create the implementation plan.
 ```
 
-Clean up: update `.rdf/work-output/spec-progress.md` with final state:
+Clean up: update `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` with final state:
 ```
 PHASE: complete
 SPEC_PATH: docs/specs/{filename}
@@ -605,6 +616,6 @@ HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
   without user confirmation. The user controls the pace.
 - **Reviewer dispatch is mandatory** — challenge review in Phase 3.
   Do not skip it.
-- **Crash safety is mandatory** — write to `spec-progress.md` after
-  every resolved design question. A session crash should lose at most
+- **Crash safety is mandatory** — write to `spec-progress-${RDF_SESSION_ID}.md`
+  after every resolved design question. A session crash should lose at most
   one question's discussion, never all prior decisions.

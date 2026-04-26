@@ -104,8 +104,12 @@ For each phase in PLAN.md:
   with the commit hash as evidence
 
 **Record spec path:**
-- If `.rdf/work-output/spec-progress.md` exists, read the `SPEC_PATH`
-  line. If present and non-empty, record it for the session log
+- Source `state/rdf-bus.sh`; `rdf_session_init`. If
+  `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` exists,
+  read the `SPEC_PATH`. If not, fall back to glob
+  `.rdf/work-output/spec-progress-*.md` (most recent by mtime);
+  if neither found, fall back to legacy `.rdf/work-output/spec-progress.md` (pre-3.1.0).
+  If `SPEC_PATH` is present and non-empty, record it for the session log
   `spec_path` field.
 
 **Detect in-progress work:**

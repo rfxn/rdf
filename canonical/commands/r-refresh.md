@@ -259,15 +259,15 @@ status in italic, detail column for metrics.
 |------|--------|--------|
 | `MEMORY.md` | *updated* | +3 new commits, 142/200 lines |
 | `PLAN.md` | *updated* | 2 phases marked complete |
-| `spec-progress.md` | *updated* | cross-referenced with `docs/specs/` |
-| `ship-progress.md` | *updated* | stage validated against git tags |
+| `spec-progress-<SESSION_ID>.md` | *updated* | cross-referenced with `docs/specs/` |
+| `ship-progress-<SESSION_ID>.md` | *updated* | stage validated against git tags |
 | GitHub | *synced* | 4 issues closed, 1 reopened |
 ```
 
 Recognized state artifacts in `.rdf/work-output/` that refresh should
 cross-reference: `session-log.jsonl`, `phase-*-status.md`,
-`current-phase.md`, `agent-feed.log`, `spec-progress.md`,
-`ship-progress.md`.
+`current-phase.md`, `agent-feed.log`, `spec-progress-<SESSION_ID>.md`,
+`ship-progress-<SESSION_ID>.md`.
 
 Status values: *updated*, *skipped* (out of scope), *not found*,
 *synced*, *not configured*.
