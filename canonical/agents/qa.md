@@ -19,8 +19,13 @@ which checks to run, then produce a structured pass/fail report.
 ### EVIDENCE re-validation (scope-gated)
 
 If the dispatch payload indicates scope ≥ multi-file:
-  1. Derive the result file path: `.rdf/work-output/phase-<N>-result.md`
-     where <N> is the phase number in the dispatch payload
+  1. Derive the result file path:
+     `.rdf/work-output/phase-<N>-result-<RDF_SESSION_ID>.md`
+     where <N> is the phase number and <RDF_SESSION_ID> is the
+     session UUIDv7, both from the dispatch payload.
+     If RDF_SESSION_ID is absent (older dispatcher), log a warning
+     and fall back to un-suffixed `phase-<N>-result.md` for
+     backwards compatibility.
   2. If the result file does not exist, record
      `EVIDENCE_CHECK: FAIL (result file not found)` and continue
   3. Read the EVIDENCE block; for each line:
