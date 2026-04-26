@@ -29,5 +29,6 @@
   "r-util-code-modernize": "Assess codebase modernization maturity and generate remediation plan",
   "r-util-test-dedup": "Find duplicate, overlapping, tautological, dead, and low-value tests",
   "r-util-test-scope": "Test tier recommendation and function-to-test impact mapping",
+  "r-util-claudemd-review": "CLAUDE.md review — conversation findings + prose/state-bloat audit",
   "r-audit-slop": "AI slop audit — discovery-first scan with sentinel + engineer FP-validation passes"
 }
