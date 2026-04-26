@@ -1,5 +1,57 @@
 # RDF Changelog
 
+## 3.1.1 — Reviewer ROI Improvements
+
+[New] plan-schema.md Rule 9: phase test-count self-consistency check.
+  Conditional — fires only when the phase asserts a count. Counter sums
+  `@test` blocks, `# expect:` lines, and heredoc counts. Mismatch emits
+  failure message; passes silently when no count assertion present.
+  Three-call-site enforcement parity with Rule 8.
+[New] planner.md Step 1.5: RC-contract evidence. For every caller-helper-fn
+  referenced in the plan, planner reads the helper's body in source,
+  extracts expected-rc per call-site (case-statement / return-tuple /
+  switch parse), and pastes a table into the plan preamble. Inline grep
+  instructions — no separate skill file. Short-circuits when no
+  caller-helper-fns appear in the plan.
+[Change] reviewer.md Challenge Mode: references Rule 9 + verifies
+  "RC Contract Evidence" section presence.
+[Change] r-plan.md Step 2.7: Rule 9 check + RC-contract-evidence section
+  presence check; halts before reviewer dispatch on either failure.
+[Change] r-build.md §1: Rule 9 check (parity with /r-plan Step 2.7).
+[New] reviewer.md Sentinel Mode: `target-class` switch (`prose | code |
+  schema | mixed`) with per-class default severity ladders. Early-Exit
+  rubric: Pass 1+2 clean + diff <300 lines + no security/hot-path file
+  → skip Pass 3 (emit `pass_3_skipped: true` verdict marker).
+[Change] Sentinel full depth capped at 3 passes (Pass 4 Performance
+  dropped); verdict marker renamed `passes_3_4_skipped` → `pass_3_skipped`.
+[Change] dispatcher.md: sentinel-dispatch derives `target-class` from
+  phase scope + file extensions (`.md`→prose, `.json/.yaml/.proto`→schema,
+  source files→code, mixed→mixed; fallback `code`). Payload includes
+  `target_class: <derived>`.
+[New] state/git-hooks/pre-commit: anti-pattern grep section after existing
+  scope-enforcement block. Five pattern classes: bare-coreutils-no-prefix,
+  `/tmp` PID/RANDOM races, `2>/dev/null` / `|| true` without same-line `#`,
+  tombstone phrases, `local var=$(...)` rc-mask. Same-line `#` suppresses;
+  `governance/ignore.md` `# anti-pattern-skip: <class>` opts-out per class.
+[New] tests/pre-commit-anti-patterns.bats — 5 BATS tests for hook extension.
+[New] tests/fixtures/pre-commit-anti-patterns/clean.sh — passes all patterns.
+[New] tests/fixtures/pre-commit-anti-patterns/dirty.sh — triggers each pattern.
+[New] engineer.md Setup step 7: boundary-guard sweep on cross-cutting/sensitive
+  phases. Greps schema directories for input fields lacking
+  `pattern`/`enum`/`format` constraints; cross-references call-site sinks
+  (filesystem path, shell command, JSONL append); pastes result table into
+  EVIDENCE. Short-circuits with INFO marker when no schema files in scope.
+[New] canonical/commands/r-util-claudemd-review.md — CLAUDE.md
+  conversation-driven review. Adapted from ykdojo/claude-code-tips
+  review-claudemd. Adds RDF discipline filters (D1–D4): no prose/narrative,
+  no memory-bound state, no framework default restatement, no tone/sentiment.
+  Filters applied to both new subagent recommendations AND audit of existing
+  CLAUDE.md content.
+[Change] Backwards-compatible: Rule 9 conditional (existing plans without
+  count assertions are unaffected); target-class default `code` (preserves
+  prior 3-pass behavior); pre-commit hook anti-pattern patterns opt-in per
+  project via `governance/ignore.md`.
+
 ## 3.1.0 — Concurrent Sessions Wave A (Stop the Bleeding)
 
 Foundation for multi-session safety. Establishes session identity, scoped

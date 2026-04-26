@@ -1,7 +1,7 @@
 # RDF -- rfxn Development Framework
 
 ![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
-![Version](https://img.shields.io/badge/version-3.1.0-green.svg)
+![Version](https://img.shields.io/badge/version-3.1.1-green.svg)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 

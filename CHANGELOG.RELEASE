@@ -1,3 +1,85 @@
+# RDF 3.1.1 Release Notes
+
+## 3.1.1 — Reviewer ROI Improvements
+
+This release targets the three most frequent classes of findings absorbed
+by the reviewer in the blacklight corpus (~106 distinct findings across
+53 build stops, ~11.7 active reviewer-hours). By moving detection earlier
+— to the planner, the pre-commit hook, and the engineer setup step — the
+reviewer spends cycles on novel issues rather than recurring hygiene.
+
+**Area A: Plan Validation**
+
+Two new checks run before the reviewer ever sees a plan. Rule 9 in
+`plan-schema.md` counts `@test` blocks in the declared test suite and
+compares the count against any assertion in the phase text ("expect N
+tests after this phase"). A mismatch is a hard failure. Rule 9 is
+conditional: phases that make no count assertion are not checked. Planner
+Step 1.5 pins RC-contract evidence in the plan preamble — for every
+caller-helper-fn referenced in the plan, the planner reads the helper's
+source, extracts expected return codes, and pastes a per-call-site table.
+Both checks run at `/r-plan` Step 2.7 and `/r-build` §1; the reviewer
+Challenge Mode verifies their presence.
+
+**Area B: Scope-Aware Sentinel**
+
+The reviewer sentinel now accepts a `target-class` signal (`prose`,
+`code`, `schema`, or `mixed`) that adjusts default severity ladders by
+pass. Prose reviews deprioritize anti-slop; schema reviews prioritize
+structural constraint checks. The dispatcher derives `target-class`
+automatically from phase file extensions and passes it in the dispatch
+payload. An Early-Exit rubric skips Pass 3 when Passes 1 and 2 are
+clean, the diff is under 300 lines, and no security-flagged files are
+in scope — reducing over-deployment of full sentinel on trivial diffs.
+
+This release also caps the full sentinel at 3 passes (Pass 4 Performance
+was dropped). The verdict marker `passes_3_4_skipped` is renamed to
+`pass_3_skipped`. The target-class default is `code`, which preserves
+prior 3-pass behavior on all existing dispatches that do not specify
+target-class.
+
+**Area C: Build-Time Hygiene + Boundary-Guard**
+
+The pre-commit hook (introduced in Wave A) gains an anti-pattern grep
+section that runs after the existing scope check. Five pattern classes
+are covered: bare coreutils without `command` prefix, `/tmp` paths
+constructed with `$$` or `$RANDOM`, `2>/dev/null` and `|| true` without
+a same-line justification comment, tombstone phrases (`replaces ... stub`,
+`was: ...`, `# removed:`), and `local var=$(...)` rc-mask. A same-line
+`#` comment suppresses any finding. Projects opt-out per class via
+`# anti-pattern-skip: <class>` in `governance/ignore.md`.
+
+Engineer Setup now includes step 7 (boundary-guard sweep) for
+`scope:cross-cutting` and `scope:sensitive` phases. The engineer greps
+schema directories for input fields lacking `pattern`, `enum`, or `format`
+constraints, cross-references against call-site sinks (filesystem paths,
+shell commands, JSONL appends), and pastes the result table into EVIDENCE.
+Step 7 short-circuits with an INFO marker when no schema files are in
+scope; it does not run on `scope:focused` or narrower phases.
+
+**`/r-util-claudemd-review` Primitive**
+
+A new utility command provides a structured review of CLAUDE.md files.
+Adapted from ykdojo/claude-code-tips `review-claudemd` and extended with
+RDF-specific discipline filters (D1 — no prose/narrative, D2 — no
+memory-bound state, D3 — no framework default restatement, D4 — no
+tone/sentiment). The filters apply to both the subagent's recommendations
+and the audit of existing CLAUDE.md content.
+
+**Backwards Compatibility**
+
+All changes are additive or conditional:
+- Rule 9 fires only when a count assertion is present; existing plans
+  without count assertions are unaffected.
+- `target-class` defaults to `code`, preserving current 3-pass sentinel
+  behavior on dispatches that do not specify the class.
+- Pre-commit hook anti-pattern checks opt-in per project via
+  `governance/ignore.md`; projects without that file receive the full
+  check, which reflects the codebase conventions documented in the parent
+  CLAUDE.md.
+
+---
+
 # RDF 3.1.0 Release Notes
 
 ## 3.1.0 — Concurrent Sessions Wave A

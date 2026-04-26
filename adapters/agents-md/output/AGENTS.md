@@ -89,10 +89,10 @@ commit, phase completion, or audit run.
 | MEMORY.md | Auto-memory dir | `/r-save` | All projects |
 | PLAN.md | `<project>/PLAN.md` | `/r-plan`, `/r-save` | When active work |
 | AUDIT.md | `<project>/AUDIT.md` | `/r-audit`, `/r-save` | After audit run |
-| spec-progress.md | `.rdf/work-output/` | `/r-spec` | During design |
-| ship-progress.md | `.rdf/work-output/` | `/r-ship` | During release |
-| vpe-progress.md | `.rdf/work-output/` | `/r-vpe` | During VPE pipeline |
-| build-progress.md | `.rdf/work-output/` | `/r-build` | During parallel build |
+| spec-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-spec` | During design |
+| ship-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-ship` | During release |
+| vpe-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-vpe` | During VPE pipeline |
+| build-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-build` | During parallel build |
 | session-log.jsonl | `.rdf/work-output/` | `/r-save` | When active work |
 
 ## Result File Artifacts
