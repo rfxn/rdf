@@ -102,4 +102,106 @@ if [[ -n "${FLEX_REGEX:-}" ]]; then
     fi
 fi
 
+# ---------------------------------------------------------------------------
+# Anti-pattern grep section (appended after scope-enforcement block above)
+# Checks added lines in staged files for five anti-pattern classes.
+# Scope enforcement runs FIRST (above); anti-pattern check runs SECOND (here).
+#
+# Pattern classes (parallel indexed arrays — no declare -A; Bash 4.1+ floor):
+#   Class 0: bare-coreutils-no-prefix
+#     \b(sha256sum|md5sum|cp|mv|rm|chmod|mkdir|cat|touch|ln)\b without 'command'
+#   Class 1: tmp-file-with-pid
+#     /tmp/ path containing $$ or $RANDOM
+#   Class 2: suppression-no-comment
+#     2>/dev/null or || true on a line with no same-line #
+#   Class 3: tombstone-phrases
+#     replaces .* stub / was: .* / # removed:
+#   Class 4: local-rc-mask
+#     local <var>=$( — masks subshell exit code
+#
+# Suppression: same-line # on the offending line suppresses any class.
+# Opt-out: governance/ignore.md in project root containing
+#   # anti-pattern-skip: <class-name>  opts-out that class for all files.
+# ---------------------------------------------------------------------------
+
+_AP_CLASSES=(
+    "bare-coreutils-no-prefix"
+    "tmp-file-with-pid"
+    "suppression-no-comment"
+    "tombstone-phrases"
+    "local-rc-mask"
+)
+
+# Regexes — ERE, matched against added diff lines (+ prefix stripped).
+# For bare-coreutils: match word-boundary occurrence NOT preceded by 'command '.
+# shellcheck disable=SC2016  # $$ and $RANDOM are literal regex tokens, not expansions
+_AP_PATTERNS=(
+    '\b(sha256sum|md5sum|cp|mv|rm|chmod|mkdir|cat|touch|ln)\b'
+    '/tmp/[^"]*\$\$|/tmp/[^"]*\$RANDOM'
+    '(2>/dev/null|\|\|[[:space:]]*true)'
+    '(replaces[[:space:]].*stub|was:[[:space:]].*|#[[:space:]]*removed:)'
+    '^\s*local[[:space:]]+[a-z_]+=\$\('
+)
+
+# Load opt-out classes from governance/ignore.md (project root, not worktree).
+_ap_skipped=()
+if [[ -f "$_proj/governance/ignore.md" ]]; then
+    while IFS= read -r _igline; do
+        if [[ "$_igline" =~ ^#[[:space:]]*anti-pattern-skip:[[:space:]]*(.+)$ ]]; then
+            _ap_skipped+=("${BASH_REMATCH[1]//[[:space:]]/}")
+        fi
+    done < "$_proj/governance/ignore.md"
+fi
+
+# _ap_class_skipped name — return 0 if class is in the skip list
+_ap_class_skipped() {
+    local _cls="$1" _s
+    for _s in "${_ap_skipped[@]+"${_ap_skipped[@]}"}"; do
+        [[ "$_s" == "$_cls" ]] && return 0
+    done
+    return 1
+}
+
+# Iterate staged files; grep each added diff hunk.
+_ap_found=0
+while IFS= read -r _ap_path; do
+    # Extract only added lines from the diff (strip leading '+', skip '+++' headers).
+    _ap_diff="$(git diff --cached -U0 -- "$_ap_path" \
+        | grep -E '^\+[^+]' \
+        | command sed 's/^\+//')" || true  # grep exits 1 when no added lines; safe
+
+    [[ -z "$_ap_diff" ]] && continue
+
+    _ap_i=0
+    for _ap_class in "${_AP_CLASSES[@]}"; do
+        _ap_pat="${_AP_PATTERNS[$_ap_i]}"
+        _ap_i=$((_ap_i + 1))
+
+        # Class-level opt-out via governance/ignore.md
+        _ap_class_skipped "$_ap_class" && continue
+
+        # Scan each added line independently so we can apply same-line # suppression.
+        while IFS= read -r _ap_line; do
+            # Same-line # suppresses any class for that line.
+            [[ "$_ap_line" =~ '#' ]] && continue
+
+            if echo "$_ap_line" | grep -qE "$_ap_pat"; then
+                # For bare-coreutils: suppress when 'command ' immediately precedes the util.
+                if [[ "$_ap_class" == "bare-coreutils-no-prefix" ]]; then
+                    echo "$_ap_line" | grep -qE 'command[[:space:]]+(sha256sum|md5sum|cp|mv|rm|chmod|mkdir|cat|touch|ln)\b' && continue
+                fi
+                echo "rdf pre-commit: ANTI-PATTERN [$_ap_class] in $_ap_path:" >&2
+                echo "  $_ap_line" >&2
+                echo "  Suppress with a same-line # comment explaining why this is safe," >&2
+                echo "  or add '# anti-pattern-skip: $_ap_class' to governance/ignore.md." >&2
+                _ap_found=1
+            fi
+        done <<< "$_ap_diff"
+    done
+done <<< "$_staged"
+
+if [[ "$_ap_found" -ne 0 ]]; then
+    exit 1
+fi
+
 exit 0
