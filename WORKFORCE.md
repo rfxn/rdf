@@ -1,11 +1,11 @@
-# RDF 3.0 Agent Workforce
+# RDF 3.1 Agent Workforce
 
 ---
 
 ## 1. Organization Chart
 
 ```
-RDF 3.0 — UNIVERSAL AGENT WORKFORCE
+RDF 3.1 — UNIVERSAL AGENT WORKFORCE
 ════════════════════════════════════════════════════════════════════
 
 USER
@@ -47,6 +47,20 @@ LIFECYCLE PIPELINE
 |--------|---------------------------------|
 | opus   | planner, engineer, reviewer     |
 | sonnet | dispatcher, qa, uat             |
+
+### Concurrent-Session Primitives (3.1.0)
+
+| Primitive | Owner | Purpose |
+|-----------|-------|---------|
+| `RDF_SESSION_ID` (UUIDv7) | session shell + every subagent | Identity inherited via env |
+| Scoped state filenames | engineer, qa, reviewer, dispatcher | `<basepath>-<SESSION_ID>.<ext>` |
+| Worktree pre-commit hook | dispatcher (installer), engineer's own commit | Physical scope enforcement |
+| Pre-aggregation dirty check | engineer Setup | Fail fast before build steps |
+| `**Tests-may-touch:**` (plan schema Rule 8) | planner declares, all three call sites enforce | Pre-authorized flex zone (≤30 lines, ≤3 files) |
+
+Helpers: `state/rdf-bus.sh` (`rdf_session_init`, `rdf_scoped_filename`,
+`rdf_session_short`, `rdf_parse_phase_scope`).
+Hook source: `state/git-hooks/pre-commit`.
 
 ---
 
@@ -125,7 +139,7 @@ dispatcher, or invoked via `/r-review`.
 | r-test | /r-test | uat | UAT acceptance |
 | r-review | /r-review | reviewer | Adversarial review |
 
-### Utility Commands (14)
+### Utility Commands (15)
 
 | Command | Slash | Purpose |
 |---------|-------|---------|
@@ -140,6 +154,7 @@ dispatcher, or invoked via `/r-review`.
 | r-util-lib-release | /r-util-lib-release | Shared library release lifecycle |
 | r-util-proj-cross | /r-util-proj-cross | Cross-project convention drift analysis |
 | r-util-code-scan | /r-util-code-scan | Pattern-class bug finder |
+| r-util-code-map | /r-util-code-map | AST-style structural map for large source files |
 | r-util-code-modernize | /r-util-code-modernize | Codebase modernization assessment |
 | r-util-test-dedup | /r-util-test-dedup | Find duplicate/overlapping tests |
 | r-util-test-scope | /r-util-test-scope | Test tier recommendation + impact mapping |
@@ -226,4 +241,4 @@ dispatcher, or invoked via `/r-review`.
 | /rel-chg-dedup | /r-util-chg-dedup |
 | /test-dedup | /r-util-test-dedup |
 
-**Total: 6 agents + 31 commands + 10 scripts = 47 primitives**
+**Total: 6 agents + 35 commands + 12 scripts = 53 primitives**

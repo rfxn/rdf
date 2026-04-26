@@ -1,7 +1,7 @@
 # RDF -- rfxn Development Framework
 
 ![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
-![Version](https://img.shields.io/badge/version-3.0.7-green.svg)
+![Version](https://img.shields.io/badge/version-3.1.0-green.svg)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
@@ -242,6 +242,28 @@ bin/rdf generate all                  # builds all four in one pass
 | **infrastructure** | Terraform, Kubernetes, Ansible, secrets, CI/CD | State file exposure, secret sprawl, RBAC drift | 3 |
 
 **Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Seven modes cover different workflows: `development` (default), `security`, `performance`, `migration`, `refactoring`, `debugging`, `documentation`.
+
+### Concurrent Session Safety
+
+RDF is designed to be run in parallel against the same repository — different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session generates its own UUIDv7 `RDF_SESSION_ID` (inherited by all subagents), and all transient handoff files are scoped by it:
+
+```
+.rdf/work-output/
+  phase-3-result-<SESSION_ID>.md
+  vpe-progress-<SESSION_ID>.md
+  build-progress-<SESSION_ID>.md
+  sentinel-N-<SESSION_ID>.md
+```
+
+Three layers protect concurrent sessions from corrupting each other:
+
+| Layer | Mechanism | Where |
+|-------|-----------|-------|
+| **Session-scoped state** | UUIDv7 suffix on every transient file | `state/rdf-bus.sh` helpers |
+| **Worktree boundary** | Pre-commit hook rejects out-of-scope commits | installed in every dispatched worktree |
+| **Pre-aggregation gate** | Engineer dirty-check before build steps | `engineer.md` Setup |
+
+Plan authors can declare a `**Tests-may-touch:**` glob list (plan schema Rule 8) to pre-authorize trivial test-infra drift (≤30 lines, ≤3 files) without surfacing as out-of-scope. See `docs/specs/2026-04-25-concurrent-sessions-design.md` for the full 12-primitive design.
 
 ### Adversarial Quality Gates
 
@@ -510,7 +532,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
 | **[CHANGELOG](CHANGELOG)** | Development history |
-| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.0.7) |
+| **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (3.1.0) |
 
 ---
 

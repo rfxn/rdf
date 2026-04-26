@@ -10,7 +10,7 @@ System-level overview: canonical sources, profiles, adapters, CLI tools.
 flowchart TD
     subgraph Canonical["Canonical Source (tool-agnostic)"]
         Agents[agents/*.md\n6 universal agents]
-        Commands[commands/*.md\n31 commands]
+        Commands[commands/*.md\n35 commands]
         Scripts[scripts/*.sh]
         Reference[reference/*.md]
     end
@@ -235,7 +235,106 @@ Isolation selection:
 
 ---
 
-## 4. Quality Gates (Scope Classification)
+## 4. Concurrent Session Safety (3.1.0)
+
+Multiple Claude Code sessions on the same repository previously collided on
+state files, leaked worktrees, and absorbed uncommitted parallel work. Wave A
+of the concurrent-sessions design introduces session identity, scoped
+filenames, and structural worktree boundaries.
+
+```mermaid
+flowchart TD
+    subgraph Session1["Session A (terminal 1)"]
+        A0[rdf_session_init\nUUIDv7 = aaaa…]
+        A1[phase-3-result-aaaa.md]
+        A2[build-progress-aaaa.md]
+        A3[sentinel-3-aaaa.md]
+        A0 --> A1 & A2 & A3
+    end
+
+    subgraph Session2["Session B (terminal 2)"]
+        B0[rdf_session_init\nUUIDv7 = bbbb…]
+        B1[phase-7-result-bbbb.md]
+        B2[vpe-progress-bbbb.md]
+        B3[sentinel-7-bbbb.md]
+        B0 --> B1 & B2 & B3
+    end
+
+    subgraph Shared["Shared filesystem (.rdf/work-output/)"]
+        WO[Files coexist —\nno collision\nno overwrite]
+    end
+
+    A1 -.-> WO
+    A2 -.-> WO
+    A3 -.-> WO
+    B1 -.-> WO
+    B2 -.-> WO
+    B3 -.-> WO
+
+    style A0 fill:#2b6cb0,color:#fff
+    style B0 fill:#2b6cb0,color:#fff
+    style A1 fill:#553c9a,color:#fff
+    style A2 fill:#553c9a,color:#fff
+    style A3 fill:#553c9a,color:#fff
+    style B1 fill:#276749,color:#fff
+    style B2 fill:#276749,color:#fff
+    style B3 fill:#276749,color:#fff
+    style WO fill:#975a16,color:#fff
+```
+
+### Three-Layer Scope Enforcement
+
+```mermaid
+flowchart LR
+    Engineer[engineer\nstaging changes] --> L1
+
+    subgraph Layers["Defense in depth"]
+        L1{{Layer 1: Engineer\npre-aggregation\ndirty check}}
+        L2{{Layer 2: Worktree\npre-commit hook}}
+        L3{{Layer 3: Dispatcher\npost-merge\ngit diff-tree}}
+    end
+
+    L1 -->|union of Files +\nTests-may-touch glob| Decide1{In scope?}
+    Decide1 -->|yes| L2
+    Decide1 -->|no| Reject1([abort\nbefore build])
+
+    L2 -->|same union check\nat commit time| Decide2{In scope?}
+    Decide2 -->|yes| L3
+    Decide2 -->|no| Reject2([reject\ngit commit])
+
+    L3 -->|same union check\nafter merge| Decide3{In scope?}
+    Decide3 -->|yes| Pass([phase complete])
+    Decide3 -->|no| Reject3([rollback +\nsurface to user])
+
+    style Engineer fill:#553c9a,color:#fff
+    style L1 fill:#975a16,color:#fff
+    style L2 fill:#9b2c2c,color:#fff
+    style L3 fill:#2b6cb0,color:#fff
+    style Decide1 fill:#2b6cb0,color:#fff
+    style Decide2 fill:#2b6cb0,color:#fff
+    style Decide3 fill:#2b6cb0,color:#fff
+    style Reject1 fill:#9b2c2c,color:#fff
+    style Reject2 fill:#9b2c2c,color:#fff
+    style Reject3 fill:#9b2c2c,color:#fff
+    style Pass fill:#276749,color:#fff
+```
+
+All three layers parse phase scope identically via `rdf_parse_phase_scope`
+in `state/rdf-bus.sh`, reading `**Files:**` and (optional)
+`**Tests-may-touch:**` directly from PLAN.md. A change to the phase
+declaration propagates to all three call sites without code edits.
+
+| Component | Source |
+|-----------|--------|
+| Session identity helpers | `state/rdf-bus.sh` |
+| Pre-commit hook | `state/git-hooks/pre-commit` |
+| Plan schema rule | `canonical/reference/plan-schema.md` Rule 8 |
+| Design spec | `docs/specs/2026-04-25-concurrent-sessions-design.md` |
+| Wave A plan | `docs/plans/2026-04-25-concurrent-sessions-wave-a-plan.md` |
+
+---
+
+## 5. Quality Gates (Scope Classification)
 
 Phase content determines which gates the dispatcher activates. Scope is
 derived automatically from the file list, description, and governance
@@ -301,7 +400,7 @@ flowchart TD
 
 ---
 
-## 5. File-Based Handoff
+## 6. File-Based Handoff
 
 Detailed sequence showing the full v3 lifecycle with file artifacts.
 
@@ -333,34 +432,35 @@ sequenceDiagram
 
     User->>Dispatcher: /r-build [N]
     activate Dispatcher
+    Note over Dispatcher: rdf_session_init →\nRDF_SESSION_ID = SID
     Dispatcher->>Dispatcher: read PLAN.md phase N
     Dispatcher->>Dispatcher: load governance, select gates
 
-    Dispatcher->>Engineer: phase context + governance
+    Dispatcher->>Engineer: phase context + governance + SID
     activate Engineer
     Note over Engineer: TDD: red, green, refactor
-    Note over Engineer: writes phase-N-status.md
-    Engineer->>Dispatcher: phase-N-result.md
+    Note over Engineer: writes phase-N-status-SID.md
+    Engineer->>Dispatcher: phase-N-result-SID.md
     deactivate Engineer
 
     opt Gate 2: QA
-        Dispatcher->>QA: verification scope
+        Dispatcher->>QA: verification scope + SID
         activate QA
-        QA->>Dispatcher: qa-phase-N-verdict.md
+        QA->>Dispatcher: qa-phase-N-verdict-SID.md
         deactivate QA
     end
 
     opt Gate 3: Reviewer Sentinel
-        Dispatcher->>Reviewer: sentinel mode
+        Dispatcher->>Reviewer: sentinel mode + SID
         activate Reviewer
-        Reviewer->>Dispatcher: sentinel-N.md
+        Reviewer->>Dispatcher: sentinel-N-SID.md
         deactivate Reviewer
     end
 
     opt Gate 4: UAT
-        Dispatcher->>UAT: acceptance scope
+        Dispatcher->>UAT: acceptance scope + SID
         activate UAT
-        UAT->>Dispatcher: uat-phase-N-verdict.md
+        UAT->>Dispatcher: uat-phase-N-verdict-SID.md
         deactivate UAT
     end
 
@@ -377,7 +477,7 @@ sequenceDiagram
 
 ---
 
-## 6. Engineer TDD Protocol
+## 7. Engineer TDD Protocol
 
 The engineer's implementation cycle, dispatched by the dispatcher.
 
@@ -412,7 +512,7 @@ flowchart LR
 
 ---
 
-## 7. Reviewer Modes
+## 8. Reviewer Modes
 
 The reviewer operates in two modes depending on invocation.
 
@@ -464,7 +564,7 @@ flowchart TD
 
 ---
 
-## 8. Audit Pipeline
+## 9. Audit Pipeline
 
 `/r-audit` dispatches 4 parallel subagents, deduplicates findings, outputs AUDIT.md.
 
@@ -496,7 +596,7 @@ flowchart TD
 
 ---
 
-## 9. Issue Hierarchy
+## 10. Issue Hierarchy
 
 GitHub issue granularity: initiatives for planning, releases for versions,
 phases for execution, and task-completion comments for progress tracking.
@@ -515,7 +615,7 @@ flowchart TD
 
 ---
 
-## 10. Two-Horizon Roadmap
+## 11. Two-Horizon Roadmap
 
 The ecosystem project provides two roadmap views: Planning (big-picture
 timeline by Target Date) and Execution (active work by Release iteration).

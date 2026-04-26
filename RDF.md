@@ -41,6 +41,16 @@ Codex, or AGENTS.md environments.
   work tracking layer using phase-level tracking (v2 issue model). The issue
   hierarchy is: initiative (planning horizon) -> release (committed version) ->
   phase (execution unit) -> task comments (progress trail).
+- **Concurrent-session safety (3.1.0+):** Multiple Claude Code sessions on the
+  same repository do not corrupt each other. Every session generates a UUIDv7
+  `RDF_SESSION_ID` (inherited by all subagents); every transient state file
+  (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) is
+  suffixed with that ID. A pre-commit hook installed in each dispatched worktree
+  physically rejects out-of-scope commits; the dispatcher's post-merge
+  `git diff-tree` is the defense-in-depth backstop. Plan authors may declare
+  `**Tests-may-touch:**` glob lists (plan schema Rule 8) to pre-authorize
+  trivial test-infra drift. Helpers live in `state/rdf-bus.sh`. Design:
+  `docs/specs/2026-04-25-concurrent-sessions-design.md`.
 
 ### Naming Convention
 
@@ -154,10 +164,15 @@ rdf/                                 # Repository root
 |   +-- agents-md/
 |
 |-- state/
-|   +-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
+|   |-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
+|   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
+|   |-- context-audit.sh             # Context weight audit -> JSON
+|   |-- rotate-work-output.sh        # Age/size-based work-output rotation
+|   +-- git-hooks/
+|       +-- pre-commit               # Worktree boundary enforcement (3.1.0)
 |
 |-- CLAUDE.md                        # RDF project's own instructions
-|-- VERSION                          # "3.0.7"
+|-- VERSION                          # "3.1.0"
 |-- CHANGELOG
 |-- CHANGELOG.RELEASE
 |-- RDF.md                           # Architecture doc (this file)

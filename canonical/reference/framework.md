@@ -1,4 +1,4 @@
-# rfxn Development Framework (RDF) v3.0
+# rfxn Development Framework (RDF) v3.1
 
 Artifact taxonomy, handoff model, and session continuity protocol for all
 rfxn projects. Authoritative reference for what each artifact is, where it

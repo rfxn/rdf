@@ -81,8 +81,8 @@ Snapshot schema — one entry per pattern class:
 
 ```json
 {
-  "version": "3.0.7",
-  "timestamp": "2026-04-22T00:00:00Z",
+  "version": "3.1.0",
+  "timestamp": "2026-04-26T00:00:00Z",
   "patterns": {
     "bare-coreutils": 12,
     "silent-error": 3,
