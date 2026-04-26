@@ -16,9 +16,13 @@ engineer, qa, uat, and reviewer subagents as needed.
 - Parse `**Regression-case**` field from the target phase; pass
   verbatim to the engineer subagent in the dispatch payload so the
   engineer can satisfy the phase's regression requirement
-- Determine phase number N; pass N to the QA subagent in the
-  dispatch payload so QA can derive `.rdf/work-output/phase-<N>-result.md`
-  for EVIDENCE re-validation (scope ≥ multi-file only)
+- Source `state/rdf-bus.sh` and call `rdf_session_init` to ensure
+  `RDF_SESSION_ID` is set before any state-file path is derived.
+- Determine phase number N; pass N AND `RDF_SESSION_ID` to the QA
+  subagent in the dispatch payload so QA can derive the scoped
+  result file path:
+  `.rdf/work-output/phase-<N>-result-<RDF_SESSION_ID>.md`
+  (See `state/rdf-bus.sh::rdf_scoped_filename`.)
 
 ### Execute (one of three modes)
 
@@ -47,6 +51,99 @@ engineer, qa, uat, and reviewer subagents as needed.
 inter-phase parallel batch managed by /r-build. In this case,
 downgrade [parallel-agent] to [serial-agent] to avoid nested
 parallelism. Log: "Downgraded to serial-agent (parallel batch)."
+
+### Worktree Pre-Commit Hook Installation (and PLAN.md sync)
+
+When dispatched into a worktree (`PARALLEL_BATCH: true` with
+`PROJECT_ROOT` set to a worktree path), perform two installation
+steps before any engineer subagent is dispatched:
+
+**(a) Copy PLAN.md from main repo into worktree.**
+Worktrees check out the HEAD-committed working tree, which means
+`PLAN.md` in the worktree is the *committed* version, not the
+operator's locally-modified version in the main repo. The hook
+enforces against whatever PLAN.md it reads, so a stale PLAN.md
+causes false-negative rejections ("Phase N not found") and
+false-positive scope leaks.
+
+```bash
+command cp "${PROJECT_ROOT_MAIN}/PLAN.md" "${PROJECT_ROOT}/PLAN.md"
+```
+
+This sync is one-shot at worktree creation; subsequent operator
+edits to PLAN.md are not reflected in worktrees. If the operator
+changes PLAN.md mid-build, dispatch must be re-invoked.
+
+**(b) Install the pre-commit hook.**
+```bash
+worktree_git_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-dir)
+command cp "${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit" \
+            "${worktree_git_dir}/hooks/pre-commit"
+command chmod +x "${worktree_git_dir}/hooks/pre-commit"
+```
+
+`${PROJECT_ROOT_MAIN}` is the main project root (where `state/`
+lives) — passed in the dispatch payload separately from
+`PROJECT_ROOT` (which is the worktree path).
+
+The hook reads `PLAN.md` from the worktree (now synced via step
+(a)) and rejects commits outside the union of `**Files:**` and
+`**Tests-may-touch:**`. See `plan-schema.md` Rule 8 for the full
+enforcement contract.
+
+If either step fails (filesystem permission, missing source):
+log a warning and proceed. The Post-Merge Scope Check (next
+section) still applies as a defense-in-depth backstop.
+
+### Post-Merge Scope Check (defense-in-depth)
+
+After a parallel-worktree engineer returns and before merging the
+branch into base, verify the engineer's commit stayed within the
+phase's declared file scope. This is layer 2 enforcement — the
+worktree pre-commit hook (previous section) is layer 1. Both
+layers cite `plan-schema.md` Rule 8.
+
+Procedure:
+
+1. Source `state/rdf-bus.sh`, parse phase scope:
+   ```
+   eval "$(rdf_parse_phase_scope PLAN.md $N)"
+   ```
+   This sets `ALLOWED_REGEX`, `FLEX_REGEX`, `FLEX_FILE_CEILING`,
+   `FLEX_LINE_CEILING`.
+
+2. Compute touched paths in engineer's commit:
+   ```
+   touched=$(git -C "$worktree_path" diff-tree --no-commit-id \
+     --name-only -r HEAD)
+   ```
+
+3. For each touched path: check it matches
+   `${ALLOWED_REGEX}|${FLEX_REGEX}`. Out-of-scope paths emit a
+   Gate 1 NEEDS_CONTEXT verdict with feedback
+   `"Scope violation: file <path> not in Files or Tests-may-touch
+   of Phase <N>"`. Normal Gate 1 retry/escalation handling applies.
+
+4. For paths matching `FLEX_REGEX`: count files (≤ FLEX_FILE_CEILING)
+   and per-file lines (≤ FLEX_LINE_CEILING). Ceiling violations also
+   emit NEEDS_CONTEXT.
+
+5. If `**Files:**` field cannot be parsed (free-form prose,
+   `ALLOWED_REGEX` empty): log warning
+   `"Cannot extract scope from Phase <N> Files field; skipping
+   post-merge scope check"` and proceed without enforcement
+   (matches `r-build.md` Section 2b.4 fallback).
+
+This check runs ONLY for parallel-worktree dispatches. Serial modes
+(serial-context, serial-agent, file-gated parallel-agent) share the
+working tree and use file-ownership validation at dispatch time
+(`/r-build` Section 2b.4).
+
+Active session evidence: M13 dispatch produced 5/5 scope violations
+despite explicit prose instruction in the dispatch payload. Layer 1
+(pre-commit hook) is the primary defense — engineers cannot
+physically commit out-of-scope changes. Layer 2 catches if the hook
+was bypassed (`--no-verify`), missing, or buggy.
 
 ### Quality Gates (after each phase)
 
@@ -292,7 +389,8 @@ SHOULD-FIX findings — advisory:
   3. Listed in phase status output, no action required to proceed
 
 INFORMATIONAL findings — logged:
-  1. Written to .rdf/work-output/phase-N-status.md
+  1. Written to .rdf/work-output/phase-<N>-status-<RDF_SESSION_ID>.md
+     (derived via rdf_scoped_filename from state/rdf-bus.sh).
   2. No output to developer unless they read the status file
   3. Available for review but never block, never prompt
 
