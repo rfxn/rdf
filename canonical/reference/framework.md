@@ -42,10 +42,10 @@ commit, phase completion, or audit run.
 | MEMORY.md | Auto-memory dir | `/r-save` | All projects |
 | PLAN.md | `<project>/PLAN.md` | `/r-plan`, `/r-save` | When active work |
 | AUDIT.md | `<project>/AUDIT.md` | `/r-audit`, `/r-save` | After audit run |
-| spec-progress.md | `.rdf/work-output/` | `/r-spec` | During design |
-| ship-progress.md | `.rdf/work-output/` | `/r-ship` | During release |
-| vpe-progress.md | `.rdf/work-output/` | `/r-vpe` | During VPE pipeline |
-| build-progress.md | `.rdf/work-output/` | `/r-build` | During parallel build |
+| spec-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-spec` | During design |
+| ship-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-ship` | During release |
+| vpe-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-vpe` | During VPE pipeline |
+| build-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-build` | During parallel build |
 | session-log.jsonl | `.rdf/work-output/` | `/r-save` | When active work |
 | insights.jsonl | `~/.rdf/` | `/r-save` | Rolling 30 entries |
 | lessons-learned.md | `~/.rdf/` | `/r-save` (user-promoted) | Cross-session wisdom |
@@ -70,12 +70,25 @@ Agent work products created during a session. Structured files in
 
 | Artifact | Writer | Reader |
 |----------|--------|--------|
-| `phase-N-status.md` | engineer | dispatcher |
-| `phase-N-result.md` | engineer | dispatcher |
-| `qa-phase-N-verdict.md` | qa | dispatcher |
-| `sentinel-N.md` | reviewer | dispatcher |
-| `sentinel-plan-final.md` | reviewer (via dispatcher) | dispatcher |
-| `uat-phase-N-verdict.md` | uat | dispatcher |
+| `phase-N-status-<SESSION_ID>.md` | engineer | dispatcher |
+| `phase-N-result-<SESSION_ID>.md` | engineer | dispatcher |
+| `qa-phase-N-verdict-<SESSION_ID>.md` | qa | dispatcher |
+| `sentinel-N-<SESSION_ID>.md` | reviewer | dispatcher |
+| `sentinel-plan-final-<SESSION_ID>.md` | reviewer (via dispatcher) | dispatcher |
+| `uat-phase-N-verdict-<SESSION_ID>.md` | uat | dispatcher |
+
+**Session Identity (`RDF_SESSION_ID`):** Set by the `rdf_session_init`
+helper in `state/rdf-bus.sh`. UUIDv7 string. Subagents inherit from
+parent (env passthrough). Used as filename suffix for transient state
+files to prevent collisions between concurrent sessions on the same
+repository. Helper functions:
+- `rdf_session_init` — generate UUIDv7 if `RDF_SESSION_ID` is unset; export
+- `rdf_scoped_filename <basepath>` — derive `<basepath>-$RDF_SESSION_ID.<ext>`
+- `rdf_session_short` — last 12 chars for log display
+- `rdf_parse_phase_scope <plan> <N>` — extract phase Files + Tests-may-touch
+  for the pre-commit hook (see Phase 4 below and `plan-schema.md` Rule 8)
+
+Concurrent-session coordination design: `docs/specs/2026-04-25-concurrent-sessions-design.md`.
 
 **Engineer result schema:**
 ```
