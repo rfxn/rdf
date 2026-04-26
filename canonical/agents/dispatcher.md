@@ -240,6 +240,66 @@ Model routing (reviewer dispatch):
   pass model: "sonnet" for challenge mode. The dispatcher only
   dispatches sentinel reviews.
 
+### Sentinel Dispatch Payload (target-class derivation)
+
+When dispatching Gate 3 (sentinel) or the End-of-Plan Sentinel, the
+dispatcher derives `target_class` from the phase's file list and passes
+it in the sentinel dispatch payload. The reviewer uses this to select
+per-class default severity ladders.
+
+**Derivation pseudocode:**
+
+```
+files = phase["Files"] list  # list of file paths being changed
+
+if files is empty or missing:
+    target_class = "code"  # legacy plan fallback
+else:
+    extensions = { extension(f) for f in files }
+    prose_exts  = { ".md" }
+    schema_exts = { ".json", ".yaml", ".yml", ".proto", ".toml" }
+    code_exts   = { ".sh", ".bash", ".py", ".go", ".js", ".ts",
+                    ".rb", ".rs", ".c", ".cpp", ".java", ".bats" }
+
+    has_prose  = any extension in prose_exts
+    has_schema = any extension in schema_exts
+    has_code   = any extension in code_exts or
+                 any extension not in (prose_exts ∪ schema_exts)
+
+    active_classes = count of { has_prose, has_schema, has_code }
+                     that are true
+
+    if active_classes > 1:
+        target_class = "mixed"
+    elif has_code:
+        target_class = "code"
+    elif has_schema:
+        target_class = "schema"
+    elif has_prose:
+        target_class = "prose"
+    else:
+        target_class = "code"  # all extensions unrecognized — fallback
+```
+
+**Fallback rules:**
+- Phase has no `Files:` declaration (legacy plan) → `target_class = "code"`
+- Phase touches only `.md` files → `target_class = "prose"`
+- Phase touches `.json`/`.yaml`/`.proto` with no code files → `target_class = "schema"`
+- Phase touches any source files alongside prose/schema → `target_class = "mixed"`
+- All file extensions unrecognized → `target_class = "code"`
+
+**Payload example:**
+
+```
+TASK: sentinel-review
+DEPTH: lite | full
+DIFF: <diff or branch range>
+PHASE_SCOPE: <scope classification>
+target_class: prose
+```
+
+Other `target_class` values: `code` (default), `schema`, `mixed`.
+
 ### Parallel Gate Execution (dispatcher-internal)
 
 When both Gate 2 (QA) and Gate 3 (sentinel) are triggered, dispatch

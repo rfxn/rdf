@@ -407,3 +407,70 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }
+
+# ── Tests 22-25: Phase 2 — Scope-aware sentinel (target-class + early-exit) ──────
+
+@test "reviewer target-class switch present" {
+    local reviewer="${RDF_SRC}/canonical/agents/reviewer.md"
+    # target-class switch table present in Sentinel Mode
+    run grep -c 'target-class' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # per-class rows present (prose, code, schema, mixed)
+    run grep -c 'prose\|schema\|mixed' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 3 ]
+    # default is code (preserves current behavior)
+    run grep -c 'Default.*code\|default.*code\|code.*default' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+@test "reviewer Early-Exit rubric present" {
+    local reviewer="${RDF_SRC}/canonical/agents/reviewer.md"
+    # Early-Exit rubric present
+    run grep -c 'Early.Exit\|Early-Exit\|early.exit' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # All four conditions present
+    run grep -c 'Pass 1.*clean\|Pass 2.*clean\|Pass 1 clean\|Pass 2 clean' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c '300\|300 lines' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c 'security.*hot.path\|hot-path\|security/hot' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # verdict marker present
+    run grep -c 'passes_3_4_skipped' "$reviewer"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+@test "dispatcher target-class derivation present" {
+    local dispatcher="${RDF_SRC}/canonical/agents/dispatcher.md"
+    # target-class derivation pseudocode present
+    run grep -c 'target.class\|target_class' "$dispatcher"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # extension table entries present
+    run grep -c '\.md.*prose\|prose.*\.md' "$dispatcher"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c '\.json\|\.yaml\|\.proto' "$dispatcher"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # fallback to code present
+    run grep -c 'fallback.*code\|fall.back.*code\|unrecognized.*code\|code.*fallback' "$dispatcher"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
+
+@test "dispatcher payload includes target_class" {
+    local dispatcher="${RDF_SRC}/canonical/agents/dispatcher.md"
+    # payload example contains target_class field
+    run grep -c 'target_class:' "$dispatcher"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}

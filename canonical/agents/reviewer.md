@@ -131,7 +131,83 @@ Reviews diffs across the passes selected by depth:
 4. **Performance** — O(n²) or worse in hot paths, unnecessary
    allocations, missing pagination, unbounded queries
 
-Report format:
+### Target-Class Switch
+
+The `target-class` field in the dispatch prompt selects the default
+severity ladder for each pass. The dispatcher derives target-class from
+the phase file extensions and passes it as `target_class: <class>` in
+the sentinel dispatch payload. Default is `code` when the field is
+absent or unrecognized (preserves current 4-pass behavior on all
+existing dispatches).
+
+If the dispatch prompt contains an unrecognized `target_class` value,
+fall back to `code` and log: "target_class unrecognized — falling back
+to code class defaults."
+
+| target_class | Pass 1 Anti-Slop default  | Pass 2 Regression default | Pass 3 Security default       | Pass 4 Performance default       |
+|--------------|---------------------------|---------------------------|-------------------------------|----------------------------------|
+| `prose`      | INFORMATIONAL             | INFORMATIONAL             | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
+| `code`       | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
+| `schema`     | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
+| `mixed`      | SHOULD-FIX(pass:anti-slop)| MUST-FIX(fix-or-refute)   | MUST-FIX(fix-or-refute)       | SHOULD-FIX(pass:performance)     |
+
+Notes on `prose` class: anti-slop and regression severities are lowered
+to INFORMATIONAL because markdown rewrites carry near-zero behavioral
+regression risk. Security remains MUST-FIX — documentation can leak
+credential patterns or misguide operators. Performance remains
+SHOULD-FIX as a formality (prose has no runtime perf concern).
+
+Notes on `mixed` class: uses the max-of-any-class default ladder above
+(equivalent to `code`). When a phase touches both prose and source
+files, code-class defaults govern.
+
+### Early-Exit Rubric (skip Pass 3 + Pass 4)
+
+When ALL four conditions below are satisfied, skip Pass 3 (Security)
+and Pass 4 (Performance) and emit the `passes_3_4_skipped` verdict
+marker in the report:
+
+1. **Pass 1 clean** — Pass 1 (Anti-Slop) produced zero MUST-FIX or
+   SHOULD-FIX findings (INFORMATIONAL-only is clean).
+2. **Pass 2 clean** — Pass 2 (Regression) produced zero MUST-FIX
+   findings.
+3. **Diff < 300 lines** — the total changed-line count of the diff
+   (additions + deletions) is fewer than 300 lines.
+4. **No security/hot-path file** — no changed file matches any of the
+   following indicators: filename contains `auth`, `cred`, `secret`,
+   `token`, `key`, `passwd`, `encrypt`, `hash`, `sign`, `cert`,
+   `session`, or `permission`; or the file path is flagged in
+   `governance/anti-patterns.md` as security-sensitive; or the
+   dispatcher marked the phase `scope:sensitive`.
+
+ALL four conditions must hold. If any condition fails, Pass 3 and
+Pass 4 run normally.
+
+Report format when Early-Exit applies:
+
+    ## Sentinel Review
+
+    **Target:** [diff or branch]
+    **Verdict:** APPROVE | MUST-FIX | CONCERNS
+    **passes_3_4_skipped: true**
+    **early_exit_reason:** all four Early-Exit conditions met
+
+    ### Pass 1: Anti-Slop
+    - [CLEAN] {details}
+
+    ### Pass 2: Regression
+    - [CLEAN] {details}
+
+    ### Pass 3: Security
+    SKIPPED — Early-Exit conditions satisfied.
+
+    ### Pass 4: Performance
+    SKIPPED — Early-Exit conditions satisfied.
+
+    ### Summary
+    MUST-FIX: 0 | SHOULD-FIX: 0 | INFORMATIONAL: {count}
+
+Report format (standard, no early exit):
 
     ## Sentinel Review
 
@@ -161,7 +237,7 @@ Note: Verdict labels (APPROVE | MUST-FIX | CONCERNS) are report-level judgments,
 distinct from per-finding severity labels. Verdict labels are unchanged —
 "CONCERNS" as a verdict means "SHOULD-FIX-level findings exist but no MUST-FIX."
 
-Per-pass default severities:
+Per-pass default severities (for `code` class — the default):
 - Anti-Slop: SHOULD-FIX(pass:anti-slop). Elevate to MUST-FIX(fix-or-refute) when
   naming/semantic issue causes functional bug.
 - Regression: MUST-FIX(fix-or-refute). Always — concrete evidence of behavioral
@@ -169,6 +245,8 @@ Per-pass default severities:
 - Security: MUST-FIX(fix-or-refute). Always — concrete exploit path.
 - Performance: SHOULD-FIX(pass:performance). Elevate to MUST-FIX(fix-or-refute)
   when observable degradation under production loads.
+
+See Target-Class Switch table above for per-class overrides.
 
 ### Counter-Hypothesis Protocol (sentinel mode, unconditional)
 
