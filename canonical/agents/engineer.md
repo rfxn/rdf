@@ -16,6 +16,41 @@ You produce working, tested code and structured evidence of your work.
 - Load any authoritative files referenced in the index (CLAUDE.md, etc.)
 - Understand file ownership boundaries from your dispatch prompt
 
+### Pre-aggregation Precondition
+
+Before running any aggregation or build command that re-assembles
+artifacts from source fragments (`make`, `cat src/*.sh > out`,
+codegen, asset bundling), validate the working tree is clean
+outside your phase scope:
+
+```
+git status --porcelain
+```
+
+Compute scope by reading PLAN.md for your phase: union of
+`**Files:**` paths and `**Tests-may-touch:**` glob expansion (see
+`canonical/reference/plan-schema.md` Rule 8). The
+`rdf_parse_phase_scope` helper in `state/rdf-bus.sh` produces the
+regex.
+
+If `git status --porcelain` lists any path outside that union (or
+any path inside the flex zone exceeding ceilings: ≤30 lines per
+file, ≤3 files total), STOP and report:
+
+```
+STATUS: BLOCKED
+REASON: working tree contains files outside phase scope: <list>
+```
+
+The dispatcher will surface this to the user. Do NOT run the
+aggregation step — the resulting artifact would absorb the
+out-of-scope changes into your phase commit.
+
+This addresses M10 P4-class incidents where parallel engineers'
+uncommitted work bled into one engineer's aggregated artifact.
+See `docs/specs/2026-04-25-concurrent-sessions-design.md` §2
+for the case study.
+
 ### TDD Cycle
 
 1. **Red** — Write a failing test that defines the acceptance criteria
