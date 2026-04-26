@@ -165,6 +165,11 @@ dispatches, quality gates, commit strategy.
 
 ### 6b. Dispatch Parallel Batch
 
+Before any worktree creation, source `state/rdf-bus.sh` and call
+`rdf_session_init` to ensure `RDF_SESSION_ID` is set. Worktree paths
+and branch names use the full UUID for collision-free identification
+across concurrent sessions on the same repository.
+
 For each batch in the dispatch plan (sequential between batches,
 parallel within each batch):
 
@@ -181,9 +186,37 @@ parallel within each batch):
 **Worktree dispatch (parallel-worktree):**
 1. Create task per phase in the batch
 2. For each phase, create a git worktree:
-   git worktree add .worktrees/rdf-phase-{N}-{session-id} -b rdf/phase-{N}-{session-id} HEAD
-   (session-id = 8-char random hex, prevents cross-session collisions)
-3. Dispatch N rdf-dispatcher subagents simultaneously
+   git worktree add .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} -b rdf/phase-{N}-${RDF_SESSION_ID} HEAD
+   (RDF_SESSION_ID is the full UUIDv7; prevents cross-session collisions)
+
+   After `git worktree add`, install the pre-commit hook into the
+   worktree's per-worktree hooks directory:
+
+   ```
+   wt_git_dir=$(git -C .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} rev-parse --git-dir)
+   command cp state/git-hooks/pre-commit "${wt_git_dir}/hooks/pre-commit"
+   command chmod +x "${wt_git_dir}/hooks/pre-commit"
+   ```
+
+   The hook enforces phase scope (Files ∪ Tests-may-touch) at
+   `git commit` time. See `plan-schema.md` Rule 8 and dispatcher.md
+   "Worktree Pre-Commit Hook Installation".
+
+3. Before each `Task` dispatch, the controller MUST change directory
+   into the target worktree:
+   ```
+   cd .worktrees/rdf-phase-{N}-${RDF_SESSION_ID}
+   ```
+   The `Task` tool inherits the controller's CWD; the SDK picks an
+   adjacent repo non-deterministically when CWD has no `.git/`
+   (see workspace CLAUDE.md "Worktree CWD"). This `cd` is the
+   actual mechanism that closes the non-deterministic-CWD class.
+   For parallel dispatches in a batch, the controller serializes
+   the `cd → Task` pair per-phase (parallelism comes from the
+   `Task` calls returning before the subagent finishes, not from
+   simultaneous `cd`s).
+
+   Then dispatch N rdf-dispatcher subagents simultaneously:
    - Each gets the standard dispatch payload plus:
      PARALLEL_BATCH: true
      PROJECT_ROOT: {worktree path}
@@ -191,18 +224,25 @@ parallel within each batch):
 4. Wait for all subagents in the batch to complete
 5. Merge completed worktrees in plan order:
    For each completed phase (in plan order, N ascending):
-     git rebase {base-branch} rdf/phase-{N}-{session-id}
+     git rebase {base-branch} rdf/phase-{N}-${RDF_SESSION_ID}
    Where {base-branch} is the branch HEAD was on when worktrees were
    created (captured at step 2 of worktree dispatch).
-     git merge --ff-only rdf/phase-{N}-{session-id}
+     git merge --ff-only rdf/phase-{N}-${RDF_SESSION_ID}
    This produces a clean linear history — phase commits appear in
    plan order with no merge commit artifacts.
    If rebase conflict: stop, report conflicting phases, enter
    failure handling (Section 8)
 6. Clean up worktrees:
-   git worktree remove .worktrees/rdf-phase-{N}-{session-id}
-   git branch -d rdf/phase-{N}-{session-id}
+   git worktree remove .worktrees/rdf-phase-{N}-${RDF_SESSION_ID}
+   git branch -d rdf/phase-{N}-${RDF_SESSION_ID}
 7. Collect results: PASS or FAIL per phase
+
+**Constraint:** Worktree dispatch MUST be invoked from a top-level
+session, not from a subagent. Subagents inherit `RDF_SESSION_ID`
+from their parent and would create colliding worktree paths.
+The `PARALLEL_BATCH` downgrade in `dispatcher.md` (lines 45-49)
+already prevents nested parallel dispatch; this is its
+worktree-specific explicit form.
 
 **Post-batch quality gate (worktree dispatch only):**
 After merging all worktrees in a batch, run a batch-level QA check:
@@ -214,7 +254,8 @@ After merging all worktrees in a batch, run a batch-level QA check:
 - If QA finds issues: enter failure handling (Section 8)
 
 **Progress tracking:**
-Write batch progress to `.rdf/work-output/build-progress.md`:
+Write batch progress to `.rdf/work-output/build-progress-${RDF_SESSION_ID}.md`
+(derived via `rdf_scoped_filename` from `state/rdf-bus.sh`):
   DISPATCH_MODE: parallel
   TOTAL_PHASES: {N}
   TOTAL_BATCHES: {N}
@@ -281,8 +322,10 @@ When one or more phases in a parallel batch fail:
      phase 2 serially against new HEAD
    - Option 2: Re-dispatch phase 2's dispatcher subagent (same
      isolation level, max 3 total attempts)
-   - Option 3: Write progress to build-progress.md, stop. User can
-     resume with `/r-build --parallel` (reads progress file)
+   - Option 3: Write progress to
+     `build-progress-${RDF_SESSION_ID}.md`, stop. User can resume
+     with `/r-build --parallel` (which calls `rdf_session_init`
+     and reads the scoped progress file).
 
 ## Constraints
 
