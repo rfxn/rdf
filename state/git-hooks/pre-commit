@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# state/git-hooks/pre-commit — RDF worktree scope enforcement (Wave A)
+# (C) 2026 R-fx Networks <proj@rfxn.com>
+# GNU GPL v2
+#
+# Installed into worktrees by dispatcher (canonical/agents/dispatcher.md).
+# Rejects commits that touch files outside the phase's declared Files list
+# or Tests-may-touch flex zone (plan-schema.md Rule 8).
+#
+# Bypass: --no-verify (intentional override; dispatcher post-merge check
+# serves as defense-in-depth backstop).
+set -euo pipefail
+
+# Locate project root (nearest ancestor with PLAN.md)
+_proj=""
+_dir="$(command pwd)"
+while [[ "$_dir" != "/" ]]; do
+    [[ -f "$_dir/PLAN.md" ]] && { _proj="$_dir"; break; }
+    _dir="$(command dirname "$_dir")"
+done
+if [[ -z "$_proj" ]]; then
+    echo "rdf pre-commit: PLAN.md not found in any ancestor; skipping scope check" >&2
+    exit 0
+fi
+
+# Source helpers
+if [[ ! -f "$_proj/state/rdf-bus.sh" ]]; then
+    echo "rdf pre-commit: state/rdf-bus.sh not found; skipping scope check" >&2
+    exit 0
+fi
+# shellcheck source=/dev/null
+source "$_proj/state/rdf-bus.sh"
+
+# Derive phase number from branch name: rdf/phase-<N>-<UUID>
+# symbolic-ref resolves correctly on both empty and non-empty repos;
+# git rev-parse --abbrev-ref returns "HEAD" (not the branch) on empty repos.
+_branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo "")" # fails on detached HEAD → no-op
+_phase_n=""
+if [[ "$_branch" =~ ^rdf/phase-([0-9]+)- ]]; then
+    _phase_n="${BASH_REMATCH[1]}"
+fi
+if [[ -z "$_phase_n" ]]; then
+    # Not a worktree branch; no enforcement
+    exit 0
+fi
+
+# Parse phase scope
+eval "$(rdf_parse_phase_scope "$_proj/PLAN.md" "$_phase_n")"
+if [[ -z "${ALLOWED_REGEX:-}" ]]; then
+    echo "rdf pre-commit: Phase $_phase_n not found in PLAN.md or has no Files block" >&2
+    exit 1
+fi
+
+# Build union regex
+_scope_regex="$ALLOWED_REGEX"
+if [[ -n "${FLEX_REGEX:-}" ]]; then
+    _scope_regex="$_scope_regex|$FLEX_REGEX"
+fi
+
+# Get staged files
+_staged="$(git diff --cached --name-only)"
+if [[ -z "$_staged" ]]; then
+    exit 0   # nothing staged
+fi
+
+# Validate each staged path
+_violations=""
+while IFS= read -r _path; do
+    if ! [[ "$_path" =~ ^(${_scope_regex})$ ]]; then
+        _violations="${_violations:+$_violations}$_path"$'\n'
+    fi
+done <<< "$_staged"
+
+if [[ -n "$_violations" ]]; then
+    echo "rdf pre-commit: SCOPE VIOLATION — files outside Phase $_phase_n scope:" >&2
+    echo "$_violations" >&2
+    echo "Phase Files allowed: $(echo "$ALLOWED_REGEX" | command tr '|' ' ')" >&2
+    [[ -n "${FLEX_REGEX:-}" ]] && echo "Tests-may-touch flex: $(echo "$FLEX_REGEX" | command tr '|' ' ')" >&2
+    echo "If this addition is legitimate test-infra, add the path to" >&2
+    echo "the phase's **Tests-may-touch:** field in PLAN.md." >&2
+    echo "Bypass with --no-verify only if dispatcher post-merge check is acceptable." >&2
+    exit 1
+fi
+
+# Check ceilings on flex-zone files
+if [[ -n "${FLEX_REGEX:-}" ]]; then
+    _flex_files=0
+    while IFS= read -r _path; do
+        if [[ "$_path" =~ ^(${FLEX_REGEX})$ ]]; then
+            _flex_files=$((_flex_files + 1))
+            # Per-file line ceiling
+            _lines="$(git diff --cached --numstat -- "$_path" | awk '{print $1+$2}')"
+            if [[ "$_lines" -gt "${FLEX_LINE_CEILING:-30}" ]]; then
+                echo "rdf pre-commit: file $_path in flex zone changed $_lines lines (ceiling ${FLEX_LINE_CEILING:-30})" >&2
+                exit 1
+            fi
+        fi
+    done <<< "$_staged"
+    if [[ "$_flex_files" -gt "${FLEX_FILE_CEILING:-3}" ]]; then
+        echo "rdf pre-commit: $_flex_files files in flex zone (ceiling ${FLEX_FILE_CEILING:-3})" >&2
+        exit 1
+    fi
+fi
+
+exit 0
