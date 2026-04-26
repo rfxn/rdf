@@ -51,6 +51,83 @@ uncommitted work bled into one engineer's aggregated artifact.
 See `docs/specs/2026-04-25-concurrent-sessions-design.md` §2
 for the case study.
 
+### Setup Step 7: Boundary-Guard Sweep
+
+**Trigger:** Run only when the phase scope is `scope:cross-cutting` or
+`scope:sensitive`. If scope is `scope:focused`, `scope:multi-file`, or
+`scope:docs`, skip this step entirely — current Setup is unchanged.
+
+**Purpose:** Catch unvalidated input fields that reach dangerous sinks
+(filesystem paths, shell commands, JSONL appends) before the phase's
+code lands in review.
+
+**Procedure:**
+
+1. Discover schema files in scope:
+
+```
+find . -path '*/schemas/*.json' -o -name '*.schema.json' \
+       -o \( -name '*.json' -not -path '*/node_modules/*' \) \
+  | head -20
+```
+
+If no schema files exist in the phase's file scope, emit one INFO
+marker and stop — no MUST-FIX is raised for a missing-schema result:
+
+```
+INFO: Step 7 short-circuit — no schema files in phase scope.
+```
+
+Paste this line into the EVIDENCE block and proceed.
+
+2. Extract field names from each schema:
+
+```
+jq -r '.. | objects | select(has("type")) | .title // "unnamed"' schema.json
+# or for JSON Schema draft-07 properties:
+jq -r '.properties | keys[]' schema.json 2>/dev/null || true  # tolerate non-schema JSON
+```
+
+3. For each extracted field, grep call sites for unguarded sinks:
+
+```
+# Filesystem path sinks
+grep -rn "$field" src/ | grep -E '/tmp/|path=|filepath|os\.path'
+
+# Shell command sinks
+grep -rn "$field" src/ | grep -E 'subprocess|exec\(|os\.system|Popen|shell=True'
+
+# JSONL append sinks
+grep -rn "$field" src/ | grep -E '\.jsonl|json\.dumps|append.*json'
+```
+
+4. Cross-reference each hit against the field's schema definition:
+   - Does the field declare `pattern`, `enum`, or `format`? If yes,
+     the constraint is present — mark as guarded.
+   - If none of `pattern`, `enum`, `format` appear in the field's
+     schema object, mark as unguarded.
+
+5. Build the EVIDENCE table (paste even when 0 findings — proof of
+   execution):
+
+```
+| field | source-schema | call-site | guard? | sink-class | risk |
+|-------|---------------|-----------|--------|------------|------|
+| name  | schemas/x.json:12 | src/y.py:34 | no | filesystem | HIGH |
+| mode  | schemas/x.json:18 | src/y.py:56 | yes (enum) | shell | LOW |
+```
+
+**Resolution:** For every row where `guard?` is `no`:
+- Add a `pattern`, `enum`, or `format` constraint to the schema field,
+  or add input validation at the call site, and update the row to
+  `yes`.
+- Alternatively, cite refute-evidence that the sink cannot receive
+  attacker-controlled data (format: `<claim>: <path>:<line>` per
+  EVIDENCE schema).
+
+Unguarded HIGH-risk rows are MUST-FIX. Unguarded MEDIUM rows are
+SHOULD-FIX. LOW rows are INFORMATIONAL.
+
 ### TDD Cycle
 
 1. **Red** — Write a failing test that defines the acceptance criteria

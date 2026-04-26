@@ -474,3 +474,36 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }
+
+# ── Test 28: Phase 4 — Engineer Setup step 7 boundary-guard present ───────────
+
+@test "engineer Setup step 7 boundary-guard present" {
+    local file="${RDF_SRC}/canonical/agents/engineer.md"
+    # Step 7 heading present
+    run grep -c 'Step 7\|step 7\|boundary.guard\|Boundary.Guard\|Boundary-guard' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Trigger conditions present (cross-cutting or sensitive)
+    run grep -c 'cross-cutting\|scope:cross-cutting' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    run grep -c 'scope:sensitive\|sensitive' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Inline grep instructions: schema discovery
+    run grep -c 'schemas/\|\.json' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Inline grep instructions: pattern/enum/format constraints
+    run grep -c 'pattern\|enum\|format' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # EVIDENCE table format columns present
+    run grep -c 'source-schema\|sink-class\|guard' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+    # Short-circuit for missing schema (INFO marker, no MUST-FIX)
+    run grep -c 'INFO\|short-circuit\|no schema' "$file"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
