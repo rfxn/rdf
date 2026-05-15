@@ -548,3 +548,11 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }
+
+# ── Test 35: Phase 4 — Dispatcher worktree sync references rdf_active_plan_path ──
+
+@test "dispatcher worktree sync references rdf_active_plan_path" {
+    run grep -c 'rdf_active_plan_path' "$RDF_SRC/canonical/agents/dispatcher.md"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 2 ]
+}

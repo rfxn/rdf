@@ -40,7 +40,7 @@ is a specification of *what* to create, not *how* to submit it.
 Then as work progresses: mark each `in_progress` → `completed`.
 For >30s operations, update activeForm with progress text.
 
-For phases that don't apply (no PLAN.md, no AUDIT.md), mark
+For phases that don't apply (no plan file (resolved via `rdf_active_plan_path`), no AUDIT.md), mark
 `completed` immediately with no spinner — the task still appears
 in the list so the user sees the full scope.
 

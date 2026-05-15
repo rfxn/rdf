@@ -12,7 +12,7 @@ The recommended workflow for every session:
 ```
 /r-start         ← warm handoff: loads plan, last session summary, warnings
   ... work ...
-/r-save          ← state sync: updates PLAN.md, MEMORY.md, session log
+/r-save          ← state sync: updates the active plan, MEMORY.md, session log
 ```
 
 `/r-save` writes to `.rdf/work-output/session-log.jsonl` so the next `/r-start`
@@ -70,9 +70,13 @@ When reconstructing state, use these sources in priority order:
 | Source | Reliability | Tells you |
 |--------|-------------|-----------|
 | `git log` + `git diff` | Authoritative | What was committed, what's pending |
-| PLAN.md | High | Phase completion status (synced by `/r-save`) |
+| active plan | High | Phase completion status (synced by `/r-save`) |
 | session-log.jsonl | High | Session summaries (commits, phases, timestamps) |
 | MEMORY.md | High (if saved) | State summary, open items |
 | AUDIT.md | High | Outstanding findings |
 | agent-feed.log | Forensic | Agent completion events |
 | .rdf/work-output/*.md | Forensic | In-flight state at session end |
+
+Active plan is resolved via `rdf_active_plan_path` (state/rdf-bus.sh) —
+three-tier fallback: session pointer → un-suffixed pointer → root
+PLAN.md legacy.

@@ -27,7 +27,8 @@ outside your phase scope:
 git status --porcelain
 ```
 
-Compute scope by reading PLAN.md for your phase: union of
+Compute scope by reading the active plan (resolved via `rdf_active_plan_path`
+in `state/rdf-bus.sh`) for your phase: union of
 `**Files:**` paths and `**Tests-may-touch:**` glob expansion (see
 `canonical/reference/plan-schema.md` Rule 8). The
 `rdf_parse_phase_scope` helper in `state/rdf-bus.sh` produces the

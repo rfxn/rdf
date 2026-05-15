@@ -3,21 +3,22 @@ TDD cycles, dispatching subagents, and enforcing quality gates.
 
 ## Role
 
-You are invoked as a subagent by /r-build. You read PLAN.md, identify
-the target phase, and execute it using the appropriate mode. You dispatch
-engineer, qa, uat, and reviewer subagents as needed.
+You are invoked as a subagent by /r-build. You resolve the active plan,
+identify the target phase, and execute it using the appropriate mode. You
+dispatch engineer, qa, uat, and reviewer subagents as needed.
 
 ## Protocol
 
 ### Load
-- Read PLAN.md — identify target phase (argument or next pending)
+- Source `state/rdf-bus.sh`; `rdf_session_init`.
+- Resolve plan: `plan_path="$(rdf_active_plan_path)"`. Error and stop
+  if empty.
+- Read `$plan_path` — identify target phase (argument or next pending)
 - Read .rdf/governance/index.md — load relevant governance
 - Determine execution mode from phase tag
 - Parse `**Regression-case**` field from the target phase; pass
   verbatim to the engineer subagent in the dispatch payload so the
   engineer can satisfy the phase's regression requirement
-- Source `state/rdf-bus.sh` and call `rdf_session_init` to ensure
-  `RDF_SESSION_ID` is set before any state-file path is derived.
 - Determine phase number N; pass N AND `RDF_SESSION_ID` to the QA
   subagent in the dispatch payload so QA can derive the scoped
   result file path:
@@ -52,27 +53,37 @@ inter-phase parallel batch managed by /r-build. In this case,
 downgrade [parallel-agent] to [serial-agent] to avoid nested
 parallelism. Log: "Downgraded to serial-agent (parallel batch)."
 
-### Worktree Pre-Commit Hook Installation (and PLAN.md sync)
+### Worktree Pre-Commit Hook Installation (and active-plan sync)
 
 When dispatched into a worktree (`PARALLEL_BATCH: true` with
-`PROJECT_ROOT` set to a worktree path), perform two installation
-steps before any engineer subagent is dispatched:
+`PROJECT_ROOT` set to a worktree path), perform two installation steps
+before any engineer subagent is dispatched:
 
-**(a) Copy PLAN.md from main repo into worktree.**
-Worktrees check out the HEAD-committed working tree, which means
-`PLAN.md` in the worktree is the *committed* version, not the
-operator's locally-modified version in the main repo. The hook
-enforces against whatever PLAN.md it reads, so a stale PLAN.md
-causes false-negative rejections ("Phase N not found") and
-false-positive scope leaks.
+**(a) Sync the active plan from main repo into worktree.**
+Worktrees check out the HEAD-committed working tree. The plan in
+`docs/plans/` is committed and thus appears in the worktree
+automatically. Older legacy projects may still have a root `PLAN.md`
+(gitignored) that does NOT propagate — copy it explicitly if the
+resolver returned a legacy path.
 
 ```bash
-command cp "${PROJECT_ROOT_MAIN}/PLAN.md" "${PROJECT_ROOT}/PLAN.md"
+source "${PROJECT_ROOT_MAIN}/state/rdf-bus.sh"
+rdf_session_init
+_main_plan="$(rdf_active_plan_path "$PROJECT_ROOT_MAIN")"
+if [[ -z "$_main_plan" ]]; then
+    echo "dispatcher: main repo has no active plan; cannot proceed" >&2
+    exit 1
+fi
+_rel_path="${_main_plan#$PROJECT_ROOT_MAIN/}"
+command mkdir -p "${PROJECT_ROOT}/$(command dirname "$_rel_path")"
+command cp "$_main_plan" "${PROJECT_ROOT}/${_rel_path}"
+# Set the worktree-local pointer to the worktree-local copy
+rdf_set_active_plan "${PROJECT_ROOT}/${_rel_path}" "$PROJECT_ROOT"
 ```
 
-This sync is one-shot at worktree creation; subsequent operator
-edits to PLAN.md are not reflected in worktrees. If the operator
-changes PLAN.md mid-build, dispatch must be re-invoked.
+This sync is one-shot at worktree creation; subsequent operator edits
+to the main-repo plan are not reflected in worktrees. If the operator
+changes the plan mid-build, dispatch must be re-invoked.
 
 **(b) Install the pre-commit hook.**
 ```bash
@@ -86,7 +97,7 @@ command chmod +x "${worktree_git_dir}/hooks/pre-commit"
 lives) — passed in the dispatch payload separately from
 `PROJECT_ROOT` (which is the worktree path).
 
-The hook reads `PLAN.md` from the worktree (now synced via step
+The hook reads the active plan from the worktree (now synced via step
 (a)) and rejects commits outside the union of `**Files:**` and
 `**Tests-may-touch:**`. See `plan-schema.md` Rule 8 for the full
 enforcement contract.
@@ -107,7 +118,7 @@ Procedure:
 
 1. Source `state/rdf-bus.sh`, parse phase scope:
    ```
-   eval "$(rdf_parse_phase_scope PLAN.md $N)"
+   eval "$(rdf_parse_phase_scope "$(rdf_active_plan_path)" $N)"
    ```
    This sets `ALLOWED_REGEX`, `FLEX_REGEX`, `FLEX_FILE_CEILING`,
    `FLEX_LINE_CEILING`.
@@ -322,7 +333,7 @@ Gate verdict: PASS only if both agents pass (after dedup). A MUST-FIX
 from either agent enters the Finding Resolution loop.
 
 ### Red/Green Decision
-- All gates pass → update PLAN.md, write status to .rdf/work-output/, next phase
+- All gates pass → update the phase result file in `.rdf/work-output/`, next phase
 - Any gate fails → send feedback to engineer, re-enter TDD cycle
 - Max 3 retry loops → surface to user with failure context
 
@@ -472,7 +483,7 @@ Developer-facing output per phase:
 - Parallel-agent: engineers work in worktrees, merge after integration,
   single commit per phase
 - Dispatcher always commits — never individual engineer subagents
-- Commit messages generated from PLAN.md phase description
+- Commit messages generated from the active-plan phase description
 
 ## Constraints
 - Respect plan tags — can downgrade (parallel→serial) but never upgrade

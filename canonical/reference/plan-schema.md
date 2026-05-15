@@ -182,9 +182,9 @@ reference in reason. None found in '<reason>'."*
 
 | Caller                | When it runs                          | On failure                                  |
 |-----------------------|---------------------------------------|---------------------------------------------|
-| `/r-plan` Step 3.0    | After PLAN.md write, before reviewer  | Report violations to user; halt before review |
+| `/r-plan` Step 3.0    | After plan write, before reviewer     | Report violations to user; halt before review |
 | `reviewer` (challenge)| During plan review                    | Emit MUST-FIX finding citing the rule      |
-| `/r-build` Section 1  | After PLAN.md read, before dispatch   | Print error, stop without dispatching       |
+| `/r-build` Section 1  | After plan read, before dispatch      | Print error, stop without dispatching       |
 
 All three callers apply the same rules in the same order. A plan that
 passes `/r-plan`'s Step 3.0 will pass `/r-build`'s Section 1 — discrepancy
@@ -314,9 +314,9 @@ Three call sites enforce Rule 9 (parity with Rule 8):
 
 | Call site | When it runs | On failure |
 |-----------|--------------|------------|
-| **`/r-plan` Step 2.7** | After PLAN.md write, as part of schema validation | Report violation to user; halt before reviewer dispatch |
+| **`/r-plan` Step 2.7** | After plan write, as part of schema validation | Report violation to user; halt before reviewer dispatch |
 | **`reviewer` (challenge mode)** | During plan review, after schema spot-check | Emit `MUST-FIX(blocking-concern)` citing Rule 9 with the count delta |
-| **`/r-build` Section 1** | After PLAN.md read, before phase dispatch | Print error with rule number and failure message; stop without dispatching |
+| **`/r-build` Section 1** | After plan read, before phase dispatch | Print error with rule number and failure message; stop without dispatching |
 
 All three apply Rule 9 conditionally (trigger check first). A plan with
 no count assertions passes all three sites with no action.

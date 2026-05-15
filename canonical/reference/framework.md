@@ -56,7 +56,14 @@ Referenced by parent CLAUDE.md / GEMINI.md / AGENTS.md for agent discovery.
 
 **MEMORY.md:** 200-line hard limit. Overflow to topic files.
 
-**PLAN.md status markers:**
+**PLAN.md Status markers** (semantic states):
+
+These are the canonical state names. They are NOT stored inline in the
+plan body — committed plans in `docs/plans/` carry no status markers.
+Status lives in `.rdf/work-output/phase-N-result-${SESSION}.md` (engineer
+STATUS lines) and is derived by `r-status`, `r-save`, `r-ship` via git
+log cross-reference and result-file inspection.
+
 - `pending` — not started
 - `in-progress` — engineer dispatched
 - `complete` — committed
@@ -223,7 +230,7 @@ automatically. See dispatcher.md for the full derivation logic.
 The `/r-save` → `/r-start` loop provides structured session handoff:
 
 ```
-Session N:  work → /r-save (syncs PLAN.md, MEMORY.md, writes session-log)
+Session N:  work → /r-save (syncs active plan, MEMORY.md, writes session-log)
 Session N+1: /r-start (reads session-log, shows plan progress, last session summary)
 ```
 
@@ -232,7 +239,7 @@ State sources, in order of reliability:
 | Source | Reliability | What it provides |
 |--------|-------------|-----------------|
 | `git log` + `git diff` | Authoritative | Committed and uncommitted state |
-| PLAN.md | High | Phase completion status (synced by `/r-save`) |
+| active plan (resolver-driven) | High | Phase completion status (synced by `/r-save`) |
 | session-log.jsonl | High | Session summaries (commits, phases completed) |
 | MEMORY.md | High (if saved) | State summary, open items |
 | AUDIT.md | High | Outstanding findings |
@@ -249,7 +256,7 @@ Git is the true record. `/r-save` creates convenience summaries.
 |----------|---------------|----------------|
 | CLAUDE.md | Required | Required |
 | MEMORY.md | Required | Required |
-| PLAN.md | When active | When active |
+| active plan | When active | When active |
 | AUDIT.md | After audit | After audit |
 | CHANGELOG | Required | Required |
 | tests/ | Required | Required |
