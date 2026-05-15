@@ -7,7 +7,7 @@ reality, preserving user modifications.
 $ARGUMENTS — optional scope:
 - No args or `all`: full refresh (governance + state files)
 - `governance`: refresh .rdf/governance/ files only
-- `state`: refresh MEMORY.md and PLAN.md only (v2 behavior)
+- `state`: refresh MEMORY.md and the active plan only (v2 behavior)
 - `github`: sync GitHub issue state with local plan (deterministic)
 
 ## Task List Protocol
@@ -173,16 +173,20 @@ Mark task "Refresh state files" as in_progress.
 - Update version, branch, HEAD hash from git
 - Update test count from test files
 - Append new commits since last recorded hash
-- Cross-reference PLAN.md phase statuses
+- Cross-reference active plan (`rdf_active_plan_path`) phase statuses
 - Size guard: warn if >= 180 lines
 
-### 5b. Refresh PLAN.md
-- Cross-reference phases against git log
-- Mark completed phases with commit hash evidence
-- Update status summary
+### 5b. Refresh the Active Plan
+- Source `state/rdf-bus.sh`; `rdf_session_init`; resolve
+  `plan_path="$(rdf_active_plan_path)"`. If empty, skip.
+- Cross-reference `$plan_path` phases against git log.
+- Mark completed phases with commit hash evidence.
+- Update status summary.
+- INFO log: "issue cross-reference: phase-status parsing inert for
+  canonical plans (status lives in .rdf/work-output/)"
 
 ### 5c. Sync GitHub Issues (if scope includes github)
-- Cross-reference GitHub issues with PLAN.md
+- Cross-reference GitHub issues with the active plan
 - Close phase issues for completed phases
 - Reopen issues for incomplete phases marked closed
 - Update initiative status if all children complete
@@ -258,7 +262,7 @@ status in italic, detail column for metrics.
 | File | Status | Detail |
 |------|--------|--------|
 | `MEMORY.md` | *updated* | +3 new commits, 142/200 lines |
-| `PLAN.md` | *updated* | 2 phases marked complete |
+| `$plan_path` | *updated* | 2 phases marked complete |
 | `spec-progress-<SESSION_ID>.md` | *updated* | cross-referenced with `docs/specs/` |
 | `ship-progress-<SESSION_ID>.md` | *updated* | stage validated against git tags |
 | GitHub | *synced* | 4 issues closed, 1 reopened |

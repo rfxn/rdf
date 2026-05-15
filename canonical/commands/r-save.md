@@ -82,19 +82,20 @@ names (max 5) for the report.
 
 **Pipeline position:** Determine where in the spec→plan→build→ship
 arc the project is:
-- `docs/specs/` has files + no PLAN.md → `spec` (design complete, plan next)
-- PLAN.md exists with pending phases → `plan` (plan ready, build next)
-- PLAN.md exists with in-progress phases → `build` (building phase N)
-- PLAN.md exists with all phases complete → `ship` (ready to ship)
+- `docs/specs/` has files + no active plan → `spec` (design complete, plan next)
+- Active plan exists with pending phases → `plan` (plan ready, build next)
+- Active plan exists with in-progress phases → `build` (building phase N)
+- Active plan exists with all phases complete → `ship` (ready to ship)
 - None of the above → `idle`
 
 Record all values for the report.
 
-### 2. Sync PLAN.md with Git
+### 2. Sync the Plan with Git
 
-Read `PLAN.md` from the project root. If it does not exist, skip.
+Source `state/rdf-bus.sh`; `rdf_session_init`. Resolve the plan:
+`plan_path="$(rdf_active_plan_path)"`. If empty, skip.
 
-For each phase in PLAN.md:
+For each phase in `$plan_path`:
 
 **Detect completion:**
 - Cross-reference `git log --oneline` against the phase description
@@ -122,7 +123,7 @@ For each phase in PLAN.md:
 - Do NOT mark anything complete without verifying the commit exists
 - Do NOT reorder phases or change descriptions
 - Do NOT change phases that are already marked complete (idempotent)
-- Update the progress summary at the top of PLAN.md if present
+- Update the progress summary at the top of `$plan_path` if present
 
 Record for report: phases newly completed, phases in-progress,
 total phase count.

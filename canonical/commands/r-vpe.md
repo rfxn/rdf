@@ -149,7 +149,7 @@ normal — VPE does not suppress the /r-plan workflow.
 
 After plan is committed:
 
-"Plan ready: PLAN.md ({N} phases)
+"Plan ready: {plan_path} ({N} phases)
  Ready to build? [Y/pause/build-specific-phase]"
 
 Write state:
@@ -197,7 +197,7 @@ After ship completes:
 
 "> **Pipeline complete** — {project} shipped.
 >  Spec: {spec_path}
->  Plan: PLAN.md ({N} phases)
+>  Plan: {plan_path} ({N} phases)
 >  Ship: {PR URL}"
 
 Write state:

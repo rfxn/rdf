@@ -14,15 +14,15 @@ commits) and note that governance is not initialized.
 
 ### 2. Read Plan Progress
 
-Read `PLAN.md` from the project root.
+Source `state/rdf-bus.sh`; `rdf_session_init`.
+`plan_path="$(rdf_active_plan_path)"`. If empty, display: "No active
+plan. Run /r-plan to create one."
 
-If present, extract:
+If `$plan_path` resolves, read it and extract:
 - Total phase count
 - Per-phase status (pending, in-progress, complete)
 - Current/next pending phase number and description
 - Execution mode tags per phase
-
-If absent, display: "No active plan. Run /r-plan to create one."
 
 ### 3. Read Phase Status Files
 
@@ -82,7 +82,7 @@ Phase styling:
 - `[ ]` + plain text = *pending*
 - `[ ]` + ~~strikethrough~~ + *(blocked)* italic = blocked
 
-If no PLAN.md: `Plan: none — run /r-plan to create one.`
+If no active plan resolves: `Plan: none — run /r-plan to create one.`
 
 ### Pipeline
 
@@ -93,7 +93,7 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
 | Stage | Status | Artifact |
 |-------|--------|----------|
 | **Spec** | *complete* | `docs/specs/2026-03-19-foo.md` |
-| **Plan** | *complete* | `PLAN.md` (8 phases) |
+| **Plan** | *complete* | `$plan_path` (8 phases) |
 | **Build** | *in-progress* | Phase 3/8 |
 | **Ship** | *pending* | — |
 ```
@@ -110,11 +110,11 @@ the legacy un-suffixed file (pre-3.1.0) with a one-shot import prompt.
   `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` (or glob
   `.rdf/work-output/spec-progress-*.md`), *in-progress* if a
   `spec-progress-*.md` file exists, *pending* otherwise.
-- **Plan**: check for `PLAN.md` in the project root. If present, show
-  total phase count as the artifact. Status: *complete* if all phases
-  are complete, *in-progress* if any phase is in-progress, *pending*
-  if no PLAN.md exists.
-- **Build**: derived from PLAN.md phase statuses. Show current phase
+- **Plan**: resolve via `rdf_active_plan_path`. If resolved, show
+  `$plan_path` and total phase count as the artifact. Status: *complete*
+  if all phases are complete, *in-progress* if any phase is in-progress,
+  *pending* if no active plan resolves.
+- **Build**: derived from `$plan_path` phase statuses. Show current phase
   number and total as the artifact. Status: *complete* if all phases
   are complete, *in-progress* if any phase is in-progress or has
   commits, *pending* if no phases have started.

@@ -15,12 +15,16 @@ Arguments:
 
 ## Protocol
 
-### 1. Locate and Validate PLAN.md
+### 1. Locate and Validate the Active Plan
 
-- Read PLAN.md in the project root
-- If PLAN.md does not exist, report error and stop:
-  "No PLAN.md found. Create one with /r-plan or write it manually."
-- Validate the plan against
+- Source `state/rdf-bus.sh` and call `rdf_session_init`.
+- `plan_path="$(rdf_active_plan_path)"` — resolves via three-tier
+  fallback (session pointer → un-suffixed pointer → root PLAN.md).
+- If `$plan_path` is empty, report error and stop:
+  "No active plan found. Create one with /r-plan or write it manually,
+   then run /r-plan --resume <path> to set the pointer."
+- Read `$plan_path` as the plan input from here forward. Validate
+  the plan against
   [reference/plan-schema.md](../reference/plan-schema.md). Apply
   Plan-Version Awareness first, then Rules 1-9 in order. On the first
   violation, print the rule number and the exact failure message from
@@ -43,7 +47,7 @@ Arguments:
 ### 2. Identify Target Phase
 
 - If `$ARGUMENTS` contains a number N: target Phase N
-  - If Phase N does not exist in PLAN.md, report error and stop
+  - If Phase N does not exist in the active plan, report error and stop
   - If Phase N has `Status: complete`, warn and ask for confirmation
 - If no argument: scan phases in order, target first with
   `Status: pending`
@@ -56,7 +60,7 @@ Arguments:
 
 If arguments contain a range (N-M) or --parallel:
 
-1. Read Phase Dependencies from PLAN.md preamble
+1. Read Phase Dependencies from the active plan preamble
    - Parse structured list: `- Phase N: none` or `- Phase N: [deps]`
    - If no structured list found, fall back to serial with warning:
      "Phase Dependencies section not in structured format. Running
@@ -111,10 +115,10 @@ If arguments contain a range (N-M) or --parallel:
 
 ### 3. Create Task List
 
-Read all phases from PLAN.md and create a task for each one:
+Read all phases from the active plan (`$plan_path`) and create a task for each one:
 
 ```
-For each phase in PLAN.md, in phase order, one TaskCreate per message:
+For each phase in the active plan, in phase order, one TaskCreate per message:
   TaskCreate:
     subject: "Phase {N}: {description}"
     activeForm: "Building Phase {N}: {short desc}"
@@ -146,11 +150,11 @@ Build the dispatch prompt for the dispatcher subagent:
 
 ```
 PHASE: <N>
-DESCRIPTION: <phase description from PLAN.md>
+DESCRIPTION: <phase description from the active plan>
 MODE: <execution mode tag: serial-context | serial-agent | parallel-agent>
-FILES: <file list from PLAN.md>
-ACCEPT: <acceptance criteria from PLAN.md>
-PLAN_PHASE_COUNT: <total phases in PLAN.md>
+FILES: <file list from the active plan>
+ACCEPT: <acceptance criteria from the active plan>
+PLAN_PHASE_COUNT: <total phases in the active plan>
 PARALLEL_BATCH: <true if dispatched as part of parallel batch, false otherwise>
 
 GOVERNANCE:
@@ -338,7 +342,7 @@ When one or more phases in a parallel batch fail:
 ## Constraints
 
 - Never execute plan phases directly — always dispatch to dispatcher
-- Never modify PLAN.md — the dispatcher updates phase status
+- Never modify the active plan — the dispatcher updates phase status
 - If governance is missing, dispatch anyway (dispatcher degrades
   gracefully) but warn the user
 - Respect the plan's execution mode tags — pass them through unchanged

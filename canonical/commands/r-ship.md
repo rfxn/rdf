@@ -43,9 +43,11 @@ Run all three checks and display results as a task list. Each check
 is pass/fail — a checked box means the gate passed.
 
 ### 1a. Plan Completion Check
-- Read PLAN.md — verify ALL phases are marked complete
-- If any phases are incomplete, report which ones and STOP
-- If no PLAN.md exists, skip this check (ad-hoc release)
+- Source `state/rdf-bus.sh`; `rdf_session_init`. Resolve the active
+  plan: `plan_path="$(rdf_active_plan_path)"`.
+- Read `$plan_path` — verify ALL phases are marked complete.
+- If any phases are incomplete, report which ones and STOP.
+- If no active plan resolves, skip this check (ad-hoc release).
 
 ### 1b. Working Tree Check
 - Run `git status` (never `-uall`), `git diff --stat`
@@ -147,6 +149,19 @@ Ask user to fix or explicitly override.
 - Stage changelog updates and any scrub fixes
 - Commit with project's message format from governance/conventions.md
 - Push branch to origin
+
+### Clear the active-plan pointer
+
+After the release tag/commit lands, clear the pointer:
+
+```bash
+source state/rdf-bus.sh
+rdf_clear_active_plan
+```
+
+The plan file in `docs/plans/` is retained as historical record; only
+the session-scoped pointer is removed so the next planning session
+starts clean.
 
 ### Release Prep Display
 

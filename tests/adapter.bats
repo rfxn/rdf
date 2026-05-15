@@ -527,3 +527,24 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }
+
+# ── Tests 32-33: Phase 3 — Command consumers route through resolver ────────────
+
+@test "consumers route through rdf_active_plan_path" {
+    # All 6 read-side consumers reference the resolver
+    local count
+    count=$(grep -lE 'rdf_active_plan_path' \
+        "$RDF_SRC/canonical/commands/r-build.md" \
+        "$RDF_SRC/canonical/commands/r-ship.md" \
+        "$RDF_SRC/canonical/commands/r-save.md" \
+        "$RDF_SRC/canonical/commands/r-status.md" \
+        "$RDF_SRC/canonical/commands/r-start.md" \
+        "$RDF_SRC/canonical/commands/r-refresh.md" 2>/dev/null | wc -l)
+    [ "$count" -eq 6 ]
+}
+
+@test "r-ship calls rdf_clear_active_plan" {
+    run grep -c 'rdf_clear_active_plan' "$RDF_SRC/canonical/commands/r-ship.md"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}

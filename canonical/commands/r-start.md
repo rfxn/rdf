@@ -139,9 +139,10 @@ For 3+ signals, use bulleted blockquote:
 Signal priority: Handoff > Spec > VPE > Ship > Build > Plan (in-progress) >
 Plan (pending) > Dispatch (stale).
 
-Signals and their display text (source `state/rdf-bus.sh`; call `rdf_session_init`
-first; look for the current-session scoped file, glob for any session-scoped file
-if absent, fall back to the legacy un-suffixed file with a one-shot import prompt):
+Signals and their display text (source `state/rdf-bus.sh`; call `rdf_session_init`;
+`plan_path="$(rdf_active_plan_path)"`; look for the current-session scoped file,
+glob for any session-scoped file if absent, fall back to the legacy un-suffixed
+file with a one-shot import prompt):
 - `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` exists (or glob
   `.rdf/work-output/spec-progress-*.md`) → `Spec — {topic}, Phase {N}`
 - `.rdf/work-output/vpe-progress-${RDF_SESSION_ID}.md` exists (or glob
@@ -169,9 +170,9 @@ Phase styling:
 - `[ ]` + ~~strikethrough~~ + *(blocked)* = blocked
 
 If >5 phases: show first 2 complete + current + next 2 pending,
-then `*+ N more phases*` in italic. Full list is in PLAN.md.
+then `*+ N more phases*` in italic. Full list is in `$plan_path`.
 
-If no PLAN.md: omit section entirely. Pipeline stage in the
+If no active plan resolves: omit section entirely. Pipeline stage in the
 heading already signals `idle`.
 
 **Last session** — one line, prefer session log over git log:
@@ -225,7 +226,8 @@ instructions. Do NOT display its contents — just confirm loaded.
 
 ## Rules
 - Do NOT load full governance file contents — only the index
-- Do NOT read full PLAN.md prose — extract phase names and statuses
+- Do NOT read full plan prose — extract phase names and statuses
+  from the resolver-returned path (`$plan_path`)
 - Do NOT read MEMORY.md — it loads automatically
 - Do NOT run tests, lint, or any expensive operations
 - Keep total output under 20 lines
