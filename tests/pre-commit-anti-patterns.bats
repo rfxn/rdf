@@ -25,9 +25,15 @@ _setup_repo() {
 
 PLANEOF
 
-    # Stub rdf-bus.sh: provide rdf_parse_phase_scope that allows all files.
+    # Stub rdf-bus.sh: provide rdf_parse_phase_scope that allows all files
+    # and rdf_active_plan_path that returns the stub PLAN.md.
     mkdir -p "$repo/state"
     cat > "$repo/state/rdf-bus.sh" <<'BUSEOF'
+rdf_active_plan_path() {
+    local root="${1:-$(pwd)}"
+    [[ -f "$root/PLAN.md" ]] && printf '%s/PLAN.md\n' "$root" && return 0
+    return 1
+}
 rdf_parse_phase_scope() {
     printf "ALLOWED_REGEX='.*'\n"
     printf "FLEX_REGEX=''\n"

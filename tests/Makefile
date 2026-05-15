@@ -17,10 +17,12 @@ TESTS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 .PHONY: test lint help
 
 test: _bats_check
-	$(BATS) $(TESTS_DIR)adapter.bats
+	$(BATS) $(TESTS_DIR)adapter.bats $(TESTS_DIR)plan-canonicalization.bats \
+	        $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats
 
 lint: _bats_check
-	shellcheck $(TESTS_DIR)adapter.bats
+	shellcheck $(TESTS_DIR)adapter.bats $(TESTS_DIR)plan-canonicalization.bats \
+	           $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats
 
 help:
 	@echo "Usage: make -C tests [target]"

@@ -16,3 +16,11 @@ claude/stats-cache.json
 claude/tasks/
 claude/telemetry/
 claude/todos/
+
+# Plans — root location is transitional; canonical is docs/plans/
+PLAN.md
+PLAN*.md
+PLAN-*.md
+
+# Active-plan pointer (resolver state)
+.rdf/active-plan*

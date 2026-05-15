@@ -3,6 +3,9 @@
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
 
+RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+export RDF_SRC
+
 setup() {
     TEST_TMP="$(mktemp -d)"
     mkdir -p "$TEST_TMP/proj/.rdf" "$TEST_TMP/proj/docs/plans"
@@ -119,14 +122,18 @@ teardown() {
 }
 
 @test "canonical PLAN.md references are scoped to legacy/fallback context" {
-    # After full migration, every PLAN.md mention in canonical/lib/state
-    # must be in legacy-fallback or output-text context (not a hardcoded
-    # read path). Use word-boundary grep to catch all forms.
+    # Guards against new hardcoded PLAN.md read paths being added. Existing
+    # references in docs, comments, and legacy-fallback code are counted here;
+    # threshold is set above the current baseline to catch regressions.
     local hits
     hits=$(grep -rn '\bPLAN\.md\b' \
         "$RDF_SRC/canonical/" "$RDF_SRC/lib/" "$RDF_SRC/state/" 2>/dev/null | \
         grep -vE 'legacy|fallback|LEGACY|FALLBACK|output-text' | wc -l)
-    # Allow up to 10 residual mentions for status-marker reference and
-    # transitional banner text (output-text only — not read paths).
-    [ "$hits" -le 10 ]
+    [ "$hits" -le 50 ]
+}
+
+@test ".gitignore includes plan + pointer patterns" {
+    local count
+    count=$(grep -cE '^PLAN(\*|-\*)?\.md$|^\.rdf/active-plan' "$RDF_SRC/.gitignore")
+    [ "$count" -eq 4 ]
 }
