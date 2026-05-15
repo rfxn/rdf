@@ -1,5 +1,44 @@
 # RDF Changelog
 
+## 3.1.2
+
+-- New Features --
+
+[New] state/rdf-bus.sh — rdf_active_plan_path / rdf_set_active_plan /
+      rdf_clear_active_plan resolver with three-tier fallback (session
+      pointer → un-suffixed pointer → root PLAN.md legacy); all plan
+      consumers route through the resolver
+
+-- Changes --
+
+[Change] /r-plan — plans now write to docs/plans/{date}-{topic}-plan.md
+      and are committed mandatorily at creation; root PLAN.md no longer
+      the active slot; new --resume <path> form for fresh-checkout
+      takeover
+[Change] canonical/{commands,agents,reference}/* — 13 files updated to
+      route through rdf_active_plan_path; dispatcher worktree sync
+      copies resolver result to worktree-local path and sets a
+      worktree-local pointer; status markers in framework.md clarified
+      to live in .rdf/work-output/, not in plan body
+[Change] lib/cmd/generate.sh — deploys rdf-bus.sh to ~/.rdf/state/
+      alongside other state helpers so consumers running outside this
+      repo can resolve the helper
+[Change] lib/cmd/refresh.sh, state/rotate-work-output.sh,
+      state/git-hooks/pre-commit — resolver wiring with context-appropriate
+      source paths (RDF_STATE_DIR for refresh.sh, sibling path for the
+      deployed rotate-work-output.sh, ancestor walk anchored on
+      state/rdf-bus.sh for the worktree hook)
+
+-- Bug Fixes --
+
+[Fix] plan loss between sessions — root PLAN.md being gitignored and
+      single-slot caused plans created in one session to be silently
+      overwritten by the next session's /r-plan; canonical plans now
+      committed at creation prevent this class of loss
+[Remove] stale tracked PLAN.md snapshot from commit 6308d6d (3.0.3 gate
+      simplification plan, abandoned and never updated) — untracked
+      via git rm --cached; file retained on disk as legacy fallback
+
 ## 3.1.1 — Reviewer ROI Improvements
 
 [New] plan-schema.md Rule 9: phase test-count self-consistency check.
