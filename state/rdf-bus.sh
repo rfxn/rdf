@@ -4,7 +4,8 @@
 # GNU GPL v2
 #
 # Provides: rdf_session_init, rdf_scoped_filename, rdf_session_short,
-#           rdf_parse_phase_scope.
+#           rdf_parse_phase_scope, rdf_active_plan_path,
+#           rdf_set_active_plan, rdf_clear_active_plan.
 # Sourced by /r-* commands and the pre-commit hook. Idempotent.
 
 # rdf_uuidv7 — emit a UUIDv7 string to stdout
@@ -107,4 +108,64 @@ rdf_parse_phase_scope() {
     printf 'FLEX_REGEX=%s\n' "$flex"
     printf 'FLEX_FILE_CEILING=3\n'
     printf 'FLEX_LINE_CEILING=30\n'
+}
+
+# rdf_active_plan_path [project_root] — resolve active plan path
+# Resolution order:
+#   1. .rdf/active-plan-${RDF_SESSION_ID}  (session-scoped)
+#   2. .rdf/active-plan                    (un-suffixed default)
+#   3. PLAN.md                             (legacy fallback)
+# Returns 0 with path on stdout if found; 1 with empty stdout otherwise.
+rdf_active_plan_path() {
+    local root="${1:-$PWD}" pointer plan
+    rdf_session_init
+    pointer="${root}/.rdf/active-plan-${RDF_SESSION_ID}"
+    if [[ -f "$pointer" ]]; then
+        plan="$(< "$pointer")"
+        plan="${plan%[$'\r\n']}"
+        plan="${plan%[$'\r\n']}"
+        if [[ -n "$plan" && -f "$plan" ]]; then
+            printf '%s\n' "$plan"
+            return 0
+        fi
+    fi
+    pointer="${root}/.rdf/active-plan"
+    if [[ -f "$pointer" ]]; then
+        plan="$(< "$pointer")"
+        plan="${plan%[$'\r\n']}"
+        plan="${plan%[$'\r\n']}"
+        if [[ -n "$plan" && -f "$plan" ]]; then
+            printf '%s\n' "$plan"
+            return 0
+        fi
+    fi
+    if [[ -f "${root}/PLAN.md" ]]; then
+        printf '%s\n' "${root}/PLAN.md"
+        return 0
+    fi
+    return 1
+}
+
+# rdf_set_active_plan <plan_path> [project_root] — write pointer
+# plan_path may be relative or absolute; absolutized before write.
+rdf_set_active_plan() {
+    local plan="${1:?rdf_set_active_plan requires plan path}"
+    local root="${2:-$PWD}"
+    rdf_session_init
+    if [[ "$plan" != /* ]]; then
+        plan="$(command pwd)/${plan}"
+    fi
+    if [[ ! -f "$plan" ]]; then
+        printf 'rdf_set_active_plan: plan file does not exist: %s\n' "$plan" >&2
+        return 1
+    fi
+    command mkdir -p "${root}/.rdf"
+    printf '%s\n' "$plan" > "${root}/.rdf/active-plan-${RDF_SESSION_ID}"
+}
+
+# rdf_clear_active_plan [project_root] — remove session pointer (idempotent)
+rdf_clear_active_plan() {
+    local root="${1:-$PWD}"
+    rdf_session_init
+    command rm -f "${root}/.rdf/active-plan-${RDF_SESSION_ID}"
 }
