@@ -125,7 +125,7 @@ If governance does not exist:
 
 ### 1.2 Read Existing Plans and Issues
 
-- Read `PLAN.md` if present — understand current work in progress
+- Read the active plan (via rdf_active_plan_path) if present — understand current work in progress
 - Check for `docs/specs/` directory — read any existing specs relevant
   to the user's topic
 - If `$ARGUMENTS` contained a GitHub URL or issue ref, the fetched

@@ -8,6 +8,18 @@
 # --no-insights: omit global insights array (caller reads once)
 set -euo pipefail
 
+# Source rdf-bus.sh for rdf_active_plan_path resolver
+if [[ -n "${RDF_STATE_DIR:-}" && -f "${RDF_STATE_DIR}/rdf-bus.sh" ]]; then
+    # shellcheck source=/dev/null
+    . "${RDF_STATE_DIR}/rdf-bus.sh"
+else
+    _bus_sibling="$(command dirname "$0")/rdf-bus.sh"
+    if [[ -f "$_bus_sibling" ]]; then
+        # shellcheck source=/dev/null
+        . "$_bus_sibling"
+    fi
+fi
+
 # timeout wrapper — empty on systems without the binary (CentOS 6 minimal)
 if command -v timeout >/dev/null 2>&1; then TIMEOUT_PREFIX="timeout 30"; else TIMEOUT_PREFIX=""; fi
 
@@ -145,7 +157,13 @@ if [[ -f "${_project_path}/MEMORY.md" ]]; then
     fi
 fi
 
-[[ -f "${_project_path}/PLAN.md" ]] && _plan_exists="true"
+# Resolve active plan via rdf_active_plan_path (session → un-suffixed → legacy PLAN.md)
+_plan_path=""
+if command -v rdf_active_plan_path >/dev/null 2>&1; then
+    rdf_session_init
+    _plan_path="$(rdf_active_plan_path "$_project_path" 2>/dev/null)" || _plan_path=""
+fi
+[[ -n "$_plan_path" ]] && _plan_exists="true"
 [[ -f "${_project_path}/AUDIT.md" ]] && _audit_exists="true"
 
 # Plan phase counts
@@ -153,11 +171,11 @@ _plan_total=0
 _plan_completed=0
 _plan_active=0
 _plan_pending=0
-if [[ "$_plan_exists" == "true" ]]; then
-    _plan_total="$(grep -c -E -i '^(###|## ).*phase|^### Task' "${_project_path}/PLAN.md" 2>/dev/null || true)"
-    _plan_completed="$(grep -c -E -i 'COMPLETE|DONE' "${_project_path}/PLAN.md" 2>/dev/null || true)"
-    _plan_active="$(grep -c -E -i 'IN.PROGRESS|ACTIVE' "${_project_path}/PLAN.md" 2>/dev/null || true)"
-    _plan_pending="$(grep -c -i '^PENDING' "${_project_path}/PLAN.md" 2>/dev/null || true)"
+if [[ -n "$_plan_path" ]]; then
+    _plan_total="$(grep -c -E -i '^(###|## ).*phase|^### Task' "$_plan_path" 2>/dev/null || true)"
+    _plan_completed="$(grep -c -E -i 'COMPLETE|DONE' "$_plan_path" 2>/dev/null || true)"
+    _plan_active="$(grep -c -E -i 'IN.PROGRESS|ACTIVE' "$_plan_path" 2>/dev/null || true)"
+    _plan_pending="$(grep -c -i '^PENDING' "$_plan_path" 2>/dev/null || true)"
     [[ -z "$_plan_total" ]] && _plan_total=0
     [[ -z "$_plan_completed" ]] && _plan_completed=0
     [[ -z "$_plan_active" ]] && _plan_active=0

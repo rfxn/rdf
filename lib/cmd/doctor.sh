@@ -205,14 +205,9 @@ _check_plan() {
         [[ -f "$f" ]] && plan_files+=("$f")
     done
 
-    if [[ ${#plan_files[@]} -eq 0 ]]; then
-        _add_result "plan" "$_OK" "no PLAN*.md files (none expected if no active work)"
-        return 0
-    fi
-
-    _add_result "plan" "$_OK" "${#plan_files[@]} PLAN file(s) found"
-
-    # Surface active-plan pointer state
+    # Surface active-plan pointer state — runs before any early return so
+    # canonical-only projects (plan in docs/plans/, no root PLAN.md) still
+    # see pointer status.
     if [[ -n "${RDF_SESSION_ID:-}" && -f "${path}/.rdf/active-plan-${RDF_SESSION_ID}" ]]; then
         _add_result "plan-pointer" "$_OK" "session pointer present"
     elif [[ -f "${path}/.rdf/active-plan" ]]; then
@@ -220,6 +215,13 @@ _check_plan() {
     else
         _add_result "plan-pointer" "$_OK" "no pointer (legacy fallback or no plan)"
     fi
+
+    if [[ ${#plan_files[@]} -eq 0 ]]; then
+        _add_result "plan" "$_OK" "no PLAN*.md files (none expected if no active work)"
+        return 0
+    fi
+
+    _add_result "plan" "$_OK" "${#plan_files[@]} PLAN file(s) found"
 
     # Check for stale IN_PROGRESS markers
     for f in "${plan_files[@]}"; do

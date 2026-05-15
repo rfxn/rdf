@@ -496,7 +496,7 @@ Please review the plan. Approve to finalize, or request changes.
 ```
 
 Wait for user approval. If the user requests changes:
-- Adjust phases, re-tag, rewrite PLAN.md
+- Adjust phases, re-tag, rewrite the plan file
 - Do NOT re-run the spec design phases — use `/r-spec` for that
 
 ### 3.3 Commit Planning Artifacts (mandatory)

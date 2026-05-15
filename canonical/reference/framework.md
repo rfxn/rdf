@@ -40,7 +40,7 @@ commit, phase completion, or audit run.
 | Artifact | Location | Owner | Mandatory |
 |----------|----------|-------|-----------|
 | MEMORY.md | Auto-memory dir | `/r-save` | All projects |
-| PLAN.md | `<project>/PLAN.md` | `/r-plan`, `/r-save` | When active work |
+| Active plan | `docs/plans/{date}-{topic}-plan.md` (canonical); root `PLAN.md` (legacy fallback) — resolved via `rdf_active_plan_path` | `/r-plan`, `/r-save` | When active work |
 | AUDIT.md | `<project>/AUDIT.md` | `/r-audit`, `/r-save` | After audit run |
 | spec-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-spec` | During design |
 | ship-progress-<SESSION_ID>.md | `.rdf/work-output/` | `/r-ship` | During release |
@@ -56,7 +56,7 @@ Referenced by parent CLAUDE.md / GEMINI.md / AGENTS.md for agent discovery.
 
 **MEMORY.md:** 200-line hard limit. Overflow to topic files.
 
-**PLAN.md Status markers** (semantic states):
+**Plan status markers** (semantic states):
 
 These are the canonical state names. They are NOT stored inline in the
 plan body — committed plans in `docs/plans/` carry no status markers.

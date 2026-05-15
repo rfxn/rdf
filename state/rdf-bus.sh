@@ -139,8 +139,8 @@ rdf_active_plan_path() {
             return 0
         fi
     fi
-    if [[ -f "${root}/PLAN.md" ]]; then
-        printf '%s\n' "${root}/PLAN.md"
+    if [[ -f "${root}/PLAN.md" ]]; then  # legacy fallback
+        printf '%s\n' "${root}/PLAN.md"   # legacy fallback
         return 0
     fi
     return 1

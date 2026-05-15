@@ -25,16 +25,19 @@ convenience summaries.
   If a crash occurs mid-session, uncommitted changes are the primary data-loss vector.
 - **Run `/r-save` before any long-running operation** — audits, full test suites,
   and multi-agent dispatches are crash-prone windows. Save state first.
-- **Run `/r-save` at session end** — ensures PLAN.md, MEMORY.md, and session-log.jsonl
-  reflect the latest state and are recoverable independently of chat context.
+- **Run `/r-save` at session end** — ensures the active plan, MEMORY.md, and
+  session-log.jsonl reflect the latest state and are recoverable independently
+  of chat context.
 
 ## Preserve Input Context
 
 - When pasting multi-line specs, task lists, or finding batches into a session,
-  **write them to a file first** (e.g., PLAN.md, a scratch file) before acting on them.
-  Chat-only context is lost on crash; files on disk survive.
-- For planning prompts with pasted content: save the pasted input to PLAN.md or a
-  working file as the first action, before beginning analysis.
+  **write them to a file first** (e.g., the active plan under `docs/plans/`,
+  a scratch file) before acting on them. Chat-only context is lost on crash;
+  files on disk survive.
+- For planning prompts with pasted content: save the pasted input to the
+  active plan (resolved via `rdf_active_plan_path`) or a working file as
+  the first action, before beginning analysis.
 
 ## Recovery Protocol
 
@@ -60,7 +63,7 @@ After a crash or new session start:
    - `.rdf/work-output/build-progress-<SESSION_ID>.md` -- parallel build state; contains batch
      progress and session ID. Resume with `/r-build --parallel`.
 7. **If uncommitted changes exist:** review and either commit or stash before resuming.
-8. **If resume fails:** `/r-start` + PLAN.md provide enough continuity to restart
+8. **If resume fails:** `/r-start` + the active plan provide enough continuity to restart
    from the last completed phase.
 
 ## Cross-Session State Priority

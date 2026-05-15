@@ -129,7 +129,7 @@ teardown() {
     hits=$(grep -rn '\bPLAN\.md\b' \
         "$RDF_SRC/canonical/" "$RDF_SRC/lib/" "$RDF_SRC/state/" 2>/dev/null | \
         grep -vE 'legacy|fallback|LEGACY|FALLBACK|output-text' | wc -l)
-    [ "$hits" -le 50 ]
+    [ "$hits" -le 20 ]
 }
 
 @test ".gitignore includes plan + pointer patterns" {

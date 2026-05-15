@@ -1,6 +1,6 @@
 # Plan Schema
 
-Authoritative validation rules for PLAN.md. Single source of truth cited by
+Authoritative validation rules for plans. Single source of truth cited by
 `/r-plan` (pre-reviewer pass), the `reviewer` agent (challenge mode), and
 `/r-build` (Section 1, pre-dispatch).
 

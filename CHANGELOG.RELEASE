@@ -39,6 +39,12 @@
       simplification plan, abandoned and never updated) — untracked
       via git rm --cached; file retained on disk as legacy fallback
 
+**Operator note:** Existing clones may have `docs/` blanket-ignored in
+`.git/info/exclude` (added pre-3.1.2). For `/r-plan` to commit new
+plans into `docs/plans/`, remove that line: `sed -i '/^docs\/$/d'
+.git/info/exclude`. Verify with `git check-ignore docs/plans/test.md`
+(expect exit 1).
+
 ## 3.1.1 — Reviewer ROI Improvements
 
 This release targets the three most frequent classes of findings absorbed

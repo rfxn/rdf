@@ -63,7 +63,7 @@ Priority 1 (curated conventions — highest signal):
 
 Priority 2 (project state and decisions):
   - MEMORY.md
-  - PLAN.md / PLAN*.md
+  - active plan (docs/plans/*.md canonical; PLAN.md legacy fallback)
 
 Priority 3 (Cursor conventions):
   - .cursorrules
@@ -708,10 +708,10 @@ Only show what was actually found — absence is not information.
 > **Ready** — `/r-start` to begin | `/r-spec` to design | `/r-plan` to plan
 ```
 
-**Pipeline-aware Ready line:** If PLAN.md or specs already exist,
+**Pipeline-aware Ready line:** If an active plan or specs already exist,
 adjust the hint:
-- Specs exist, no PLAN.md → `> **Ready** — `/r-plan` to create implementation plan`
-- PLAN.md exists → `> **Ready** — `/r-build` to start phase 1`
+- Specs exist, no active plan → `> **Ready** — `/r-plan` to create implementation plan`
+- Active plan exists → `> **Ready** — `/r-build` to start phase 1`
 - Nothing exists → `> **Ready** — `/r-start` to begin | `/r-spec` to design`
 
 **Adaptation rules:**
