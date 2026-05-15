@@ -1,7 +1,8 @@
 # /r-plan — Planning Command
 
 Take a spec (or equivalent input) and decompose it into an
-execution-grade implementation plan (PLAN.md). You never write code.
+execution-grade implementation plan written to
+`docs/plans/{YYYY-MM-DD}-{topic}-plan.md`. You never write code.
 You produce plans.
 
 This is the second stage of the spec-plan-build-ship pipeline.
@@ -13,14 +14,16 @@ This is the second stage of the spec-plan-build-ship pipeline.
 /r-plan docs/specs/foo.md        — file path (contains / or ends with .md)
 /r-plan https://github.com/...   — GitHub URL (starts with http/https)
 /r-plan #42                      — issue shorthand (# + digits)
-/r-plan --resume                 — resume interrupted planning session
+/r-plan --resume                 — resume interrupted plan (resolved via rdf_active_plan_path)
+/r-plan --resume <path>          — set pointer to <path> and resume
 ```
 
 **Argument detection logic:**
 - Contains `/` or ends with `.md` → file path → read as spec input
 - Starts with `http` or `https` → GitHub URL → fetch via `gh`
 - Starts with `#` followed by digits → issue shorthand → `gh issue view {N}`
-- Equals `--resume` → resume from existing PLAN.md (see Resume Protocol)
+- Equals `--resume` → resume from active plan (see Resume Protocol)
+- Two tokens `--resume <path>` → validate `<path>` exists; `rdf_set_active_plan "<path>"`; enter Resume Protocol
 - No argument → scan `docs/specs/` for most recent file by mtime
 
 **Input validation:**
@@ -66,9 +69,11 @@ mark its task `in_progress`. After completing, mark `completed`.
 
 ## Resume Protocol
 
-If `--resume` is specified or PLAN.md exists with incomplete phases:
+If `--resume` (with or without `<path>`) is specified, OR if `rdf_active_plan_path` returns a plan with incomplete phases:
 
-1. Read existing PLAN.md
+1. Source `state/rdf-bus.sh`; `rdf_session_init`. Read the active plan:
+   `plan_path="$(rdf_active_plan_path)"`. If `--resume <path>` was given,
+   call `rdf_set_active_plan "<path>"` first.
 2. Detect phase completion status:
    - A phase is **complete** if it has a trailing `---` horizontal
      rule before the next phase heading (or EOF)
@@ -85,7 +90,7 @@ If `--resume` is specified or PLAN.md exists with incomplete phases:
    Continue? [Y/start fresh]
    ```
 4. If continuing: skip complete phases, regenerate truncated, write
-   missing. If starting fresh: delete PLAN.md and begin from Step 1.
+   missing. If starting fresh: remove the pointer (`rdf_clear_active_plan`) and begin from Step 1.
 
 ---
 
@@ -129,7 +134,25 @@ Mark task "Read codebase and spec" as `completed`.
 
 ---
 
-## Step 2: Write PLAN.md
+## Step 2.0: Determine Plan File Path
+
+Plan files are written to `docs/plans/{YYYY-MM-DD}-{topic}-plan.md`.
+Derive the filename at runtime:
+
+```bash
+TODAY="$(command date +%Y-%m-%d)"
+TOPIC="{slugified topic from spec or user input}"
+PLAN_FILE="docs/plans/${TODAY}-${TOPIC}-plan.md"
+```
+
+If `PLAN_FILE` already exists, append a disambiguating suffix (`-v2`,
+`-v3`, ...) — never overwrite a committed plan.
+
+Create `docs/plans/` if absent: `command mkdir -p docs/plans/`.
+
+---
+
+## Step 2: Write Plan File
 
 Mark task "Write execution-grade implementation phases" as `in_progress`.
 
@@ -371,7 +394,7 @@ truncated and will be regenerated on `--resume`.
 
 ### 2.7 Validate Schema
 
-Validate the drafted PLAN.md against
+Validate the drafted plan file (`$PLAN_FILE`) against
 [reference/plan-schema.md](../reference/plan-schema.md). Walk every rule
 (Plan-Version Awareness, then Rules 1-9) against every phase. List any
 violations to the user with the rule number and exact failure message,
@@ -452,7 +475,7 @@ prevent an engineer from executing the step without guessing. Style
 preferences, naming opinions, and alternative approaches are
 INFORMATIONAL(risk-area), not MUST-FIX.
 
-File: PLAN.md
+File: $PLAN_FILE  (the docs/plans/{date}-{topic}-plan.md path from Step 2.0)
 Mode: challenge
 ```
 
@@ -464,7 +487,7 @@ remain after 3 cycles, present to the user for resolution.
 Present the plan summary:
 
 ```
-Plan written to: PLAN.md
+Plan written to: $PLAN_FILE
 {N} phases | {serial count} serial, {parallel count} parallel
 Estimated gates: {total gate invocations across all phases}
 
@@ -476,20 +499,31 @@ Wait for user approval. If the user requests changes:
 - Adjust phases, re-tag, rewrite PLAN.md
 - Do NOT re-run the spec design phases — use `/r-spec` for that
 
-### 3.3 Commit Planning Artifacts
+### 3.3 Commit Planning Artifacts (mandatory)
 
-After approval, offer to commit:
+Plans are committed at creation. Stage the plan file and commit:
 
-```
-Commit the plan? [Y/n]
+```bash
+git add "$PLAN_FILE"
+# If the spec is not yet committed:
+git diff --cached --name-only | grep -q docs/specs/ || git add "$SPEC_PATH"
+git commit -m "Add {topic} implementation plan
+
+[New] $PLAN_FILE — {N}-phase implementation plan"
 ```
 
-If yes, commit PLAN.md (and spec if not already committed):
-```
-Add {topic} implementation plan
+The plan is now a tracked artifact and cannot be silently overwritten by a subsequent session. This is the central guarantee of the post-3.1.2 plan model.
 
-[New] PLAN.md — {N}-phase implementation plan
+### 3.3.1 Set the Active-Plan Pointer
+
+After committing:
+
+```bash
+source state/rdf-bus.sh
+rdf_set_active_plan "$PLAN_FILE"
 ```
+
+This records the plan as active for the current session. The pointer file `.rdf/active-plan-${RDF_SESSION_ID}` is gitignored.
 
 Mark task "Challenge review and user approval" as `completed`.
 
@@ -500,7 +534,7 @@ Mark task "Challenge review and user approval" as `completed`.
 After all steps complete, present the pipeline handoff:
 
 ```
-> **Plan ready** — `PLAN.md` ({N} phases)
+> **Plan ready** — `$PLAN_FILE` ({N} phases)
 > Run `/r-build` to begin execution, or `/r-build 3` for a specific phase.
 ```
 

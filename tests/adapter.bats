@@ -507,3 +507,23 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 1 ]
 }
+
+# ── Tests 29-31: Phase 2 — r-plan docs/plans/ rewrite ────────────────────────
+
+@test "r-plan canonical names docs/plans path" {
+    run grep -c 'docs/plans/{' "$RDF_SRC/canonical/commands/r-plan.md"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 3 ]
+}
+
+@test "r-plan Step 3.3 marks commit as mandatory" {
+    # Should NOT contain the optional [Y/n] prompt — commit is mandatory
+    run grep -c 'Commit the plan? \[Y/n\]' "$RDF_SRC/canonical/commands/r-plan.md"
+    [ "$output" = "0" ]
+}
+
+@test "r-plan Resume Protocol calls rdf_active_plan_path" {
+    run grep -c 'rdf_active_plan_path' "$RDF_SRC/canonical/commands/r-plan.md"
+    [ "$status" -eq 0 ]
+    [ "$output" -ge 1 ]
+}
