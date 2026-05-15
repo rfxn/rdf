@@ -116,12 +116,27 @@ layers cite `plan-schema.md` Rule 8.
 
 Procedure:
 
-1. Source `state/rdf-bus.sh`, parse phase scope:
+1. Source `state/rdf-bus.sh`, parse phase scope via the safe read-loop
+   pattern (NOT `eval` — plan files are committed and may carry shell
+   metachars in Files entries that `rdf_parse_phase_scope`'s
+   regex-metachar escape does not strip):
    ```
-   eval "$(rdf_parse_phase_scope "$(rdf_active_plan_path)" $N)"
+   ALLOWED_REGEX=""
+   FLEX_REGEX=""
+   FLEX_FILE_CEILING=""
+   FLEX_LINE_CEILING=""
+   while IFS='=' read -r _k _v; do
+       case "$_k" in
+           ALLOWED_REGEX)     ALLOWED_REGEX="$_v" ;;
+           FLEX_REGEX)        FLEX_REGEX="$_v" ;;
+           FLEX_FILE_CEILING) FLEX_FILE_CEILING="$_v" ;;
+           FLEX_LINE_CEILING) FLEX_LINE_CEILING="$_v" ;;
+       esac
+   done < <(rdf_parse_phase_scope "$(rdf_active_plan_path)" "$N")
    ```
    This sets `ALLOWED_REGEX`, `FLEX_REGEX`, `FLEX_FILE_CEILING`,
-   `FLEX_LINE_CEILING`.
+   `FLEX_LINE_CEILING`. See `state/git-hooks/pre-commit` for the
+   canonical implementation.
 
 2. Compute touched paths in engineer's commit:
    ```

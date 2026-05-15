@@ -159,3 +159,21 @@ _setup_fixture_repo() {
     [[ "$output" == *"lib/v1\\+util\\.sh"* ]]
     [[ "$output" == *"lib/util\\?\\.sh"* ]]
 }
+
+@test "pre-commit hook rejects shell-metachar injection in plan Files entry" {
+    _setup_fixture_repo "$TEST_TMP/repo" 1
+    # Malicious plan: ; in a Files entry would, under eval, run touch
+    local pwn_file="$TEST_TMP/RDF_INJECT_$$"
+    rm -f "$pwn_file"
+    printf '%s\n%s\n' \
+        '### Phase 1: Test' \
+        "- Modify: \`evil;touch ${pwn_file}\`" \
+        > "$TEST_TMP/repo/PLAN.md"
+    # Stage an in-scope file and attempt commit
+    command mkdir -p "$TEST_TMP/repo/state"
+    echo "ok" > "$TEST_TMP/repo/state/foo.sh"
+    git -C "$TEST_TMP/repo" add state/foo.sh
+    run git -C "$TEST_TMP/repo" -c user.email=t@t -c user.name=t commit -m "test"
+    # Whatever the hook's scope verdict, the injection payload MUST NOT have run
+    [ ! -e "$pwn_file" ]
+}

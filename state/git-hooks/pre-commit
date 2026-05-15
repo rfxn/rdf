@@ -44,14 +44,27 @@ if [[ -z "$_phase_n" ]]; then
     exit 0
 fi
 
-# Parse phase scope
+# Parse phase scope — read loop, not eval; plan files arrive via commits
+# (post-3.1.2 canonical workflow) and may carry shell metachars (`;`, `&`)
+# in Files entries that bypass rdf_parse_phase_scope's regex-metachar escape.
 _plan="$(rdf_active_plan_path "$_proj")"
 if [[ -z "$_plan" ]]; then
     echo "rdf pre-commit: no active plan found; skipping scope check" >&2
     exit 0
 fi
-eval "$(rdf_parse_phase_scope "$_plan" "$_phase_n")"
-if [[ -z "${ALLOWED_REGEX:-}" ]]; then
+ALLOWED_REGEX=""
+FLEX_REGEX=""
+FLEX_FILE_CEILING=""
+FLEX_LINE_CEILING=""
+while IFS='=' read -r _k _v; do
+    case "$_k" in
+        ALLOWED_REGEX)     ALLOWED_REGEX="$_v" ;;
+        FLEX_REGEX)        FLEX_REGEX="$_v" ;;
+        FLEX_FILE_CEILING) FLEX_FILE_CEILING="$_v" ;;
+        FLEX_LINE_CEILING) FLEX_LINE_CEILING="$_v" ;;
+    esac
+done < <(rdf_parse_phase_scope "$_plan" "$_phase_n")
+if [[ -z "$ALLOWED_REGEX" ]]; then
     echo "rdf pre-commit: Phase $_phase_n not found in $_plan or has no Files block" >&2
     exit 1
 fi

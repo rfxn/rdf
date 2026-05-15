@@ -35,10 +35,13 @@ rdf_active_plan_path() {
     return 1
 }
 rdf_parse_phase_scope() {
-    printf "ALLOWED_REGEX='.*'\n"
-    printf "FLEX_REGEX=''\n"
-    printf "FLEX_FILE_CEILING=3\n"
-    printf "FLEX_LINE_CEILING=30\n"
+    # Stub: emit the same unquoted KEY=VALUE shape the real producer uses
+    # (state/rdf-bus.sh::rdf_parse_phase_scope). Consumer is the read-loop
+    # in state/git-hooks/pre-commit (no eval, no quote stripping).
+    printf 'ALLOWED_REGEX=.*\n'
+    printf 'FLEX_REGEX=\n'
+    printf 'FLEX_FILE_CEILING=3\n'
+    printf 'FLEX_LINE_CEILING=30\n'
 }
 BUSEOF
 
