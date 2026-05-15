@@ -212,6 +212,15 @@ _check_plan() {
 
     _add_result "plan" "$_OK" "${#plan_files[@]} PLAN file(s) found"
 
+    # Surface active-plan pointer state
+    if [[ -n "${RDF_SESSION_ID:-}" && -f "${path}/.rdf/active-plan-${RDF_SESSION_ID}" ]]; then
+        _add_result "plan-pointer" "$_OK" "session pointer present"
+    elif [[ -f "${path}/.rdf/active-plan" ]]; then
+        _add_result "plan-pointer" "$_OK" "un-suffixed pointer present"
+    else
+        _add_result "plan-pointer" "$_OK" "no pointer (legacy fallback or no plan)"
+    fi
+
     # Check for stale IN_PROGRESS markers
     for f in "${plan_files[@]}"; do
         local fname

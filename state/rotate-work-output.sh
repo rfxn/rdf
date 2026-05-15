@@ -5,6 +5,10 @@
 # Usage: rotate-work-output.sh [--dry-run] [--age <days>] [--size-cap <kb>] <project-root>
 set -euo pipefail
 
+# shellcheck source=/dev/null
+source "$(command dirname "$0")/rdf-bus.sh"
+rdf_session_init
+
 _dry_run=0
 _age_days=14
 _size_cap_kb=100
@@ -40,11 +44,10 @@ if [[ ! -d "$_work_output" ]]; then
     exit 0
 fi
 
-# Resolve active basenames from PLAN.md to protect in-use result files
+# Resolve active basenames from active plan to protect in-use result files
 _active_basenames=""
-_plan_file="${_project_root}/PLAN.md"
-if [[ -f "$_plan_file" ]]; then
-    # Extract bare filenames referenced in PLAN.md (no path, just basename)
+_plan_file="$(rdf_active_plan_path "$_project_root")" || _plan_file=""
+if [[ -n "$_plan_file" && -f "$_plan_file" ]]; then
     _active_basenames="$(grep -oE '[a-zA-Z0-9_-]+\.md' "$_plan_file" 2>/dev/null || true)" # grep exits 1 when no match; both outcomes are valid
 fi
 

@@ -11,15 +11,15 @@
 # serves as defense-in-depth backstop).
 set -euo pipefail
 
-# Locate project root (nearest ancestor with PLAN.md)
+# Locate project root (nearest ancestor with state/rdf-bus.sh — the RDF anchor)
 _proj=""
 _dir="$(command pwd)"
 while [[ "$_dir" != "/" ]]; do
-    [[ -f "$_dir/PLAN.md" ]] && { _proj="$_dir"; break; }
+    [[ -f "$_dir/state/rdf-bus.sh" ]] && { _proj="$_dir"; break; }
     _dir="$(command dirname "$_dir")"
 done
 if [[ -z "$_proj" ]]; then
-    echo "rdf pre-commit: PLAN.md not found in any ancestor; skipping scope check" >&2
+    echo "rdf pre-commit: state/rdf-bus.sh not found in any ancestor; skipping scope check" >&2
     exit 0
 fi
 
@@ -45,9 +45,14 @@ if [[ -z "$_phase_n" ]]; then
 fi
 
 # Parse phase scope
-eval "$(rdf_parse_phase_scope "$_proj/PLAN.md" "$_phase_n")"
+_plan="$(rdf_active_plan_path "$_proj")"
+if [[ -z "$_plan" ]]; then
+    echo "rdf pre-commit: no active plan found; skipping scope check" >&2
+    exit 0
+fi
+eval "$(rdf_parse_phase_scope "$_plan" "$_phase_n")"
 if [[ -z "${ALLOWED_REGEX:-}" ]]; then
-    echo "rdf pre-commit: Phase $_phase_n not found in PLAN.md or has no Files block" >&2
+    echo "rdf pre-commit: Phase $_phase_n not found in $_plan or has no Files block" >&2
     exit 1
 fi
 

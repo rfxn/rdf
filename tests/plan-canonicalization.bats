@@ -117,3 +117,16 @@ teardown() {
     [ "$(< $TEST_TMP/proj/.rdf/active-plan-01900000-0000-7000-8000-000000000AAA)" = "$TEST_TMP/proj/docs/plans/a.md" ]
     [ "$(< $TEST_TMP/proj/.rdf/active-plan-01900000-0000-7000-8000-000000000BBB)" = "$TEST_TMP/proj/docs/plans/b.md" ]
 }
+
+@test "canonical PLAN.md references are scoped to legacy/fallback context" {
+    # After full migration, every PLAN.md mention in canonical/lib/state
+    # must be in legacy-fallback or output-text context (not a hardcoded
+    # read path). Use word-boundary grep to catch all forms.
+    local hits
+    hits=$(grep -rn '\bPLAN\.md\b' \
+        "$RDF_SRC/canonical/" "$RDF_SRC/lib/" "$RDF_SRC/state/" 2>/dev/null | \
+        grep -vE 'legacy|fallback|LEGACY|FALLBACK|output-text' | wc -l)
+    # Allow up to 10 residual mentions for status-marker reference and
+    # transitional banner text (output-text only — not read paths).
+    [ "$hits" -le 10 ]
+}

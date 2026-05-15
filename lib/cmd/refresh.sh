@@ -4,6 +4,9 @@
 # GNU GPL v2
 # Sourced by bin/rdf — do not execute directly
 
+# shellcheck source=/dev/null
+source "${RDF_STATE_DIR}/rdf-bus.sh"
+
 _refresh_usage() {
     cat <<'USAGE'
 Usage: rdf refresh [path] [options]
@@ -140,8 +143,10 @@ _refresh_scope_plan() {
 
     rdf_log "refresh scope: plan"
 
-    if [[ ! -f "${project_path}/PLAN.md" ]]; then
-        rdf_warn "no PLAN.md found — skipping plan refresh"
+    local plan_path
+    plan_path="$(rdf_active_plan_path "$project_path")" || true
+    if [[ -z "$plan_path" ]]; then
+        rdf_warn "no active plan found — skipping plan refresh"
         return 0
     fi
 
@@ -155,7 +160,7 @@ _refresh_scope_plan() {
     phase_commits="$(git -C "$project_path" log --oneline -50 2>/dev/null | grep -iE '(phase|p[0-9])' || true)"
 
     if [[ $dry_run -eq 1 ]]; then
-        rdf_log "DRY RUN: would update ${project_path}/PLAN.md"
+        rdf_log "DRY RUN: would update ${plan_path}"
         if [[ -n "$phase_commits" ]]; then
             rdf_log "phase-referencing commits found:"
             echo "$phase_commits" >&2
@@ -218,11 +223,12 @@ _refresh_scope_github() {
         return 0
     fi
 
-    # Cross-reference PLAN.md status with issue state
-    # For each phase issue, check if the corresponding phase is marked COMPLETE in PLAN.md
-    if [[ -f "${project_path}/PLAN.md" ]]; then
+    # Cross-reference plan status with issue state
+    local _github_plan_path
+    _github_plan_path="$(rdf_active_plan_path "$project_path")" || true
+    if [[ -n "$_github_plan_path" && -f "$_github_plan_path" ]]; then
         local plan_content
-        plan_content="$(< "${project_path}/PLAN.md")"
+        plan_content="$(< "$_github_plan_path")"
 
         # Parse phase issues and check for state mismatches
         local mismatches=0
@@ -277,7 +283,7 @@ _refresh_scope_github() {
 
         rdf_log "github sync: ${synced} in sync, ${mismatches} mismatches resolved"
     else
-        rdf_log "no PLAN.md — listing issues only"
+        rdf_log "no active plan — listing issues only"
         echo "$issues_json" | jq -r '.[] | "#\(.number) [\(.state)] \(.title)"' 2>/dev/null || true
         echo "$tasks_json" | jq -r '.[] | "#\(.number) [\(.state)] \(.title)"' 2>/dev/null || true
     fi
