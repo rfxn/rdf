@@ -47,3 +47,25 @@ teardown() {
     [ "$result" = "$TEST_TMP/real.txt" ]
 }
 
+@test "bin/rdf via absolute symlink resolves RDF_HOME" {
+    ln -s "$RDF_SRC/bin/rdf" "$TEST_TMP/rdf-abs"
+    run "$TEST_TMP/rdf-abs" --version
+    [ "$status" -eq 0 ]
+    [ "$output" = "rdf $(cat "$RDF_SRC/VERSION")" ]
+}
+
+@test "bin/rdf via relative-target two-hop symlink chain resolves RDF_HOME (EC2+EC3)" {
+    # hop2 -> hop1 (relative target) -> real bin/rdf (absolute) : covers EC2 + EC3
+    ln -s "$RDF_SRC/bin/rdf" "$TEST_TMP/hop1"
+    ( cd "$TEST_TMP" && ln -s hop1 hop2 )
+    run "$TEST_TMP/hop2" --version
+    [ "$status" -eq 0 ]
+    [ "$output" = "rdf $(cat "$RDF_SRC/VERSION")" ]
+}
+
+@test "bin/rdf direct (non-symlink) invocation unchanged" {
+    run "$RDF_SRC/bin/rdf" --version
+    [ "$status" -eq 0 ]
+    [ "$output" = "rdf $(cat "$RDF_SRC/VERSION")" ]
+}
+

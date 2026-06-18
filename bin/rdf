@@ -4,8 +4,25 @@
 # GNU GPL v2
 set -euo pipefail
 
-RDF_HOME="$(cd "$(dirname "$0")/.." && pwd)" || exit 1
+# Resolve this script's real location, following symlinks (portable; bash 3.2-safe).
+_rdf_self="${BASH_SOURCE[0]:-$0}"
+_rdf_hops=0
+while [ -h "$_rdf_self" ]; do
+    _rdf_hops=$((_rdf_hops + 1))
+    if [ "$_rdf_hops" -gt 40 ]; then
+        echo "rdf: fatal: too many symlink levels resolving $0" >&2
+        exit 1
+    fi
+    _rdf_dir="$(cd -P "$(command dirname "$_rdf_self")" >/dev/null 2>&1 && pwd)" || exit 1
+    _rdf_self="$(command readlink "$_rdf_self")"
+    case "$_rdf_self" in
+        /*) ;;                                       # absolute target
+        *)  _rdf_self="${_rdf_dir}/${_rdf_self}" ;;  # relative -> against link dir
+    esac
+done
+RDF_HOME="$(cd -P "$(command dirname "$_rdf_self")/.." >/dev/null 2>&1 && pwd)" || exit 1
 RDF_LIBDIR="${RDF_HOME}/lib"
+unset _rdf_self _rdf_dir _rdf_hops
 
 # shellcheck disable=SC1091
 source "${RDF_LIBDIR}/rdf_common.sh"
