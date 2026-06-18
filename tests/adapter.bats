@@ -279,7 +279,7 @@ teardown() {
     [ -f "$file" ]
     # Count non-comment, non-heading, non-blank exclusion lines in the Default Body
     # Excludes: lines starting with #, lines starting with >, blank lines, lines with 4+ backticks
-    run bash -c "grep -vE '^#|^>|^\s*$|^\`\`\`' '$file' | grep -c '/$\|\*' || true"
+    run bash -c "grep -vE '^#|^>|^[[:space:]]*$|^\`\`\`' '$file' | grep -cE '/$|\*' || true"
     [ "$status" -eq 0 ]
     [ "$output" -ge 6 ]
     # Confirm representative defaults are present

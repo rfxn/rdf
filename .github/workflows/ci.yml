@@ -82,19 +82,36 @@ jobs:
 
   tests:
     name: Tests (BATS)
-    runs-on: ubuntu-latest
-    # Phase 10 adds the BATS adapter test suite. This job is a stub that
-    # becomes live once tests/Makefile exists. If the file is absent the
-    # job is skipped rather than failing the workflow.
+    # Runs on ubuntu + macOS so BSD coreutils and system bash 3.2 are exercised.
     if: ${{ hashFiles('tests/Makefile') != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install test dependencies
+      - name: Install test dependencies (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get install -y bats shellcheck
+
+      - name: Install test dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install bats-core shellcheck
 
       - name: Run BATS tests
         run: make -C tests test
+
+      - name: Smoke rdf-bus under system bash 3.2 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          /bin/bash --version | head -1
+          /bin/bash -c 'unset EPOCHREALTIME; source state/rdf-bus.sh; rdf_uuidv7' \
+            | grep -qE '^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+          /bin/bash -c 'source state/rdf-bus.sh; rdf_session_init; printf "%s\n" "$RDF_SESSION_ID"' \
+            | grep -qE '^[0-9a-f]{8}-'
+          echo "bash 3.2 bus smoke: OK"
