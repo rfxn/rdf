@@ -4,8 +4,13 @@
 # GNU GPL v2
 # Sourced by bin/rdf — do not execute directly
 
-# shellcheck source=/dev/null
-source "${RDF_STATE_DIR}/rdf-bus.sh"
+# rdf-bus.sh provides rdf_active_plan_path — hard dependency; fail clearly.
+if [[ -n "${RDF_STATE_DIR:-}" && -f "${RDF_STATE_DIR}/rdf-bus.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "${RDF_STATE_DIR}/rdf-bus.sh"
+else
+    rdf_die "state/rdf-bus.sh not found (RDF_STATE_DIR=${RDF_STATE_DIR:-<unset>}) — run 'rdf generate <adapter>' to deploy state helpers"
+fi
 
 _refresh_usage() {
     cat <<'USAGE'

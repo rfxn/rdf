@@ -5,8 +5,14 @@
 # Usage: rotate-work-output.sh [--dry-run] [--age <days>] [--size-cap <kb>] <project-root>
 set -euo pipefail
 
-# shellcheck source=/dev/null
-source "$(command dirname "$0")/rdf-bus.sh"
+_rwo_dir="$(cd -P "$(command dirname "$0")" >/dev/null 2>&1 && pwd)" || _rwo_dir=""
+if [[ -f "${_rwo_dir}/rdf-bus.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "${_rwo_dir}/rdf-bus.sh"
+else
+    printf 'rotate-work-output: error: rdf-bus.sh not found beside %s\n' "$0" >&2
+    exit 1
+fi
 rdf_session_init
 
 _dry_run=0

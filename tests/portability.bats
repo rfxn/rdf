@@ -69,3 +69,36 @@ teardown() {
     [ "$output" = "rdf $(cat "$RDF_SRC/VERSION")" ]
 }
 
+@test "refresh.sh missing bus emits clear error not raw ENOENT" {
+    run bash -c '
+        set -euo pipefail
+        source "'"$RDF_SRC"'/lib/rdf_common.sh"
+        RDF_HOME="'"$RDF_SRC"'"; rdf_init
+        RDF_STATE_DIR="/nonexistent-rdf-state"
+        source "'"$RDF_SRC"'/lib/cmd/refresh.sh"
+    '
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"rdf-bus.sh not found"* ]]
+    [[ "$output" != *"No such file or directory"* ]]
+}
+
+@test "refresh.sh with bus present sources successfully (normal path)" {
+    run bash -c '
+        set -euo pipefail
+        source "'"$RDF_SRC"'/lib/rdf_common.sh"
+        RDF_HOME="'"$RDF_SRC"'"; rdf_init
+        source "'"$RDF_SRC"'/lib/cmd/refresh.sh"
+        type -t cmd_refresh
+    '
+    [ "$status" -eq 0 ]
+    [ "$output" = "function" ]
+}
+
+@test "rotate-work-output.sh missing sibling bus errors clearly" {
+    command cp "$RDF_SRC/state/rotate-work-output.sh" "$TEST_TMP/rotate.sh"
+    # No rdf-bus.sh beside the copy.
+    run bash "$TEST_TMP/rotate.sh" --dry-run "$TEST_TMP"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"rdf-bus.sh not found"* ]]
+    [[ "$output" != *"No such file or directory"* ]]
+}
