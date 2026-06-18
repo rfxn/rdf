@@ -44,6 +44,36 @@ rdf_init() {
     fi
 }
 
+# rdf_canonical_path PATH — emit a canonical/absolute path, following symlinks.
+# Portable: tries readlink -f, then realpath, then a cd -P + readlink fallback.
+# Emits empty string on total failure (preserves the readlink -f "|| echo ''"
+# contract it replaces). Always returns 0.
+rdf_canonical_path() {
+    local _p="${1:-}" _t _d
+    # Capture-then-emit: readlink/realpath print to stdout even when they exit
+    # nonzero (e.g. BSD readlink -f on a broken link), so guard on exit status
+    # AND non-empty output to avoid leaking a partial path into the result.
+    if _t="$(command readlink -f "$_p" 2>/dev/null)" && [[ -n "$_t" ]]; then
+        printf '%s\n' "$_t"; return 0
+    fi
+    if command -v realpath >/dev/null 2>&1 \
+        && _t="$(command realpath "$_p" 2>/dev/null)" && [[ -n "$_t" ]]; then
+        printf '%s\n' "$_t"; return 0
+    fi
+    if [[ -L "$_p" ]]; then
+        _t="$(command readlink "$_p" 2>/dev/null)"
+        case "$_t" in
+            /*) printf '%s\n' "$_t" ;;
+            *)  _d="$(cd -P "$(command dirname "$_p")" 2>/dev/null && pwd)" \
+                    && printf '%s/%s\n' "$_d" "$_t" || printf '\n' ;;
+        esac
+        return 0
+    fi
+    _d="$(cd -P "$(command dirname "$_p")" 2>/dev/null && pwd)" \
+        && printf '%s/%s\n' "$_d" "$(command basename "$_p")" || printf '\n'
+    return 0
+}
+
 rdf_die() {
     echo "rdf: error: $*" >&2
     exit 1

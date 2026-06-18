@@ -479,7 +479,7 @@ _check_sync() {
         local link="/root/.claude/${target}"
         if [[ -L "$link" ]]; then
             local link_dest
-            link_dest="$(readlink -f "$link" 2>/dev/null || echo "")"
+            link_dest="$(rdf_canonical_path "$link")"
             if [[ "$link_dest" == "${output_dir}/${target}" ]]; then
                 link_ok=$((link_ok + 1))
             else

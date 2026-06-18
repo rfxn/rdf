@@ -18,11 +18,13 @@ TESTS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 test: _bats_check
 	$(BATS) $(TESTS_DIR)adapter.bats $(TESTS_DIR)plan-canonicalization.bats \
-	        $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats
+	        $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats \
+	        $(TESTS_DIR)portability.bats
 
 lint: _bats_check
 	shellcheck $(TESTS_DIR)adapter.bats $(TESTS_DIR)plan-canonicalization.bats \
-	           $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats
+	           $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats \
+	           $(TESTS_DIR)portability.bats
 
 help:
 	@echo "Usage: make -C tests [target]"
