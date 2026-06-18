@@ -177,3 +177,38 @@ _setup_fixture_repo() {
     # Whatever the hook's scope verdict, the injection payload MUST NOT have run
     [ ! -e "$pwn_file" ]
 }
+
+# --- rdf_uuidv7 portability (Phase 4) ---
+_UUIDV7_RE='^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+
+@test "rdf_uuidv7 valid with stubbed BSD date (literal N)" {
+    command mkdir -p "$TEST_TMP/fakebin"
+    printf '#!/bin/sh\ncase "$1" in +%%s%%N) echo "1718000000N";; +%%s) /bin/date +%%s;; *) exec /bin/date "$@";; esac\n' > "$TEST_TMP/fakebin/date"
+    command chmod +x "$TEST_TMP/fakebin/date"
+    run env PATH="$TEST_TMP/fakebin:$PATH" bash -c 'unset EPOCHREALTIME; source "'"$RDF_SRC"'/state/rdf-bus.sh"; rdf_uuidv7'
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ $_UUIDV7_RE ]]
+}
+
+@test "rdf_uuidv7 valid with stubbed date (empty %N)" {
+    command mkdir -p "$TEST_TMP/fakebin"
+    printf '#!/bin/sh\ncase "$1" in +%%s%%N) echo "";; +%%s) /bin/date +%%s;; *) exec /bin/date "$@";; esac\n' > "$TEST_TMP/fakebin/date"
+    command chmod +x "$TEST_TMP/fakebin/date"
+    run env PATH="$TEST_TMP/fakebin:$PATH" bash -c 'unset EPOCHREALTIME; source "'"$RDF_SRC"'/state/rdf-bus.sh"; rdf_uuidv7'
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ $_UUIDV7_RE ]]
+}
+
+@test "rdf_uuidv7 valid when EPOCHREALTIME present" {
+    [ -n "${EPOCHREALTIME:-}" ] || skip "EPOCHREALTIME unavailable (bash < 5)"
+    run bash -c 'source "'"$RDF_SRC"'/state/rdf-bus.sh"; rdf_uuidv7'
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ $_UUIDV7_RE ]]
+}
+
+@test "rdf_uuidv7 valid via date +%N path" {
+    command date +%s%N | grep -qE '^[0-9]+$' || skip "date +%N unsupported here"
+    run bash -c 'unset EPOCHREALTIME; source "'"$RDF_SRC"'/state/rdf-bus.sh"; rdf_uuidv7'
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ $_UUIDV7_RE ]]
+}
