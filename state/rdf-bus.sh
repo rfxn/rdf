@@ -19,7 +19,7 @@ rdf_uuidv7() {
         if [[ -n "$_raw" && "$_raw" != *[!0-9]* ]]; then
             ts_ms=$(( _raw / 1000000 ))                 # ns → ms (GNU date)
         else
-            ts_ms=$(( $(command date +%s) * 1000 + RANDOM % 1000 ))  # BSD/old fallback
+            ts_ms=$(( $(command date +%s) * 1000 + RANDOM % 1000 ))  # date +%s%N not numeric: whole seconds + random sub-ms
         fi
     fi
     printf -v hex_ts '%012x' "$ts_ms"

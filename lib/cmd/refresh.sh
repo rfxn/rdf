@@ -4,7 +4,6 @@
 # GNU GPL v2
 # Sourced by bin/rdf — do not execute directly
 
-# rdf-bus.sh provides rdf_active_plan_path — hard dependency; fail clearly.
 if [[ -n "${RDF_STATE_DIR:-}" && -f "${RDF_STATE_DIR}/rdf-bus.sh" ]]; then
     # shellcheck source=/dev/null
     source "${RDF_STATE_DIR}/rdf-bus.sh"

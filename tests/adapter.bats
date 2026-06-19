@@ -277,8 +277,7 @@ teardown() {
 @test "ignore-defaults.md contains at least 6 exclusion entries" {
     local file="${RDF_SRC}/profiles/core/reference/ignore-defaults.md"
     [ -f "$file" ]
-    # Count non-comment, non-heading, non-blank exclusion lines in the Default Body
-    # Excludes: lines starting with #, lines starting with >, blank lines, lines with 4+ backticks
+    # Count exclusion entries: drop comments, blockquotes, blanks, code-fence lines; keep dir/glob lines.
     run bash -c "grep -vE '^#|^>|^[[:space:]]*$|^\`\`\`' '$file' | grep -cE '/$|\*' || true"
     [ "$status" -eq 0 ]
     [ "$output" -ge 6 ]

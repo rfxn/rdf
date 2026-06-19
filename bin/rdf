@@ -4,7 +4,7 @@
 # GNU GPL v2
 set -euo pipefail
 
-# Resolve this script's real location, following symlinks (portable; bash 3.2-safe).
+# Dereference a PATH symlink (~/bin/rdf etc.) so RDF_HOME is the repo, not the link's dir.
 _rdf_self="${BASH_SOURCE[0]:-$0}"
 _rdf_hops=0
 while [ -h "$_rdf_self" ]; do
@@ -16,8 +16,8 @@ while [ -h "$_rdf_self" ]; do
     _rdf_dir="$(cd -P "$(command dirname "$_rdf_self")" >/dev/null 2>&1 && pwd)" || exit 1
     _rdf_self="$(command readlink "$_rdf_self")"
     case "$_rdf_self" in
-        /*) ;;                                       # absolute target
-        *)  _rdf_self="${_rdf_dir}/${_rdf_self}" ;;  # relative -> against link dir
+        /*) ;;
+        *)  _rdf_self="${_rdf_dir}/${_rdf_self}" ;;
     esac
 done
 RDF_HOME="$(cd -P "$(command dirname "$_rdf_self")/.." >/dev/null 2>&1 && pwd)" || exit 1

@@ -7,8 +7,7 @@ RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 
 setup() {
     TEST_TMP="$(mktemp -d)"
-    # Normalize /var -> /private/var on macOS so equality against readlink -f /
-    # realpath output holds (both canonicalize macOS's /var and /tmp symlinks).
+    # mktemp returns a /var/... symlink path; canonicalize to /private/var so it matches the resolved paths the helper returns.
     TEST_TMP="$(cd "$TEST_TMP" && pwd -P)"
 }
 
