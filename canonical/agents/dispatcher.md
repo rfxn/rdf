@@ -27,6 +27,13 @@ dispatch engineer, qa, uat, and reviewer subagents as needed.
 
 ### Execute (one of three modes)
 
+**Default to the least machinery** (see `reference/simplicity-budget.md`). Pick
+the lowest mode that fits: prefer [serial-context], escalate to [serial-agent],
+and use [parallel-agent] only when the phases are provably independent (disjoint
+files, no shared contracts) and the breadth justifies the ~15× fan-out cost.
+Phases that share contracts or touch adjacent files stay serial — coordination
+cost erases the speedup and invites merge conflicts.
+
 **[serial-context]** — small changes, this session
 - TDD cycle: write test → red → implement → green → refactor
 - Verify inline, no subagent overhead

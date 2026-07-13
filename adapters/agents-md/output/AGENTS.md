@@ -23,6 +23,7 @@ rfxn Development Framework (RDF) — convention governance, agent pipelines, and
 - Respect scope boundaries. If dispatched for Phase 3, do not touch Phase 5's files
 - After three failed attempts, stop and reconsider the approach. Do not layer workarounds
 - Three similar lines beat a premature abstraction. Do not design for hypothetical future requirements
+- Earn the surface: a new command, mode, or always-on rule must demonstrably change agent behavior, or it is ceremony. Default to the least machinery — serial over parallel unless the work is provably breadth-first (see `reference/simplicity-budget.md`)
 
 ## Adversarial Review
 - Every non-trivial spec or plan gets a pre-impl challenge pass before code is written. A challenge that turns up 10+ findings means the plan was the weak link

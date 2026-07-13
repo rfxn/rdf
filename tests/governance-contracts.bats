@@ -40,6 +40,10 @@ _contract() {
     _contract agents/dispatcher.md 'NEEDS_CONTEXT'
 }
 
+@test "dispatcher defaults to least machinery (serial over parallel)" {
+    _contract agents/dispatcher.md 'least machinery|simplicity-budget'
+}
+
 # ── QA: independent re-execution of cited evidence ───────────────────────────
 
 @test "qa re-validates EVIDENCE by re-running cited commands" {

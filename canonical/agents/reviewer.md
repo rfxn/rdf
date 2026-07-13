@@ -75,6 +75,17 @@ assessing design quality:
    If no helper functions are referenced by name in the plan, this check
    is exempt.
 
+3. **Simplicity budget — surface justification**: If the plan adds a new
+   command, agent, mode, profile, gate, or always-on rule, verify it states the
+   agent behavior the addition changes and how that change is observed. If the
+   justification is absent or amounts to "nice to have," emit:
+   ```
+   MUST-FIX(blocking-concern) Phase N: adds surface (<name>) without a stated
+   behavior change — justify against reference/simplicity-budget.md or cut it.
+   ```
+   Extending existing surface, and additions with a stated, observable behavior
+   change, are exempt.
+
 ### Verification protocol (MUST-FIX assertions)
 
 Before reporting a MUST-FIX(blocking-concern) that claims "code is
