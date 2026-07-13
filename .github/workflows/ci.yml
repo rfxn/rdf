@@ -83,7 +83,6 @@ jobs:
   tests:
     name: Tests (BATS)
     # Runs on ubuntu + macOS so BSD coreutils and system bash 3.2 are exercised.
-    if: ${{ hashFiles('tests/Makefile') != '' }}
     strategy:
       fail-fast: false
       matrix:
