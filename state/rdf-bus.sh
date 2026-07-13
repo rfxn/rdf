@@ -10,8 +10,18 @@
 
 # rdf_uuidv7 — emit a UUIDv7 string to stdout
 rdf_uuidv7() {
-    local ts_ms hex_ts hex_rand variant_byte
-    ts_ms=$(($(command date +%s%N) / 1000000))
+    local ts_ms hex_ts hex_rand variant_byte _raw
+    _raw="${EPOCHREALTIME:+${EPOCHREALTIME//[!0-9]/}}"   # locale-safe: strip . or ,
+    if [[ -n "$_raw" && "${#_raw}" -ge 16 ]]; then
+        ts_ms=$(( 10#${_raw:0:16} / 1000 ))             # sec+µs → ms (bash 5, 6-dp)
+    else
+        _raw="$(command date +%s%N 2>/dev/null)"
+        if [[ -n "$_raw" && "$_raw" != *[!0-9]* ]]; then
+            ts_ms=$(( _raw / 1000000 ))                 # ns → ms (GNU date)
+        else
+            ts_ms=$(( $(command date +%s) * 1000 + RANDOM % 1000 ))  # date +%s%N not numeric: whole seconds + random sub-ms
+        fi
+    fi
     printf -v hex_ts '%012x' "$ts_ms"
     hex_rand=$(command od -An -N10 -tx1 /dev/urandom | command tr -d ' \n')
     variant_byte=$(printf '%x' $((0x8 | (0x${hex_rand:3:1} & 0x3))))
