@@ -1,4 +1,32 @@
-# RDF 3.1.2 Release Notes
+# RDF 3.1.3 Release Notes
+
+## 3.1.3
+
+-- New Features --
+
+[New] lib/rdf_common.sh — rdf_canonical_path portable symlink-resolving path
+      helper (readlink -f → realpath → cd -P fallback); doctor.sh adopts it
+      in place of a bare readlink -f
+[New] tests/portability.bats plus rdf_uuidv7 portability cases in
+      rdf-bus.bats; CI test matrix gains a macOS leg exercising system bash
+      3.2 and BSD coreutils
+
+-- Bug Fixes --
+
+[Fix] bin/rdf — resolve RDF_HOME through PATH symlinks via a depth-bounded
+      BASH_SOURCE loop (bash 3.2-safe, no readlink -f); fixes deterministic
+      startup ENOENT on macOS/Homebrew and /usr/local scattered layouts
+      (contributed by ggwicz)
+[Fix] state/rdf-bus.sh — rdf_uuidv7 portable millisecond cascade
+      (EPOCHREALTIME → date +%s%N when numeric → date +%s + RANDOM); no
+      longer aborts under set -e on BSD/older macOS where date +%s%N is
+      non-numeric
+
+-- Changes --
+
+[Change] lib/cmd/refresh.sh, state/rotate-work-output.sh — guard the
+         rdf-bus.sh source and fail with an actionable message instead of a
+         raw ENOENT when the bus helper is absent
 
 ## 3.1.2
 
