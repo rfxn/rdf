@@ -193,6 +193,10 @@ For EACH design question, follow this exact sequence:
 - Use the Explore subagent (Claude Code built-in) for codebase patterns
 - Check governance/reference docs for prior decisions on this topic
 - Look at how similar projects solve this problem
+- Probe external/runtime unknowns directly — binary paths, protocol/auth
+  shapes, install-environment footprints, live-system facts — with one-liner
+  checks or `/r-verify-claim`, and fold the results into the spec as facts
+  rather than assumptions
 
 **Step B: Present 3+ options with trade-offs.**
 

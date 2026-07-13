@@ -121,6 +121,8 @@ After the reviewer subagent returns:
   counts
 - **Sentinel mode**: highlight MUST-FIX findings; summarize verdict
   (APPROVE / MUST-FIX / CONCERNS)
+- To route each finding to a structured FIX / REBUT / DEFER response and
+  record an audit trail, run `/r-review-answer` (advisory — no merge gate)
 
 ## Constraints
 

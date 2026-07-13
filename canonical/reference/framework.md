@@ -82,6 +82,7 @@ Agent work products created during a session. Structured files in
 | `qa-phase-N-verdict-<SESSION_ID>.md` | qa | dispatcher |
 | `sentinel-N-<SESSION_ID>.md` | reviewer | dispatcher |
 | `sentinel-plan-final-<SESSION_ID>.md` | reviewer (via dispatcher) | dispatcher |
+| `sentinel-N-answer-<SESSION_ID>.md` | `/r-review-answer` | audit trail (advisory) |
 | `uat-phase-N-verdict-<SESSION_ID>.md` | uat | dispatcher |
 
 **Session Identity (`RDF_SESSION_ID`):** Set by the `rdf_session_init`

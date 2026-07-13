@@ -1,4 +1,24 @@
-# RDF 3.1.3 Release Notes
+# RDF 3.1.4 Release Notes
+
+## 3.1.4
+
+-- New Features --
+
+[New] canonical/commands/r-review-answer.md — route each sentinel/challenge
+      finding to a structured FIX / REBUT / DEFER response and write a
+      .rdf/work-output/sentinel-N-answer artifact; advisory only (no merge
+      gate); reuses /r-verify-claim for evidence and flags unanswered MUST-FIX
+      and evidence-free REBUT
+
+-- Changes --
+
+[Change] canonical/commands/r-spec.md §2.2 Step A — research now probes
+         external/runtime unknowns (binary paths, protocol/auth shapes,
+         install-environment footprints) via one-liners or /r-verify-claim,
+         folding results into the spec as facts rather than assumptions
+[Change] canonical/reference/framework.md, canonical/commands/r-review.md —
+         document the sentinel-N-answer artifact and point /r-review at
+         /r-review-answer
 
 ## 3.1.3
 
