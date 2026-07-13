@@ -1,0 +1,7 @@
+file	total	cmt_only	cmt_pct	banner	tombstone	hdr_ge4	hdr_max	cat_block	max_inline
+/root/admin/work/proj/pkg_lib/files/pkg_lib.sh	3209	542	16.9	0	0	27	25	25	83
+/root/admin/work/proj/alert_lib/files/alert_lib.sh	1175	251	21.4	0	0	28	17	17	62
+/root/admin/work/proj/geoip_lib/files/geoip_lib.sh	839	145	17.3	0	0	11	25	25	39
+/root/admin/work/proj/elog_lib/files/elog_lib.sh	1353	265	19.6	0	0	8	25	25	57
+/root/admin/work/proj/tlog_lib/files/tlog_lib.sh	784	182	23.2	0	0	11	17	17	54
+/root/admin/work/proj/tlog_lib/files/tlog	522	57	10.9	0	0	1	25	25	52
