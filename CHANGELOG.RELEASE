@@ -1,4 +1,36 @@
-# RDF 3.1.4 Release Notes
+# RDF 3.2.0 Release Notes
+
+## 3.2.0
+
+-- New Features --
+
+[New] tests/governance-contracts.bats — behavioral-contract eval harness: 13
+      contracts assert the evidence-discipline chain (engineer, dispatcher, qa,
+      reviewer, /r-review-answer, /r-verify-claim, orchestration default) still
+      lives in canonical source, so a prompt edit that silently drops a contract
+      fails CI instead of shipping; closes the eval-driven-development gap
+[New] lib/rdf_common.sh: rdf_hash_stdin — portable digest resolver (sha256sum →
+      shasum -a 256 → sha1sum); adapter.sh and doctor.sh route hashing through it
+[New] canonical/reference/simplicity-budget.md — earn-the-surface rule and
+      when-NOT-to-orchestrate doctrine (serial default; parallel fan-out is a
+      ~15x bet reserved for provably breadth-first work)
+
+-- Bug Fixes --
+
+[Fix] macOS/BSD portability completion (T1): rdf generate no longer aborts on
+      stock macOS (sha256sum-or-die → shasum -a 256 fallback); stat -c → BSD
+      stat -f (mtime/size no longer report 0), find -printf byte-sum fallback,
+      statusline md5sum → md5 -q, and templated mktemp across setup, clone,
+      half-clone, migrate, and test-half-clone
+
+-- Changes --
+
+[Change] canonical/agents/dispatcher.md — Execute defaults to the least
+         machinery; parallel only for provably-independent phases
+[Change] canonical/agents/reviewer.md — challenge-mode check 3: a plan adding a
+         command/agent/mode/profile/gate/rule must state the behavior it changes
+[Change] CLAUDE.md.ref (+ regenerated AGENTS.md) — Scope Discipline gains the
+         earn-the-surface rule
 
 ## 3.1.4
 
