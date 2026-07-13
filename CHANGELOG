@@ -25,6 +25,9 @@
       tests job; job-level if is evaluated before checkout, which GitHub
       rejects as a workflow-file error — CI had failed at startup (0 jobs) on
       every run since it was introduced in 3.0.5
+[Fix] tests/adapter.bats — post-generate doctor test now scopes to
+      content-drift; full doctor's sync/github/memory checks FAIL in a clean
+      CI checkout and would have failed the now-running suite
 
 -- Changes --
 

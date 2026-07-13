@@ -294,10 +294,9 @@ teardown() {
     run "${RDF_SRC}/bin/rdf" generate agents-md
     # generate may print informational output; exit code is what matters
     [ "$status" -eq 0 ]
-    run bash -c "'${RDF_SRC}/bin/rdf' doctor '${RDF_SRC}' 2>&1 | grep -c '\[FAIL\]' || true"
-    # grep -c prints 0 when no [FAIL] markers; || true ensures status 0 when FAIL-free
-    # Use [FAIL] pattern (not bare FAIL) to avoid matching the summary line
-    # Pass RDF_SRC explicitly so doctor checks the right project dir regardless of CWD
+    # Scope to content-drift: full doctor's sync/github/memory checks require a
+    # deployed environment (absent in CI); content-drift is the post-generate signal.
+    run bash -c "'${RDF_SRC}/bin/rdf' doctor '${RDF_SRC}' --scope content-drift 2>&1 | grep -c '\[FAIL\]' || true"
     [ "$status" -eq 0 ]
     [ "$output" = "0" ]
 }
