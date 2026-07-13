@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HALF_CLONE_SCRIPT="${SCRIPT_DIR}/half-clone-conversation.sh"
 
 # Test directory (isolated from real Claude data)
-TEST_DIR=$(mktemp -d)
+TEST_DIR=$(command mktemp -d "${TMPDIR:-/tmp}/rdf.XXXXXX")
 TEST_CLAUDE_DIR="${TEST_DIR}/.claude"
 TEST_PROJECTS_DIR="${TEST_CLAUDE_DIR}/projects"
 TEST_PROJECT_PATH="/test/project"

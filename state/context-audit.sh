@@ -24,7 +24,7 @@ _project_memory="${_claude_home}/projects/-${_project_slug}/memory"
 _project_settings="${_claude_home}/projects/-${_project_slug}"
 
 # Helper: file size in bytes (0 if missing)
-_fsize() { stat -c %s "$1" 2>/dev/null || echo 0; }
+_fsize() { stat -c %s "$1" 2>/dev/null || stat -f %z "$1" 2>/dev/null || echo 0; }
 
 # Helper: line count (0 if missing)
 _flines() { wc -l < "$1" 2>/dev/null || echo 0; }
@@ -279,10 +279,15 @@ _session_db_bytes=$(_fsize "$_session_db")
 _jsonl_total_bytes=0
 _jsonl_count=0
 if [[ -d "${_claude_home}/projects" ]]; then
-    # Use find -printf for byte sum: avoids per-file stat calls over thousands of JSONL files
     _jsonl_count="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d 2>/dev/null | wc -l)"
     _jsonl_count="${_jsonl_count##* }"
-    _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d -printf '%s\n' 2>/dev/null | awk '{s+=$1} END {print s+0}')"
+    # GNU find -printf sums bytes without per-file stat; BSD/macOS find has no
+    # -printf, so fall back to the portable _fsize helper per file.
+    if command find "${_claude_home}/projects" -maxdepth 0 -printf '' >/dev/null 2>&1; then
+        _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d -printf '%s\n' 2>/dev/null | awk '{s+=$1} END {print s+0}')"
+    else
+        _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" -type f 2>/dev/null | while IFS= read -r _f; do _fsize "$_f"; done | awk '{s+=$1} END {print s+0}')"
+    fi
 fi
 
 _history_file="${_claude_home}/history.jsonl"

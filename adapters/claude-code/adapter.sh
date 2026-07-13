@@ -11,16 +11,13 @@ _CC_OUTPUT_DIR="${_CC_ADAPTER_DIR}/output"
 _CC_AGENT_META="${_CC_ADAPTER_DIR}/agent-meta.json"
 _CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta-v3.json"
 
-# Resolve sha256sum or sha1sum, whichever is available first.
-# Prefers sha256sum (64-char hex); falls back to sha1sum (40-char hex).
-# Sets _CC_HASH_CMD to the binary name. Dies if neither present.
+# Fail fast if no SHA tool is available for .rdf-hash sidecar generation.
+# Hashing itself goes through rdf_hash_stdin (portable across GNU/macOS/BSD).
 _cc_resolve_hash_cmd() {
-    if command -v sha256sum >/dev/null 2>&1; then
-        _CC_HASH_CMD="sha256sum"
-    elif command -v sha1sum >/dev/null 2>&1; then
-        _CC_HASH_CMD="sha1sum"
-    else
-        rdf_die "neither sha256sum nor sha1sum found — cannot generate .rdf-hash sidecars"
+    if ! command -v sha256sum >/dev/null 2>&1 \
+        && ! command -v shasum >/dev/null 2>&1 \
+        && ! command -v sha1sum >/dev/null 2>&1; then
+        rdf_die "no SHA tool found (need sha256sum, shasum, or sha1sum) — cannot generate .rdf-hash sidecars"
     fi
 }
 
@@ -32,7 +29,7 @@ _cc_write_hash_sidecar() {
     local src="$1"
     local dst="$2"
     local hash
-    hash="$("$_CC_HASH_CMD" < "$src" | command awk '{print $1}')"
+    hash="$(rdf_hash_stdin < "$src")"
     printf '%s\n' "$hash" > "${dst}.rdf-hash"
 }
 

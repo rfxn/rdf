@@ -151,7 +151,7 @@ _audit_exists="false"
 
 if [[ -f "${_project_path}/MEMORY.md" ]]; then
     _memory_exists="true"
-    _mem_mtime="$(stat -c %Y "${_project_path}/MEMORY.md" 2>/dev/null || echo "0")"
+    _mem_mtime="$(stat -c %Y "${_project_path}/MEMORY.md" 2>/dev/null || stat -f %m "${_project_path}/MEMORY.md" 2>/dev/null || echo "0")"
     if [[ "$_mem_mtime" -gt 0 ]]; then
         _memory_age_hours=$(( ($(date +%s) - _mem_mtime) / 3600 ))
     fi
@@ -217,7 +217,7 @@ if [[ "$_full_mode" -eq 1 ]]; then
         _gov_dir="$(dirname "$_gov_path")"
         _governance_files="$(command find "$_gov_dir" -maxdepth 1 -type f -name '*.md' | wc -l)"
         _governance_files="${_governance_files##* }"
-        _gov_mtime="$(stat -c %Y "$_gov_path" 2>/dev/null || echo "0")"
+        _gov_mtime="$(stat -c %Y "$_gov_path" 2>/dev/null || stat -f %m "$_gov_path" 2>/dev/null || echo "0")"
         if [[ "$_gov_mtime" -gt 0 ]]; then
             _governance_age_hours=$(( ($(date +%s) - _gov_mtime) / 3600 ))
         fi

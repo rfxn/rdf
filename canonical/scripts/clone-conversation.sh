@@ -202,7 +202,7 @@ clone_conversation() {
     total_lines=$(wc -l < "$source_file")
     local uuid_count=$((total_lines * 3 + 100))  # Extra buffer
     local uuid_file
-    uuid_file=$(mktemp)
+    uuid_file=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     trap "rm -f '$uuid_file'" EXIT
     log_info "Pre-generating UUIDs..."
     pre_generate_uuids "$uuid_count" "$uuid_file"

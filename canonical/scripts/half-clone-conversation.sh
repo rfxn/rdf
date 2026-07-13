@@ -259,7 +259,7 @@ half_clone_conversation() {
     local lines_to_process=$(($(wc -l < "$source_file") - skip_count))
     local uuid_count=$((lines_to_process * 3 + 100))  # Extra buffer
     local uuid_file
-    uuid_file=$(mktemp)
+    uuid_file=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     trap "rm -f '$uuid_file'" EXIT
     log_info "Pre-generating UUIDs..."
     pre_generate_uuids "$uuid_count" "$uuid_file"

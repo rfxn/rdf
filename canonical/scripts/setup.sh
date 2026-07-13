@@ -158,7 +158,7 @@ else
         curl -sL "$REPO_URL/scripts/context-bar.sh" -o "$CLAUDE_DIR/scripts/context-bar.sh"
     fi
     chmod +x "$CLAUDE_DIR/scripts/context-bar.sh"
-    tmp=$(mktemp)
+    tmp=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     jq '.statusLine = {"type": "command", "command": "~/.claude/scripts/context-bar.sh"}' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo -e "${GREEN}[Configured]${NC} Status line"
@@ -172,7 +172,7 @@ if should_skip "4"; then
 elif json_has_key '.env.DISABLE_AUTOUPDATER'; then
     echo -e "${GREEN}[Already set]${NC} Disable auto-updates"
 else
-    tmp=$(mktemp)
+    tmp=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     jq '.env.DISABLE_AUTOUPDATER = "1"' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo -e "${GREEN}[Set]${NC} Disable auto-updates"
@@ -186,7 +186,7 @@ if should_skip "5"; then
 elif json_has_key '.env.ENABLE_TOOL_SEARCH'; then
     echo -e "${GREEN}[Already set]${NC} Lazy-load MCP tools"
 else
-    tmp=$(mktemp)
+    tmp=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     jq '.env.ENABLE_TOOL_SEARCH = "true"' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo -e "${GREEN}[Set]${NC} Lazy-load MCP tools"
@@ -200,7 +200,7 @@ if should_skip "6"; then
 elif json_has_permission 'Read(~/.claude)'; then
     echo -e "${GREEN}[Already set]${NC} Read(~/.claude) permission"
 else
-    tmp=$(mktemp)
+    tmp=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     jq '.permissions.allow = (.permissions.allow // []) + ["Read(~/.claude)"]' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo -e "${GREEN}[Added]${NC} Read(~/.claude) permission"
@@ -214,7 +214,7 @@ if should_skip "7"; then
 elif json_has_permission 'Read(//tmp/**)'; then
     echo -e "${GREEN}[Already set]${NC} Read(//tmp/**) permission"
 else
-    tmp=$(mktemp)
+    tmp=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     jq '.permissions.allow = (.permissions.allow // []) + ["Read(//tmp/**)"]' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo -e "${GREEN}[Added]${NC} Read(//tmp/**) permission"
@@ -228,7 +228,7 @@ if should_skip "8"; then
 elif json_has_key '.attribution'; then
     echo -e "${GREEN}[Already set]${NC} Disable attribution"
 else
-    tmp=$(mktemp)
+    tmp=$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")
     jq '.attribution = {"commit": "", "pr": ""}' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo -e "${GREEN}[Set]${NC} Disable attribution"

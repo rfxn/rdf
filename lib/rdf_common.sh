@@ -72,6 +72,16 @@ rdf_canonical_path() {
     return 0
 }
 
+# rdf_hash_stdin — emit hex digest of stdin; portable (sha256sum → shasum -a 256 →
+# sha1sum). Returns nonzero if no hashing tool exists. macOS ships shasum, not sha256sum.
+rdf_hash_stdin() {
+    if command -v sha256sum >/dev/null 2>&1; then command sha256sum | command awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then command shasum -a 256 | command awk '{print $1}'
+    elif command -v sha1sum >/dev/null 2>&1; then command sha1sum | command awk '{print $1}'
+    else return 1
+    fi
+}
+
 rdf_die() {
     echo "rdf: error: $*" >&2
     exit 1

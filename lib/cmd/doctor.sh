@@ -161,7 +161,7 @@ _check_memory() {
 
         # Staleness check: >7 days since modification
         local mem_mtime
-        mem_mtime="$(stat -c %Y "${path}/MEMORY.md" 2>/dev/null || echo "0")"
+        mem_mtime="$(stat -c %Y "${path}/MEMORY.md" 2>/dev/null || stat -f %m "${path}/MEMORY.md" 2>/dev/null || echo "0")"
         local now
         now="$(date +%s)"
         local age_days=0
@@ -235,7 +235,7 @@ _check_plan() {
         if [[ "$in_progress" -gt 0 ]]; then
             # Check file age — if PLAN has active phases but hasn't been touched in >7d
             local plan_mtime
-            plan_mtime="$(stat -c %Y "$f" 2>/dev/null || echo "0")"
+            plan_mtime="$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo "0")"
             local now
             now="$(date +%s)"
             local age_days=0
@@ -329,14 +329,12 @@ _check_content_drift() {
         return 0
     fi
 
-    # Resolve hash command — prefer sha256sum (64-char), fall back to sha1sum (40-char)
-    local hash_cmd=""
-    if command -v sha256sum >/dev/null 2>&1; then
-        hash_cmd="sha256sum"
-    elif command -v sha1sum >/dev/null 2>&1; then
-        hash_cmd="sha1sum"
-    else
-        _add_result "content-drift" "$_WARN" "neither sha256sum nor sha1sum found — cannot verify content drift"
+    # Hashing goes through rdf_hash_stdin (portable across GNU/macOS/BSD); bail with a
+    # WARN only if no SHA tool at all is present (macOS ships shasum, not sha256sum).
+    if ! command -v sha256sum >/dev/null 2>&1 \
+        && ! command -v shasum >/dev/null 2>&1 \
+        && ! command -v sha1sum >/dev/null 2>&1; then
+        _add_result "content-drift" "$_WARN" "no SHA tool found — cannot verify content drift"
         return 0
     fi
 
@@ -356,9 +354,9 @@ _check_content_drift() {
             # Strip YAML frontmatter: lines from line 1 (---) through the closing ---,
             # plus the one blank line separator, then hash the remainder.
             awk '/^---/{if(fm==0){fm=1;next}else{fm=2;skip=1;next}} fm==2&&skip{skip=0;next} fm!=1{print}' \
-                "$deployed" | "$hash_cmd" | command awk '{print $1}'
+                "$deployed" | rdf_hash_stdin
         else
-            "$hash_cmd" < "$deployed" | command awk '{print $1}'
+            rdf_hash_stdin < "$deployed"
         fi
     }
 

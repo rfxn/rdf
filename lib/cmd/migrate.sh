@@ -179,7 +179,7 @@ _update_excludes() {
     # Remove old RDF entries, preserve everything else
     local old_entries=(".claude/" "work-output/" "audit-output/" "REGR.md")
     local tmp
-    tmp="$(mktemp)"
+    tmp="$(command mktemp "${TMPDIR:-/tmp}/rdf.XXXXXX")"
     local removed=0
     while IFS= read -r line || [[ -n "$line" ]]; do
         local skip=0

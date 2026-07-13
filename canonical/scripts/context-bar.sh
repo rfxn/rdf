@@ -191,7 +191,7 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
             # Track cumulative cost at each turn for windowed average
             # Prefer XDG_RUNTIME_DIR (user-private tmpfs) over world-readable /tmp
             _cache_dir="${XDG_RUNTIME_DIR:-/tmp}"
-            cost_cache="${_cache_dir}/claude-cost-$(echo -n "$transcript_path" | md5sum | cut -c1-8).hist"
+            cost_cache="${_cache_dir}/claude-cost-$(printf '%s' "$transcript_path" | { md5sum 2>/dev/null || md5 -q 2>/dev/null; } | cut -c1-8).hist"
             last_recorded=0
             if [[ -f "$cost_cache" ]]; then
                 last_recorded=$(tail -1 "$cost_cache" | cut -d' ' -f1)
