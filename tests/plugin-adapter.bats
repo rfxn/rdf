@@ -6,7 +6,7 @@
 # Hermetic: fresh temp RDF home + temp output dir per test. Harness
 # pattern mirrors tests/adapter.bats.
 #
-# shellcheck disable=SC2154,SC2164,SC1090,SC1091,SC2016
+# shellcheck disable=SC2154,SC2164,SC1090,SC1091,SC2016,SC2088
 
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 export RDF_SRC
@@ -35,6 +35,8 @@ _generate_plugin() {
         cpl_generate_commands
         cpl_generate_agents
         cpl_generate_scripts
+        cpl_generate_hooks
+        cpl_stamp_plugin_version
     ' -- "$RDF_SRC" "$test_home" "$output_dir"
 }
 
@@ -82,6 +84,11 @@ setup() {
 }
 META
     printf '#!/usr/bin/env bash\necho fixture\n' > "${TEST_HOME}/canonical/scripts/fixture.sh"
+
+    cp "${RDF_SRC}/adapters/claude-code/hooks/hooks.json" \
+        "${TEST_HOME}/adapters/claude-code/hooks/hooks.json"
+    printf '{\n  "name": "rdf",\n  "version": "9.9.9"\n}\n' \
+        > "${TEST_HOME}/.claude-plugin/plugin.json"
 
     echo "0.0.0-test" > "${TEST_HOME}/VERSION"
     touch "${TEST_HOME}/.rdf-profiles"
@@ -147,6 +154,26 @@ teardown() {
 @test "plugin scripts are copied executable" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     [ -x "${_TEST_OUT}/scripts/fixture.sh" ]
+}
+
+@test "plugin hooks.json uses CLAUDE_PLUGIN_ROOT for all 4 script refs" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    run grep -c 'CLAUDE_PLUGIN_ROOT' "${_TEST_OUT}/hooks.json"
+    [ "$output" -eq 4 ]
+    run grep '~/.claude' "${_TEST_OUT}/hooks.json"
+    [ "$status" -ne 0 ]
+}
+
+@test "plugin hooks.json preserves prompt-type hooks untouched" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    diff <(jq -S '.hooks.PreCompact' "${_TEST_HOME}/adapters/claude-code/hooks/hooks.json") \
+         <(jq -S '.hooks.PreCompact' "${_TEST_OUT}/hooks.json")
+}
+
+@test "generate stamps plugin.json version from VERSION" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    run jq -r .version "${_TEST_HOME}/.claude-plugin/plugin.json"
+    [ "$output" = "0.0.0-test" ]
 }
 
 @test "generate claude-plugin target is wired into cmd_generate" {

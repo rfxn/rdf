@@ -155,6 +155,51 @@ cpl_generate_scripts() {
     rdf_log "generated ${count} script files"
 }
 
+# Transform hooks.json: every "command" value under ~/.claude/scripts/
+# (ANYWHERE in the document — includes top-level statusLine, a sibling
+# of "hooks") -> ${CLAUDE_PLUGIN_ROOT}-relative path. Prompt-type hooks
+# pass through untouched. walk/1 is defined inline for jq 1.5 compat
+# (builtin only since 1.6; local def harmlessly shadows it on 1.6+).
+cpl_generate_hooks() {
+    local src="${RDF_ADAPTERS}/claude-code/hooks/hooks.json"
+    local dst="${_CPL_OUTPUT_DIR}/hooks.json"
+    # shellcheck disable=SC2016  # literal ${CLAUDE_PLUGIN_ROOT} — expanded by the plugin loader, not this shell
+    local pfx='"${CLAUDE_PLUGIN_ROOT}"/adapters/claude-plugin/output/scripts'
+
+    rdf_require_file "$src" "hooks.json template"
+    jq --arg pfx "$pfx" '
+        def walk(f):
+            . as $in
+            | if type == "object" then
+                  reduce keys[] as $key ({}; . + {($key): ($in[$key] | walk(f))}) | f
+              elif type == "array" then map(walk(f)) | f
+              else f
+              end;
+        walk(
+            if type == "object" and (.command? | type == "string")
+               and (.command | startswith("~/.claude/scripts/"))
+            then .command = ($pfx + (.command | ltrimstr("~/.claude/scripts")))
+            else .
+            end
+        )
+    ' "$src" > "$dst"
+    rdf_log "generated hooks.json (plugin-root paths)"
+}
+
+# Stamp plugin.json version from VERSION. Plugin users only receive
+# updates when this field changes — stamping makes the bump automatic
+# on every generate after a version change.
+cpl_stamp_plugin_version() {
+    local manifest="${RDF_HOME}/.claude-plugin/plugin.json"
+    local tmp
+
+    rdf_require_file "$manifest" "plugin.json"
+    tmp="$(command mktemp)"
+    jq --arg v "$RDF_VERSION" '.version = $v' "$manifest" > "$tmp"
+    command mv "$tmp" "$manifest"
+    rdf_log "stamped plugin.json version: ${RDF_VERSION}"
+}
+
 # Full plugin generation pipeline
 cpl_generate_all() {
     rdf_log "generating Claude Plugin adapter output..."
@@ -173,6 +218,8 @@ cpl_generate_all() {
     cpl_generate_commands
     cpl_generate_agents
     cpl_generate_scripts
+    cpl_generate_hooks
+    cpl_stamp_plugin_version
 
     _CPL_OUTPUT_DIR="$_output_final"
     command rm -rf "$_output_old"
