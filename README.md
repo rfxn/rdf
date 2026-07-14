@@ -10,7 +10,7 @@
 
 RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Gemini CLI, Codex), encoding project conventions, quality gates, and domain expertise into typed agent personas -- so the AI writes code that actually follows your rules.
 
-> **Drop it on any repo.** `/r-init` auto-detects your stack and scaffolds governance, quality gates, and typed agent personas -- no rfxn context required. Battle-tested on production security tooling (APF, LMD, BFD), built to generalize. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context-window management. *Issues and PRs welcome -- support is best-effort and community-driven.*
+> **Drop it on any repo.** `/r-init` auto-detects your stack and scaffolds governance, quality gates, and typed agent personas -- no rfxn context required. Battle-tested on production security tooling (APF, LMD, BFD), built to generalize. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context-window management. *Issues and PRs welcome -- support is best-effort and community-driven.* **[Quickstart: your repo in 5 minutes ->](docs/quickstart.md)**
 
 ---
 
@@ -47,6 +47,9 @@ That's it. Your AI agent now has project-specific governance, quality gates, and
 ```bash
 bin/rdf doctor                        # health check: artifacts, drift, sync
 ```
+
+New to RDF? The [5-minute quickstart](docs/quickstart.md) walks this
+path on a plain Flask project, with real output at every step.
 
 ---
 
