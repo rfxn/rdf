@@ -14,6 +14,14 @@ RDF is a convention governance layer for AI coding agents. It sits between the h
 
 ---
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Real session: clone, generate, deploy, init a Flask project, doctor — 0 FAIL" width="100%"/>
+</p>
+
+*Real recorded session: install RDF, initialize a plain Flask project, verify health — 42 seconds, no edits.*
+
+---
+
 ## 1. How It Works
 
 <p align="center">
