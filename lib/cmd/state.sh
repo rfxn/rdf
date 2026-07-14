@@ -16,8 +16,8 @@ Arguments:
 
 Examples:
   rdf state
-  rdf state /root/admin/work/proj/brute-force-detection
-  rdf state /root/admin/work/proj/rdf | jq .version
+  rdf state ~/projects/my-project
+  rdf state ~/projects/rdf | jq .version
 USAGE
 }
 

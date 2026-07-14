@@ -27,11 +27,11 @@ Options:
   --dry-run             Show what would be created without writing
 
 Examples:
-  rdf init /root/admin/work/proj/my-project
-  rdf init /root/admin/work/proj/my-project --type shell --github
-  rdf init /root/admin/work/proj/my-project --type rust,infrastructure
-  rdf init /root/admin/work/proj --batch --type minimal
-  rdf init /root/admin/work/proj/inactive --batch --dry-run
+  rdf init ~/projects/my-project
+  rdf init ~/projects/my-project --type shell --github
+  rdf init ~/projects/my-project --type rust,infrastructure
+  rdf init ~/projects --batch --type minimal
+  rdf init ~/projects/inactive --batch --dry-run
 USAGE
 }
 

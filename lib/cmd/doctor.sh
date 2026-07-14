@@ -23,7 +23,7 @@ Options:
 
 Examples:
   rdf doctor
-  rdf doctor /root/admin/work/proj/brute-force-detection
+  rdf doctor ~/projects/my-project
   rdf doctor --all
   rdf doctor --scope github
   rdf doctor --all --scope memory
@@ -470,25 +470,25 @@ _check_sync() {
         _add_result "sync" "$_OK" "command count matches (${canon_cmds})"
     fi
 
-    # Check symlink health: /root/.claude/* -> output/
+    # Check symlink health: ~/.claude/* -> output/
     local link_ok=0
     local link_fail=0
     for target in commands agents scripts; do
-        local link="/root/.claude/${target}"
+        local link="${HOME}/.claude/${target}"
         if [[ -L "$link" ]]; then
             local link_dest
             link_dest="$(rdf_canonical_path "$link")"
             if [[ "$link_dest" == "${output_dir}/${target}" ]]; then
                 link_ok=$((link_ok + 1))
             else
-                _add_result "sync" "$_WARN" "/root/.claude/${target} points to wrong target: ${link_dest}"
+                _add_result "sync" "$_WARN" "${link} points to wrong target: ${link_dest}"
                 link_fail=$((link_fail + 1))
             fi
         elif [[ -d "$link" ]]; then
-            _add_result "sync" "$_WARN" "/root/.claude/${target} is a directory, not a symlink"
+            _add_result "sync" "$_WARN" "${link} is a directory, not a symlink"
             link_fail=$((link_fail + 1))
         else
-            _add_result "sync" "$_WARN" "/root/.claude/${target} missing"
+            _add_result "sync" "$_WARN" "${link} missing"
             link_fail=$((link_fail + 1))
         fi
     done

@@ -22,7 +22,7 @@ Codex, or AGENTS.md environments.
   and governance docs live as tool-agnostic markdown in `canonical/`. Tool-specific
   adapters generate deployment artifacts from canonical sources. Development happens
   in `canonical/` -- deployed copies are generated output, not editable originals.
-- **RDF is authoritative:** The repo is the source of truth. `/root/.claude/` and
+- **RDF is authoritative:** The repo is the source of truth. `~/.claude/` and
   other tool-specific directories are deployment targets populated by `rdf generate`.
   Emergency edits to deployed copies are pulled back via `rdf sync`.
 - **Governance-driven agent behavior:** Six universal agents (planner, dispatcher,
@@ -88,7 +88,7 @@ rdf/                                 # Repository root
 |       |-- migrate.sh               # rdf migrate (version migration helpers)
 |       |-- state.sh                 # rdf state [path] -> JSON to stdout
 |       |-- refresh.sh               # rdf refresh [path] [--scope memory|plan|github|all]
-|       |-- sync.sh                  # rdf sync -> pull /root/.claude/ back to canonical
+|       |-- sync.sh                  # rdf sync -> pull ~/.claude/ back to canonical
 |       +-- github.sh                # rdf github <setup|sync-labels|ecosystem-init|ecosystem-add>
 |
 |-- canonical/                       # Tool-agnostic framework content

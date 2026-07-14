@@ -26,7 +26,7 @@ USAGE
 }
 
 # Convert absolute path to CC auto-memory path-encoded directory name
-# /root/admin/work/proj/rdf → -root-admin-work-proj-rdf
+# /home/user/projects/rdf → -home-user-projects-rdf
 _encode_project_path() {
     local abs_path="$1"
     local encoded="${abs_path//\//-}"
@@ -129,7 +129,7 @@ _setup_memory_symlink() {
     local rdf_memory="${project_path}/.rdf/memory"
     local encoded
     encoded="$(_encode_project_path "$project_path")"
-    local cc_memory="/root/.claude/projects/${encoded}/memory"
+    local cc_memory="${HOME}/.claude/projects/${encoded}/memory"
 
     if [[ -L "$rdf_memory" ]]; then
         rdf_log "  [—] .rdf/memory/ symlink already exists"

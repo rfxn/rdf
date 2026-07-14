@@ -37,7 +37,7 @@ RDF ${RDF_VERSION} -- rfxn Development Framework
 Commands:
   generate   Build tool-specific files from canonical sources
   deploy     Deploy generated output to tool destinations
-  sync       Pull /root/.claude/ changes back to canonical
+  sync       Pull ~/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
   github     GitHub Issues + Projects integration
   dispatch   Generate mode-aware agent dispatch instructions

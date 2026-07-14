@@ -8,7 +8,7 @@ _sync_usage() {
     cat <<'USAGE'
 Usage: rdf sync [options]
 
-Pull changes from /root/.claude/ back to canonical sources.
+Pull changes from ~/.claude/ back to canonical sources.
 Strips CC-specific YAML frontmatter from agent files.
 
 Use this after making emergency edits to deployed files.

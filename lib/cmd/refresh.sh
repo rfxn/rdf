@@ -32,7 +32,7 @@ Options:
 
 Examples:
   rdf refresh
-  rdf refresh /root/admin/work/proj/brute-force-detection
+  rdf refresh ~/projects/my-project
   rdf refresh --scope memory
   rdf refresh --scope github --dry-run
   rdf refresh --scope all
@@ -40,7 +40,7 @@ USAGE
 }
 
 # Resolve the MEMORY.md path for a given project
-# Claude Code auto-memory lives under /root/.claude/projects/ with path-encoded dirs
+# Claude Code auto-memory lives under ~/.claude/projects/ with path-encoded dirs
 # Args: $1 = absolute project path
 # Output: absolute path to MEMORY.md (may not exist yet)
 _resolve_memory_path() {

@@ -17,7 +17,7 @@ generator. There are two kinds of source:
 | Framework tooling (CLI, libs, state helpers) | `bin/`, `lib/`, `state/` directly | — |
 | Tests | `tests/*.bats` | `make -C tests test` |
 
-**Never edit generated output** (`/root/.claude/…`, `adapters/*/output/`). It is
+**Never edit generated output** (`~/.claude/…`, `adapters/*/output/`). It is
 overwritten on every `rdf generate`. If you change anything under `canonical/`,
 run `bin/rdf generate claude-code` in the same change so the deployed tree and
 your source stay in sync — `bin/rdf doctor` must report zero FAIL before you
