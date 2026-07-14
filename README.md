@@ -1,5 +1,6 @@
 # RDF -- rfxn Development Framework
 
+[![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
@@ -123,6 +124,7 @@ deployed edits  <--   rdf sync     <--   (emergency path)
 | `/r-verify` | qa | QA verification against diff or scope |
 | `/r-test` | uat | User acceptance testing from end-user persona |
 | `/r-review` | reviewer | Adversarial review in challenge or sentinel mode |
+| `/r-review-answer` | -- | Route review findings to FIX/REBUT/DEFER with audit-trail artifact |
 | `/r-verify-claim` | -- | Falsifiable claim verification (5 classes) — invoked by reviewer on MUST-FIX assertions |
 | `/r-audit` | 3x reviewer + qa | Full codebase audit across all domains |
 | `/r-audit-slop` | 3x engineer + sentinel | Discovery-first AI slop audit with FP calibration |
@@ -130,7 +132,7 @@ deployed edits  <--   rdf sync     <--   (emergency path)
 | `/r-vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
 | `/r-tasks` | -- | Read-only task list status -- check progress of long-running commands |
 
-### 4.3. Utility Commands (15)
+### 4.3. Utility Commands (16)
 
 | Command | Purpose |
 |---------|---------|
@@ -149,6 +151,7 @@ deployed edits  <--   rdf sync     <--   (emergency path)
 | `/r-util-code-modernize` | Codebase modernization assessment |
 | `/r-util-test-dedup` | Find duplicate/overlapping tests |
 | `/r-util-test-scope` | Test tier recommendation + impact mapping |
+| `/r-util-claudemd-review` | CLAUDE.md prose-drift + conversation-driven improvement review |
 
 ### 4.4. `rdf` CLI
 
@@ -372,7 +375,7 @@ rdf/
 |                                      #   state, refresh, sync, github, deploy, dispatch, migrate
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
-|   |-- commands/                      # 35 commands (/r- namespace)
+|   |-- commands/                      # 37 commands (/r- namespace)
 |   |-- scripts/                       # 12 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
@@ -546,6 +549,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 35 commands -- 12 scripts -- 11 profiles -- 4 adapters -- 7 modes**
+**6 agents -- 37 commands -- 12 scripts -- 11 profiles -- 4 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>
