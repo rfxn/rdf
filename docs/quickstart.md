@@ -19,6 +19,12 @@ bin/rdf doctor
 # expect: 0 FAIL — WARNs are fine on a fresh install
 ```
 
+**Prefer a one-command install?** RDF is also a Claude Code plugin:
+`/plugin marketplace add rfxn/rdf` then `/plugin install rdf@rdf`.
+Plugin commands are namespaced (`/rdf:r-start` instead of `/r-start`);
+everything else is identical. Hooks and the status line require `jq`
+on your PATH in both modes.
+
 ## 2. Initialize your project
 
 Point `rdf init` at any repo. It auto-detects the stack and scaffolds

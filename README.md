@@ -35,6 +35,13 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 ## 2. Quick Start
 
 ```bash
+# ── Option A: plugin install (consumer — commands namespaced /rdf:r-*) ──
+#   In Claude Code:
+#     /plugin marketplace add rfxn/rdf
+#     /plugin install rdf@rdf
+#   Note: hooks + status line require jq on PATH.
+
+# ── Option B: symlink deploy (contributor/power mode — bare /r-*) ──
 # 1. Clone
 git clone https://github.com/rfxn/rdf.git && cd rdf
 

@@ -27,11 +27,11 @@ Make "drop it on any repo" true for someone with zero rfxn context:
 RDF ships a `plugin.json` today; the goal is full plugin-marketplace
 citizenship:
 
-- [ ] Installable via `/plugin marketplace add rfxn/rdf` +
+- [x] Installable via `/plugin marketplace add rfxn/rdf` +
       `/plugin install rdf@rdf` (repo as its own marketplace)
-- [ ] Design pass on command namespacing (`/r-start` vs `/rdf:r-start`)
+- [x] Design pass on command namespacing (`/r-start` vs `/rdf:r-start`)
       and dual install modes (symlink deploy vs plugin install)
-- [ ] `claude plugin validate --strict` in CI
+- [x] `claude plugin validate --strict` in CI
 - [ ] Submission to the community plugin marketplace
 
 ## Later — ecosystem
