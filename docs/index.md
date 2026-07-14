@@ -1,6 +1,14 @@
+---
+title: Home
+nav_order: 1
+permalink: /
+---
+
 # RDF — rfxn Development Framework
+{: .fs-8 }
 
 **Governance-driven AI development for teams that ship to production.**
+{: .fs-5 .fw-300 }
 
 RDF is a convention governance layer for AI coding agents. It sits
 between you and the AI runtime (Claude Code, Gemini CLI, Codex),
@@ -8,38 +16,86 @@ encoding project conventions, quality gates, and domain expertise into
 typed agent personas — so the AI writes code that actually follows your
 rules.
 
-**6 agents · 37 commands · 11 profiles · 4 adapters · 7 modes**
+[![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
+[![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](https://github.com/rfxn/rdf/blob/main/LICENSE)
 
-## Start here
+**6 agents · 37 commands · 11 profiles · 5 adapters · 7 modes**
 
-- **[Quickstart — your repo in 5 minutes](quickstart.md)**
-- [Demo walkthrough — a real production change, spec to ship](demo-walkthrough.md)
-- [Full README — commands, architecture, configuration](https://github.com/rfxn/rdf#readme)
-- [Roadmap](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
+[Quickstart — 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
+[View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }
+
+---
+
+![Real recorded session: clone, generate, deploy, init a Flask project, doctor — 0 FAIL](assets/demo.gif)
+
+*Real recorded session — install RDF, initialize a plain Flask project,
+verify health. 42 seconds, no edits, ends at `0 FAIL`.*
+
+## Install
+
+**As a Claude Code plugin** (one command, commands namespaced `/rdf:r-*`):
+
+```
+/plugin marketplace add rfxn/rdf
+/plugin install rdf@rdf
+```
+
+**Or symlink deploy** (contributor mode, bare `/r-*` commands):
+
+```bash
+git clone https://github.com/rfxn/rdf.git ~/rdf && cd ~/rdf
+bin/rdf generate claude-code && bin/rdf deploy claude-code
+bin/rdf init ~/projects/my-app     # auto-detects your stack
+```
+
+Hooks and the status line require `jq` on your PATH in both modes.
+Full walkthrough with real output: [Quickstart](quickstart).
+
+## The pipeline
+
+![RDF Pipeline: spec, plan, build, ship](assets/pipeline.svg)
+
+Four commands take a change from idea to release — `/r-spec` (research +
+adversarial design review), `/r-plan` (execution-grade decomposition),
+`/r-build` (TDD with quality gates), `/r-ship` (preflight → publish).
+Small change? Skip the pipeline — governance applies to normal sessions
+too.
 
 ## Why RDF
 
-- **Governance as code** — conventions live in versioned files the AI
-  reads every session, not in your head or a wiki
-- **Adversarial quality gates** — reviewer agents challenge specs before
-  implementation and audit code after it, with scope-derived depth
-- **Convention inheritance** — workspace → project → profile layering;
-  one edit propagates everywhere
-- **Multi-adapter** — author governance once, deploy to Claude Code,
-  Gemini CLI, Codex, or plain AGENTS.md
+| | |
+|---|---|
+| **Governance as code** | Conventions live in versioned files the AI reads every session — not in your head or a wiki |
+| **Adversarial quality gates** | Reviewer agents challenge specs before implementation and audit code after it, with scope-derived depth |
+| **Convention inheritance** | Workspace → project → profile layering; one edit propagates everywhere |
+| **Multi-adapter** | Author governance once; deploy to Claude Code (symlink or plugin), Gemini CLI, Codex, or plain AGENTS.md |
 
-## Design history
+## Proven on production infrastructure
 
-Every major RDF release ships its design documents. The
-[spec archive](https://github.com/rfxn/rdf/tree/main/docs/specs) holds
-24 of them — research, trade-offs, and rejected alternatives included.
+RDF governs the development of security tooling running on
+**~350,000 servers** (APF, LMD, BFD). Measured across the RDF era
+(March–July 2026, derived from session logs and git history):
+
+- **518 governed sessions** across 30+ projects, **2,513 commits** landed
+- **BFD's first release in ~11.6 years**; APF revived after four
+  zero-commit years; LMD from 0 commits (2024) to 171 (mid-2026)
+- **6,871 BATS tests** across 13 governed repos — the flagship tools had
+  zero test coverage before the 2026 modernization
+- **19 RDF releases in 19 weeks**, every one with committed design specs
+  (25) and implementation plans (22) — we design in the open:
+  [spec archive](https://github.com/rfxn/rdf/tree/main/docs/specs)
+
+## Docs
+
+- **[Quickstart — your repo in 5 minutes](quickstart)**
+- [Demo walkthrough — a real production change, spec to ship](demo-walkthrough)
+- [Full command reference (README)](https://github.com/rfxn/rdf#4-usage)
+- [Roadmap](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
 
 ## Get involved
 
 [Issues](https://github.com/rfxn/rdf/issues) ·
 [Discussions](https://github.com/rfxn/rdf/discussions) ·
-[Contributing guide](https://github.com/rfxn/rdf/blob/main/CONTRIBUTING.md) ·
+[Contributing](https://github.com/rfxn/rdf/blob/main/CONTRIBUTING.md) ·
 [Security policy](https://github.com/rfxn/rdf/blob/main/SECURITY.md)
-
-RDF is GPL-2.0, built by [R-fx Networks](https://github.com/rfxn) — the
-team behind APF, LMD (Linux Malware Detect), and BFD.

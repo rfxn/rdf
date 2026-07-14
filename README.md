@@ -3,7 +3,7 @@
 [![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
-![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
+![Adapters](https://img.shields.io/badge/adapters-5-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
 **Governance-driven AI development for teams that ship to production.**
@@ -445,15 +445,22 @@ Daily check-ins from government (NIST, NOAA, NIH), defense (NATO CCDCOE), univer
 
 **What goes wrong when code is wrong:** A false positive in LMD quarantines legitimate files on every server that pulls the update. A regression in APF rule parsing locks administrators out of their own servers. A threshold change in BFD floods block lists or stops detecting real attacks. These are security tools -- a regression changes the security posture of hundreds of thousands of machines.
 
+### Measured impact (2026-03 → 2026-07, derived from session logs + git history)
+
 | Metric | Value |
 |--------|-------|
-| Active servers | ~350,000 |
-| Total commits (governed) | 1,686 |
-| Production code | 31,176 lines |
-| Test code (BATS) | 70,965 lines |
-| Test cases | 5,764 |
-| Governance framework | 14,204 lines |
-| Net code churn | +271K / -111K lines |
+| Active servers running governed tools | ~350,000 |
+| Governed work sessions logged | 518 across 30+ projects (~17 weeks) |
+| Commits landed portfolio-wide | 2,513 (git-verified) |
+| BATS test cases across governed repos | 6,871 (13 repos) |
+| RDF releases | 19 in 19 weeks, each with committed specs (25) and plans (22) |
+
+**Dormant projects, revived.** The clearest signal in the data:
+
+- **BFD** shipped v2.0.1 in March 2026 — its **first release in ~11.6 years** (v1.5-2 was 2014)
+- **APF** went from **four consecutive zero-commit years** (2022-2025) to 169 commits and the v2.0.2 release
+- **LMD** went 0 commits (2024) → 19 (2025) → **171 by mid-2026**, shipping the first 2.x release in project history
+- Testing culture from zero: the three flagship tools had **no test directories** before the 2026 modernization; today they carry 3,869 CI-run BATS tests between them
 
 ### Project Ecosystem
 
@@ -567,6 +574,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 37 commands -- 12 scripts -- 11 profiles -- 4 adapters -- 7 modes**
+**6 agents -- 37 commands -- 12 scripts -- 11 profiles -- 5 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

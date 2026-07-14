@@ -1,3 +1,8 @@
+---
+title: Demo Walkthrough
+nav_order: 3
+---
+
 # RDF Workflow Demo
 
 A walkthrough of the spec-plan-build-ship pipeline using a real

@@ -36,7 +36,7 @@ citizenship:
 
 ## Later — ecosystem
 
-- [ ] Deep-dive writeups from the spec archive (`docs/specs/` — 24 design
+- [ ] Deep-dive writeups from the spec archive (`docs/specs/` — design
       documents from real releases)
 - [ ] Community profile packs (language/domain governance beyond the
       built-in 11)

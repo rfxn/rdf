@@ -1,3 +1,8 @@
+---
+title: Quickstart
+nav_order: 2
+---
+
 # Quickstart — RDF on Your Repo in 5 Minutes
 
 No rfxn context required. You need `git`, `bash` 4.1+, `jq`, and an AI

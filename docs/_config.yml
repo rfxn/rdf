@@ -1,3 +1,18 @@
 title: RDF — rfxn Development Framework
 description: Governance-driven AI development — convention enforcement, quality gates, and typed agent personas for Claude Code, Gemini CLI, and Codex
-theme: jekyll-theme-midnight
+remote_theme: just-the-docs/just-the-docs
+color_scheme: dark
+search_enabled: true
+heading_anchors: true
+aux_links:
+  "GitHub":
+    - "https://github.com/rfxn/rdf"
+  "Releases":
+    - "https://github.com/rfxn/rdf/releases"
+nav_external_links:
+  - title: Full README
+    url: https://github.com/rfxn/rdf#readme
+footer_content: "GPL-2.0 · R-fx Networks — the team behind APF, LMD, and BFD"
+exclude:
+  - specs/
+  - plans/

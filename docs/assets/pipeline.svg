@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 340" font-family="ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace" font-size="13">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="340" rx="8" fill="url(#bg)"/>
+  <rect x="1" y="1" width="958" height="338" rx="7" fill="none" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="480" y="32" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="bold">spec  ──  plan  ──  build  ──  ship</text>
+  <text x="480" y="50" text-anchor="middle" fill="#7d8590" font-size="11">The RDF development pipeline</text>
+
+  <!-- Stage 1: Spec -->
+  <rect x="25" y="70" width="190" height="170" rx="6" fill="#161b22" stroke="#a371f7" stroke-width="1.5"/>
+  <rect x="25" y="70" width="190" height="28" rx="6" fill="#a371f7" fill-opacity="0.15"/>
+  <text x="120" y="89" text-anchor="middle" fill="#a371f7" font-weight="bold" font-size="14">/r-spec</text>
+  <text x="40" y="115" fill="#7d8590" font-size="11">1. Discover</text>
+  <text x="40" y="133" fill="#7d8590" font-size="11">2. Brainstorm + Research</text>
+  <text x="40" y="151" fill="#7d8590" font-size="11">3. Write Spec</text>
+  <text x="40" y="169" fill="#7d8590" font-size="11">4. Challenge Review</text>
+  <line x1="40" y1="182" x2="200" y2="182" stroke="#30363d" stroke-width="0.5"/>
+  <text x="40" y="200" fill="#e6edf3" font-size="11">Agent: planner (opus)</text>
+  <text x="40" y="218" fill="#58a6ff" font-size="11">Output: docs/specs/*.md</text>
+
+  <!-- Arrow 1: Spec → Plan -->
+  <polygon points="225,143 255,155 225,167" fill="#a371f7" fill-opacity="0.6" stroke="#a371f7" stroke-width="1" filter="url(#glow)"/>
+
+  <!-- Stage 2: Plan -->
+  <rect x="265" y="70" width="190" height="170" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.5"/>
+  <rect x="265" y="70" width="190" height="28" rx="6" fill="#3fb950" fill-opacity="0.15"/>
+  <text x="360" y="89" text-anchor="middle" fill="#3fb950" font-weight="bold" font-size="14">/r-plan</text>
+  <text x="280" y="115" fill="#7d8590" font-size="11">1. Read Spec + Codebase</text>
+  <text x="280" y="133" fill="#7d8590" font-size="11">2. Decompose into Phases</text>
+  <text x="280" y="151" fill="#7d8590" font-size="11">3. Write PLAN.md</text>
+  <text x="280" y="169" fill="#7d8590" font-size="11">4. Challenge Review</text>
+  <line x1="280" y1="182" x2="440" y2="182" stroke="#30363d" stroke-width="0.5"/>
+  <text x="280" y="200" fill="#e6edf3" font-size="11">Agent: planner (opus)</text>
+  <text x="280" y="218" fill="#58a6ff" font-size="11">Output: PLAN.md</text>
+
+  <!-- Arrow 2: Plan → Build -->
+  <polygon points="465,143 495,155 465,167" fill="#3fb950" fill-opacity="0.6" stroke="#3fb950" stroke-width="1" filter="url(#glow)"/>
+
+  <!-- Stage 3: Build -->
+  <rect x="505" y="70" width="190" height="170" rx="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+  <rect x="505" y="70" width="190" height="28" rx="6" fill="#58a6ff" fill-opacity="0.15"/>
+  <text x="600" y="89" text-anchor="middle" fill="#58a6ff" font-weight="bold" font-size="14">/r-build</text>
+  <text x="520" y="115" fill="#7d8590" font-size="11">1. Dispatch phases</text>
+  <text x="520" y="133" fill="#7d8590" font-size="11">2. Engineer builds (TDD)</text>
+  <text x="520" y="151" fill="#7d8590" font-size="11">3. QA verifies</text>
+  <text x="520" y="169" fill="#7d8590" font-size="11">4. Reviewer audits</text>
+  <line x1="520" y1="182" x2="680" y2="182" stroke="#30363d" stroke-width="0.5"/>
+  <text x="520" y="200" fill="#e6edf3" font-size="11">Agents: dispatcher + team</text>
+  <text x="520" y="218" fill="#58a6ff" font-size="11">Output: committed code</text>
+
+  <!-- Arrow 3: Build → Ship -->
+  <polygon points="705,143 735,155 705,167" fill="#58a6ff" fill-opacity="0.6" stroke="#58a6ff" stroke-width="1" filter="url(#glow)"/>
+
+  <!-- Stage 4: Ship -->
+  <rect x="745" y="70" width="190" height="170" rx="6" fill="#161b22" stroke="#f0883e" stroke-width="1.5"/>
+  <rect x="745" y="70" width="190" height="28" rx="6" fill="#f0883e" fill-opacity="0.15"/>
+  <text x="840" y="89" text-anchor="middle" fill="#f0883e" font-weight="bold" font-size="14">/r-ship</text>
+  <text x="760" y="115" fill="#7d8590" font-size="11">1. Preflight</text>
+  <text x="760" y="133" fill="#7d8590" font-size="11">2. Verification</text>
+  <text x="760" y="151" fill="#7d8590" font-size="11">3. Release Prep</text>
+  <text x="760" y="169" fill="#7d8590" font-size="11">4. Publish</text>
+  <line x1="760" y1="182" x2="920" y2="182" stroke="#30363d" stroke-width="0.5"/>
+  <text x="760" y="200" fill="#e6edf3" font-size="11">Agents: qa + reviewer</text>
+  <text x="760" y="218" fill="#58a6ff" font-size="11">Output: PR + tag</text>
+
+  <!-- Quality Gates Bar -->
+  <rect x="25" y="260" width="910" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="480" y="280" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="bold">Quality Gates  —  scope-derived depth</text>
+
+  <circle cx="75" cy="300" r="4" fill="#3fb950"/>
+  <text x="92" y="304" fill="#3fb950" font-size="11">G1: Self-report</text>
+
+  <circle cx="290" cy="300" r="4" fill="#d2a8ff"/>
+  <text x="307" y="304" fill="#d2a8ff" font-size="11">G2: QA verification</text>
+
+  <circle cx="510" cy="300" r="4" fill="#ffa657"/>
+  <text x="527" y="304" fill="#ffa657" font-size="11">G3: Reviewer sentinel</text>
+
+  <circle cx="730" cy="300" r="4" fill="#79c0ff"/>
+  <text x="747" y="304" fill="#79c0ff" font-size="11">G4: UAT acceptance</text>
+</svg>
