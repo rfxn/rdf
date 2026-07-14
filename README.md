@@ -1,7 +1,7 @@
 # RDF -- rfxn Development Framework
 
-![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)
-![Version](https://img.shields.io/badge/version-3.1.2-green.svg)
+[![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
 ![Adapters](https://img.shields.io/badge/adapters-4-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
@@ -9,7 +9,7 @@
 
 RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Gemini CLI, Codex), encoding project conventions, quality gates, and domain expertise into typed agent personas -- so the AI writes code that actually follows your rules.
 
-> **This is not a drop-in framework.** RDF is purpose-built for the rfxn ecosystem and shared as a reference for what disciplined AI-assisted development looks like. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context window management.
+> **Drop it on any repo.** `/r-init` auto-detects your stack and scaffolds governance, quality gates, and typed agent personas -- no rfxn context required. Battle-tested on production security tooling (APF, LMD, BFD), built to generalize. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context-window management. *Issues and PRs welcome -- support is best-effort and community-driven.*
 
 ---
 
