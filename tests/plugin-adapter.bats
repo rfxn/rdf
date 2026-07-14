@@ -227,12 +227,23 @@ _run_install_mode_check() {
     mkdir -p "${FIX_HOME}/.claude/plugins"
     printf '{"version":1,"plugins":{"rdf@rdf":[{"scope":"user"}]}}\n' \
         > "${FIX_HOME}/.claude/plugins/installed_plugins.json"
+    # Hermetic RDF_HOME: cc output is NOT tracked (local-only via
+    # .git/info/exclude), so a CI checkout has none — the deploy
+    # pre-flight would die before reaching the warning. Build a
+    # minimal skeleton so dry-run deploy proceeds.
+    mkdir -p "${FIX_HOME}/adapters/claude-code/output/agents" \
+             "${FIX_HOME}/adapters/claude-code/output/commands" \
+             "${FIX_HOME}/adapters/claude-code/output/scripts" \
+             "${FIX_HOME}/adapters/claude-code/output/governance" \
+             "${FIX_HOME}/canonical" "${FIX_HOME}/state"
+    touch "${FIX_HOME}/adapters/claude-code/output/commands/x.md"
+    echo "0.0.0-test" > "${FIX_HOME}/VERSION"
     run bash -c '
         set -euo pipefail
         rdf_src="$1"
         fix_home="$2"
         HOME="$fix_home"
-        RDF_HOME="$rdf_src"
+        RDF_HOME="$fix_home"
         RDF_LIBDIR="${rdf_src}/lib"
         source "${rdf_src}/lib/rdf_common.sh"
         rdf_init

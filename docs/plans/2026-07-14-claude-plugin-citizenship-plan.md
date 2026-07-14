@@ -1049,16 +1049,12 @@ Manifest-based (`installed_plugins.json`, key `rdf@rdf`) detection; doctor OK/OK
   }
   ```
 
-  > Self-correction note: the deploy test runs `_deploy_claude_code 1 0`
-  > (dry_run=1) against the REAL repo's output dir (RDF_HOME = RDF_SRC),
-  > so the pre-flight "output not found" die cannot trigger — Phase 4
-  > committed the output. This is why Phase 5's BATS additions land after
-  > Phase 4 in the same file even though the lib changes are independent;
-  > if executed in parallel before Phase 4, this one test would fail. The
-  > dependency list keeps Phase 5 parallel-eligible because /r-build
-  > merges by phase completion — but note the deploy test asserts against
-  > `adapters/claude-code/output` (cc, not plugin), which exists since
-  > long before this plan. No ordering hazard in practice.
+  > Self-correction note (CORRECTED post-CI): the original deploy test
+  > pointed RDF_HOME at the real repo, assuming `adapters/claude-code/
+  > output` exists — true locally (untracked, .git/info/exclude) but
+  > FALSE in CI checkouts, so the pre-flight died before the warning.
+  > The test is hermetic now: fixture RDF_HOME with a minimal cc-output
+  > skeleton. Lesson: never assert against untracked local state.
 
 - [ ] **Step 5: Lint + test**
 
