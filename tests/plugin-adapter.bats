@@ -33,6 +33,8 @@ _generate_plugin() {
         rdf_require_dir "$RDF_CANONICAL" "canonical directory"
         rdf_require_bin jq
         cpl_generate_commands
+        cpl_generate_agents
+        cpl_generate_scripts
     ' -- "$RDF_SRC" "$test_home" "$output_dir"
 }
 
@@ -58,6 +60,28 @@ setup() {
         "${TEST_HOME}/canonical/commands/r-caller.md"
     cp "${RDF_SRC}/tests/fixtures/canonical/agents/example.md" \
         "${TEST_HOME}/canonical/agents/example.md"
+    cp "${RDF_SRC}/tests/fixtures/canonical/agents/caller.md" \
+        "${TEST_HOME}/canonical/agents/caller.md"
+
+    cat > "${TEST_HOME}/adapters/claude-code/agent-meta.json" <<'META'
+{
+  "example": {
+    "name": "rdf-example",
+    "description": "Test fixture agent for adapter BATS tests.",
+    "tools": ["Bash", "Read"],
+    "disallowedTools": [],
+    "model": "sonnet"
+  },
+  "caller": {
+    "name": "rdf-caller",
+    "description": "Fixture agent with /r- cross-references.",
+    "tools": ["Read"],
+    "disallowedTools": [],
+    "model": "sonnet"
+  }
+}
+META
+    printf '#!/usr/bin/env bash\necho fixture\n' > "${TEST_HOME}/canonical/scripts/fixture.sh"
 
     echo "0.0.0-test" > "${TEST_HOME}/VERSION"
     touch "${TEST_HOME}/.rdf-profiles"
@@ -100,6 +124,29 @@ teardown() {
     # no leftover un-namespaced occurrence of the longer name
     run grep ' /r-example-extra' "${_TEST_OUT}/commands/r-caller.md"
     [ "$status" -ne 0 ]
+}
+
+@test "plugin agents carry frontmatter" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    head -1 "${_TEST_OUT}/agents/example.md" | grep -q -- '---'
+    grep -q '^name: rdf-example$' "${_TEST_OUT}/agents/example.md"
+}
+
+@test "plugin agents rewrite /r-X cross-refs in bodies" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    grep -q 'running /rdf:r-example — this' "${_TEST_OUT}/agents/caller.md"
+    grep -q 'canonical/commands/r-example\.md' "${_TEST_OUT}/agents/caller.md"
+}
+
+@test "plugin output contains no .rdf-hash sidecars" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    run find "${_TEST_OUT}" -name '*.rdf-hash'
+    [ -z "$output" ]
+}
+
+@test "plugin scripts are copied executable" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    [ -x "${_TEST_OUT}/scripts/fixture.sh" ]
 }
 
 @test "generate claude-plugin target is wired into cmd_generate" {
