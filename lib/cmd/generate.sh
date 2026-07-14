@@ -12,6 +12,7 @@ Build tool-specific output from canonical sources.
 
 Targets:
   claude-code    Generate Claude Code adapter output
+  claude-plugin  Generate Claude Code plugin output (marketplace install)
   gemini-cli     Generate Gemini CLI adapter output
   codex          Generate Codex adapter output (AGENTS.md + config)
   agents-md      Generate cross-tool AGENTS.md
@@ -85,6 +86,12 @@ cmd_generate() {
                 cmd_deploy claude-code
             fi
             ;;
+        claude-plugin)
+            _generate_adapter "claude-plugin/adapter.sh" "cpl_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                rdf_warn "--deploy not applicable to claude-plugin — install via /plugin marketplace add"
+            fi
+            ;;
         gemini-cli)
             _generate_adapter "gemini-cli/adapter.sh" "gem_generate_all"
             if [[ $deploy_after -eq 1 ]]; then
@@ -112,6 +119,11 @@ cmd_generate() {
             # Claude Code
             if [[ -f "${RDF_ADAPTERS}/claude-code/adapter.sh" ]]; then
                 _generate_adapter "claude-code/adapter.sh" "cc_generate_all" || failed=$((failed + 1))
+            fi
+
+            # Claude Plugin
+            if [[ -f "${RDF_ADAPTERS}/claude-plugin/adapter.sh" ]]; then
+                _generate_adapter "claude-plugin/adapter.sh" "cpl_generate_all" || failed=$((failed + 1))
             fi
 
             # Gemini CLI

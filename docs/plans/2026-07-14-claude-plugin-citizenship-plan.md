@@ -111,6 +111,7 @@ Creates the fifth adapter with the `/r-X` → `/rdf:r-X` rewrite engine and wire
 - Create: `tests/plugin-adapter.bats`
 - Create: `tests/fixtures/canonical/commands/r-caller.md`, `tests/fixtures/canonical/commands/r-example-extra.md`
 - Modify: `lib/cmd/generate.sh` (new target case, usage line, `all` loop)
+- Modify: `tests/Makefile` (add plugin-adapter.bats to explicit test + lint file lists — discovered during execution: the Makefile does not glob)
 
 - **Mode**: serial-agent
 - **Accept**: `_generate_plugin` BATS harness produces `output/commands/` where (a) `r-caller.md` contains `/rdf:r-example` and `/rdf:r-example-extra`, (b) path-like `canonical/commands/r-example.md` is unrewritten, (c) `bin/rdf generate claude-plugin` on the real repo exits 0 and emits 37 files
@@ -384,10 +385,10 @@ Creates the fifth adapter with the `/r-X` → `/rdf:r-X` rewrite engine and wire
 
   @test "rewrite handles prefix-colliding command names" {
       _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
-      grep -q '/rdf:r-example-extra' "${_TEST_OUT}/commands/r-caller.md"
-      run grep '/rdf:r-example-extra' "${_TEST_OUT}/commands/r-caller.md"
-      [ "$status" -eq 0 ]
-      run grep 'rdf:r-example\b-extra' "${_TEST_OUT}/commands/r-caller.md"
+      # longer name rewritten atomically
+      grep -q 'run /rdf:r-example-extra for' "${_TEST_OUT}/commands/r-caller.md"
+      # no leftover un-namespaced occurrence of the longer name
+      run grep ' /r-example-extra' "${_TEST_OUT}/commands/r-caller.md"
       [ "$status" -ne 0 ]
   }
 
