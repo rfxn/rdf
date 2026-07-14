@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in RDF's tooling, adapters, or generated output is broken
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: RDF version
+      description: Output of `bin/rdf version` (or the tag/commit you're on)
+      placeholder: "3.2.1"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS + AI runtime (if relevant)
+      placeholder: "macOS 15 / Claude Code 2.x"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. bin/rdf generate claude-code
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`bin/rdf doctor` output"
+      description: Paste relevant output if the issue involves generation, deploy, or drift
+      render: text
+    validations:
+      required: false

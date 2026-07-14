@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a new command, agent behavior, profile, adapter, or convention
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Command (/r-*)
+        - Agent behavior
+        - Profile (language/domain governance)
+        - Adapter (new AI runtime target)
+        - CLI / tooling (bin, lib, state)
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What friction or gap does this address? Concrete scenarios help.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Optional — how you'd solve it. Note that RDF favors simplicity; see the simplicity-budget doctrine before proposing new orchestration.
+    validations:
+      required: false
