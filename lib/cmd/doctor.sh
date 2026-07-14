@@ -518,7 +518,7 @@ _check_readme() {
     # --- Floor checks (always run) ---
 
     if [[ ! -f "${path}/README.md" ]]; then
-        _add_result "readme" "$_FAIL" "README.md missing"
+        _add_result "readme" "$_WARN" "README.md missing"
         return 0
     fi
 
