@@ -282,11 +282,13 @@ if [[ -d "${_claude_home}/projects" ]]; then
     _jsonl_count="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d 2>/dev/null | wc -l)"
     _jsonl_count="${_jsonl_count##* }"
     # GNU find -printf sums bytes without per-file stat; BSD/macOS find has no
-    # -printf, so fall back to the portable _fsize helper per file.
-    if command find "${_claude_home}/projects" -maxdepth 0 -printf '' >/dev/null 2>&1; then
+    # -printf. Probe capability against /dev/null (target-independent), then fall
+    # back to the portable _fsize helper per file. Both branches use the same
+    # ! -type d predicate as the count above.
+    if command find /dev/null -maxdepth 0 -printf '' >/dev/null 2>&1; then
         _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d -printf '%s\n' 2>/dev/null | awk '{s+=$1} END {print s+0}')"
     else
-        _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" -type f 2>/dev/null | while IFS= read -r _f; do _fsize "$_f"; done | awk '{s+=$1} END {print s+0}')"
+        _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d 2>/dev/null | while IFS= read -r _f; do _fsize "$_f"; done | awk '{s+=$1} END {print s+0}')"
     fi
 fi
 

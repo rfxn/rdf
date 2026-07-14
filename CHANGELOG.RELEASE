@@ -1,4 +1,16 @@
-# RDF 3.2.0 Release Notes
+# RDF 3.2.1 Release Notes
+
+## 3.2.1
+
+-- Changes --
+
+[Change] tests/governance-contracts.bats — the reviewer challenge/sentinel
+         contract anchors to the mode headers (^### Challenge Mode / ^### Sentinel
+         Mode) instead of bare prose mentions, so it bites if a mode section is
+         gutted or renamed (post-3.2.0 review follow-up)
+[Change] state/context-audit.sh — find -printf capability probe targets /dev/null
+         (target-independent, avoids a false BSD-branch selection); GNU and BSD
+         byte-sum branches use the same ! -type d predicate as the file count
 
 ## 3.2.0
 

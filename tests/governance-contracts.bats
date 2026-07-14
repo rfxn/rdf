@@ -57,8 +57,10 @@ _contract() {
 # ── Reviewer: two modes + verification of its own claims ─────────────────────
 
 @test "reviewer defines both challenge and sentinel modes" {
+    # Anchor to the mode-definition headers, not bare prose mentions, so the
+    # contract bites if a mode section is gutted or renamed.
     local f="${RDF_SRC}/canonical/agents/reviewer.md"
-    grep -qiE 'challenge' "$f" && grep -qiE 'sentinel' "$f"
+    grep -qE '^### Challenge Mode' "$f" && grep -qE '^### Sentinel Mode' "$f"
 }
 
 @test "reviewer must /r-verify-claim its MUST-FIX current-state assertions" {
