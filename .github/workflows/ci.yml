@@ -80,6 +80,30 @@ jobs:
         # production state (sync, readme, github, memory) which are CI-inappropriate.
         run: ./bin/rdf doctor --scope content-drift
 
+  plugin:
+    name: Plugin (drift + validate)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (jq)
+        run: sudo apt-get install -y jq
+
+      - name: Generate claude-plugin output
+        run: ./bin/rdf generate claude-plugin
+
+      - name: Fail on uncommitted plugin drift
+        # Stale committed output (or an unstamped plugin.json version)
+        # makes the release un-mergeable — same guard as the doctor job.
+        run: git diff --exit-code adapters/claude-plugin/output .claude-plugin/plugin.json
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate plugin + marketplace (strict)
+        run: claude plugin validate . --strict
+
   tests:
     name: Tests (BATS)
     # Runs on ubuntu + macOS so BSD coreutils and system bash 3.2 are exercised.
