@@ -182,6 +182,67 @@ teardown() {
     grep -q 'claude-plugin' <(bash "${RDF_SRC}/bin/rdf" generate help)
 }
 
+# Helper: run _check_install_mode under a fixture HOME, print raw results.
+_run_install_mode_check() {
+    local fixture_home="$1"
+    HOME="$fixture_home" bash -c '
+        set -euo pipefail
+        rdf_src="$1"
+        RDF_HOME="$rdf_src"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_install_mode "."
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC"
+}
+
+@test "doctor warns on dual install mode" {
+    FIX_HOME="$(mktemp -d)"
+    mkdir -p "${FIX_HOME}/.claude/plugins" "${FIX_HOME}/real-target"
+    ln -s "${FIX_HOME}/real-target" "${FIX_HOME}/.claude/commands"
+    printf '{"version":1,"plugins":{"rdf@rdf":[{"scope":"user"}]}}\n' \
+        > "${FIX_HOME}/.claude/plugins/installed_plugins.json"
+    run _run_install_mode_check "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"install-mode|WARN|both symlink deploy and plugin install"* ]]
+    rm -rf "$FIX_HOME"
+}
+
+@test "doctor reports plugin-only install as OK" {
+    FIX_HOME="$(mktemp -d)"
+    mkdir -p "${FIX_HOME}/.claude/plugins"
+    printf '{"version":1,"plugins":{"rdf@rdf":[{"scope":"user"}]}}\n' \
+        > "${FIX_HOME}/.claude/plugins/installed_plugins.json"
+    run _run_install_mode_check "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"install-mode|OK|plugin install (rdf@rdf)"* ]]
+    rm -rf "$FIX_HOME"
+}
+
+@test "deploy warns when plugin manifest lists rdf@rdf" {
+    FIX_HOME="$(mktemp -d)"
+    mkdir -p "${FIX_HOME}/.claude/plugins"
+    printf '{"version":1,"plugins":{"rdf@rdf":[{"scope":"user"}]}}\n' \
+        > "${FIX_HOME}/.claude/plugins/installed_plugins.json"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"
+        fix_home="$2"
+        HOME="$fix_home"
+        RDF_HOME="$rdf_src"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/deploy.sh"
+        _deploy_claude_code 1 0
+    ' -- "$RDF_SRC" "$FIX_HOME"
+    [[ "$output" == *"plugin install detected (rdf@rdf)"* ]]
+    rm -rf "$FIX_HOME"
+}
+
 @test "repo plugin.json version matches VERSION" {
     run jq -r .version "${RDF_SRC}/.claude-plugin/plugin.json"
     [ "$output" = "$(cat "${RDF_SRC}/VERSION")" ]

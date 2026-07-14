@@ -662,6 +662,32 @@ _check_readme() {
 }
 
 # Version resolver for doctor (avoids sourcing init.sh dependency)
+# ── Check: install-mode ──
+# Detects how RDF is installed for this user: symlink deploy (~/.claude/
+# commands -> adapter output), plugin install (rdf@rdf in the plugin
+# manifest), both (WARN — duplicate commands), or neither.
+_check_install_mode() {
+    local manifest="${HOME}/.claude/plugins/installed_plugins.json"
+    local symlink_mode=0
+    local plugin_mode=0
+
+    [[ -L "${HOME}/.claude/commands" ]] && symlink_mode=1
+    if [[ -f "$manifest" ]] \
+        && jq -e '.plugins | has("rdf@rdf")' "$manifest" >/dev/null 2>&1; then  # absent or malformed manifest = not plugin-installed
+        plugin_mode=1
+    fi
+
+    if [[ $symlink_mode -eq 1 && $plugin_mode -eq 1 ]]; then
+        _add_result "install-mode" "$_WARN" "both symlink deploy and plugin install detected — /r-start and /rdf:r-start both active; remove one (rdf deploy help | /plugin uninstall rdf@rdf)"
+    elif [[ $plugin_mode -eq 1 ]]; then
+        _add_result "install-mode" "$_OK" "plugin install (rdf@rdf)"
+    elif [[ $symlink_mode -eq 1 ]]; then
+        _add_result "install-mode" "$_OK" "symlink deploy"
+    else
+        _add_result "install-mode" "$_OK" "no user-level RDF install (project-only usage)"
+    fi
+}
+
 _resolve_version_for_doctor() {
     local path="$1"
     local name
@@ -762,6 +788,7 @@ _doctor_one() {
             _check_plan "$path"
             _check_github "$path"
             _check_sync "$path"
+            _check_install_mode "$path"
             _check_content_drift "$path"
             _check_readme "$path"
             ;;
@@ -771,9 +798,10 @@ _doctor_one() {
         plan)           _check_plan "$path" ;;
         github)         _check_github "$path" ;;
         sync)           _check_sync "$path" ;;
+        install-mode)   _check_install_mode "$path" ;;
         content-drift)  _check_content_drift "$path" ;;
         readme)         _check_readme "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, content-drift, readme" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, content-drift, readme" ;;
     esac
 }
 

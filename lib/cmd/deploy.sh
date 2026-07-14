@@ -172,6 +172,13 @@ _deploy_claude_code() {
         rdf_die "output not found — run 'rdf generate claude-code' first"
     fi
 
+    local plugin_manifest="${HOME}/.claude/plugins/installed_plugins.json"
+    if command -v jq >/dev/null 2>&1 \
+        && [[ -f "$plugin_manifest" ]] \
+        && jq -e '.plugins | has("rdf@rdf")' "$plugin_manifest" >/dev/null 2>&1; then  # no jq / no manifest = skip advisory silently
+        rdf_warn "plugin install detected (rdf@rdf) — symlink deploy will duplicate commands as /r-* and /rdf:r-*"
+    fi
+
     rdf_log "deploying Claude Code adapter to ${dest_base}..."
 
     _deploy_symlink "${output_dir}/agents" "${dest_base}/agents" "$dry_run" "$force"
