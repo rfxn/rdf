@@ -839,6 +839,14 @@ Declares the repo a marketplace, points `plugin.json` at the generated component
 
   (Exact placement: `"license": "GPL-2.0",` then these three lines, then `"keywords": [`.)
 
+  > Execution discovery: `claude plugin validate --strict` REJECTS a
+  > directory string for `agents` ("Invalid input") — it requires an
+  > explicit array of `.md` file paths. Resolved by having
+  > `cpl_stamp_plugin_version` stamp the agents array from generated
+  > output at generate time (self-heals when agents are added/removed);
+  > the repo guard test iterates the array. `commands` as a directory
+  > string IS accepted.
+
 - [ ] **Step 3: Generate and stage real output**
 
   ```bash

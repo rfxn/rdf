@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/post-edit-lint.sh",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "prompt": "Context compaction imminent. Save work-in-progress state: write a status checkpoint to work-output/ if mid-phase, verify MEMORY.md reflects current state.",
+            "type": "prompt"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/pre-commit-validate.sh",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/subagent-stop.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/context-bar.sh",
+    "type": "command"
+  }
+}

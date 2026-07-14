@@ -11,6 +11,16 @@
   "homepage": "https://github.com/rfxn/rdf",
   "repository": "https://github.com/rfxn/rdf",
   "license": "GPL-2.0",
+  "commands": "./adapters/claude-plugin/output/commands",
+  "agents": [
+    "./adapters/claude-plugin/output/agents/dispatcher.md",
+    "./adapters/claude-plugin/output/agents/engineer.md",
+    "./adapters/claude-plugin/output/agents/planner.md",
+    "./adapters/claude-plugin/output/agents/qa.md",
+    "./adapters/claude-plugin/output/agents/reviewer.md",
+    "./adapters/claude-plugin/output/agents/uat.md"
+  ],
+  "hooks": "./adapters/claude-plugin/output/hooks.json",
   "keywords": [
     "governance",
     "quality-gates",

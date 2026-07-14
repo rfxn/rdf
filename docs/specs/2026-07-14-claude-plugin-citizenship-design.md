@@ -208,7 +208,7 @@ lib/cmd/deploy.sh    _deploy_claude_code()  same installed_plugins.json probe be
 |-------|---------|-----|
 | `version` | hand-maintained | stamped from `VERSION` by generate |
 | `commands` | absent | `"./adapters/claude-plugin/output/commands"` |
-| `agents` | absent | `"./adapters/claude-plugin/output/agents"` |
+| `agents` | absent | explicit `.md` file ARRAY, stamped at generate time — the strict validator rejects directory strings for `agents` (implementation discovery, contradicts docs) |
 | `hooks` | absent | `"./adapters/claude-plugin/output/hooks.json"` |
 
 ### Modified functions

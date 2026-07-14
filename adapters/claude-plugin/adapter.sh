@@ -186,18 +186,29 @@ cpl_generate_hooks() {
     rdf_log "generated hooks.json (plugin-root paths)"
 }
 
-# Stamp plugin.json version from VERSION. Plugin users only receive
-# updates when this field changes — stamping makes the bump automatic
-# on every generate after a version change.
+# Stamp plugin.json version from VERSION and the agents file array from
+# generated output. Plugin users only receive updates when version
+# changes; agents must be an explicit .md file array — the strict
+# validator rejects directory strings (verified against
+# claude plugin validate --strict).
 cpl_stamp_plugin_version() {
     local manifest="${RDF_HOME}/.claude-plugin/plugin.json"
-    local tmp
+    local tmp agents_json
+    local agent_files=()
+    local f
 
     rdf_require_file "$manifest" "plugin.json"
+    for f in "${_CPL_OUTPUT_DIR}/agents"/*.md; do
+        [[ -f "$f" ]] || continue
+        agent_files+=("./adapters/claude-plugin/output/agents/$(basename "$f")")
+    done
+    agents_json="$(printf '%s\n' "${agent_files[@]}" | jq -R . | jq -s .)"
+
     tmp="$(command mktemp)"
-    jq --arg v "$RDF_VERSION" '.version = $v' "$manifest" > "$tmp"
+    jq --arg v "$RDF_VERSION" --argjson agents "$agents_json" \
+        '.version = $v | .agents = $agents' "$manifest" > "$tmp"
     command mv "$tmp" "$manifest"
-    rdf_log "stamped plugin.json version: ${RDF_VERSION}"
+    rdf_log "stamped plugin.json version: ${RDF_VERSION} (${#agent_files[@]} agents)"
 }
 
 # Full plugin generation pipeline

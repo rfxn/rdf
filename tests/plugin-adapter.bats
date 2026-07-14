@@ -181,3 +181,29 @@ teardown() {
     grep -q 'cpl_generate_all' "${RDF_SRC}/lib/cmd/generate.sh"
     grep -q 'claude-plugin' <(bash "${RDF_SRC}/bin/rdf" generate help)
 }
+
+@test "repo plugin.json version matches VERSION" {
+    run jq -r .version "${RDF_SRC}/.claude-plugin/plugin.json"
+    [ "$output" = "$(cat "${RDF_SRC}/VERSION")" ]
+}
+
+@test "repo marketplace.json declares plugin rdf with source ./" {
+    run jq -r '.plugins[0].name + " " + .plugins[0].source' "${RDF_SRC}/.claude-plugin/marketplace.json"
+    [ "$output" = "rdf ./" ]
+}
+
+@test "repo plugin.json component paths exist" {
+    local p
+    for key in commands hooks; do
+        p="$(jq -r ".${key}" "${RDF_SRC}/.claude-plugin/plugin.json")"
+        [ "${p#./}" != "$p" ]           # must be ./-relative
+        [ -e "${RDF_SRC}/${p#./}" ]     # must exist in repo
+    done
+    # agents is an explicit .md file array (validator rejects dir strings)
+    run jq -r '.agents | length' "${RDF_SRC}/.claude-plugin/plugin.json"
+    [ "$output" -ge 1 ]
+    while IFS= read -r p; do
+        [ "${p#./}" != "$p" ]
+        [ -e "${RDF_SRC}/${p#./}" ]
+    done < <(jq -r '.agents[]' "${RDF_SRC}/.claude-plugin/plugin.json")
+}

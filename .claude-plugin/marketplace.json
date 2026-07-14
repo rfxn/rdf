@@ -1,0 +1,12 @@
+{
+  "name": "rdf",
+  "owner": { "name": "R-fx Networks", "email": "proj@rfxn.com" },
+  "metadata": { "description": "RDF — governance-driven AI development" },
+  "plugins": [
+    {
+      "name": "rdf",
+      "source": "./",
+      "description": "Convention governance, quality gates, and typed agent personas"
+    }
+  ]
+}
