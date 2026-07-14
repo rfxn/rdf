@@ -31,7 +31,7 @@ USAGE
 }
 
 # Default workspace root — parent of RDF home
-_WORKSPACE_ROOT="/root/admin/work/proj"
+_WORKSPACE_ROOT="$(command dirname "${RDF_HOME}")"
 
 # Check result formatting
 _OK="OK"
@@ -120,7 +120,8 @@ _check_drift() {
     fi
 
     # Structural checks: does CLAUDE.md reference parent?
-    local parent_ref="/root/admin/work/proj/CLAUDE.md"
+    local parent_ref
+    parent_ref="$(command dirname "${RDF_HOME}")/CLAUDE.md"
     if grep -q "$parent_ref" "${path}/CLAUDE.md" 2>/dev/null || \
        grep -qi "inherits.*parent" "${path}/CLAUDE.md" 2>/dev/null; then
         _add_result "drift" "$_OK" "CLAUDE.md references parent conventions"
@@ -267,19 +268,20 @@ _check_github() {
         return 0
     fi
 
-    local repo
-    repo="$(git -C "$path" remote get-url origin 2>/dev/null \
-        | sed 's|.*github.com[:/]||; s|\.git$||' || echo "")"
-    if [[ -z "$repo" ]]; then
+    local origin_url
+    origin_url="$(git -C "$path" remote get-url origin 2>/dev/null || echo "")"  # no origin -> skip below
+    if [[ "$origin_url" != *github.com* ]]; then
         _add_result "github" "$_WARN" "no GitHub remote — skipping"
         return 0
     fi
+    local repo
+    repo="$(echo "$origin_url" | sed 's|.*github.com[:/]||; s|\.git$||')"
 
     # Check for standardized labels
     local label_count
     label_count="$(gh label list --repo "$repo" --json name --jq 'length' 2>/dev/null || echo "0")"
     if [[ "$label_count" -eq 0 ]]; then
-        _add_result "github" "$_FAIL" "no labels on ${repo}"
+        _add_result "github" "$_WARN" "no labels on ${repo}"
     else
         # Check for our taxonomy labels specifically
         local has_type_phase

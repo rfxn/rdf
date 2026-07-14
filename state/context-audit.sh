@@ -16,7 +16,7 @@ if [[ "${1:-}" == "--baseline" ]]; then
     shift 2
 fi
 
-_workspace="${1:-/root/admin/work/proj}"
+_workspace="${1:-$(pwd)}"
 _claude_home="${HOME}/.claude"
 _rdf_home="${HOME}/.rdf"
 _project_slug="$(echo "$_workspace" | sed 's|/|-|g; s|^-||')"

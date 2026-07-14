@@ -296,7 +296,7 @@ cmd_migrate() {
     done
 
     if [[ "$migrate_all" -eq 1 ]]; then
-        local workspace="${path:-/root/admin/work/proj}"
+        local workspace="${path:-$(command dirname "${RDF_HOME}")}"
         [[ -d "$workspace" ]] || rdf_die "workspace not found: $workspace"
         workspace="$(cd "$workspace" && pwd)" || exit 1
 
