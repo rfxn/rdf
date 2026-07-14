@@ -106,8 +106,11 @@ Distribution goal: `/plugin marketplace add rfxn/rdf` +
 
 Committed-output tradeoff: generating plugin output ephemerally (CI-only,
 uncommitted) was considered and rejected — plugin installs clone the repo
-directly, so the tree GitHub serves must contain the output. Committing
-matches the existing convention for all 4 adapters.
+directly, so the tree GitHub serves must contain the output. Note this
+DIFFERS from 3 of the 4 existing adapters (claude-code/gemini-cli/codex
+outputs are local-only, excluded via `.git/info/exclude`; only agents-md
+commits its output) — the plugin adapter must commit because consumers
+never run `rdf generate`.
 
 ### Dependency Tree
 
@@ -134,9 +137,12 @@ lib/cmd/deploy.sh    _deploy_claude_code()  same installed_plugins.json probe be
    existing four (`_generate_adapter "claude-plugin/adapter.sh"
    "cpl_generate_all"`). Output committed, mirroring existing adapters.
 2. **Namespace transform at generate time.** `/r-X` → `/rdf:r-X` applied
-   to command bodies only, only for names in the actual command inventory,
-   only when preceded by start-of-line, whitespace, backtick, `(`, or `|`
-   (prevents rewriting file paths like `canonical/commands/r-spec.md`).
+   to command bodies AND agent bodies (agents carry 14 `/r-X` references
+   across 5 of 6 personas — unrewritten they would instruct plugin users
+   to run commands that do not exist), only for names in the actual
+   command inventory, only when preceded by start-of-line, whitespace,
+   backtick, `(`, `|`, quote, or `*` (prevents rewriting file paths like
+   `canonical/commands/r-spec.md`).
 3. **Hooks transform.** Every `"command"`-valued field matching
    `~/.claude/scripts/` — ANYWHERE in the file, including the top-level
    `statusLine` key (a sibling of `"hooks"`), not just entries under
@@ -173,8 +179,8 @@ lib/cmd/deploy.sh    _deploy_claude_code()  same installed_plugins.json probe be
 |----------|-----------|---------|--------------|
 | `_cpl_rewrite_namespace()` | (src_file, dst_file) | sed-rewrite `/r-X` → `/rdf:r-X` for known command names with boundary guard | command inventory from `canonical/commands/*.md` |
 | `cpl_generate_commands()` | () | emit 37 rewritten commands to `output/commands/` | `_cpl_rewrite_namespace()` |
-| `cpl_generate_agents()` | () | emit 6 agents with CC frontmatter, NO `.rdf-hash` sidecars | frontmatter builder (shared pattern from cc `_cc_agent_frontmatter`, duplicated — adapters do not cross-source) |
-| `cpl_generate_scripts()` | () | copy `canonical/scripts/*.sh`, chmod +x, same profile filter as cc | `rdf_profile_includes()` |
+| `cpl_generate_agents()` | () | emit 6 agents with CC frontmatter, namespace-rewritten bodies, NO `.rdf-hash` sidecars | `_cpl_rewrite_namespace()`; frontmatter builder (shared pattern from cc `_cc_agent_frontmatter`, duplicated — adapters do not cross-source) |
+| `cpl_generate_scripts()` | () | copy `canonical/scripts/*.sh`, chmod +x, unconditional (no dead `rdf_profile_includes` stub call) | — |
 | `cpl_generate_hooks()` | () | read cc `hooks/hooks.json`, transform script paths to `${CLAUDE_PLUGIN_ROOT}`, write `output/hooks.json` | jq |
 | `cpl_stamp_plugin_version()` | () | `jq '.version = $v'` into `.claude-plugin/plugin.json` | `RDF_VERSION`, jq |
 | `cpl_generate_all()` | () | run all of the above, log summary | all above |
@@ -352,6 +358,9 @@ grep -c 'CLAUDE_PLUGIN_ROOT' adapters/claude-plugin/output/hooks.json
 
 ls adapters/claude-plugin/output/agents/ | grep -c '.rdf-hash'
 # expect: 0
+
+grep -l '/rdf:r-' adapters/claude-plugin/output/agents/*.md | wc -l
+# expect: 5 (all personas with cross-refs: dispatcher, planner, qa, reviewer, uat)
 
 diff <(jq -r .version .claude-plugin/plugin.json) VERSION && echo SYNCED
 # expect: SYNCED
