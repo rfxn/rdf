@@ -124,3 +124,12 @@ _contract() {
     _contract agents/dispatcher.md 'sentinel-full'
     _contract agents/dispatcher.md 'scope:sensitive'
 }
+
+# ── /r-ship: living-spec fold into docs/specs/CURRENT.md (3.5 Scale) ──────────
+
+@test "r-ship folds CURRENT.md and skips on bugfix" {
+    # Short single-line anchors — grep -qE is line-based (no cross-wrap match).
+    _contract commands/r-ship.md 'docs/specs/CURRENT.md'
+    _contract commands/r-ship.md 'bugfix'
+    _contract commands/r-ship.md 'rdf_clear_active_tier'
+}

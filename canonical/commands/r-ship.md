@@ -150,18 +150,39 @@ Ask user to fix or explicitly override.
 - Commit with project's message format from governance/conventions.md
 - Push branch to origin
 
-### Clear the active-plan pointer
+### 3e. Living-Spec Fold (docs/specs/CURRENT.md)
 
-After the release tag/commit lands, clear the pointer:
+Fold this release's outcome into the maintained current-state spec. **Skipped
+when `rdf_active_tier` is `bugfix`** (a defect fix does not change the
+architecture) and when the plan File Map cannot be parsed (degrade — never
+block the release).
+
+1. `source state/rdf-bus.sh; tier="$(rdf_active_tier)"`. If `bugfix`, skip.
+2. Read `docs/specs/CURRENT.md` (create with a living-spec header if absent).
+3. Derive an ADDED / MODIFIED / REMOVED delta from the shipped plan's File
+   Map (New→ADDED, Modified→MODIFIED, Deleted→REMOVED) plus the changelog
+   entries from Stage 3a (one-line summaries). If the File Map cannot be
+   parsed, emit a notice and skip.
+4. Present the delta to the user for approval (a few bullets — keep it light,
+   this is cheap, not ceremony).
+5. On approval, prepend a `## <version> — <date>` block to CURRENT.md and
+   stage it with the release commit (amend Stage 3d's commit or a follow-up).
+
+OpenSpec precedent; this must stay lightweight, never ceremony.
+
+### Clear the active-plan and tier pointers
+
+After the release tag/commit lands, clear the session pointers:
 
 ```bash
 source state/rdf-bus.sh
 rdf_clear_active_plan
+rdf_clear_active_tier
 ```
 
 The plan file in `docs/plans/` is retained as historical record; only
-the session-scoped pointer is removed so the next planning session
-starts clean.
+the session-scoped pointers are removed so the next planning session
+starts clean with no stale tier.
 
 ### Release Prep Display
 
