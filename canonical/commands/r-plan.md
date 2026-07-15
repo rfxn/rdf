@@ -16,6 +16,7 @@ This is the second stage of the spec-plan-build-ship pipeline.
 /r-plan #42                      — issue shorthand (# + digits)
 /r-plan --resume                 — resume interrupted plan (resolved via rdf_active_plan_path)
 /r-plan --resume <path>          — set pointer to <path> and resume
+/r-plan --full|--quick|--bugfix  — set the task-class tier (may combine with a spec input)
 ```
 
 **Argument detection logic:**
@@ -24,6 +25,7 @@ This is the second stage of the spec-plan-build-ship pipeline.
 - Starts with `#` followed by digits → issue shorthand → `gh issue view {N}`
 - Equals `--resume` → resume from active plan (see Resume Protocol)
 - Two tokens `--resume <path>` → validate `<path>` exists; `rdf_set_active_plan "<path>"`; enter Resume Protocol
+- `--full` / `--quick` / `--bugfix` → task-class tier flag (see Tier Selection); a tier flag may accompany any input form
 - No argument → scan `docs/specs/` for most recent file by mtime
 
 **Input validation:**
@@ -39,6 +41,41 @@ This is the second stage of the spec-plan-build-ship pipeline.
   ```
   If Y: run the `/r-spec` workflow inline, then continue into
   planning when the spec is complete. If N: stop.
+
+---
+
+## Tier Selection
+
+Before planning, resolve the task-class tier
+([reference/tiers.md](../reference/tiers.md) — the single source of truth for
+tier semantics and gate caps):
+
+```bash
+source state/rdf-bus.sh
+rdf_session_init
+tier="$(rdf_active_tier)"        # inherits the tier /r-spec set, else full
+```
+
+- **Flag override.** If `--full`, `--quick`, or `--bugfix` is present, it wins:
+  map to `full` / `quick-plan` / `bugfix` and record it with
+  `rdf_set_active_tier <tier>`.
+- **Inherited tier.** If `/r-spec` already set a session tier (pointer present)
+  and no flag overrides it, honor it silently — no re-prompt.
+- **No flag, no inherited tier.** Present the heuristic suggestion from
+  `reference/tiers.md` and let the user confirm:
+
+  ```
+  Assessing scope... {one-line read of the ask}.
+  Suggested tier: {heuristic}.
+    [1] full (default)  [2] quick-plan  [3] bugfix
+  Select tier [1]:
+  ```
+
+  A bare Enter selects `[1] full` — one keystroke, today's behavior. On any
+  choice, record it with `rdf_set_active_tier <tier>`.
+
+The resolved tier drives the `**Tier:**` preamble marker (Step 2.1) and the
+tier-scaled output paths (Step 2.2a).
 
 ---
 
@@ -176,6 +213,8 @@ Every plan starts with four sections before any phases:
 **Phases:** {N}
 
 **Plan Version:** 3.0.6
+
+**Tier:** {full | quick-plan | bugfix}
 ```
 
 The `**Plan Version:** 3.0.6` marker is what schema validators key on
@@ -183,6 +222,11 @@ for version-aware checks — see Plan-Version Awareness in
 [reference/plan-schema.md](../reference/plan-schema.md). New plans must
 carry the current marker; legacy plans without it bypass the strictest
 rules with an INFO log.
+
+The `**Tier:**` marker (plan-schema Rule 10) records the task-class ceremony
+level resolved in Tier Selection; `/r-build` and the dispatcher read it to cap
+gates. It sits on its own line immediately after `**Plan Version:**`. Absent →
+`full`.
 
 The `**Phases:** {N}` line enables crash recovery — compare against
 actual phase headings to detect missing phases on resume.
@@ -269,6 +313,23 @@ Guidelines for decomposition:
 - **Infrastructure before features** — scaffolding, types, interfaces
   come before implementation
 - **Smaller is better** — prefer 8 small phases over 4 large ones
+
+### 2.2a Tier-Scaled Output
+
+The resolved tier (Tier Selection) scales the plan artifact and its review path.
+See [reference/tiers.md](../reference/tiers.md) for the full ceremony table.
+
+- **`full`** — current behavior: the full plan written to
+  `docs/plans/{date}-{topic}-plan.md`, challenge review in Step 3.
+- **`quick-plan`** — write ONE condensed
+  `docs/plans/{date}-{topic}-quickplan.md`: a folded Context/Goals block (~15
+  lines, from the spec or the ask) followed by phases. A single review pass in
+  Step 3 — no separate spec review.
+- **`bugfix`** — write a ≤ 2-phase plan: Phase 1 lands a failing regression test
+  (red) then the minimal fix (green); an optional Phase 2 is follow-up
+  hardening. Schema-validate only (Step 2.7) and skip the Step 3 challenge
+  review — the build-time sentinel-lite is the adversarial pass. Phase 1's
+  Accept MUST require the failing test first.
 
 ### 2.3 Tag Each Phase
 

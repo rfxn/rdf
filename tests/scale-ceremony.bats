@@ -40,3 +40,9 @@ teardown() { rm -rf "${_TEST_PROJ}" 2>/dev/null || true; } # cleanup, ignore err
     [ "$status" -eq 0 ]
     [ "$output" = "bugfix" ]   # marker authoritative; pointer reconciled
 }
+
+@test "r-plan preamble template carries Tier marker and condensed paths" {
+    grep -q '\*\*Tier:\*\*' "${RDF_SRC}/canonical/commands/r-plan.md"
+    grep -q 'quickplan' "${RDF_SRC}/canonical/commands/r-plan.md"
+    grep -q 'failing regression test' "${RDF_SRC}/canonical/commands/r-plan.md"
+}
