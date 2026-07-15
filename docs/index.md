@@ -50,7 +50,9 @@ bin/rdf init ~/projects/my-app     # auto-detects your stack
 ```
 
 Hooks and the status line require `jq` on your PATH in both modes.
-Full walkthrough with real output: [Quickstart](quickstart).
+Context cost is published and CI-guarded: the default deploy adds ~0.1K
+always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
+`rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).
 
 ## The pipeline
 

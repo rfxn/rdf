@@ -51,6 +51,22 @@ Codex, or AGENTS.md environments.
   `**Tests-may-touch:**` glob lists (plan schema Rule 8) to pre-authorize
   trivial test-infra drift. Helpers live in `state/rdf-bus.sh`. Design:
   `docs/specs/2026-04-25-concurrent-sessions-design.md`.
+- **Memory & context thrift (3.4+):** Zero-effort auto-learning and a measured
+  per-session token budget. Claude-side hooks across three events carry it:
+  PreCompact (a prompt hook + the `precompact-snapshot.sh` command),
+  SessionStart (the `matcher:"compact"` context-restore entry plus a matcher-less
+  read-only `session-start-inject.sh` lessons ID-index injection), and SessionEnd
+  (`session-end-capture.sh` — an inline git snapshot appended to the session
+  journal).
+  `cc_generate_rules()` emits context-scoped governance into `output/rules/`
+  (core unscoped so it survives compaction; language rules `paths:`-scoped and
+  dormant until a matching file is read), deployed opt-in via
+  `rdf deploy --rules` or the minimal `rdf deploy --lite` (condensed governance,
+  lifecycle commands only, hooks skipped). Deterministic state helpers
+  `state/rdf-lessons.sh` (lessons index + consolidation scan) and
+  `state/rdf-overhead.sh` (per-session token overhead) own the delta; native
+  auto-memory owns conversational memory and MEMORY.md loading. Design:
+  `docs/specs/2026-07-15-memory-context-design.md`.
 
 ### Naming Convention
 
@@ -80,7 +96,7 @@ rdf/                                 # Repository root
 |   |-- rdf_common.sh                # Shared init, version, config, cleanup
 |   +-- cmd/                         # Subcommand handlers (sourced, not executed)
 |       |-- deploy.sh                # rdf deploy <claude-code|gemini-cli>
-|       |-- generate.sh              # rdf generate <claude-code|gemini-cli|codex|agents-md|all>
+|       |-- generate.sh              # rdf generate <claude-code|gemini-cli|codex|agents-md|all> [--rules|--lite]
 |       |-- profile.sh               # rdf profile <list|install|remove|status>
 |       |-- init.sh                  # rdf init <path> [--type] [--batch] [--tools] [--github]
 |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
@@ -167,6 +183,8 @@ rdf/                                 # Repository root
 |-- state/
 |   |-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
 |   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
+|   |-- rdf-lessons.sh               # Lessons ID-index + consolidation scan (3.4)
+|   |-- rdf-overhead.sh              # Per-session token overhead -> JSON (3.4)
 |   |-- context-audit.sh             # Context weight audit -> JSON
 |   |-- rotate-work-output.sh        # Age/size-based work-output rotation
 |   +-- git-hooks/

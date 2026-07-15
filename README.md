@@ -143,10 +143,13 @@ against drift in CI.
 |--------|-----------------------:|
 | Default | ~0.1K tokens (lessons index only) |
 | `--rules` (opt-in scoped governance) | ~2.1K tokens (adds the unscoped core rule) |
-| `rdf-lite` | pending (fast-follow) |
+| `rdf-lite` (minimal deploy) | ~0.7K tokens (condensed core governance) |
 
 Scoped language rules load only when a matching file is read -- they add nothing
-to the always-loaded figures.
+to the always-loaded figures. Opt into either variant with a deploy flag:
+`bin/rdf deploy --rules claude-code` (scoped governance alongside the default
+symlinks) or `bin/rdf deploy --lite claude-code` (rdf-lite: condensed governance,
+lifecycle commands only, hooks skipped).
 
 ### 4.2. Design → Ship Pipeline Commands
 

@@ -30,6 +30,18 @@ bash rdf/state/context-audit.sh --baseline ~/.rdf/context-audit-baseline.json 2>
 Parse the JSON output. Do NOT make additional file reads or greps —
 the script measures everything.
 
+Then measure RDF's own always-loaded boot cost:
+
+```bash
+bash rdf/state/rdf-overhead.sh
+```
+
+Surface the three deploy figures from its JSON — `default_boot_tokens`
+(~0.1K, lessons index only), `rules_boot_tokens` (~2.1K, adds the unscoped
+core governance rule), and `lite_boot_tokens` (~0.7K, rdf-lite condensed
+governance). `hooks.json` appears only under `excluded` — it is runtime
+config that never enters model context, so it is not part of any boot figure.
+
 ### 2. Render Report
 
 Use this exact format. Keep it under 40 lines.

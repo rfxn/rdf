@@ -42,9 +42,25 @@ citizenship:
       built-in 11)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Delivered — 3.4 "Memory & Context"
+
+- [x] Context-scoped governance loading (3.2 T3): scoped `.claude/rules/`,
+      core left unscoped so it survives compaction
+- [x] Zero-effort auto-memory: SessionEnd journal capture + a lessons ID-index
+      injected read-only at session start
+- [x] Published per-session context cost with the `rdf-overhead.sh` harness
+      (default ~0.1K / `--rules` ~2.1K / `rdf-lite` ~0.7K always-loaded tokens)
+- [x] `rdf-lite` minimal deploy variant
+
+## Next major — 3.5 "Scale & Reach"
+
+Scale-adaptive ceremony (task-class tiers: full / quick-plan / bugfix), a
+Clarify micro-gate, and intent-triggered skills. Spec + plan drafted:
+[design](docs/specs/2026-07-15-scale-reach-design.md) ·
+[plan](docs/plans/2026-07-15-scale-reach-plan.md).
+
 ## Deferred (tracked, not scheduled)
 
-- Context-scoped governance loading (3.2 T3)
 - Debt cleanup: Agent-Teams triad, dead-code sweep (3.2 T5)
 
 ---
