@@ -19,6 +19,8 @@
 [New] hooks-handoff.bats — 14 tests: snapshot fields, 40-line ceiling, exit-0 on
       garbage/empty stdin, session_id path-traversal sanitization, 7-day prune,
       .consumed idempotence, jq-absent fallback
+[New] doctor.bats — 4 tests: doc-stats drift FAIL fires, live-repo pass, non-RDF
+      no-op, deps jq OK/WARN paths
 
 -- Bug Fixes --
 
