@@ -142,6 +142,14 @@ _check() {
     local errors="" warns="" oks=""
     local fm_total covered=0 uncovered_fm="" extra_ph=""
 
+    if [[ -z "$fm_list" ]]; then
+        # No File Map section: nothing to compare against — plan-schema does not
+        # mandate one, and historical hand-authored plans lack it. Skip the
+        # structural comparison (mirrors the no-spec graceful skip).
+        _add_unique oks "No File Map section — coverage comparison skipped"
+        ph_list=""
+    fi
+
     while IFS= read -r p; do
         [[ -n "$p" ]] || continue
         if _contains "$p" "$ph_list"; then covered=$((covered + 1)); else _add_unique uncovered_fm "$p"; fi

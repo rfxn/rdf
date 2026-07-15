@@ -3,7 +3,7 @@ dispatcher subagent to execute an implementation plan.
 
 ## Invocation
 
-`/r-build [N | N-M | --parallel] [--worktree] [--max N]`
+`/r-build [N | N-M | --parallel] [--worktree] [--max N] [--consistency-warn-only "<reason>"]`
 
 Arguments:
   N            — single phase (existing behavior)
@@ -11,6 +11,8 @@ Arguments:
   --parallel   — auto-batch all pending phases by dependency graph
   --worktree   — force git worktree isolation (overrides auto-derivation)
   --max N      — maximum concurrent dispatchers (default: 4)
+  --consistency-warn-only "<reason>" — downgrade a consistency-gate structural
+               block to a warning; requires a stated reason (see Section 1)
   (no args)    — next pending phase, serial (existing behavior)
 
 ## Protocol

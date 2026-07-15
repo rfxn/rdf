@@ -2,7 +2,7 @@
 # tests/scale-ceremony.bats — RDF 3.5 scale-adaptive ceremony
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
-# shellcheck disable=SC2154,SC2164,SC1090,SC1091
+# shellcheck disable=SC2154,SC2164,SC1090,SC1091,SC2016
 
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 export RDF_SRC
@@ -78,4 +78,13 @@ teardown() { rm -rf "${_TEST_PROJ}" 2>/dev/null || true; } # cleanup, ignore err
     grep -q -- '--bugfix' "${RDF_SRC}/canonical/commands/r-spec.md"
     grep -q 'rdf_set_active_tier' "${RDF_SRC}/canonical/commands/r-spec.md"
     grep -q 'skipped for .*bugfix' "${RDF_SRC}/canonical/commands/r-spec.md"
+}
+
+@test "consistency check skips File-Map comparison when plan has no File Map" {
+    fix="$(mktemp -d)"
+    printf '# P\n\n**Phases:** 1\n\n### Phase 1: only\n\n**Files:**\n- Modify: `lib/thing.sh`\n\n**Goals:** 1\n' > "$fix/plan.md"
+    run bash "$RDF_SRC/state/rdf-consistency.sh" check "$fix/plan.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"coverage comparison skipped"* ]]
+    rm -rf "$fix"
 }
