@@ -156,18 +156,20 @@ teardown() {
     [ -x "${_TEST_OUT}/scripts/fixture.sh" ]
 }
 
-@test "plugin hooks.json uses CLAUDE_PLUGIN_ROOT for all 4 script refs" {
+@test "plugin hooks.json uses CLAUDE_PLUGIN_ROOT for all 6 script refs" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     run grep -c 'CLAUDE_PLUGIN_ROOT' "${_TEST_OUT}/hooks.json"
-    [ "$output" -eq 4 ]
+    [ "$output" -eq 6 ]
     run grep '~/.claude' "${_TEST_OUT}/hooks.json"
     [ "$status" -ne 0 ]
 }
 
 @test "plugin hooks.json preserves prompt-type hooks untouched" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
-    diff <(jq -S '.hooks.PreCompact' "${_TEST_HOME}/adapters/claude-code/hooks/hooks.json") \
-         <(jq -S '.hooks.PreCompact' "${_TEST_OUT}/hooks.json")
+    # PreCompact now mixes a prompt hook (pass-through) with a command hook
+    # (path-rewritten) — compare only the prompt-type hooks, which must be identical.
+    diff <(jq -S '[.. | objects | select(.type? == "prompt")]' "${_TEST_HOME}/adapters/claude-code/hooks/hooks.json") \
+         <(jq -S '[.. | objects | select(.type? == "prompt")]' "${_TEST_OUT}/hooks.json")
 }
 
 @test "generate stamps plugin.json version from VERSION" {

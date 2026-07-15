@@ -19,6 +19,15 @@
             "type": "prompt"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/precompact-snapshot.sh",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -30,6 +39,18 @@
           }
         ],
         "matcher": "Bash"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/session-start-context.sh",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "compact"
       }
     ],
     "SubagentStop": [

@@ -30,6 +30,27 @@
             "prompt": "Context compaction imminent. Save work-in-progress state: write a status checkpoint to work-output/ if mid-phase, verify MEMORY.md reflects current state."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/precompact-snapshot.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/session-start-context.sh",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SubagentStop": [

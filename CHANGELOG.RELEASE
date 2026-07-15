@@ -9,6 +9,16 @@
       count drift cannot ship (doctor runs pre-push and in CI)
 [New] rdf doctor [deps] — non-fatal WARN when jq is absent, with install
       remediation; rdf deploy and rdf init emit the same early jq preflight
+[New] compaction handoff square: PreCompact command hook (precompact-snapshot.sh)
+      snapshots session state (trigger, cwd, git branch/HEAD/dirty count, active
+      plan, newest work-output) to ~/.rdf/state/handoff/<session_id>.md; never
+      blocks compaction (always exit 0, 10s timeout), prunes handoffs >7 days
+[New] SessionStart(source:compact) hook (session-start-context.sh) re-injects
+      the pre-compaction snapshot as context, renames it .consumed for
+      idempotence; both scripts degrade gracefully without jq
+[New] hooks-handoff.bats — 14 tests: snapshot fields, 40-line ceiling, exit-0 on
+      garbage/empty stdin, session_id path-traversal sanitization, 7-day prune,
+      .consumed idempotence, jq-absent fallback
 
 -- Bug Fixes --
 
