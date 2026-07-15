@@ -47,7 +47,9 @@ _json_str() {
     s="${s//\\/\\\\}"
     s="${s//\"/\\\"}"
     s="${s//$'\n'/\\n}"
-    echo -n "$s"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
 }
 
 # Project name — directory basename

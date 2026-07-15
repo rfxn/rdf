@@ -35,8 +35,9 @@ _json_str() {
     s="${s//\\/\\\\}"
     s="${s//\"/\\\"}"
     s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
     s="${s//$'\t'/\\t}"
-    echo -n "$s"
+    printf '%s' "$s"
 }
 
 # Helper: count *.md files in a directory (maxdepth 1, no symlinked dirs)
@@ -227,10 +228,10 @@ if [[ -x "$_rdf_state" ]] || [[ -f "$_rdf_state" ]]; then
 
         # Field breakdown via python3 (if available)
         if command -v python3 >/dev/null 2>&1; then
-            _field_sizes="$($TIMEOUT_PREFIX python3 -c "
+            _field_sizes="$(printf '%s' "$_sout" | $TIMEOUT_PREFIX python3 -c "
 import sys, json
 try:
-    d = json.loads('''$_sout''')
+    d = json.load(sys.stdin)
     wo = len(json.dumps(d.get('work_output_files', [])))
     ins = len(json.dumps(d.get('insights', [])))
     sl = len(json.dumps(d.get('session_last', '')))
@@ -345,7 +346,7 @@ if [[ -n "$_baseline_file" ]] && [[ -f "$_baseline_file" ]] && command -v python
     _delta_json="$($TIMEOUT_PREFIX python3 -c "
 import json, sys
 try:
-    with open('$_baseline_file') as f:
+    with open(sys.argv[1]) as f:
         base = json.load(f)
     cur = {
         'always_loaded_tokens': $_always_loaded_tokens,
@@ -364,7 +365,7 @@ try:
     json.dump(delta, sys.stdout)
 except Exception as e:
     print(json.dumps({'error': str(e)}))
-" 2>/dev/null || echo "{}")"
+" "$_baseline_file" 2>/dev/null || echo "{}")"
 fi
 
 # --- Output JSON ---
