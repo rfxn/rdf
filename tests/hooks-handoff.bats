@@ -130,7 +130,8 @@ _minbin() {
 @test "precompact prunes handoff files older than 7 days" {
     mkdir -p "$HANDOFF"
     printf 'old\n' > "$HANDOFF/stale.md"
-    touch -d '10 days ago' "$HANDOFF/stale.md"
+    # fixed past timestamp: portable across GNU and BSD touch (-d '10 days ago' is GNU-only)
+    touch -t 202001010000 "$HANDOFF/stale.md"
     printf '{"session_id":"sid-fresh","cwd":"/nonexistent","trigger":"auto"}' > "$JSON"
     run bash "$PRE" < "$JSON"
     [ "$status" -eq 0 ]
