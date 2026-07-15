@@ -133,3 +133,14 @@ _contract() {
     _contract commands/r-ship.md 'bugfix'
     _contract commands/r-ship.md 'rdf_clear_active_tier'
 }
+
+# ── /r-spec: Clarify micro-gate precedes Brainstorm (3.5 Scale) ───────────────
+
+@test "r-spec Clarify precedes Brainstorm" {
+    # Order check via line numbers — _contract only proves presence, not sequence.
+    local f="${RDF_SRC}/canonical/commands/r-spec.md"
+    local clarify brainstorm
+    clarify="$(grep -n '^## Phase 1.5: Clarify' "$f" | head -1 | cut -d: -f1)"
+    brainstorm="$(grep -n '^## Phase 2: Brainstorm' "$f" | head -1 | cut -d: -f1)"
+    [ -n "$clarify" ] && [ -n "$brainstorm" ] && [ "$clarify" -lt "$brainstorm" ]
+}

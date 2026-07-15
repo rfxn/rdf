@@ -72,3 +72,10 @@ teardown() { rm -rf "${_TEST_PROJ}" 2>/dev/null || true; } # cleanup, ignore err
     run bash "${RDF_SRC}/state/rdf-consistency.sh" check --warn-only "${RDF_SRC}/tests/fixtures/tiers/mismatch-plan.md"
     [ "$status" -eq 1 ]   # exit 2 → 1 under --warn-only
 }
+
+@test "r-spec documents tier flags and clarify skip" {
+    grep -q -- '--quick' "${RDF_SRC}/canonical/commands/r-spec.md"
+    grep -q -- '--bugfix' "${RDF_SRC}/canonical/commands/r-spec.md"
+    grep -q 'rdf_set_active_tier' "${RDF_SRC}/canonical/commands/r-spec.md"
+    grep -q 'skipped for .*bugfix' "${RDF_SRC}/canonical/commands/r-spec.md"
+}

@@ -15,17 +15,56 @@ This is the first stage of the spec-plan-build-ship pipeline.
   `.rdf/work-output/spec-progress-*.md` (other sessions). If exactly one
   un-suffixed `.rdf/work-output/spec-progress.md` exists (legacy from pre-3.1.0),
   prompt: "Found legacy progress file. Import? [Y/n]".
+- `--full` / `--quick` / `--bugfix` → set the task-class tier (see Tier
+  Selection); a tier flag may accompany any input form.
 
 **Argument detection logic:**
 - Starts with `http` or `https` → GitHub URL → fetch with `gh`
 - Starts with `#` followed by digits → issue shorthand → `gh issue view`
 - Equals `--resume` → resume from state file
+- `--full` / `--quick` / `--bugfix` → task-class tier flag (see Tier Selection)
 - No argument → start fresh
 
 When a GitHub issue or URL is provided, it becomes the starting
 context for the Discover phase — the user still goes through
 brainstorming and design questions, but the problem statement is
 pre-populated from the issue body.
+
+---
+
+## Tier Selection
+
+`/rdf:r-spec` is where the task-class tier is chosen for the whole lifecycle
+([reference/tiers.md](../reference/tiers.md) — the single source of truth for
+tier semantics and gate caps). `/rdf:r-plan`, `/rdf:r-build`, and the dispatcher inherit
+whatever `/rdf:r-spec` records here, so resolve the tier before Discover:
+
+```bash
+source state/rdf-bus.sh
+rdf_session_init
+```
+
+- **Flag override.** If `--full`, `--quick`, or `--bugfix` is present, it wins:
+  map to `full` / `quick-plan` / `bugfix` and record it with `rdf_set_active_tier <tier>`.
+- **No flag.** Assess the ask against the heuristic signals in
+  `reference/tiers.md` (bug/issue reference + single-file scope → `bugfix`;
+  well-understood ≤ ~3-file change → `quick-plan`; ambiguity or multi-component
+  work → `full`) and present a numbered suggestion the user confirms:
+
+  ```
+  Assessing scope... {one-line read of the ask}.
+  Suggested tier: {heuristic}.
+    [1] full (default)  [2] quick-plan  [3] bugfix
+  Select tier [1]:
+  ```
+
+  A bare Enter selects `[1] full` — one keystroke, today's behavior. On any
+  choice, record it with `rdf_set_active_tier <tier>`.
+
+**`bugfix` short-circuits `/rdf:r-spec`.** A bugfix produces no spec document — it is
+a test-first fix. When the resolved tier is `bugfix`, `/rdf:r-spec` delegates to
+`/rdf:r-plan --bugfix` (which writes a ≤ 2-phase failing-test-first plan) and stops
+— it does NOT run Discover, Clarify, Brainstorm, or Spec.
 
 ---
 
@@ -158,6 +197,31 @@ Proceed with this scope? [Y/n/adjust]
 Wait for user confirmation before entering Phase 2.
 
 Mark task "Discover project context and scope" as `completed`.
+
+---
+
+## Phase 1.5: Clarify (de-ambiguation micro-gate)
+
+Before Brainstorm, interrogate the ask for underspecified requirements — scope
+bounds, unstated constraints, and success criteria. Scaled by tier
+(`reference/tiers.md`): **skipped for `bugfix`**; **one round for `quick-plan`**;
+**full for `full`**.
+
+1. Scan the seed (request + fetched issue/URL + governance) for ambiguity
+   markers: vague quantifiers ("fast", "some", "most"), undefined domain terms,
+   missing acceptance criteria, unspecified error/edge handling, unstated
+   platform/scope boundaries.
+2. Derive up to 5 clarifying questions FROM THE ACTUAL ASK (not a fixed
+   questionnaire), targeting only genuinely ambiguous points. Present them one at
+   a time (multiple-choice where possible).
+3. Record each answer to `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`
+   under a `CLARIFY:` block, same crash-safety cadence as Brainstorm.
+4. If the ask is already fully specified, state "No ambiguities found —
+   proceeding to Brainstorm" and continue. Never invent questions to fill a
+   quota.
+
+This is a self-run pass (no reviewer dispatch). It exists to catch ambiguity at
+design entry rather than during build (Spec Kit `/clarify` precedent).
 
 ---
 
