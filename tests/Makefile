@@ -25,7 +25,8 @@ test: _bats_check
 	        $(TESTS_DIR)hooks-handoff.bats $(TESTS_DIR)doctor.bats \
 	        $(TESTS_DIR)rules-deploy.bats $(TESTS_DIR)memory-context.bats \
 	        $(TESTS_DIR)overhead.bats $(TESTS_DIR)rdf-lite.bats \
-	        $(TESTS_DIR)scale-ceremony.bats $(TESTS_DIR)agent-skills.bats
+	        $(TESTS_DIR)scale-ceremony.bats $(TESTS_DIR)agent-skills.bats \
+	        $(TESTS_DIR)deploy.bats
 
 lint: _bats_check
 	shellcheck $(TESTS_DIR)adapter.bats $(TESTS_DIR)plugin-adapter.bats \
@@ -36,7 +37,8 @@ lint: _bats_check
 	           $(TESTS_DIR)hooks-handoff.bats $(TESTS_DIR)doctor.bats \
 	           $(TESTS_DIR)rules-deploy.bats $(TESTS_DIR)memory-context.bats \
 	           $(TESTS_DIR)overhead.bats $(TESTS_DIR)rdf-lite.bats \
-	           $(TESTS_DIR)scale-ceremony.bats $(TESTS_DIR)agent-skills.bats
+	           $(TESTS_DIR)scale-ceremony.bats $(TESTS_DIR)agent-skills.bats \
+	           $(TESTS_DIR)deploy.bats
 
 help:
 	@echo "Usage: make -C tests [target]"

@@ -14,6 +14,7 @@ Targets:
   claude-code    Deploy to ~/.claude/ (agents, commands, scripts, governance)
   gemini-cli     Deploy to ~/.gemini/ (agents, commands, GEMINI.md)
   codex          Deploy to ~/.codex/ + project root (requires --project-root)
+  agent-skills   Deploy .agents/skills/ into a workspace root (--project-root, default CWD)
 
 Options:
   --dry-run        Show what would happen without making changes
@@ -245,6 +246,25 @@ _deploy_codex() {
     _deploy_copy_skip "${output_dir}/.codex/config.toml" "${dest_base}/config.toml" "$dry_run" "$force"
 }
 
+# Deploy agent-skills output (.agents/skills/) into a workspace root
+_deploy_agent_skills() {
+    local dry_run="$1"
+    local force="$2"
+    local project_root="$3"
+    local output_dir="${RDF_ADAPTERS}/agent-skills/output"
+
+    if [[ ! -d "$output_dir" ]] || [[ -z "$(ls -A "$output_dir" 2>/dev/null)" ]]; then  # 2>/dev/null: empty-on-missing is the intended empties→rdf_die value
+        rdf_die "output not found — run 'rdf generate agent-skills' first"
+    fi
+    [[ -n "$project_root" ]] || project_root="$PWD"
+    if [[ ! -d "$project_root" ]]; then
+        rdf_die "project root not a directory: ${project_root}"
+    fi
+
+    rdf_log "deploying agent-skills to ${project_root}/.agents/skills..."
+    _deploy_symlink "${output_dir}/.agents/skills" "${project_root}/.agents/skills" "$dry_run" "$force"
+}
+
 cmd_deploy() {
     local dry_run=0
     local force=0
@@ -294,6 +314,7 @@ cmd_deploy() {
         claude-code) _deploy_claude_code "$dry_run" "$force" "$deploy_rules" ;;
         gemini-cli)  _deploy_gemini_cli "$dry_run" "$force" ;;
         codex)       _deploy_codex "$dry_run" "$force" "$project_root" ;;
+        agent-skills) _deploy_agent_skills "$dry_run" "$force" "$project_root" ;;
         *)           rdf_die "unknown target: ${target} — run 'rdf deploy help' for usage" ;;
     esac
 
