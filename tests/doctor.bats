@@ -118,6 +118,33 @@ _run_doc_stats() {
     rm -rf "$fix" "$fakehome"
 }
 
+@test "content-drift OK for a deployed command with frontmatter + body --- rules" {
+    # A canonical command body with --- horizontal rules; CC generate prepends
+    # frontmatter and writes the canonical-body sidecar. doctor must strip the
+    # LEADING frontmatter only (body --- rules preserved) → no drift FAIL.
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"
+        proj="$(mktemp -d)"
+        mkdir -p "$proj/canonical/commands"
+        printf "line1\n\n---\n\nline2\n\n---\n\nline3\n" > "$proj/canonical/commands/x.md"
+        RDF_HOME="$proj"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        source "${rdf_src}/adapters/claude-code/adapter.sh"
+        _CC_OUTPUT_DIR="${proj}/adapters/claude-code/output"
+        _cc_resolve_hash_cmd
+        cc_generate_commands
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_content_drift "$proj"
+        if [ "${#_RESULTS[@]}" -gt 0 ]; then printf "%s\n" "${_RESULTS[@]}"; fi
+        rm -rf "$proj"
+    ' -- "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"FAIL"*"commands/x.md"* ]]
+    [[ "$output" == *"content-drift|OK|"* ]]
+}
+
 @test "deps check reports jq: OK when present, WARN when masked" {
     run bash -c '
         set -euo pipefail

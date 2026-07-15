@@ -95,23 +95,32 @@ cmd_sync() {
         done
     fi
 
-    # Sync commands — direct copy (no frontmatter)
+    # Sync commands — strip frontmatter if present (canonical stays frontmatter-free)
     if [[ -d "${output_dir}/commands" ]]; then
         for out_file in "${output_dir}/commands"/*.md; do
             [[ -f "$out_file" ]] || continue
             local basename_f
             basename_f="$(basename "$out_file")"
             local canon_file="${RDF_CANONICAL}/commands/${basename_f}"
+            local body
+            if [[ "$(head -1 "$out_file")" == "---" ]]; then
+                body="$(_strip_frontmatter "$out_file")"
+                body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
+            else
+                body="$(< "$out_file")"
+            fi
 
-            if [[ -f "$canon_file" ]] && diff -q "$out_file" "$canon_file" >/dev/null 2>&1; then
-                unchanged=$((unchanged + 1))
-                continue
+            if [[ -f "$canon_file" ]]; then
+                local current; current="$(< "$canon_file")"
+                if [[ "$body" == "$current" ]]; then
+                    unchanged=$((unchanged + 1)); continue
+                fi
             fi
 
             if [[ $dry_run -eq 1 ]]; then
                 rdf_log "WOULD UPDATE: canonical/commands/${basename_f}"
             else
-                command cp "$out_file" "$canon_file"
+                printf '%s\n' "$body" > "$canon_file"
                 rdf_log "updated: canonical/commands/${basename_f}"
             fi
             changed=$((changed + 1))

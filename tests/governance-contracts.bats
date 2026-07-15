@@ -144,3 +144,13 @@ _contract() {
     brainstorm="$(grep -n '^## Phase 2: Brainstorm' "$f" | head -1 | cut -d: -f1)"
     [ -n "$clarify" ] && [ -n "$brainstorm" ] && [ "$clarify" -lt "$brainstorm" ]
 }
+
+# ── Canonical stays frontmatter-free (Reach — CC frontmatter is adapter-side) ──
+
+@test "canonical commands carry no YAML frontmatter" {
+    local root f
+    root="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+    for f in "${root}"/canonical/commands/*.md; do
+        [ "$(head -1 "$f")" != "---" ]
+    done
+}

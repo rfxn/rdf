@@ -21,6 +21,49 @@ _gen_skills() {
     ' -- "$RDF_SRC" "$output_dir"
 }
 
+# _gen_cc_commands <output_dir> — run cc_generate_commands into a temp tree.
+_gen_cc_commands() {
+    local output_dir="$1"
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; output_dir="$2"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/claude-code/adapter.sh"
+        _CC_OUTPUT_DIR="$output_dir"
+        _cc_resolve_hash_cmd
+        cc_generate_commands
+    ' -- "$RDF_SRC" "$output_dir"
+}
+
+# _gen_gem_commands <output_dir> — run gem_generate_commands into a temp tree.
+_gen_gem_commands() {
+    local output_dir="$1"
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; output_dir="$2"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/gemini-cli/adapter.sh"
+        _GEM_OUTPUT_DIR="$output_dir"
+        gem_generate_commands
+    ' -- "$RDF_SRC" "$output_dir"
+}
+
+# _gen_agents_md <output_dir> — run amd_generate_all into a temp tree.
+_gen_agents_md() {
+    local output_dir="$1"
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; output_dir="$2"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/agents-md/adapter.sh"
+        _AMD_OUTPUT_DIR="$output_dir"
+        amd_generate_all
+    ' -- "$RDF_SRC" "$output_dir"
+}
+
 setup() { TEST_OUT="$(mktemp -d)"; export TEST_OUT; }
 teardown() { rm -rf "$TEST_OUT" 2>/dev/null || true; }  # cleanup, ignore errors
 
@@ -47,4 +90,48 @@ teardown() { rm -rf "$TEST_OUT" 2>/dev/null || true; }  # cleanup, ignore errors
     local s="${TEST_OUT}/.agents/skills/r-status/SKILL.md"
     grep -q '^description: >' "$s"
     [ -n "$(sed -n '/^description: >/{n;p;}' "$s")" ]   # description line non-empty
+}
+
+@test "CC command output gains description frontmatter; canonical stays frontmatter-free" {
+    _gen_cc_commands "$TEST_OUT"
+    head -1 "${TEST_OUT}/commands/r-spec.md" | grep -q '^---$'
+    grep -q '^description: >' "${TEST_OUT}/commands/r-spec.md"
+    [ "$(head -1 "${RDF_SRC}/canonical/commands/r-spec.md")" != "---" ]
+}
+
+@test "gemini command TOML parses as strict TOML (literal-string fix)" {
+    command -v python3 >/dev/null && python3 -c 'import tomllib' >/dev/null 2>&1 || skip "no tomllib"  # 2>/dev/null: probe only; skip handles absence
+    _gen_gem_commands "$TEST_OUT"
+    local bad=0 f
+    for f in "${TEST_OUT}"/.gemini/commands/*.toml; do
+        python3 -c 'import tomllib,sys; tomllib.load(open(sys.argv[1],"rb"))' "$f" || bad=$((bad+1))
+    done
+    [ "$bad" -eq 0 ]
+}
+
+@test "gemini command TOML uses a prompt literal string (python-free guard)" {
+    # MINOR 8: guards the fix even when tomllib is absent. Every generated
+    # command prompt must open a ''' literal (or the ''' -in-body fallback """
+    # WITH escaped backslashes) — never a bare """ basic prompt carrying raw
+    # backslashes (the original 15/37 defect).
+    _gen_gem_commands "$TEST_OUT"
+    local f bad=0
+    for f in "${TEST_OUT}"/.gemini/commands/*.toml; do
+        grep -q "^prompt = '''" "$f" && continue          # literal-string prompt (default path)
+        grep -q '^prompt = """' "$f" || { bad=$((bad+1)); continue; }  # neither form → defect
+    done
+    [ "$bad" -eq 0 ]
+    # r-build's body has backslashes (sed/regex); assert its prompt is a literal
+    grep -q "^prompt = '''" "${TEST_OUT}/.gemini/commands/r-build.toml"
+}
+
+@test "gemini {{args}} NOTE present for arg command, absent for r-status" {
+    _gen_gem_commands "$TEST_OUT"
+    grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-build.toml"
+    ! grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-status.toml"
+}
+
+@test "agents-md AGENTS.md references .agents/skills/" {
+    _gen_agents_md "$TEST_OUT"
+    grep -q '\.agents/skills/' "${TEST_OUT}/AGENTS.md"
 }

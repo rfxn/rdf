@@ -10,6 +10,7 @@ _CC_ADAPTER_DIR="${RDF_ADAPTERS}/claude-code"
 _CC_OUTPUT_DIR="${_CC_ADAPTER_DIR}/output"
 _CC_AGENT_META="${_CC_ADAPTER_DIR}/agent-meta.json"
 _CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta-v3.json"
+_CC_SKILL_META="${RDF_ADAPTERS}/agent-skills/skill-meta.json"   # shared intent-trigger source (Phase 8)
 # rdf-lite: 1 = condensed core governance, lifecycle commands only, no hooks.
 # Default 0 keeps the full generation path byte-identical (set by generate.sh).
 _CC_LITE="${_CC_LITE:-0}"
@@ -123,9 +124,27 @@ _cc_is_lite_command() {
     esac
 }
 
+# cc_generate_command_frontmatter <basename-no-ext> — emit a CC command
+# frontmatter block with an intent-trigger description. Trigger comes from the
+# shared agent-skills skill-meta.json; falls back to the canonical body's first
+# non-heading line. Never sets disable-model-invocation (CC bug #43875).
+cc_generate_command_frontmatter() {
+    local name="$1" desc
+    desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_CC_SKILL_META" 2>/dev/null || true)"  # missing key/file → empty (falls back to body)
+    if [[ -z "$desc" ]]; then
+        desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "${RDF_CANONICAL}/commands/${name}.md")"
+        [[ -z "$desc" ]] && desc="RDF command: ${name}"
+    fi
+    echo "---"
+    echo "description: >"
+    echo "  ${desc}"
+    echo "---"
+}
+
 # Generate all CC command files
-# Reads canonical/commands/*.md + command-meta.json -> output/commands/*.md
-# Currently: direct copy (commands have no frontmatter in CC)
+# Reads canonical/commands/*.md + skill-meta.json -> output/commands/*.md
+# Each command gains an intent-trigger description: frontmatter (canonical stays
+# frontmatter-free; the hash sidecar is over the canonical body).
 cc_generate_commands() {
     local src_dir="${RDF_CANONICAL}/commands"
     local dst_dir="${_CC_OUTPUT_DIR}/commands"
@@ -141,8 +160,13 @@ cc_generate_commands() {
             continue   # lite ships only the lifecycle command set
         fi
         local dst_file="${dst_dir}/${basename_f}"
-        command cp "$src_file" "$dst_file"
-        # Hash the canonical source so doctor can detect post-deploy drift
+        local name_noext="${basename_f%.md}"
+        {
+            cc_generate_command_frontmatter "$name_noext"
+            echo ""
+            command cat "$src_file"
+        } > "$dst_file"
+        # Hash the CANONICAL source (pre-frontmatter) so doctor still matches
         _cc_write_hash_sidecar "$src_file" "$dst_file"
         count=$((count + 1))
     done

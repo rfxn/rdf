@@ -344,22 +344,24 @@ _check_content_drift() {
     local missing_sidecar_count=0
     local checked_count=0
 
-    # Hash the body of a deployed file. For agents (has YAML frontmatter added
-    # by the adapter), strip the leading --- ... --- block and the blank line
-    # that follows before hashing, so the result matches hash(canonical source).
-    # For commands (direct copy, no frontmatter), hash the file directly.
-    # Args: $1 = deployed file path, $2 = "agent" or "command"
+    # Hash the body of a deployed file (agent OR command — both now carry a
+    # leading YAML frontmatter block added by the adapter). Strip ONLY a leading
+    # contiguous --- ... --- block (engaged only when line 1 is ---) plus one
+    # blank separator, then hash the remainder so the result matches
+    # hash(canonical source). Body --- horizontal rules are preserved: once the
+    # closing --- is seen (fm reaches 3) the /^---/ rules no longer fire. A
+    # frontmatter-less file (line 1 not ---) hashes verbatim (fm stays 0).
+    # Args: $1 = deployed file path, $2 = "agent" | "command" (accepted for the
+    # existing two call sites; both now take the same leading-frontmatter strip).
     _hash_deployed_body() {
         local deployed="$1"
-        local kind="$2"
-        if [[ "$kind" == "agent" ]]; then
-            # Strip YAML frontmatter: lines from line 1 (---) through the closing ---,
-            # plus the one blank line separator, then hash the remainder.
-            awk '/^---/{if(fm==0){fm=1;next}else{fm=2;skip=1;next}} fm==2&&skip{skip=0;next} fm!=1{print}' \
-                "$deployed" | rdf_hash_stdin
-        else
-            rdf_hash_stdin < "$deployed"
-        fi
+        awk '
+            NR==1 && /^---[[:space:]]*$/ { fm=1; next }
+            fm==1 && /^---[[:space:]]*$/ { fm=2; next }
+            fm==1 { next }
+            fm==2 { fm=3; if ($0 ~ /^[[:space:]]*$/) next }
+            { print }
+        ' "$deployed" | rdf_hash_stdin
     }
 
     # Check agents: hash deployed body (frontmatter stripped) vs sidecar
