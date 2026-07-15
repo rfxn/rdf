@@ -106,6 +106,10 @@ cmd_sync() {
             if [[ "$(head -1 "$out_file")" == "---" ]]; then
                 body="$(_strip_frontmatter "$out_file")"
                 body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
+                if [[ -z "$body" ]]; then
+                    rdf_warn "skipping commands/${basename_f}: unclosed frontmatter (empty body after strip)"
+                    continue
+                fi
             else
                 body="$(< "$out_file")"
             fi

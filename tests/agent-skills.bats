@@ -128,7 +128,8 @@ teardown() { rm -rf "$TEST_OUT" 2>/dev/null || true; }  # cleanup, ignore errors
 @test "gemini {{args}} NOTE present for arg command, absent for r-status" {
     _gen_gem_commands "$TEST_OUT"
     grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-build.toml"
-    ! grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-status.toml"
+    run grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-status.toml"
+    [ "$status" -ne 0 ]
 }
 
 @test "agents-md AGENTS.md references .agents/skills/" {

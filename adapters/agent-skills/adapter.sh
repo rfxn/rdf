@@ -14,7 +14,7 @@ _SK_META="${_SK_ADAPTER_DIR}/skill-meta.json"
 # skill-meta.json; fall back to the canonical body's first non-heading line.
 _sk_skill_description() {
     local name="$1" src="$2" desc
-    desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_SK_META" 2>/dev/null)"  # missing/malformed → empty, body fallback
+    desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_SK_META" 2>/dev/null || true)"  # missing meta file/key → empty, body fallback (parity with CC twin)
     if [[ -z "$desc" ]]; then
         desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "$src")"
         [[ -z "$desc" ]] && desc="RDF command: ${name}"
