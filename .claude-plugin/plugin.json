@@ -2,7 +2,7 @@
   "name": "rdf",
   "displayName": "RDF — rfxn Development Framework",
   "description": "Governance-driven AI development — convention enforcement, quality gates, and typed agent personas for any repo",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "author": {
     "name": "R-fx Networks",
     "email": "proj@rfxn.com",

@@ -62,12 +62,15 @@ citizenship:
       spec↔plan↔tasks)
 - [x] Living current-state spec (`docs/specs/CURRENT.md`) folded at `/r-ship`
 
-## Next — 3.5.1 "Reach" (Wave 2)
+## Next — "Reach" (Wave 2, version assigned at ship)
 
 Intent-triggered skills + `.agents/skills/` emission for Codex/Gemini parity,
-deploy/sync BATS coverage. Gated on a live Skills-schema probe. Spec + plan:
+deploy/sync BATS coverage, and the gemini-cli adapter TOML-escaping fix
+(15/37 command files fail a strict TOML parser — pre-existing, surfaced by
+the 3.5.0 QA pass). Gated on a live Skills-schema probe, then a fresh
+re-plan of Phases 8-11. Spec + plan:
 [design](docs/specs/2026-07-15-scale-reach-design.md) ·
-[plan](docs/plans/2026-07-15-scale-reach-plan.md) (Phases 8-11).
+[plan](docs/plans/2026-07-15-scale-reach-plan.md).
 
 ## Deferred (tracked, not scheduled)
 
