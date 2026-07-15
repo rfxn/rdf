@@ -10,7 +10,7 @@ System-level overview: canonical sources, profiles, adapters, CLI tools.
 flowchart TD
     subgraph Canonical["Canonical Source (tool-agnostic)"]
         Agents[agents/*.md\n6 universal agents]
-        Commands[commands/*.md\n35 commands]
+        Commands[commands/*.md\n37 commands]
         Scripts[scripts/*.sh]
         Reference[reference/*.md]
     end
