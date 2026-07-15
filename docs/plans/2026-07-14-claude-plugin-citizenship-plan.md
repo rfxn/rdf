@@ -12,6 +12,14 @@
 
 **Plan Version:** 3.0.6
 
+## Progress
+
+All 7 phases complete (2026-07-14): P1 `b22dcdd` · P2 `6d275f4` ·
+P3 `0636209` · P4 `ece8408` (validate --strict green) · P5 `1312b60` ·
+P6 `b6f8453` (CI plugin job) · P7 `ef27860` · post-phase fixup
+`df37308` (hermetic deploy test — CI-red at ef27860, remediated) ·
+sentinel verdict: HEAD sound, 0 SHOULD-FIX.
+
 ## Conventions
 
 **Adapter boilerplate** — `adapters/claude-plugin/adapter.sh` starts with:
