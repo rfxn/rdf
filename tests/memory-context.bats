@@ -186,3 +186,43 @@ _minbin() {
     [ -z "$output" ]
     [ ! -f "$HOME/.rdf/lessons-index.md" ]   # read-only: absent index is not created
 }
+
+# ---- Phase 3: rdf-state diff_categories + r-save/r-start auto-act -----------
+
+@test "rdf-state --full emits diff_categories object" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+    local repo="$TEST_TMP/repo-dc"
+    _mkrepo "$repo"
+    # deterministic classification is a real measurement — the model no longer
+    # classifies changed files in /r-save §1
+    run bash -c 'bash "$1/state/rdf-state.sh" --full "$2" | jq -e ".diff_categories | type == \"object\""' \
+        -- "$RDF_SRC" "$repo"
+    [ "$status" -eq 0 ]
+}
+
+@test "rdf-state --full diff_categories counts staged files by path prefix" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+    local repo="$TEST_TMP/repo-dc2"
+    _mkrepo "$repo"
+    mkdir -p "$repo/canonical/commands" "$repo/docs/specs" "$repo/lib/cmd"
+    touch "$repo/canonical/commands/foo.md" "$repo/docs/specs/bar.md" \
+          "$repo/lib/cmd/x.sh" "$repo/README.md"
+    git -C "$repo" add -A   # stage so porcelain lists per-file (untracked dirs collapse)
+    run bash -c 'bash "$1/state/rdf-state.sh" --full "$2" \
+        | jq -e ".diff_categories | .commands==1 and .cli==1 and .specs==1 and .docs==1"' \
+        -- "$RDF_SRC" "$repo"
+    [ "$status" -eq 0 ]
+}
+
+@test "r-save selects session-end cache and skips state re-run" {
+    grep -q 'RDF_SESSION_ID' "$RDF_SRC/canonical/commands/r-save.md"
+    grep -q 'Cache selection rule' "$RDF_SRC/canonical/commands/r-save.md"
+    grep -q 'diff_categories' "$RDF_SRC/canonical/commands/r-save.md"
+}
+
+@test "r-save and r-start auto-run mem-compact preview at MEMORY threshold" {
+    grep -q 'invoke .*/r-util-mem-compact.* in preview' "$RDF_SRC/canonical/commands/r-save.md"
+    grep -q 'previewed compaction saves' "$RDF_SRC/canonical/commands/r-start.md"
+}

@@ -87,6 +87,7 @@ _is_git="false"
 _unpushed=0
 _dirty_files="[]"
 _recent_commits="[]"
+_diff_categories="{}"
 
 if $TIMEOUT_PREFIX git -C "$_project_path" rev-parse --git-dir >/dev/null 2>&1; then
     _is_git="true"
@@ -142,6 +143,24 @@ if $TIMEOUT_PREFIX git -C "$_project_path" rev-parse --git-dir >/dev/null 2>&1; 
         done < <($TIMEOUT_PREFIX git -C "$_project_path" log --oneline -5 2>/dev/null)
         _rc_list="${_rc_list%,}"
         _recent_commits="[${_rc_list}]"
+
+        # Deterministic diff classification — /r-save reads these instead of the model classifying
+        _dc_cmd=0; _dc_agt=0; _dc_scr=0; _dc_cli=0; _dc_adp=0; _dc_spec=0; _dc_doc=0; _dc_oth=0
+        while IFS= read -r _dcf; do
+            [[ -z "$_dcf" ]] && continue
+            _dcf="${_dcf:3}"  # strip porcelain XY status prefix
+            case "$_dcf" in
+                canonical/commands/*) _dc_cmd=$((_dc_cmd+1)) ;;
+                canonical/agents/*)   _dc_agt=$((_dc_agt+1)) ;;
+                canonical/scripts/*)  _dc_scr=$((_dc_scr+1)) ;;
+                lib/cmd/*|bin/*)      _dc_cli=$((_dc_cli+1)) ;;
+                adapters/*)           _dc_adp=$((_dc_adp+1)) ;;
+                docs/specs/*)         _dc_spec=$((_dc_spec+1)) ;;
+                *.md)                 _dc_doc=$((_dc_doc+1)) ;;
+                *)                    _dc_oth=$((_dc_oth+1)) ;;
+            esac
+        done < <($TIMEOUT_PREFIX git -C "$_project_path" status --porcelain 2>/dev/null)   # probe: empty on failure → zero counts, the intended value
+        _diff_categories="{\"commands\":${_dc_cmd},\"agents\":${_dc_agt},\"scripts\":${_dc_scr},\"cli\":${_dc_cli},\"adapters\":${_dc_adp},\"specs\":${_dc_spec},\"docs\":${_dc_doc},\"other\":${_dc_oth}}"
     fi
 fi
 
@@ -336,6 +355,7 @@ cat <<JSONEOF
   "specs_count": ${_specs_count},
   "session_last": "$(_json_str "$_session_last")",
   "in_flight": ${_in_flight},
+  "diff_categories": ${_diff_categories},
   "insights": ${_insights}
 }
 JSONEOF

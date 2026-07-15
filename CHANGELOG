@@ -36,8 +36,22 @@
       survives compaction (spec §4.3); rules-deploy.bats (7 tests) guards the
       never-scope-core invariant
 
+[New] rdf-state.sh --full emits a deterministic diff_categories object
+      (path-prefix counts: commands/agents/scripts/cli/adapters/specs/docs/
+      other) so /r-save reads the classification instead of the model
+      re-classifying changed files by hand
+
 -- Changes --
 
+[Change] /r-save §1 consumes the SessionEnd cache via an RDF_SESSION_ID-first
+         selection rule (else newest unconsumed session-end-*.json, renamed
+         *.consumed on hit) and skips the rdf-state --full re-run on a hit;
+         reads .diff_categories for the diff summary
+[Change] /r-save §3/§8 and /r-start auto-act on thresholds — MEMORY.md >=180
+         auto-runs the /r-util-mem-compact preview and surfaces the proposed
+         reduction; context >60% renders a fresh-session/half-clone directive
+         instead of a passive warning; /r-start surfaces the indexed-lessons
+         count
 [Change] deploy: opt-in rules/ symlink via --rules (rdf deploy / rdf generate
          --deploy --rules); default off — no behavior change for existing
          symlink users

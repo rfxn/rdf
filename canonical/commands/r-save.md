@@ -35,10 +35,21 @@ only the final report (section 8) produces visible output.
 
 ### 1. Compute Session Diff
 
-Run ONE command to gather current project state:
+A SessionEnd hook may have precomputed this session's deterministic state.
+**Cache selection rule:** if `$RDF_SESSION_ID` is set, look for
+`.rdf/work-output/session-end-${RDF_SESSION_ID}.json`; otherwise glob
+`.rdf/work-output/session-end-*.json` and take the newest one NOT ending in
+`.consumed`. On a hit, parse it, SKIP the `rdf-state.sh --full` re-run, and
+rename the file to `*.consumed`. If no cache is found, run:
 ```bash
 bash state/rdf-state.sh --full .
 ```
+
+Read `.diff_categories` from the state JSON and format the top-3 summary from
+it — do NOT re-classify files by hand; that classification is now
+deterministic in `rdf-state.sh`. (The SessionEnd cache carries only the git
+snapshot, not `diff_categories` — a cache hit still requires this one
+`rdf-state.sh` call to obtain them.)
 
 This returns JSON with: HEAD, branch, dirty count + file names,
 recent commits, unpushed count, plan phases, pipeline position,
@@ -61,18 +72,11 @@ From the state JSON or fallback, identify:
 - Files modified across all new commits
 - Upstream status (unpushed count)
 
-**Diff characterization:** Classify changed files into categories
-by path prefix or extension:
-- `canonical/commands/` → commands
-- `canonical/agents/` → agents
-- `canonical/scripts/` → scripts
-- `canonical/reference/` → reference
-- `lib/cmd/` or `bin/` → CLI
-- `adapters/` → adapters
-- `profiles/` or `modes/` → profiles
-- `*.md` at root → docs
-- `docs/specs/` → specs
-- everything else → other
+**Diff characterization:** The `.diff_categories` object in the state JSON
+already classifies changed files by path prefix — keys `commands`, `agents`,
+`scripts`, `cli`, `adapters`, `specs`, `docs`, `other`. Read those counts
+directly; do NOT re-classify files by hand (the classification is
+deterministic in `rdf-state.sh`).
 
 Produce a one-line summary: `"3 commands, 1 spec, 2 docs"` (ordered
 by count descending, top 3 categories, remainders grouped as "other").
@@ -146,8 +150,9 @@ If it does not exist, create it with the standard index format.
 **CRITICAL**: Never forward-copy values from prior MEMORY.md entries.
 Always grep from source or git for current values.
 
-**Size guard**: After updating, count total lines. If >=180, record
-a warning for the report.
+**Size guard (auto-act)**: After updating, count total lines. If >=180,
+invoke `/r-util-mem-compact` in preview mode and carry its proposed
+reduction into the report (§8) as an action line — not a passive warning.
 
 Record for report: whether HEAD changed, commit count recorded,
 push status, any warnings.
@@ -357,16 +362,17 @@ More informative in less space.
 > **Next** — `/r-start` to resume.
 > ⚠ {N} unpushed commits — `git push` before switching machines
 > ⚠ {N} dirty files: `{file1}`, `{file2}`, `{file3}`
-> ⚠ MEMORY.md at {N}/200 lines — `/r-util-mem-compact`
-> ⚠ Context at ~{N}% — consider fresh session or `/half-clone`
+> ▶ MEMORY.md {N}/200 — previewed compaction saves {M} lines; apply? y/n
+> ▶ Context ~{N}% — start a fresh session or `/half-clone` now
 ```
 
 Warning thresholds:
 - Unpushed: any (>0 is always shown — this is safety-critical)
 - Dirty files: >0 (show up to 5 filenames)
-- Memory: >=180 lines
+- Memory: >=180 lines → auto-run `/r-util-mem-compact` preview, show reduction
 - Context: >60% estimated (rough heuristic: count conversation
-  turns × ~2000 tokens, compare to model context limit)
+  turns × ~2000 tokens, compare to model context limit) → directive
+  (fresh session / `/half-clone`), not a passive warning
 
 **Pipeline-aware Next hint:**
 - `idle` → `Spec a feature with /r-spec, or plan directly with /r-plan`

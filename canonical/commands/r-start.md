@@ -192,14 +192,19 @@ Fallback (no session log) — 3 most recent commits:
 **Warnings** — one blockquote line, pipe-separated:
 
 ```
-> ⚠ Governance {T}h old — `/r-refresh` | MEMORY.md {N}/200 — `/r-util-mem-compact`
+> ▶ Governance {T}h old — `/r-refresh` | MEMORY.md {N}/200 — previewed compaction saves {M} lines | Context ~{N}% — fresh session or `/half-clone`
 ```
+
+When MEMORY.md ≥180, run `/r-util-mem-compact` in preview mode and render the
+proposed reduction inline (auto-act, not a passive warning). When estimated
+context >60%, render the fresh-session/`/half-clone` directive.
 
 Thresholds:
 - Governance stale: >24 hours
 - Dirty state: >5 files
 - Status file stale: >1 hour
-- Memory size: >=180 lines
+- Memory size: >=180 lines → auto-run `/r-util-mem-compact` preview
+- Context: >60% estimated → directive (fresh session / `/half-clone`)
 
 If no thresholds exceeded, omit entirely.
 
@@ -209,7 +214,11 @@ If no thresholds exceeded, omit entirely.
 > **Insights**
 > - **{project}**: {insight text} *— {tool}, {age}*
 > - {insight text} *— {project}, {tool}, {age}*
+> {N} lessons indexed (fetch by ID) — injected at session start
 ```
+
+The lessons ID-index itself is injected by the SessionStart hook (read-only),
+not by `/r-start`; `/r-start` only surfaces the count on the last line above.
 
 Selection (two-tier, 3 max):
 1. Most recent project-matching entry = pinned (bold project name)
