@@ -445,22 +445,21 @@ Daily check-ins from government (NIST, NOAA, NIH), defense (NATO CCDCOE), univer
 
 **What goes wrong when code is wrong:** A false positive in LMD quarantines legitimate files on every server that pulls the update. A regression in APF rule parsing locks administrators out of their own servers. A threshold change in BFD floods block lists or stops detecting real attacks. These are security tools -- a regression changes the security posture of hundreds of thousands of machines.
 
-### Measured impact (2026-03 → 2026-07, derived from session logs + git history)
+### Measured usage (2026-03 → 2026-07, derived from session logs + git history)
 
 | Metric | Value |
 |--------|-------|
 | Active servers running governed tools | ~350,000 |
-| Governed work sessions logged | 518 across 30+ projects (~17 weeks) |
-| Commits landed portfolio-wide | 2,513 (git-verified) |
-| BATS test cases across governed repos | 6,871 (13 repos) |
-| RDF releases | 19 in 19 weeks, each with committed specs (25) and plans (22) |
+| Governed work sessions logged | 518 across 30+ projects (~17 weeks, ~4.3/day sustained) |
+| Commits landed portfolio-wide | 2,513 (git-verified; ~4 per committing session) |
+| BATS test cases across governed repos | 6,871 (13 repos, all CI-runnable) |
+| Major releases shipped under governance | LMD 2.0, APF 2.0, BFD 2.0 — plus 19 RDF releases in 19 weeks |
+| Design artifacts committed | 25 specs, 22 implementation plans — designed in the open |
 
-**Dormant projects, revived.** The clearest signal in the data:
-
-- **BFD** shipped v2.0.1 in March 2026 — its **first release in ~11.6 years** (v1.5-2 was 2014)
-- **APF** went from **four consecutive zero-commit years** (2022-2025) to 169 commits and the v2.0.2 release
-- **LMD** went 0 commits (2024) → 19 (2025) → **171 by mid-2026**, shipping the first 2.x release in project history
-- Testing culture from zero: the three flagship tools had **no test directories** before the 2026 modernization; today they carry 3,869 CI-run BATS tests between them
+One operator, thirty-plus projects, sustained multi-month cadence — with
+every release backed by committed specs, adversarial review, and a test
+suite that runs in CI. That is the throughput the governance layer exists
+to make safe.
 
 ### Project Ecosystem
 

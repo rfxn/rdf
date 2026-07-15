@@ -1,5 +1,7 @@
-title: RDF — rfxn Development Framework
+title: RDF
+tagline: rfxn Development Framework
 description: Governance-driven AI development — convention enforcement, quality gates, and typed agent personas for Claude Code, Gemini CLI, and Codex
+search_placeholder_custom: Search RDF docs
 remote_theme: just-the-docs/just-the-docs
 color_scheme: dark
 search_enabled: true

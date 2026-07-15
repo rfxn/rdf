@@ -77,13 +77,13 @@ RDF governs the development of security tooling running on
 **~350,000 servers** (APF, LMD, BFD). Measured across the RDF era
 (March–July 2026, derived from session logs and git history):
 
-- **518 governed sessions** across 30+ projects, **2,513 commits** landed
-- **BFD's first release in ~11.6 years**; APF revived after four
-  zero-commit years; LMD from 0 commits (2024) to 171 (mid-2026)
-- **6,871 BATS tests** across 13 governed repos — the flagship tools had
-  zero test coverage before the 2026 modernization
-- **19 RDF releases in 19 weeks**, every one with committed design specs
-  (25) and implementation plans (22) — we design in the open:
+- **518 governed sessions** across 30+ projects at a sustained
+  **~4.3 sessions/day**, landing **2,513 git-verified commits**
+- **Three major releases shipped under governance** — LMD 2.0, APF 2.0,
+  BFD 2.0 — plus **19 RDF releases in 19 weeks**
+- **6,871 BATS tests** across 13 governed repos, all CI-runnable
+- Every release backed by committed design specs (25) and implementation
+  plans (22) — we design in the open:
   [spec archive](https://github.com/rfxn/rdf/tree/main/docs/specs)
 
 ## Docs
