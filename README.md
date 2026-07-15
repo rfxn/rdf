@@ -132,6 +132,22 @@ deployed edits  <--   rdf sync     <--   (emergency path)
 | `/r-sync` | Pull emergency edits from deployed location back to canonical |
 | `/r-context-audit` | Measure Claude Code context overhead; scored report + drift detection |
 
+**Context cost.** RDF's default deploy adds ~0.1K always-loaded tokens per
+session -- just the lessons index injected at session start (hard-capped at
+400 bytes); governance is read on demand, so it costs nothing until an agent
+needs it, and `hooks.json` is runtime config that never enters model context.
+Figures are a `bytes/4` estimate from `rdf/state/rdf-overhead.sh`, guarded
+against drift in CI.
+
+| Deploy | Always-loaded overhead |
+|--------|-----------------------:|
+| Default | ~0.1K tokens (lessons index only) |
+| `--rules` (opt-in scoped governance) | ~2.1K tokens (adds the unscoped core rule) |
+| `rdf-lite` | pending (fast-follow) |
+
+Scoped language rules load only when a matching file is read -- they add nothing
+to the always-loaded figures.
+
 ### 4.2. Design → Ship Pipeline Commands
 
 | Command | Dispatches | Purpose |

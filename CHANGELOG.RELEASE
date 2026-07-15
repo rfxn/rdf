@@ -23,6 +23,13 @@
       lessons ID-index as additionalContext; skips resume, re-injects on
       compact (intended), 400B cap bounds per-spawn cost, no-op without
       jq/index; second matcher-less SessionStart hooks.json entry (5s)
+[New] state/rdf-overhead.sh — measure RDF's always-loaded context overhead into
+      default / --rules / lite figures (bytes/4 estimate); hooks.json reported
+      only under excluded (runtime config, never model context); scoped
+      language rules counted dormant; jq-independent; tests/overhead.bats
+      (8 tests) incl. a README drift guard
+[Change] README publishes the figures separately: default deploy ~0.1K tokens,
+         opt-in --rules ~2.1K; rdf-lite pending its build phase
 [New] T3 context-scoped governance rules: cc_generate_rules emits
       output/rules/<profile>.md; language profiles get a paths: frontmatter
       block derived from registry.json detect globs, core stays unscoped so it
