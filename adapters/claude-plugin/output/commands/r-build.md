@@ -23,6 +23,9 @@ Arguments:
 - If `$plan_path` is empty, report error and stop:
   "No active plan found. Create one with /rdf:r-plan or write it manually,
    then run /rdf:r-plan --resume <path> to set the pointer."
+- `tier="$(rdf_active_tier)"` — resolve the plan's task-class tier
+  (`full` when no `**Tier:**` marker); carried into the Section 5
+  dispatch payload so the dispatcher can cap gates.
 - Read `$plan_path` as the plan input from here forward. Validate
   the plan against
   [reference/plan-schema.md](../reference/plan-schema.md). Apply
@@ -43,6 +46,28 @@ Arguments:
   manually, edited after planning, or the pre-reviewer pass was skipped
   — either fix the plan and re-run /rdf:r-build, or re-run /rdf:r-plan to
   regenerate.
+
+- **Consistency micro-gate (spec↔plan↔tasks).** After schema validation,
+  run the deterministic cross-check:
+  ```bash
+  bash state/rdf-consistency.sh check "$plan_path"
+  ```
+  (If a source spec is known, pass it as the second argument for goal /
+  edge-case coverage.) Exit 2 = structural break (File-Map/phase mismatch
+  or phase-count mismatch) → print the findings and STOP without
+  dispatching (fix via `/rdf:r-plan`). Exit 1 = advisory drift (uncovered
+  goal/edge case, missing `**Goals:**` field, tier-size) → surface the
+  findings and proceed. Exit 0 = clean. Spec Kit `/analyze` precedent;
+  mechanical checks only.
+
+  **Escape hatch.** For a rare legitimate structural false-positive (an
+  intentional File-Map entry a reviewer approved), re-run with
+  `state/rdf-consistency.sh check --warn-only "$plan_path"` to downgrade
+  the exit-2 block to an exit-1 warning. Using `--warn-only` REQUIRES the
+  operator to state the reason in the `/rdf:r-build` invocation (e.g.
+  `/rdf:r-build --consistency-warn-only "reason: File-Map intentionally lists
+  the generated foo.sh"`) — exit-2-with-no-override is too brittle for
+  real plans.
 
 ### 2. Identify Target Phase
 
@@ -152,6 +177,7 @@ Build the dispatch prompt for the dispatcher subagent:
 PHASE: <N>
 DESCRIPTION: <phase description from the active plan>
 MODE: <execution mode tag: serial-context | serial-agent | parallel-agent>
+TIER: <rdf_active_tier — full|quick-plan|bugfix, read at Section 1>
 FILES: <file list from the active plan>
 ACCEPT: <acceptance criteria from the active plan>
 PLAN_PHASE_COUNT: <total phases in the active plan>

@@ -46,3 +46,29 @@ teardown() { rm -rf "${_TEST_PROJ}" 2>/dev/null || true; } # cleanup, ignore err
     grep -q 'quickplan' "${RDF_SRC}/canonical/commands/r-plan.md"
     grep -q 'failing regression test' "${RDF_SRC}/canonical/commands/r-plan.md"
 }
+
+@test "consistency check passes consistent plan" {
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check "${RDF_SRC}/tests/fixtures/tiers/consistent-plan.md"
+    [ "$status" -eq 0 ]
+}
+@test "consistency check blocks File-Map/phase mismatch" {
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check "${RDF_SRC}/tests/fixtures/tiers/mismatch-plan.md"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"ghost.sh"* ]]
+}
+@test "consistency check covers a comma-list Files line (M2 multi-path)" {
+    # commalist-plan.md has `- Create: `a.sh`, `b.sh`` and File Map lists both.
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check "${RDF_SRC}/tests/fixtures/tiers/commalist-plan.md"
+    [ "$status" -eq 0 ]   # single-capture parse would flag b.sh uncovered → 2
+}
+@test "consistency check warns on uncovered goal" {
+    # consistent structurally but spec Goal 9 unreferenced → exit 1
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check \
+        "${RDF_SRC}/tests/fixtures/tiers/consistent-plan.md" \
+        "${RDF_SRC}/tests/fixtures/tiers/spec-with-extra-goal.md"
+    [ "$status" -eq 1 ]
+}
+@test "--warn-only downgrades a structural error to a warning" {
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check --warn-only "${RDF_SRC}/tests/fixtures/tiers/mismatch-plan.md"
+    [ "$status" -eq 1 ]   # exit 2 → 1 under --warn-only
+}

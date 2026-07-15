@@ -42,7 +42,7 @@ _generate_deploy_state_helpers() {
     local state_dst="${HOME}/.rdf/state"
     local _helper src
     command mkdir -p "$state_dst"
-    for _helper in rdf-state.sh context-audit.sh rotate-work-output.sh rdf-bus.sh rdf-lessons.sh; do
+    for _helper in rdf-state.sh context-audit.sh rotate-work-output.sh rdf-bus.sh rdf-consistency.sh rdf-lessons.sh; do
         src="${RDF_HOME}/state/${_helper}"
         if [[ -f "$src" ]]; then
             command cp "$src" "${state_dst}/${_helper}"
