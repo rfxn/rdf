@@ -52,16 +52,29 @@ citizenship:
       (default ~0.1K / `--rules` ~2.1K / `rdf-lite` ~0.7K always-loaded tokens)
 - [x] `rdf-lite` minimal deploy variant
 
-## Next major — 3.5 "Scale & Reach"
+## Delivered — 3.5.0 "Scale"
 
-Scale-adaptive ceremony (task-class tiers: full / quick-plan / bugfix), a
-Clarify micro-gate, and intent-triggered skills. Spec + plan drafted:
+- [x] Scale-adaptive ceremony: task-class tiers (full / quick-plan / bugfix)
+      with a security floor — tiers only remove ceremony, never the security
+      pass
+- [x] `/r-spec` Phase 1.5 Clarify de-ambiguation micro-gate
+- [x] `/r-build` consistency micro-gate (`rdf-consistency.sh`,
+      spec↔plan↔tasks)
+- [x] Living current-state spec (`docs/specs/CURRENT.md`) folded at `/r-ship`
+
+## Next — 3.5.1 "Reach" (Wave 2)
+
+Intent-triggered skills + `.agents/skills/` emission for Codex/Gemini parity,
+deploy/sync BATS coverage. Gated on a live Skills-schema probe. Spec + plan:
 [design](docs/specs/2026-07-15-scale-reach-design.md) ·
-[plan](docs/plans/2026-07-15-scale-reach-plan.md).
+[plan](docs/plans/2026-07-15-scale-reach-plan.md) (Phases 8-11).
 
 ## Deferred (tracked, not scheduled)
 
-- Debt cleanup: Agent-Teams triad, dead-code sweep (3.2 T5)
+- Wave 3 coordination re-triage → 3.6 (message bus recommended against —
+  obsoleted by native background agents; only phantom collect-spool cleanup
+  and an optional read-only peer view survive)
+- Debt cleanup follow-ups beyond the executed 3.2 T5 cuts (shipped in 3.3.1)
 
 ---
 

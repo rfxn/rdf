@@ -1,5 +1,45 @@
 # RDF Changelog
 
+## 3.5.0
+
+-- New Features --
+
+[New] task-class tiers (full/quick-plan/bugfix): reference/tiers.md single
+      source of truth (definitions, heuristic signals, min(scope_gate,
+      tier_cap) gate caps, security floor); rdf-bus.sh
+      rdf_set_active_tier/rdf_active_tier/rdf_clear_active_tier session pointer
+      parallel to active-plan — a resolved plan **Tier:** marker is
+      authoritative; defaults to full everywhere (legacy plans unchanged);
+      plan-schema Rule 10 optional **Tier:** preamble marker
+[New] /r-spec tier selection (--full/--quick/--bugfix, heuristic suggestion the
+      user confirms, bare Enter → full; first setter — /r-plan inherits) and
+      Phase 1.5 Clarify de-ambiguation micro-gate before Brainstorm (<=5
+      targeted questions, scaled by tier, skipped for bugfix)
+[New] /r-plan tier flow: stamps **Tier:** into the plan preamble; quick-plan
+      condensed single-artifact path (-quickplan.md); bugfix failing-test-first
+      <=2-phase path (schema-only validation, sentinel-lite at build time)
+[New] /r-build consistency micro-gate: state/rdf-consistency.sh cross-checks
+      spec↔plan↔tasks — File-Map↔phase coverage (multi-path Files parse, Phase
+      0 counted) and phase count are structural blocks (exit 2); spec-goal /
+      **Goals:** field / tier-size coverage warn (exit 1); --warn-only
+      downgrades a block with a stated reason
+[New] docs/specs/CURRENT.md living current-state spec; /r-ship Stage 3e folds
+      each shipped plan's outcome in as a dated ADDED/MODIFIED/REMOVED delta
+      (user-approved, skipped on bugfix); r-ship clears the tier pointer
+      alongside the active-plan pointer
+
+-- Changes --
+
+[Change] dispatcher applies max(security_floor, min(scope_gate, tier_cap)):
+         quick-plan caps Gate 3 at sentinel-lite and skips the end-of-plan
+         sentinel; bugfix runs Gate 1 + regression-only sentinel-lite; full
+         unchanged; the cap only lowers gates and never below the security
+         floor — scope:sensitive or a security-indicator file keeps Gate 2 +
+         sentinel-full regardless of tier
+[Change] governance-contracts grew 4 tier/clarify/living-spec contracts;
+         tests/scale-ceremony.bats (11 tests) covers the tier + consistency
+         surface incl. the File-Map-less graceful skip
+
 ## 3.4.0
 
 -- New Features --

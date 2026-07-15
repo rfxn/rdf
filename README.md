@@ -151,6 +151,13 @@ to the always-loaded figures. Opt into either variant with a deploy flag:
 symlinks) or `bin/rdf deploy --lite claude-code` (rdf-lite: condensed governance,
 lifecycle commands only, hooks skipped).
 
+**Scale-adaptive ceremony.** The pipeline scales to the task: pick a tier at
+`/r-spec` or `/r-plan` entry — `--full` (default, unchanged), `--quick`
+(condensed single-artifact plan, lighter gates), or `--bugfix`
+(failing-test-first, minimal gates). A 5-line fix is just `/r-plan --bugfix`.
+Tiers only remove ceremony, never safety: security-sensitive changes keep the
+full security review regardless of tier. See `reference/tiers.md`.
+
 ### 4.2. Design → Ship Pipeline Commands
 
 | Command | Dispatches | Purpose |
