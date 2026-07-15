@@ -20,7 +20,7 @@ rules.
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](https://github.com/rfxn/rdf/blob/main/LICENSE)
 
-**6 agents · 37 commands · 11 profiles · 5 adapters · 7 modes**
+**6 agents · 37 commands · 11 profiles · 6 adapters · 7 modes**
 
 [Quickstart — 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
 [View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }

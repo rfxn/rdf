@@ -3,7 +3,7 @@
 [![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
-![Adapters](https://img.shields.io/badge/adapters-5-purple.svg)
+![Adapters](https://img.shields.io/badge/adapters-6-purple.svg)
 ![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
 
 **Governance-driven AI development for teams that ship to production.**
@@ -599,6 +599,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 37 commands -- 16 scripts -- 11 profiles -- 5 adapters -- 7 modes**
+**6 agents -- 37 commands -- 16 scripts -- 11 profiles -- 6 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

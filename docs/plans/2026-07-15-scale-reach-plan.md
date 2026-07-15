@@ -1094,6 +1094,8 @@ to the codex or gemini adapters.
 - Modify: `lib/cmd/generate.sh`
 - Create: `tests/agent-skills.bats`
 - Modify: `tests/Makefile`
+- Modify: `README.md` (adapter-count 5→6, badge + footer — pulled forward from Phase 11 so doc-stats stays green)
+- Modify: `docs/index.md` (adapter-count 5→6 — pulled forward from Phase 11)
 
 - **Mode**: serial-agent
 - **Goals:** 6
@@ -1337,6 +1339,12 @@ to the codex or gemini adapters.
   (`.git/info/exclude` is not a tracked file — this step produces no staged
   change; it prevents an accidental `git add` of output.)
 
+- [ ] **Step 6b: doc-stats adapter count 5→6** (pulled forward from Phase 11:
+  the 6th `adapters/*/` dir makes doctor doc-stats FAIL and `doctor.bats`
+  asserts 0 FAIL rows, so the suite would stay red until release otherwise) —
+  `README.md:6` badge `adapters-5`→`adapters-6`; `README.md:602` footer and
+  `docs/index.md:23` `5 adapters`→`6 adapters`.
+
 - [ ] **Step 7: Lint + test**
   ```bash
   bash -n adapters/agent-skills/adapter.sh && shellcheck adapters/agent-skills/adapter.sh
@@ -1351,7 +1359,7 @@ to the codex or gemini adapters.
 - [ ] **Step 8: Commit**
   ```bash
   git add adapters/agent-skills/adapter.sh adapters/agent-skills/skill-meta.json \
-      lib/cmd/generate.sh tests/agent-skills.bats tests/Makefile
+      lib/cmd/generate.sh tests/agent-skills.bats tests/Makefile README.md docs/index.md
   git commit -m "Add agent-skills adapter + antigravity generate target
 
   [New] adapters/agent-skills — emits .agents/skills/<cmd>/SKILL.md (name +
@@ -1944,13 +1952,11 @@ Docs, roadmap, changelog, VERSION bump. Depends on Phases 8–10.
   `rdf generate agent-skills` (shared `.agents/skills/`) and `rdf generate
   antigravity` (skills + AGENTS.md); note gemini-cli is a **frozen legacy tier**
   for enterprise Gemini CLI users (kept for the transition, TOML fix included).
-  **Also bump the doc-stats adapter count 5→6** (agent-skills is a new adapter
-  dir): the badge `README.md:6` (`adapters-5`→`adapters-6`) and the footer
-  banner `README.md:602` (`5 adapters`→`6 adapters`). Verify with
-  `bash bin/rdf doctor --all 2>&1 | grep -i 'doc-stat\|adapter'` after the edit —
-  doc-stats counts `adapters/*/` live and will FAIL if the docs still say 5.
-- [ ] **Step 2: docs/index.md** — bump the footer stats line `docs/index.md:23`
-  (`5 adapters`→`6 adapters`) to match the live count.
+  **Adapter-count bumps (5→6) landed in Phase 8** (pulled forward to keep the
+  suite green across 8–10); verify with
+  `bash bin/rdf doctor --all 2>&1 | grep -i 'doc-stat\|adapter'` — expect OK.
+- [ ] **Step 2: docs/index.md** — verify the footer stats line `docs/index.md:23`
+  already says `6 adapters` (bumped in Phase 8); update any other drifted stats.
 - [ ] **Step 3: ROADMAP** — check off the first-class multi-tool / Agent-Skills
   item; note Antigravity is the locked transition target and gemini-cli is legacy.
 - [ ] **Step 4: CHANGELOG + CHANGELOG.RELEASE** — a `## <REACH_VERSION>` block,

@@ -16,6 +16,8 @@ Targets:
   gemini-cli     Generate Gemini CLI adapter output
   codex          Generate Codex adapter output (AGENTS.md + config)
   agents-md      Generate cross-tool AGENTS.md
+  agent-skills   Generate .agents/skills/ (Codex + Antigravity shared surface)
+  antigravity    Generate the Antigravity surface (.agents/skills/ + AGENTS.md)
   all            Generate all available adapters
 
 Options:
@@ -134,6 +136,20 @@ cmd_generate() {
                 rdf_warn "--deploy not applicable to agents-md target"
             fi
             ;;
+        agent-skills)
+            _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                rdf_warn "--deploy for agent-skills requires manual 'rdf deploy --project-root <path> agent-skills'"
+            fi
+            ;;
+        antigravity)
+            # First-class composite: shared skills + AGENTS.md context (spec §13.4)
+            _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
+            _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
+            if [[ $deploy_after -eq 1 ]]; then
+                rdf_warn "--deploy for antigravity: copy .agents/skills/ + AGENTS.md into the workspace root (skills via 'rdf deploy --project-root <path> agent-skills')"
+            fi
+            ;;
         all)
             rdf_log "generating all adapters..."
             local failed=0
@@ -161,6 +177,11 @@ cmd_generate() {
             # AGENTS.md
             if [[ -f "${RDF_ADAPTERS}/agents-md/adapter.sh" ]]; then
                 _generate_adapter "agents-md/adapter.sh" "amd_generate_all" || failed=$((failed + 1))
+            fi
+
+            # Agent Skills (.agents/skills/) — shared Codex + Antigravity surface
+            if [[ -f "${RDF_ADAPTERS}/agent-skills/adapter.sh" ]]; then
+                _generate_adapter "agent-skills/adapter.sh" "sk_generate_all" || failed=$((failed + 1))
             fi
 
             if [[ $failed -gt 0 ]]; then
