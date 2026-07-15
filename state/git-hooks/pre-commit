@@ -190,6 +190,11 @@ while IFS= read -r _ap_path; do
 
     [[ -z "$_ap_diff" ]] && continue
 
+    # Drop lines carrying a same-line '#' (suppression) once, so each class greps the
+    # remaining added lines a single time instead of once per line.
+    _ap_scan="$(grep -vE '#' <<< "$_ap_diff" || true)"  # rc1 when every line has #; safe
+    [[ -z "$_ap_scan" ]] && continue
+
     _ap_i=0
     for _ap_class in "${_AP_CLASSES[@]}"; do
         _ap_pat="${_AP_PATTERNS[$_ap_i]}"
@@ -198,23 +203,25 @@ while IFS= read -r _ap_path; do
         # Class-level opt-out via governance/ignore.md
         _ap_class_skipped "$_ap_class" && continue
 
-        # Scan each added line independently so we can apply same-line # suppression.
-        while IFS= read -r _ap_line; do
-            # Same-line # suppresses any class for that line.
-            [[ "$_ap_line" =~ '#' ]] && continue
+        # One grep over all remaining added lines for this class.
+        _ap_hits="$(grep -E "$_ap_pat" <<< "$_ap_scan" || true)"  # rc1 when no match; safe
+        [[ -z "$_ap_hits" ]] && continue
 
-            if echo "$_ap_line" | grep -qE "$_ap_pat"; then
-                # For bare-coreutils: suppress when 'command ' immediately precedes the util.
-                if [[ "$_ap_class" == "bare-coreutils-no-prefix" ]]; then
-                    echo "$_ap_line" | grep -qE 'command[[:space:]]+(sha256sum|md5sum|cp|mv|rm|chmod|mkdir|cat|touch|ln)\b' && continue
-                fi
-                echo "rdf pre-commit: ANTI-PATTERN [$_ap_class] in $_ap_path:" >&2
-                echo "  $_ap_line" >&2
-                echo "  Suppress with a same-line # comment explaining why this is safe," >&2
-                echo "  or add '# anti-pattern-skip: $_ap_class' to governance/ignore.md." >&2
-                _ap_found=1
-            fi
-        done <<< "$_ap_diff"
+        # For bare-coreutils: drop lines where 'command ' precedes the util (valid usage).
+        if [[ "$_ap_class" == "bare-coreutils-no-prefix" ]]; then
+            _ap_hits="$(grep -vE 'command[[:space:]]+(sha256sum|md5sum|cp|mv|rm|chmod|mkdir|cat|touch|ln)\b' <<< "$_ap_hits" || true)"  # rc1 when all command-prefixed; safe
+            [[ -z "$_ap_hits" ]] && continue
+        fi
+
+        # Report each offending line.
+        while IFS= read -r _ap_line; do
+            [[ -z "$_ap_line" ]] && continue
+            echo "rdf pre-commit: ANTI-PATTERN [$_ap_class] in $_ap_path:" >&2
+            echo "  $_ap_line" >&2
+            echo "  Suppress with a same-line # comment explaining why this is safe," >&2
+            echo "  or add '# anti-pattern-skip: $_ap_class' to governance/ignore.md." >&2
+            _ap_found=1
+        done <<< "$_ap_hits"
     done
 done <<< "$_staged"
 

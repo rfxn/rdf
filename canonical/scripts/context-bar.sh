@@ -25,9 +25,20 @@ esac
 
 input=$(cat)
 
-# Extract model, directory, and cwd
-model=$(echo "$input" | jq -r '.model.display_name // .model.id // "?"')
-cwd=$(echo "$input" | jq -r '.cwd // empty')
+# Extract all hook-input fields in one jq pass. Newline-delimited, not @tsv: tab is
+# IFS-whitespace and would collapse consecutive empty fields (shifting the parse).
+{
+    IFS= read -r model
+    IFS= read -r cwd
+    IFS= read -r transcript_path
+    IFS= read -r max_context
+    IFS= read -r cost_usd
+} < <(printf '%s' "$input" | jq -r '
+    .model.display_name // .model.id // "?",
+    .cwd // "",
+    .transcript_path // "",
+    (.context_window.context_window_size // 200000 | tostring),
+    (.cost.total_cost_usd // "" | tostring)')
 dir=$(basename "$cwd" 2>/dev/null || echo "?")
 
 # Get git branch, uncommitted file count, and sync status
@@ -95,33 +106,23 @@ if [[ -n "$cwd" && -d "$cwd" ]]; then
     fi
 fi
 
-# Get transcript path for context calculation and last message feature
-transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
-
-# Get context window size from JSON (accurate), but calculate tokens from transcript
-# (more accurate than total_input_tokens which excludes system prompt/tools/memory)
+# Context window size (extracted above); tokens are computed from the transcript
+# (more accurate than total_input_tokens which excludes system prompt/tools/memory).
 # See: github.com/anthropics/claude-code/issues/13652
-max_context=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
 max_k=$((max_context / 1000))
 
 # Calculate context bar from transcript
 if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
+    # Single pass over the transcript: token totals AND turn count share one filter
+    # (was two separate slurps). Last-message extraction stays separate below so its
+    # tolerated-failure semantics stay decoupled from the metrics.
     context_metrics=$(jq -rs '
-        map(select(.message.usage and .isSidechain != true and .isApiErrorMessage != true)) |
-        last |
-        if . then
-            {
-                total: ((.message.usage.input_tokens // 0) +
-                        (.message.usage.cache_read_input_tokens // 0) +
-                        (.message.usage.cache_creation_input_tokens // 0)),
-                cache_read: (.message.usage.cache_read_input_tokens // 0),
-                cache_create: (.message.usage.cache_creation_input_tokens // 0),
-                input: (.message.usage.input_tokens // 0)
-            }
-        else { total: 0, cache_read: 0, cache_create: 0, input: 0 } end |
-        "\(.total) \(.cache_read) \(.cache_create) \(.input)"
+        map(select(.message.usage and .isSidechain != true and .isApiErrorMessage != true)) as $u |
+        ($u | last | .message.usage) as $g |
+        (($g.input_tokens // 0) + ($g.cache_read_input_tokens // 0) + ($g.cache_creation_input_tokens // 0)) as $total |
+        "\($total) \($g.cache_read_input_tokens // 0) \($g.cache_creation_input_tokens // 0) \($g.input_tokens // 0) \($u | length)"
     ' < "$transcript_path")
-    read -r context_length cache_read cache_create uncached_input <<< "$context_metrics"
+    read -r context_length cache_read cache_create uncached_input turn_count <<< "$context_metrics"
 
     # Cache hit rate: cache_read / (cache_read + cache_create + uncached_input)
     cache_total=$((cache_read + cache_create + uncached_input))
@@ -178,15 +179,12 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
         cache_color="$C_GRAY"
     fi
 
-    # Session cost and windowed burn rate (last 5 turns)
-    cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
+    # Session cost and windowed burn rate (last 5 turns); cost_usd extracted above
     cost_label=""
     if [[ -n "$cost_usd" ]]; then
         cost_fmt=$(printf '$%.2f' "$cost_usd")
 
-        # Count turns (assistant messages with usage, excluding sidechain)
-        turn_count=$(jq -s '[.[] | select(.message.usage and .isSidechain != true and .isApiErrorMessage != true)] | length' < "$transcript_path")
-
+        # turn_count comes from the single metrics pass above
         if [[ "$turn_count" -gt 0 ]]; then
             # Track cumulative cost at each turn for windowed average
             # Prefer XDG_RUNTIME_DIR (user-private tmpfs) over world-readable /tmp

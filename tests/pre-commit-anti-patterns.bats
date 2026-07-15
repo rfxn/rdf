@@ -116,6 +116,30 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "batched scan reports every hit across classes and honors command-prefix exception" {
+    # Guards the per-class batched grep: multiple hits in one file, mixed classes,
+    # a command-prefixed line that must NOT flag, and a same-line-# suppression.
+    cat > "$TEST_REPO/multi.sh" <<'EOF'
+#!/usr/bin/env bash
+rm -rf /var/foo
+mkdir /c
+command cp /ok /dst
+cleanup 2>/dev/null
+touch /tmp/keep  # intentional
+EOF
+    git -C "$TEST_REPO" add multi.sh
+    run git -C "$TEST_REPO" commit -m "multi"
+    [ "$status" -ne 0 ]
+    # Both bare coreutils are reported...
+    [[ "$output" =~ "rm -rf /var/foo" ]]
+    [[ "$output" =~ "mkdir /c" ]]
+    # ...the suppression-no-comment line is reported...
+    [[ "$output" =~ "cleanup 2>/dev/null" ]]
+    # ...but the command-prefixed line and the #-suppressed line are NOT.
+    [[ ! "$output" =~ "command cp /ok /dst" ]]
+    [[ ! "$output" =~ "touch /tmp/keep" ]]
+}
+
 @test "scope-check ordering preserved (scope first, anti-pattern second)" {
     # On a non-worktree branch the scope block exits 0 early (line ~44 of hook).
     # The anti-pattern section must NOT run before the scope block.
