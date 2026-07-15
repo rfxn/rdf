@@ -323,6 +323,25 @@ no count assertions passes all three sites with no action.
 
 ---
 
+## Rule 10: Tier Marker (optional)
+
+Plans MAY declare a task-class tier in the preamble, on its own line
+immediately after `**Plan Version:**`:
+
+```
+**Tier:** full | quick-plan | bugfix
+```
+
+Absent marker → treated as `full` (legacy plans behave unchanged). The value
+must be one of the three literals. `bugfix` plans SHOULD have ≤ 2 phases and
+`quick-plan` ≤ ~6 (advisory — `rdf-consistency.sh` warns, does not block).
+See `reference/tiers.md` for tier semantics and gate caps.
+
+**Failure:** *"Phase preamble Tier marker '<v>' is not one of
+full|quick-plan|bugfix."* (only when a marker is present and malformed).
+
+---
+
 ## Adding a New Rule
 
 When extending this schema:

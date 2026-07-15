@@ -5,7 +5,8 @@
 #
 # Provides: rdf_session_init, rdf_scoped_filename, rdf_session_short,
 #           rdf_parse_phase_scope, rdf_active_plan_path,
-#           rdf_set_active_plan, rdf_clear_active_plan.
+#           rdf_set_active_plan, rdf_clear_active_plan,
+#           rdf_set_active_tier, rdf_active_tier, rdf_clear_active_tier.
 # Sourced by /r-* commands and the pre-commit hook. Idempotent.
 
 # rdf_uuidv7 — emit a UUIDv7 string to stdout
@@ -178,4 +179,53 @@ rdf_clear_active_plan() {
     local root="${1:-$PWD}"
     rdf_session_init
     command rm -f "${root}/.rdf/active-plan-${RDF_SESSION_ID}"
+}
+
+# rdf_set_active_tier <tier> [project_root] — write session tier pointer
+rdf_set_active_tier() {
+    local tier="${1:?rdf_set_active_tier requires a tier}"
+    local root="${2:-$PWD}"
+    case "$tier" in
+        full|quick-plan|bugfix) ;;
+        *) printf 'rdf_set_active_tier: invalid tier: %s\n' "$tier" >&2; return 1 ;;
+    esac
+    rdf_session_init
+    command mkdir -p "${root}/.rdf"
+    printf '%s\n' "$tier" > "${root}/.rdf/active-tier-${RDF_SESSION_ID}"
+}
+
+# rdf_active_tier [project_root] — echo the active tier (default: full)
+# Precedence (S3): the resolved plan's **Tier:** marker is AUTHORITATIVE and
+# reconciles the pre-plan session pointer; else the session pointer (pre-plan
+# carrier, used during /r-spec before a plan exists); else "full".
+rdf_active_tier() {
+    local root="${1:-$PWD}" pointer tier plan marker
+    rdf_session_init
+    pointer="${root}/.rdf/active-tier-${RDF_SESSION_ID}"
+    plan="$(rdf_active_plan_path "$root")" || plan=""     # 1 = no plan yet
+    # 1) Plan marker wins once a plan resolves; overwrite the pointer to match.
+    if [[ -n "$plan" && -f "$plan" ]]; then
+        marker="$(grep -m1 '^\*\*Tier:\*\*' "$plan" 2>/dev/null | sed -E 's/^\*\*Tier:\*\*[[:space:]]*//')"  # no marker → empty
+        marker="${marker%%[[:space:]]*}"                  # first token (marker line may carry prose)
+        case "$marker" in
+            full|quick-plan|bugfix)
+                command mkdir -p "${root}/.rdf" 2>/dev/null || true   # reconcile write is best-effort
+                printf '%s\n' "$marker" > "$pointer" 2>/dev/null || true   # pointer follows the authoritative marker
+                printf '%s\n' "$marker"; return 0 ;;
+        esac
+    fi
+    # 2) Pre-plan phase: the session pointer is the carrier.
+    if [[ -f "$pointer" ]]; then
+        tier="$(< "$pointer")"; tier="${tier%[$'\r\n']}"; tier="${tier%[$'\r\n']}"
+        case "$tier" in full|quick-plan|bugfix) printf '%s\n' "$tier"; return 0 ;; esac
+    fi
+    # 3) Default.
+    printf 'full\n'; return 0
+}
+
+# rdf_clear_active_tier [project_root] — remove the session tier pointer (idempotent)
+rdf_clear_active_tier() {
+    local root="${1:-$PWD}"
+    rdf_session_init
+    command rm -f "${root}/.rdf/active-tier-${RDF_SESSION_ID}"
 }
