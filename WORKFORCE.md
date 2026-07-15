@@ -243,4 +243,4 @@ dispatcher, or invoked via `/r-review`.
 | /rel-chg-dedup | /r-util-chg-dedup |
 | /test-dedup | /r-util-test-dedup |
 
-**Total: 6 agents + 37 commands + 12 scripts = 55 primitives**
+**Total: 6 agents + 37 commands + 14 scripts = 57 primitives**

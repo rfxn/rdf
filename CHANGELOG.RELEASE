@@ -34,7 +34,6 @@
          adapter + repo-as-marketplace shipped in 3.3.0, only community-
          marketplace submission remains deferred; add Claude Plugin to the
          in-scope adapters list
-
 [Remove] Agent-Teams triad (3.2 T5 debt cleanup): the deprecated v2 dispatch
       modules (lib/dispatch.sh, lib/cmd/dispatch.sh) and their `rdf dispatch` CLI
       route in bin/rdf, the two design specs (dispatch-abstraction.md,
