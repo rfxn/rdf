@@ -51,6 +51,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/session-start-inject.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SubagentStop": [

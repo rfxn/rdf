@@ -294,6 +294,18 @@ Use the first tag as the category. Bullet format:
 **Cap at 50 entries.** If the file exceeds 50 bullets after
 appending, note it as a warning in the report.
 
+**Rebuild the lessons index (single writer, F7).** After appending
+(y or auto), run:
+```bash
+bash state/rdf-lessons.sh index
+```
+This rebuilds `~/.rdf/lessons-index.md` AND backfills any missing
+`<!-- id:X -->` markers on lessons bullets (idempotent). This is the
+ONLY place `lessons-learned.md` / `lessons-index.md` are written
+programmatically — the SessionStart inject hook is strictly read-only.
+`rdf-lessons.sh index` takes an flock on `lessons-learned.md`, so a
+concurrent `/rdf:r-util-mem-compact` consolidation cannot interleave.
+
 ### 8. Output Report
 
 This is the ONLY visible text output from the entire save operation.

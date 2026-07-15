@@ -13,6 +13,9 @@
 
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 CAP="$RDF_SRC/canonical/scripts/session-end-capture.sh"
+LESSONS="$RDF_SRC/state/rdf-lessons.sh"
+INJECT="$RDF_SRC/canonical/scripts/session-start-inject.sh"
+LESSONS_FIXTURE="$RDF_SRC/tests/fixtures/lessons/lessons-sample.md"
 
 setup() {
     TEST_TMP="$(mktemp -d)"
@@ -104,4 +107,82 @@ _minbin() {
     [ ! -e "$TEST_TMP/evil.json" ]                       # traversal did not escape work-output
     [ ! -e "$repo/.rdf/evil.json" ]
     [ -f "$repo/.rdf/work-output/session-end-....evil.json" ]   # slashes stripped, dots kept
+}
+
+# ---- rdf-lessons.sh index --------------------------------------------------
+
+@test "rdf-lessons index emits <=400 byte ID-index" {
+    mkdir -p "$HOME/.rdf"
+    cp "$LESSONS_FIXTURE" "$HOME/.rdf/lessons-learned.md"
+
+    run bash "$LESSONS" index "$HOME/.rdf/lessons-learned.md"
+    [ "$status" -eq 0 ]
+    [ -f "$HOME/.rdf/lessons-index.md" ]
+    # hard 400-byte cap bounds the per-session injection cost
+    [ "$(wc -c < "$HOME/.rdf/lessons-index.md")" -le 400 ]
+    # first Workflow bullet is tagged W1 and survives the cap (appears early)
+    grep -q '^\[W1\]' "$HOME/.rdf/lessons-index.md"
+}
+
+@test "rdf-lessons index assigns stable IDs across two runs (idempotent)" {
+    mkdir -p "$HOME/.rdf"
+    cp "$LESSONS_FIXTURE" "$HOME/.rdf/lessons-learned.md"
+
+    bash "$LESSONS" index "$HOME/.rdf/lessons-learned.md"
+    first="$(grep -c '<!-- id:' "$HOME/.rdf/lessons-learned.md")"
+    bash "$LESSONS" index "$HOME/.rdf/lessons-learned.md"
+    second="$(grep -c '<!-- id:' "$HOME/.rdf/lessons-learned.md")"
+    [ "$first" -eq 5 ]              # one marker per bullet, no more
+    [ "$first" -eq "$second" ]      # re-run does not duplicate markers
+}
+
+@test "rdf-lessons index on a missing lessons file writes an empty index" {
+    mkdir -p "$HOME/.rdf"
+    run bash "$LESSONS" index "$HOME/.rdf/absent-lessons.md"
+    [ "$status" -eq 0 ]
+    [ -f "$HOME/.rdf/lessons-index.md" ]
+    [ ! -s "$HOME/.rdf/lessons-index.md" ]   # empty when there are no lessons
+}
+
+# ---- session-start-inject.sh -----------------------------------------------
+
+@test "session-start-inject injects on startup, skips resume, is read-only" {
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+    mkdir -p "$HOME/.rdf"
+    cp "$LESSONS_FIXTURE" "$HOME/.rdf/lessons-learned.md"
+    bash "$LESSONS" index "$HOME/.rdf/lessons-learned.md"
+    [ -f "$HOME/.rdf/lessons-index.md" ]
+    local before after
+    before="$(cat "$HOME/.rdf/lessons-index.md")"
+
+    # startup → inject additionalContext JSON
+    printf '{"source":"startup"}' > "$JSON"
+    run bash "$INJECT" < "$JSON"
+    [ "$status" -eq 0 ]
+    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null
+    [[ "$output" == *'[W1]'* ]]
+
+    # resume → emit nothing (context already present)
+    printf '{"source":"resume"}' > "$JSON"
+    run bash "$INJECT" < "$JSON"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+
+    # compact → re-inject (intended: restores lessons dropped by compaction)
+    printf '{"source":"compact"}' > "$JSON"
+    run bash "$INJECT" < "$JSON"
+    [ "$status" -eq 0 ]
+    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null
+
+    # READ-ONLY (F7): the hook never rewrites the index
+    after="$(cat "$HOME/.rdf/lessons-index.md")"
+    [ "$before" = "$after" ]
+}
+
+@test "session-start-inject emits nothing when no index exists" {
+    printf '{"source":"startup"}' > "$JSON"
+    run bash "$INJECT" < "$JSON"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+    [ ! -f "$HOME/.rdf/lessons-index.md" ]   # read-only: absent index is not created
 }

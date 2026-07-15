@@ -14,6 +14,15 @@
       the 3.3.x PreCompact/SessionStart-compact entries (left byte-identical);
       memory-context.bats (4 tests) covers append, non-git no-op, jq-absent
       degrade, path-traversal sanitization
+[New] state/rdf-lessons.sh index — assigns stable [<Cat><ordinal>] IDs to
+      lessons-learned.md bullets (<!-- id:X --> markers, idempotent backfill)
+      and writes a <=400-byte ~/.rdf/lessons-index.md; single-writer flock
+      guard, POSIX-portable sed, jq-independent; scan subcommand stubbed for
+      the consolidation phase
+[New] session-start-inject.sh — read-only SessionStart hook injecting the
+      lessons ID-index as additionalContext; skips resume, re-injects on
+      compact (intended), 400B cap bounds per-spawn cost, no-op without
+      jq/index; second matcher-less SessionStart hooks.json entry (5s)
 [New] T3 context-scoped governance rules: cc_generate_rules emits
       output/rules/<profile>.md; language profiles get a paths: frontmatter
       block derived from registry.json detect globs, core stays unscoped so it

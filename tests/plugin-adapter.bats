@@ -156,10 +156,10 @@ teardown() {
     [ -x "${_TEST_OUT}/scripts/fixture.sh" ]
 }
 
-@test "plugin hooks.json uses CLAUDE_PLUGIN_ROOT for all 7 script refs" {
+@test "plugin hooks.json uses CLAUDE_PLUGIN_ROOT for all 8 script refs" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     run grep -c 'CLAUDE_PLUGIN_ROOT' "${_TEST_OUT}/hooks.json"
-    [ "$output" -eq 7 ]
+    [ "$output" -eq 8 ]
     run grep '~/.claude' "${_TEST_OUT}/hooks.json"
     [ "$status" -ne 0 ]
 }
