@@ -123,6 +123,7 @@ No ambiguous helper names (each grep above returns a single definition).
 | File | Changes | Test File |
 |------|---------|-----------|
 | `state/rdf-state.sh` | add deterministic `diff_categories` field (F6) | `tests/memory-context.bats` |
+| `tests/Makefile` | register `memory-context.bats` in test + lint lists | self |
 | `tests/governance-contracts.bats` | +never-scope-core, +no-auto-resolve-contradiction (F9) | self |
 | `adapters/claude-code/hooks/hooks.json` | +matcher-less SessionStart, +SessionEnd (on top of 3.3.x; 5 s timeouts) | `tests/memory-context.bats` |
 | `adapters/claude-code/adapter.sh` | `cc_generate_rules()`; `--lite` in `cc_generate_all` | `tests/memory-context.bats` |

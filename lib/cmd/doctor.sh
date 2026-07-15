@@ -424,7 +424,8 @@ _check_content_drift() {
 
 # ── Check: sync (RDF-specific) ──
 _check_sync() {
-    local path="$1"
+    local path="${1%/}"   # --all yields a trailing slash; strip it so output_dir has no
+                          # "//" that would fail the normalized-symlink string match below
 
     # Only meaningful for the RDF project itself
     local canonical_dir="${path}/canonical"
@@ -690,7 +691,7 @@ _check_doc_stats() {
     fi
 
     # Live counts from the filesystem
-    local total_cmds=0 util_cmds=0 life_cmds=0 agents=0 profiles=0 adapters=0 modes=0
+    local total_cmds=0 util_cmds=0 life_cmds=0 agents=0 scripts=0 profiles=0 adapters=0 modes=0
     local f base
     for f in "${canonical_dir}/commands"/*.md; do
         [[ -f "$f" ]] || continue
@@ -701,7 +702,8 @@ _check_doc_stats() {
             *)        life_cmds=$((life_cmds + 1)) ;;
         esac
     done
-    for f in "${canonical_dir}/agents"/*.md; do [[ -f "$f" ]] && agents=$((agents + 1)); done
+    for f in "${canonical_dir}/agents"/*.md;  do [[ -f "$f" ]] && agents=$((agents + 1)); done
+    for f in "${canonical_dir}/scripts"/*.sh; do [[ -f "$f" ]] && scripts=$((scripts + 1)); done
     for f in "${path}/profiles"/*/;          do
         [[ -d "$f" ]] || continue
         [[ "${f%/}" == */lite ]] && continue   # lite is a deploy source, not a governance profile
@@ -732,6 +734,24 @@ _check_doc_stats() {
         done < <(grep -E 'Commands \([0-9]+\)' "$wf")
         _doc_stat_cmp "WORKFORCE.md" "lifecycle" "$wf_life" "$life_cmds"
         _doc_stat_cmp "WORKFORCE.md" "utility"   "$wf_util" "$util_cmds"
+
+        # Primitives line: "**Total: A agents + B commands + C scripts = D primitives**"
+        local pline wf_pa="" wf_pc="" wf_ps="" wf_pd=""
+        pline="$(grep -m1 -E 'Total:.*[0-9]+ agents .* [0-9]+ primitives' "$wf")" || pline=""
+        if [[ "$pline" =~ ([0-9]+)\ agents\ \+\ ([0-9]+)\ commands\ \+\ ([0-9]+)\ scripts\ =\ ([0-9]+)\ primitives ]]; then
+            wf_pa="${BASH_REMATCH[1]}"; wf_pc="${BASH_REMATCH[2]}"
+            wf_ps="${BASH_REMATCH[3]}"; wf_pd="${BASH_REMATCH[4]}"
+        fi
+        _doc_stat_cmp "WORKFORCE.md" "primitives agents"   "$wf_pa" "$agents"
+        _doc_stat_cmp "WORKFORCE.md" "primitives commands" "$wf_pc" "$total_cmds"
+        _doc_stat_cmp "WORKFORCE.md" "primitives scripts"  "$wf_ps" "$scripts"
+        # D must equal A+B+C (self-consistency of the printed sum)
+        if [[ -n "$wf_pd" ]]; then
+            _doc_stat_cmp "WORKFORCE.md" "primitives total" "$wf_pd" \
+                "$(( ${wf_pa:-0} + ${wf_pc:-0} + ${wf_ps:-0} ))"
+        else
+            _doc_stat_cmp "WORKFORCE.md" "primitives total" "" "0"
+        fi
     fi
 
     # RDF.md scope line: "N commands under `/r-` namespace (X lifecycle + Y utility)"
@@ -764,6 +784,25 @@ _check_doc_stats() {
         _doc_stat_cmp "docs/index.md" "profiles" "$idx_profiles" "$profiles"
         _doc_stat_cmp "docs/index.md" "adapters" "$idx_adapters" "$adapters"
         _doc_stat_cmp "docs/index.md" "modes"    "$idx_modes"    "$modes"
+    fi
+
+    # README.md footer banner: "**A agents -- B commands -- C scripts -- D profiles -- E adapters -- F modes**"
+    local rdme="${path}/README.md"
+    if [[ -f "$rdme" ]]; then
+        local fline rd_ag="" rd_cmd="" rd_scr="" rd_prof="" rd_adp="" rd_mod=""
+        fline="$(grep -m1 -E '\*\*[0-9]+ agents .* [0-9]+ modes\*\*' "$rdme")" || fline=""
+        [[ "$fline" =~ ([0-9]+)\ agents ]]   && rd_ag="${BASH_REMATCH[1]}"
+        [[ "$fline" =~ ([0-9]+)\ commands ]] && rd_cmd="${BASH_REMATCH[1]}"
+        [[ "$fline" =~ ([0-9]+)\ scripts ]]  && rd_scr="${BASH_REMATCH[1]}"
+        [[ "$fline" =~ ([0-9]+)\ profiles ]] && rd_prof="${BASH_REMATCH[1]}"
+        [[ "$fline" =~ ([0-9]+)\ adapters ]] && rd_adp="${BASH_REMATCH[1]}"
+        [[ "$fline" =~ ([0-9]+)\ modes ]]    && rd_mod="${BASH_REMATCH[1]}"
+        _doc_stat_cmp "README.md" "agents"   "$rd_ag"   "$agents"
+        _doc_stat_cmp "README.md" "commands" "$rd_cmd"  "$total_cmds"
+        _doc_stat_cmp "README.md" "scripts"  "$rd_scr"  "$scripts"
+        _doc_stat_cmp "README.md" "profiles" "$rd_prof" "$profiles"
+        _doc_stat_cmp "README.md" "adapters" "$rd_adp"  "$adapters"
+        _doc_stat_cmp "README.md" "modes"    "$rd_mod"  "$modes"
     fi
 }
 

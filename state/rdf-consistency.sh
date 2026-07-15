@@ -39,12 +39,16 @@ _count() {
     printf '%s' "$__n"
 }
 
-# _first_backtick <line> — echo the first backtick-quoted group's content (File-Map path column)
-_first_backtick() {
-    local s="$1"
-    case "$s" in *'`'*) ;; *) return 0 ;; esac
-    s="${s#*\`}"
-    printf '%s' "${s%%\`*}"
+# _harvest_filemap_row <line> <accumulator-var> — append every backtick group in a
+# File-Map row's first (path) column. Multi-path cells (`A` / `B` / `C`) register all
+# paths; later columns (Purpose, Test File) may carry backticks and are excluded.
+_harvest_filemap_row() {
+    local cell="${1#*|}" __acc="$2" p   # drop the leading pipe
+    cell="${cell%%|*}"                  # keep only the path column
+    while [[ "$cell" == *'`'* ]]; do
+        cell="${cell#*\`}"; p="${cell%%\`*}"; cell="${cell#*\`}"
+        [[ -n "$p" ]] && _add_unique "$__acc" "$p"
+    done
 }
 
 # _harvest_files_line <line> <accumulator-var> — append every backtick group on a
@@ -107,10 +111,7 @@ _check() {
         if [[ "$line" == "## File Map"* ]]; then in_filemap=1; continue; fi
         if [[ $in_filemap -eq 1 && "$line" =~ $re_h2 ]]; then in_filemap=0; fi
         if [[ $in_filemap -eq 1 && "$line" == '|'* ]]; then
-            if [[ ! "$line" =~ $re_sep ]]; then
-                p="$(_first_backtick "$line")"
-                [[ -n "$p" ]] && _add_unique fm_list "$p"
-            fi
+            [[ "$line" =~ $re_sep ]] || _harvest_filemap_row "$line" fm_list
             continue
         fi
 
@@ -196,7 +197,13 @@ _check() {
         _add_unique warns "Tier sanity: quick-plan plan has ${phase_count} phases (expected <= 6)"
     fi
 
-    if [[ $warn_only -eq 1 && -n "$errors" ]]; then
+    # Legacy plans predate the 3.5 schema: no **Tier:** preamble marker means the
+    # mechanical File-Map coverage rule (Rule 10) never applied, so downgrade
+    # structural breaks to warnings. Marker-bearing plans keep strict exit-2 semantics.
+    local legacy=0
+    [[ -z "$tier" ]] && legacy=1
+    if [[ -n "$errors" && ( $warn_only -eq 1 || $legacy -eq 1 ) ]]; then
+        [[ $legacy -eq 1 ]] && _add_unique warns "legacy plan (no Tier marker) — structural findings downgraded to warnings; add a **Tier:** marker to opt into strict checking"
         while IFS= read -r p; do [[ -n "$p" ]] && _add_unique warns "$p"; done <<< "$errors"
         errors=""
     fi

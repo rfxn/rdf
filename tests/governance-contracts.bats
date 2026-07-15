@@ -13,7 +13,7 @@
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
 #
-# shellcheck disable=SC2154
+# shellcheck disable=SC2154,SC2016
 
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 

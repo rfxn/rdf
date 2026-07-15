@@ -599,6 +599,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 37 commands -- 12 scripts -- 11 profiles -- 5 adapters -- 7 modes**
+**6 agents -- 37 commands -- 16 scripts -- 11 profiles -- 5 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

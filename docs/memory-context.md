@@ -47,9 +47,12 @@ figures, and CI guards the published numbers against drift.
 - **No parallel memory system.** RDF does not re-implement conversational
   recall — native memory already does that, and duplicating it would only
   burn context.
-- **No writes to the native memory directory.** Nothing in RDF writes into
-  `~/.claude/projects/<slug>/memory/`. RDF's own files live under `~/.rdf/`
-  and the project's `.rdf/work-output/`.
+- **No new content classes in the native memory directory.** RDF never writes
+  lessons, insights, or governance into `~/.claude/projects/<slug>/memory/` —
+  those live under `~/.rdf/` and the project's `.rdf/work-output/`. The one
+  deliberate exception: the project's own `MEMORY.md`, which `/r-save`
+  maintains through the `.rdf/memory` symlink (`rdf migrate` creates it) so it
+  stays where native loading picks it up for free.
 - **No pulling MEMORY.md out of native loading.** The project `MEMORY.md`
   stays where native already loads it for free; RDF only keeps it healthy.
 

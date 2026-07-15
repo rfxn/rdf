@@ -88,3 +88,24 @@ teardown() { rm -rf "${_TEST_PROJ}" 2>/dev/null || true; } # cleanup, ignore err
     [[ "$output" == *"coverage comparison skipped"* ]]
     rm -rf "$fix"
 }
+
+@test "legacy plan (no Tier marker) downgrades structural break to warning" {
+    # No **Tier:** preamble => pre-3.5 schema; File-Map coverage break is advisory.
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check "${RDF_SRC}/tests/fixtures/tiers/legacy-mismatch-plan.md"
+    [ "$status" -eq 1 ]   # marker-strict would be 2; legacy downgrades to 1
+    [[ "$output" == *"legacy plan (no Tier marker)"* ]]
+    [[ "$output" == *"ghost.sh"* ]]
+}
+
+@test "marker-bearing plan keeps strict exit-2 on structural break" {
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check "${RDF_SRC}/tests/fixtures/tiers/mismatch-plan.md"
+    [ "$status" -eq 2 ]   # **Tier:** marker opts into strict checking
+    [[ "$output" != *"legacy plan"* ]]
+}
+
+@test "File-Map row with multiple paths in one cell registers every path" {
+    # `alpha.sh` / `beta.sh` / `gamma.sh` in one path cell; later columns excluded.
+    run bash "${RDF_SRC}/state/rdf-consistency.sh" check "${RDF_SRC}/tests/fixtures/tiers/multifile-row-plan.md"
+    [ "$status" -eq 0 ]   # single-capture parse would flag beta.sh/gamma.sh uncovered → 2
+    [[ "$output" == *"3/3 files covered"* ]]
+}

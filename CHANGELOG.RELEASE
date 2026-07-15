@@ -1,42 +1,30 @@
-# RDF 3.5.0 Release Notes
+# RDF 3.5.1 Release Notes
 
-## 3.5.0
+## 3.5.1
 
--- New Features --
+-- Bug Fixes --
 
-[New] task-class tiers (full/quick-plan/bugfix): reference/tiers.md single
-      source of truth (definitions, heuristic signals, min(scope_gate,
-      tier_cap) gate caps, security floor); rdf-bus.sh
-      rdf_set_active_tier/rdf_active_tier/rdf_clear_active_tier session pointer
-      parallel to active-plan — a resolved plan **Tier:** marker is
-      authoritative; defaults to full everywhere (legacy plans unchanged);
-      plan-schema Rule 10 optional **Tier:** preamble marker
-[New] /r-spec tier selection (--full/--quick/--bugfix, heuristic suggestion the
-      user confirms, bare Enter → full; first setter — /r-plan inherits) and
-      Phase 1.5 Clarify de-ambiguation micro-gate before Brainstorm (<=5
-      targeted questions, scaled by tier, skipped for bugfix)
-[New] /r-plan tier flow: stamps **Tier:** into the plan preamble; quick-plan
-      condensed single-artifact path (-quickplan.md); bugfix failing-test-first
-      <=2-phase path (schema-only validation, sentinel-lite at build time)
-[New] /r-build consistency micro-gate: state/rdf-consistency.sh cross-checks
-      spec↔plan↔tasks — File-Map↔phase coverage (multi-path Files parse, Phase
-      0 counted) and phase count are structural blocks (exit 2); spec-goal /
-      **Goals:** field / tier-size coverage warn (exit 1); --warn-only
-      downgrades a block with a stated reason
-[New] docs/specs/CURRENT.md living current-state spec; /r-ship Stage 3e folds
-      each shipped plan's outcome in as a dated ADDED/MODIFIED/REMOVED delta
-      (user-approved, skipped on bugfix); r-ship clears the tier pointer
-      alongside the active-plan pointer
+[Fix] rdf-consistency: legacy plans lacking a **Tier:** preamble marker now
+      downgrade File-Map coverage breaks from block (exit 2) to warning (exit
+      1) with a one-line notice; marker-bearing plans keep strict exit-2 —
+      4 of 8 committed pre-3.5 plans no longer hard-block the gate
+[Fix] rdf-consistency: File-Map rows packing multiple paths into one cell
+      register every path (path column only), clearing false "Phase file X is
+      not in the File Map" errors (the 3.4 plan's release-bundle row)
+[Fix] doctor --all: strip the trailing slash the project glob appends before
+      the normalized-symlink match in the sync check; removes false "points to
+      wrong target" WARNs for correctly-configured projects (pre-existing
+      since 3.0)
+[Fix] docs/memory-context.md: resolve the self-contradiction on native-memory
+      writes — MEMORY.md is the one deliberate exception via the .rdf/memory
+      symlink; README footer scripts count 12→16; docs/specs/CURRENT.md 3.5.0
+      fold backfilled; 3.4 plan File Map completed (tests/Makefile);
+      governance-contracts.bats SC2016 header disable restores lint baseline
 
 -- Changes --
 
-[Change] dispatcher applies max(security_floor, min(scope_gate, tier_cap)):
-         quick-plan caps Gate 3 at sentinel-lite and skips the end-of-plan
-         sentinel; bugfix runs Gate 1 + regression-only sentinel-lite; full
-         unchanged; the cap only lowers gates and never below the security
-         floor — scope:sensitive or a security-indicator file keeps Gate 2 +
-         sentinel-full regardless of tier
-[Change] governance-contracts grew 4 tier/clarify/living-spec contracts;
-         tests/scale-ceremony.bats (11 tests) covers the tier + consistency
-         surface incl. the File-Map-less graceful skip
+[Change] doctor doc-stats: verify README.md footer banner (all six counts) and
+         WORKFORCE.md primitives line (A/B/C vs live + D == A+B+C) against
+         live filesystem counts, incl. a new scripts count from
+         canonical/scripts/*.sh — the drift class QA found is now guarded
 
