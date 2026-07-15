@@ -4,6 +4,16 @@
 
 -- New Features --
 
+[New] session-end-capture.sh — SessionEnd command hook: inline git-only snapshot
+      appended to .rdf/work-output/session-log.jsonl (the journal /r-start
+      reads) plus a session-end-<id>.json cache for /r-save; records sessions
+      that never run /r-save; no model work, always exits 0, no-op outside a
+      git repo, jq-optional, session_id sanitized (stdin discriminator is
+      `reason` per platform docs — spec's `trigger` corrected)
+[New] hooks.json matcher-less SessionEnd entry (5s timeout) composed on top of
+      the 3.3.x PreCompact/SessionStart-compact entries (left byte-identical);
+      memory-context.bats (4 tests) covers append, non-git no-op, jq-absent
+      degrade, path-traversal sanitization
 [New] T3 context-scoped governance rules: cc_generate_rules emits
       output/rules/<profile>.md; language profiles get a paths: frontmatter
       block derived from registry.json detect globs, core stays unscoped so it

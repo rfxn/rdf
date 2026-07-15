@@ -62,6 +62,17 @@
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/session-end-capture.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

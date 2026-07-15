@@ -1,0 +1,107 @@
+#!/usr/bin/env bats
+# tests/memory-context.bats — RDF 3.4 memory & context
+# (C) 2026 R-fx Networks <proj@rfxn.com>
+# GNU GPL v2
+#
+# Phase 1 covers canonical/scripts/session-end-capture.sh: a SessionEnd command
+# hook that appends a deterministic git-only snapshot to the project session
+# journal (.rdf/work-output/session-log.jsonl) and writes a session-end-<id>.json
+# cache for /r-save. The hook must NEVER exit nonzero (SessionEnd output is
+# ignored — shutdown must not be blocked), must degrade without jq, and must be
+# a clean no-op outside a git repo. HOME is pinned to a temp dir; stdin is fed
+# from a file to keep shell metacharacters out of bats `run` (which evals).
+
+RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+CAP="$RDF_SRC/canonical/scripts/session-end-capture.sh"
+
+setup() {
+    TEST_TMP="$(mktemp -d)"
+    TEST_TMP="$(cd "$TEST_TMP" && pwd -P)"
+    export HOME="$TEST_TMP/home"
+    mkdir -p "$HOME"
+    JSON="$TEST_TMP/in.json"
+}
+
+teardown() {
+    command rm -rf "$TEST_TMP"
+}
+
+_mkrepo() {
+    local repo="$1"
+    mkdir -p "$repo"
+    git -C "$repo" init -q
+    git -C "$repo" config user.email t@t.t
+    git -C "$repo" config user.name t
+    git -C "$repo" commit -q --allow-empty -m init
+}
+
+# _minbin dir — symlink the real binaries the hook needs, deliberately excluding
+# jq, so PATH=dir simulates a host without jq. type -P resolves the on-disk
+# executable only (ignores shell aliases/functions).
+_minbin() {
+    local dir="$1" tool src
+    mkdir -p "$dir"
+    for tool in bash env cat tr date mkdir git wc grep sed head; do
+        src="$(type -P "$tool" 2>/dev/null)" || continue   # skip tools absent on this host
+        [ -n "$src" ] && ln -sf "$src" "$dir/$tool"
+    done
+}
+
+# ---- session-end-capture.sh -----------------------------------------------
+
+@test "session-end-capture appends journal entry + writes cache, exits 0" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    local repo="$TEST_TMP/repo"
+    _mkrepo "$repo"
+    printf '{"session_id":"t","reason":"clear","cwd":"%s"}' "$repo" > "$JSON"
+
+    run bash "$CAP" < "$JSON"
+    [ "$status" -eq 0 ]
+    # journal APPEND is the load-bearing behavior (Goal 1 — read by /r-start)
+    [ -f "$repo/.rdf/work-output/session-log.jsonl" ]
+    run tail -1 "$repo/.rdf/work-output/session-log.jsonl"
+    [[ "$output" == *'"reason":"clear"'* ]]
+    [[ "$output" == *'"insight":null'* ]]
+    [[ "$output" == *'"source":"session-end-hook"'* ]]
+    # cache for /r-save enrichment
+    [ -f "$repo/.rdf/work-output/session-end-t.json" ]
+}
+
+@test "session-end-capture is a no-op outside a git repo" {
+    local nongit="$TEST_TMP/nongit"
+    mkdir -p "$nongit"
+    printf '{"session_id":"t2","reason":"logout","cwd":"%s"}' "$nongit" > "$JSON"
+
+    run bash "$CAP" < "$JSON"
+    [ "$status" -eq 0 ]
+    [ ! -f "$nongit/.rdf/work-output/session-log.jsonl" ]   # no journal write outside a repo
+}
+
+@test "session-end-capture falls back without jq and still records (exit 0)" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    local repo="$TEST_TMP/repo-nojq"
+    _mkrepo "$repo"
+    local minbin="$TEST_TMP/minbin"
+    _minbin "$minbin"
+    printf '{"session_id":"nojq","reason":"logout","cwd":"%s"}' "$repo" > "$JSON"
+
+    run env PATH="$minbin" HOME="$HOME" bash "$CAP" < "$JSON"
+    [ "$status" -eq 0 ]
+    [ -f "$repo/.rdf/work-output/session-log.jsonl" ]
+    [ -f "$repo/.rdf/work-output/session-end-nojq.json" ]
+    run tail -1 "$repo/.rdf/work-output/session-log.jsonl"
+    [[ "$output" == *'"reason":"logout"'* ]]   # grep/sed fallback extracted reason
+}
+
+@test "session-end-capture sanitizes a path-traversal session_id" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    local repo="$TEST_TMP/repo-trav"
+    _mkrepo "$repo"
+    printf '{"session_id":"../../evil","reason":"clear","cwd":"%s"}' "$repo" > "$JSON"
+
+    run bash "$CAP" < "$JSON"
+    [ "$status" -eq 0 ]
+    [ ! -e "$TEST_TMP/evil.json" ]                       # traversal did not escape work-output
+    [ ! -e "$repo/.rdf/evil.json" ]
+    [ -f "$repo/.rdf/work-output/session-end-....evil.json" ]   # slashes stripped, dots kept
+}

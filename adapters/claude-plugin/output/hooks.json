@@ -41,6 +41,17 @@
         "matcher": "Bash"
       }
     ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/adapters/claude-plugin/output/scripts/session-end-capture.sh",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
