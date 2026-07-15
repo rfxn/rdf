@@ -66,13 +66,13 @@ fi
 if ! bash -n "$file_path" 2>/tmp/post-edit-lint-err.tmp; then
     echo ""
     echo "LINT WARNING: bash -n syntax error in $(basename "$file_path"):"
-    cat /tmp/post-edit-lint-err.tmp
+    command cat /tmp/post-edit-lint-err.tmp
     echo ""
-    rm -f /tmp/post-edit-lint-err.tmp
+    command rm -f /tmp/post-edit-lint-err.tmp
     exit 0
 fi
 
-rm -f /tmp/post-edit-lint-err.tmp
+command rm -f /tmp/post-edit-lint-err.tmp
 
 # Success — no output (keep it quiet on success)
 exit 0

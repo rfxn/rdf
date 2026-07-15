@@ -28,6 +28,18 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 - All variables double-quoted in command context
 - `command -v` for binary discovery, never hardcoded paths
 - `command cp`/`command mv`/`command rm` in project source (not bare, not `/usr/bin/`)
+- **Suppression comments (`2>/dev/null`, `|| true`) — RDF scope:** the workspace
+  rule (same-line justification comment) applies to **new or modified** suppressions
+  in first-party source, and is enforced on added diff lines by
+  `state/git-hooks/pre-commit` (`suppression-no-comment` class). RDF is operator-run
+  developer tooling, not an adversarial-input-facing scanner like APF/BFD/LMD, so a
+  retroactive sweep of the many self-evidently-safe pre-existing suppressions
+  (`git`/`jq`/`find` probes whose empty-on-failure result is the intended value) is
+  **not** required. Add the comment when you touch the line; do not mass-annotate.
+  Vendored `canonical/scripts/` (ykdojo/claude-code-tips: `context-bar.sh`,
+  `setup.sh`, `clone-conversation.sh`, `half-clone-conversation.sh`,
+  `test-half-clone.sh`, `color-preview.sh`, `check-context.sh`) is advisory-only —
+  fix upstream, not in-tree.
 
 ## Commit Protocol
 - Free-form descriptive messages (no version prefix)

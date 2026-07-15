@@ -67,7 +67,7 @@ _deploy_symlink() {
         if [[ $dry_run -eq 1 ]]; then
             rdf_log "[dry-run] would replace symlink: ${dst} -> ${src}"
         else
-            ln -snf "$src" "$dst"
+            command ln -snf "$src" "$dst"
             rdf_log "replaced symlink: ${dst} -> ${src}"
         fi
         _DEPLOY_OK=$((_DEPLOY_OK + 1))
@@ -81,7 +81,7 @@ _deploy_symlink() {
                 rdf_log "[dry-run] would symlink: ${dst} -> ${src}"
             else
                 command mv "$dst" "$backup"
-                ln -snf "$src" "$dst"
+                command ln -snf "$src" "$dst"
                 rdf_log "backed up ${dst} to ${backup}"
                 rdf_log "symlinked: ${dst} -> ${src}"
             fi
@@ -95,7 +95,7 @@ _deploy_symlink() {
         if [[ $dry_run -eq 1 ]]; then
             rdf_log "[dry-run] would symlink: ${dst} -> ${src}"
         else
-            ln -snf "$src" "$dst"
+            command ln -snf "$src" "$dst"
             rdf_log "symlinked: ${dst} -> ${src}"
         fi
         _DEPLOY_OK=$((_DEPLOY_OK + 1))

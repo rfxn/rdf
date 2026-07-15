@@ -38,7 +38,7 @@ cdx_generate_agents_md() {
         [[ -z "$profile" ]] && continue
         local gov_file="${profiles_dir}/${profile}/governance.md"
         if [[ -f "$gov_file" ]]; then
-            cat "$gov_file" >> "$dst_file"
+            command cat "$gov_file" >> "$dst_file"
             echo "" >> "$dst_file"
         fi
     done <<< "$active"
@@ -153,7 +153,7 @@ cdx_generate_scripts() {
         local basename_f
         basename_f="$(basename "$src_file")"
         command cp "$src_file" "${dst_dir}/${basename_f}"
-        chmod +x "${dst_dir}/${basename_f}"
+        command chmod +x "${dst_dir}/${basename_f}"
         count=$((count + 1))
     done
     rdf_log "codex: generated ${count} script files"

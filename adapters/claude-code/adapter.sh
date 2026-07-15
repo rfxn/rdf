@@ -98,7 +98,7 @@ cc_generate_agents() {
         # Generate frontmatter + canonical body
         if _cc_agent_frontmatter "$basename_f" > "${dst_file}.tmp" 2>/dev/null; then
             echo "" >> "${dst_file}.tmp"
-            cat "$src_file" >> "${dst_file}.tmp"
+            command cat "$src_file" >> "${dst_file}.tmp"
             command mv "${dst_file}.tmp" "$dst_file"
         else
             # No metadata — copy as-is
@@ -154,7 +154,7 @@ cc_generate_scripts() {
             continue
         fi
         command cp "$src_file" "${dst_dir}/${basename_f}"
-        chmod +x "${dst_dir}/${basename_f}"
+        command chmod +x "${dst_dir}/${basename_f}"
         count=$((count + 1))
     done
     rdf_log "generated ${count} script files"

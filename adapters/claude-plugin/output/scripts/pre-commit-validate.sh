@@ -95,7 +95,7 @@ fi
 for file in $shell_files; do
     if ! bash -n "$file" 2>/tmp/cc-hook-bash-errors.txt; then
         echo "FAIL: bash -n $file" >&2
-        cat /tmp/cc-hook-bash-errors.txt >&2
+        command cat /tmp/cc-hook-bash-errors.txt >&2
         errors=$((errors + 1))
     fi
 done
@@ -105,7 +105,7 @@ if command -v shellcheck >/dev/null 2>&1; then
     for file in $shell_files; do
         if ! shellcheck --severity=error "$file" 2>/tmp/cc-hook-sc-errors.txt; then
             echo "FAIL: shellcheck $file" >&2
-            cat /tmp/cc-hook-sc-errors.txt >&2
+            command cat /tmp/cc-hook-sc-errors.txt >&2
             errors=$((errors + 1))
         fi
     done

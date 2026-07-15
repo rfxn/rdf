@@ -55,7 +55,7 @@ gem_generate_agents() {
         # Generate frontmatter + canonical body
         if _gem_agent_frontmatter "$basename_f" > "${dst_file}.tmp" 2>/dev/null; then
             echo "" >> "${dst_file}.tmp"
-            cat "$src_file" >> "${dst_file}.tmp"
+            command cat "$src_file" >> "${dst_file}.tmp"
             command mv "${dst_file}.tmp" "$dst_file"
         else
             # No metadata — copy canonical body with minimal frontmatter
@@ -66,7 +66,7 @@ gem_generate_agents() {
                 echo "description: \"RDF agent: ${basename_f}\""
                 echo "---"
                 echo ""
-                cat "$src_file"
+                command cat "$src_file"
             } > "$dst_file"
         fi
         count=$((count + 1))
@@ -167,7 +167,7 @@ gem_generate_context() {
                 echo ""
                 echo "---"
                 echo ""
-                cat "$gov_file"
+                command cat "$gov_file"
             } >> "$dst_file"
         else
             rdf_warn "gemini-cli: governance-template.md not found for profile: $profile"
@@ -190,7 +190,7 @@ gem_generate_scripts() {
         local basename_f
         basename_f="$(basename "$src_file")"
         command cp "$src_file" "${dst_dir}/${basename_f}"
-        chmod +x "${dst_dir}/${basename_f}"
+        command chmod +x "${dst_dir}/${basename_f}"
         count=$((count + 1))
     done
     rdf_log "gemini-cli: generated ${count} script files"
