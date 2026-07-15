@@ -28,21 +28,11 @@
       only under excluded (runtime config, never model context); scoped
       language rules counted dormant; jq-independent; tests/overhead.bats
       (8 tests) incl. a README drift guard
-[Change] README/docs publish all three measured context figures: default deploy
-         ~0.1K tokens, opt-in --rules ~2.1K, rdf-lite ~0.7K (674, bytes/4);
-         hooks.json (478) reported only under excluded, never model context
-[Change] doc surface refreshed for the 3.4 feature set — RDF.md architecture
-         (hooks across PreCompact/SessionStart/SessionEnd, rules/ generation,
-         --rules/--lite, rdf-lessons.sh/rdf-overhead.sh), r-context-audit runs
-         rdf-overhead.sh, ROADMAP marks T3/auto-memory/context-cost/rdf-lite
-         delivered and references the 3.5 spec, WORKFORCE scripts total 14->16
-         (=59 primitives)
 [New] T3 context-scoped governance rules: cc_generate_rules emits
       output/rules/<profile>.md; language profiles get a paths: frontmatter
       block derived from registry.json detect globs, core stays unscoped so it
-      survives compaction (spec §4.3); rules-deploy.bats (7 tests) guards the
-      never-scope-core invariant
-
+      survives compaction (spec §4.3); rules-deploy.bats (6 tests) guards the
+      rules generation surface
 [New] docs/memory-context.md — native-memory vs RDF division of labor (spec
       §4.5): native owns conversational memory + MEMORY.md loading, RDF owns
       the delta (lessons, insights, governance, session journal); RDF writes
@@ -66,6 +56,15 @@
 
 -- Changes --
 
+[Change] README/docs publish all three measured context figures: default deploy
+         ~0.1K tokens, opt-in --rules ~2.1K, rdf-lite ~0.7K (674, bytes/4);
+         hooks.json (478) reported only under excluded, never model context
+[Change] doc surface refreshed for the 3.4 feature set — RDF.md architecture
+         (hooks across PreCompact/SessionStart/SessionEnd, rules/ generation,
+         --rules/--lite, rdf-lessons.sh/rdf-overhead.sh), r-context-audit runs
+         rdf-overhead.sh, ROADMAP marks T3/auto-memory/context-cost/rdf-lite
+         delivered and references the 3.5 spec, WORKFORCE scripts total 14->16
+         (=59 primitives)
 [Change] /r-save §1 consumes the SessionEnd cache via an RDF_SESSION_ID-first
          selection rule (else newest unconsumed session-end-*.json, renamed
          *.consumed on hit) and skips the rdf-state --full re-run on a hit;

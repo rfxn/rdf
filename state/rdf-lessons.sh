@@ -33,8 +33,15 @@ cmd_index() {
     fi
 
     # Pass 1: ensure every bullet carries an id marker (idempotent re-runs).
+    # IDs must be globally unique: same-initial categories and bullets inserted
+    # above marked ones would otherwise reuse a taken <initial><ordinal>.
+    local existing_ids=" " id_tok
+    while IFS= read -r id_tok; do
+        existing_ids="${existing_ids}${id_tok} "
+    done < <(grep -oE '<!-- id:[A-Za-z]+[0-9]+ -->' "$_LESSONS" 2>/dev/null | sed -E 's/.*id:([A-Za-z]+[0-9]+).*/\1/' || true)  # empty set when no markers yet
+
     local cat_i="X" ord=0 line tmp
-    tmp="$(command mktemp)"
+    tmp="$(command mktemp "${_LESSONS}.XXXXXX")"   # same dir as target: mv stays an atomic rename (never cross-fs copy)
     while IFS= read -r line || [ -n "$line" ]; do
         if [[ "$line" =~ ^##[[:space:]] ]]; then
             cat_i="$(_cat_initial "${line#\#\# }")"; ord=0
@@ -45,7 +52,9 @@ cmd_index() {
             if [[ "$line" == *"<!-- id:"* ]]; then
                 printf '%s\n' "$line" >> "$tmp"
             else
+                while [[ "$existing_ids" == *" ${cat_i}${ord} "* ]]; do ord=$((ord + 1)); done
                 printf '%s <!-- id:%s%d -->\n' "$line" "$cat_i" "$ord" >> "$tmp"
+                existing_ids="${existing_ids}${cat_i}${ord} "
             fi
             continue
         fi

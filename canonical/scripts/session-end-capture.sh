@@ -49,9 +49,14 @@ main() {
     local out_dir=".rdf/work-output"
     command mkdir -p "$out_dir" 2>/dev/null || exit 0   # unwritable tree: give up quietly
 
-    # Minimal JSON escaping (backslash + double-quote) for the stdin-derived fields.
-    local b_esc="${branch//\\/\\\\}"; b_esc="${b_esc//\"/\\\"}"
-    local r_esc="${reason//\\/\\\\}"; r_esc="${r_esc//\"/\\\"}"
+    # Minimal JSON escaping (backslash + double-quote) for the stdin-derived
+    # fields; control chars stripped first — an embedded newline would split the
+    # one-record-per-line JSONL and silently break the session_last reader.
+    local b_esc r_esc
+    b_esc="$(printf '%s' "$branch" | command tr -d '\000-\037')"
+    r_esc="$(printf '%s' "$reason" | command tr -d '\000-\037')"
+    b_esc="${b_esc//\\/\\\\}"; b_esc="${b_esc//\"/\\\"}"
+    r_esc="${r_esc//\\/\\\\}"; r_esc="${r_esc//\"/\\\"}"
     local line
     line="{\"timestamp\":\"${ts}\",\"head_after\":\"${head}\",\"branch\":\"${b_esc}\",\"dirty_files\":${dirty:-0},\"reason\":\"${r_esc}\",\"source\":\"session-end-hook\",\"insight\":null}"
 
