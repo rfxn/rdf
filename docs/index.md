@@ -64,8 +64,8 @@ too.
 
 ## Why RDF
 
-| | |
-|---|---|
+| Principle | What it means |
+|-----------|---------------|
 | **Governance as code** | Conventions live in versioned files the AI reads every session — not in your head or a wiki |
 | **Adversarial quality gates** | Reviewer agents challenge specs before implementation and audit code after it, with scope-derived depth |
 | **Convention inheritance** | Workspace → project → profile layering; one edit propagates everywhere |
