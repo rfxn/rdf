@@ -61,7 +61,9 @@ one ceremony level to every task. Verified against the current tree
    emits **no** hooks (`codex/adapter.sh` has no hook function) while CC wires
    several. And the deploy/sync code paths (`lib/cmd/deploy.sh`, `r-sync.md`)
    have **zero** BATS coverage (audit finding M6) despite being the install
-   surface every consumer hits.
+   surface every consumer hits. *(Superseded post-probe — see §13.1: the
+   Linux-Foundation/AAIF governance attribution is unverified and uncited going
+   forward; Gemini CLI → Antigravity CLI is the Agent-Skills client.)*
 
 7. **Cross-session coordination was designed but never shipped.** The
    2026-04-25 concurrent-sessions design specified Wave B (cross-session
@@ -117,24 +119,24 @@ themes and the deferral tail (§7 stages them into releases).
    `## <version> — <date>` delta section after a `/r-ship`; a contract asserts
    the fold step is present in `r-ship.md` Stage 3.
 
-**Theme Reach (3.5.1):**
+**Theme Reach (Wave 2 — `<REACH_VERSION>` assigned at ship; §13):**
 
 6. `rdf generate` emits `.agents/skills/<command>/SKILL.md` for the lifecycle
    commands from canonical sources, carrying a natural-language `description:`
-   trigger (Goal 7's data) so Codex and Gemini (both Agent-Skills clients)
-   self-surface RDF commands on intent. Measurable: a new `agent-skills`
-   generate target produces `SKILL.md` files whose frontmatter validates
-   against the Agent-Skills schema (name + description); BATS asserts one
-   SKILL per lifecycle command.
+   trigger (Goal 7's data) so Codex and Antigravity (both Agent-Skills clients;
+   Gemini CLI superseded — §13.1) self-surface RDF commands on intent.
+   Measurable: a new `agent-skills` generate target produces `SKILL.md` files
+   whose frontmatter validates against the Agent-Skills schema (name +
+   description); BATS asserts one SKILL per lifecycle command.
 7. CC command output gains YAML frontmatter with an intent-trigger
    `description` (authored in adapter metadata, never in canonical bodies).
    Measurable: `output/commands/r-spec.md` begins with `---` and a
    `description:` line; canonical `r-spec.md` still has no frontmatter (a
    contract asserts canonical stays frontmatter-free).
 8. The Gemini `{{args}}`-only lossy edge is documented (parity matrix in
-   `docs/tri-tool-parity.md`) and the Gemini adapter emits a one-line warning
+   `docs/multi-tool-parity.md`) and the Gemini adapter emits a one-line warning
    in any command TOML whose canonical body references a positional argument.
-   Measurable: `docs/tri-tool-parity.md` states the `{{args}}` limitation; the
+   Measurable: `docs/multi-tool-parity.md` states the `{{args}}` limitation; the
    adapter emits the warning comment for positional-arg commands.
 9. Deploy and sync code paths gain BATS coverage (closes audit M6). Measurable:
    `tests/deploy.bats` covers symlink create/replace/skip/force and the
@@ -181,7 +183,7 @@ explicit exclusions.
   it is a human-readable delta append, not a diff engine. NOT blocking `/r-ship`
   on the fold — it degrades to a skip with a notice. NOT retiring the dated
   design docs — `docs/specs/YYYY-MM-DD-*.md` remain the historical archive.
-- **Item 6 (tri-tool parity):** NOT mapping the full Codex/Gemini hook event
+- **Item 6 (multi-tool parity):** NOT mapping the full Codex/Gemini hook event
   surface — only the intersection RDF actually uses (pre-tool, post-tool,
   session boundary). NOT inventing a settings framework — recommended-settings
   fragments are static, opt-in, and RECOMMENDED-DEFERRED (§7). NOT changing
@@ -194,6 +196,16 @@ explicit exclusions.
   recovery stays opportunistic if it ships at all. The default recommendation
   is: ship only the phantom-contract cleanup + an optional read-only peer view;
   defer the bus/msg/sweeper.
+- **Item 6b (Antigravity surfaces, added post-probe — §13.7):** NOT building
+  Antigravity hooks (`.agents/hooks.json`), subagents, or plugins
+  (`~/.gemini/antigravity-cli/plugins/`) — schemas undocumented or churning.
+  NOT the Codex `agents/openai.yaml` per-skill metadata (Codex-specific,
+  optional, not required for skill consumption). NOT global/user-level
+  `~/.agents/skills/` scanning (unverified). NOT the optional AAIF SKILL.md
+  fields (`license`, `metadata`, `allowed-tools`). The `.agents/skills/` skills
+  surface is emitted ONCE as a shared workspace convention, NEVER duplicated per
+  tool. NOT a separate Antigravity generation engine — `rdf generate
+  antigravity` is a thin composite over the shared skills + `agents-md` context.
 - **Cross-cutting:** NOT touching the files 3.4 owns without composing (§4.2).
   NOT GNU-only flags anywhere (macOS CI). jq-optional on every runtime path.
 
@@ -219,12 +231,13 @@ explicit exclusions.
 | `canonical/reference/plan-schema.md` | modified | 1 | +~30 | Rule 10 (Tier marker, optional) |
 | `adapters/agent-skills/adapter.sh` | new | 2 | ~180 | emit `.agents/skills/<cmd>/SKILL.md` from canonical + trigger meta |
 | `adapters/agent-skills/skill-meta.json` | new | 2 | ~60 | per-command intent-trigger descriptions (lifecycle set) |
-| `docs/tri-tool-parity.md` | new | 2 | ~90 | AGENTS.md + Skills + MCP matrix; Gemini `{{args}}` lossy edge |
+| `docs/multi-tool-parity.md` | new | 2 | ~90 | AGENTS.md + Skills + MCP matrix; Gemini `{{args}}` lossy edge |
 | `tests/deploy.bats` | new | 2 | ~120 | deploy symlink + sync BATS coverage (audit M6) |
 | `tests/agent-skills.bats` | new | 2 | ~90 | SKILL.md shape + trigger presence |
 | `adapters/claude-code/adapter.sh` | modified | 2 | (3.4 base) +~30 | command frontmatter (intent trigger) — **composes on 3.4** |
-| `adapters/gemini-cli/adapter.sh` | modified | 2 | +~25 | skills emission + positional-arg lossy warning |
-| `adapters/codex/adapter.sh` | modified | 2 | +~20 | skills emission |
+| `adapters/gemini-cli/adapter.sh` | modified | 2 | +~25 | LEGACY tier: TOML `'''` literal-string fix (15/37) + positional-arg lossy warning — **no per-tool `.agents/skills/`** (shared surface, §13.4) |
+| `lib/cmd/doctor.sh` | modified | 2 | +~8 | content-drift: strip leading command frontmatter (body-`---`-safe) — §13.5 injection |
+| `lib/cmd/sync.sh` | modified | 2 | +~8 | strip frontmatter on the command sync path so canonical stays frontmatter-free |
 | `adapters/agents-md/adapter.sh` | modified | 2 | +~10 | reference `.agents/skills/` in AGENTS.md |
 | `lib/cmd/generate.sh` | modified | 2 | (3.4 base) +~15 | `agent-skills` target — **composes on 3.4 `--lite`** |
 | `lib/cmd/deploy.sh` | modified | 2 | (3.4 base) +~15 | skills deploy — **composes on 3.4 rules symlink** |
@@ -316,15 +329,19 @@ Wave 1 (Scale — canonical + state, NO adapter.sh) ─────────�
   state/rdf-bus.sh: rdf_set_active_tier / rdf_active_tier (parallel to active-plan)
   plan-schema.md: Rule 10 (Tier marker)
 
-Wave 2 (Reach — adapters; GATED on 3.4 merged) ───────────────────────────
+Wave 2 (Reach — adapters; 3.4 MERGED, confirmed 2026-07-15 — see §13) ─────
   adapters/agent-skills/adapter.sh  (canonical/commands + skill-meta.json)
-    └── .agents/skills/<cmd>/SKILL.md  (name + intent-trigger description)
+    └── output/.agents/skills/<cmd>/SKILL.md  (name + intent-trigger description)
+         — the ONE shared workspace surface read by Codex + Antigravity
+  generate.sh: `agent-skills` target + `antigravity` composite (skills + AGENTS.md)
   claude-code/adapter.sh: cc_generate_command_frontmatter (intent trigger)  [on 3.4 base]
-  gemini-cli/adapter.sh: skills emission + {{args}} lossy warning
-  codex/adapter.sh: skills emission
-  generate.sh: `agent-skills` target · deploy.sh: skills symlink   [on 3.4 base]
+  gemini-cli/adapter.sh (LEGACY tier): TOML `'''` literal-string fix (15/37) + {{args}} lossy warning
+  agents-md/adapter.sh: `.agents/skills/` pointer (Antigravity + AGENTS.md consumers)
+  deploy.sh: opt-in `.agents/skills/` symlink (--project-root)   [on 3.4 base]
   tests/deploy.bats (audit M6), tests/agent-skills.bats
-  docs/tri-tool-parity.md
+  docs/multi-tool-parity.md (trio + legacy gemini row)
+  NOTE: codex/adapter.sh is NO LONGER modified — skills are the shared
+        agent-skills surface, not per-tool output (§13.4).
 
 Wave 3 (Coordination — RE-TRIAGE GATED; recommend 3.6) ───────────────────
   Phase 0 probe: Codex hooks schema · Agent-Skills SKILL.md schema ·
@@ -585,7 +602,7 @@ $ grep -A1 'positional' adapters/gemini-cli/output/.gemini/commands/r-build.toml
 | Wave | Release | Items | Ships | Gate |
 |------|---------|-------|-------|------|
 | 1 | **3.5.0 "Scale"** | 1,2,3,5 | tiers, clarify, consistency, living-spec | none — canonical + state only; **no 3.4 SOURCE conflict** (two additive shared test files, §4.2) |
-| 2 | **3.5.1 "Reach"** | 4,6(core),8,9 | `.agents/skills` + intent triggers, gemini lossy doc, deploy/sync BATS | **3.4 merged** (adapter.sh/generate.sh/deploy.sh) + Phase-0 Skills-schema probe |
+| 2 | **`<REACH_VERSION>` "Reach"** | 4,6(core),8,9 | `.agents/skills` + intent triggers, gemini TOML fix, deploy/sync BATS | **3.4 merged ✓** + Skills-schema probe done (§13) |
 | 3 | **3.6 (recommend defer)** | 6(heavy),7 | Codex hooks, settings fragments, Wave B delta | Phase-0 re-triage; only zero-risk survivors pulled forward |
 
 **Why this split:** Wave 1 is the highest adoption-per-effort work, is
@@ -756,3 +773,192 @@ bash bin/rdf doctor 2>&1 | grep -c 'FAIL'                   # expect: 0
   shell files. Hard gate for Wave 2.
 
 None block Wave 1. Phase 0 records go/no-go for Waves 2–3.
+
+**RESOLVED 2026-07-15 (full detail + primary sources in §13):**
+- **Q1 — GO.** SKILL.md required frontmatter is `name` + `description` only; RDF
+  emits exactly those. Optional AAIF fields NOT emitted (§13.4).
+- **Q2 — DEFER.** Antigravity hook/subagent schemas undocumented/churning; Codex
+  `openai.yaml` optional. No hook/subagent emission in Reach (§13.7 Non-Goals).
+- **Q3 — unchanged.** Stays in the deferred Phase 12 (recommend 3.6).
+- **Q4 — GO. 3.4 HAS MERGED** (`cc_generate_rules`/`_CC_LITE` present on `main`,
+  VERSION 3.5.1). Wave 2 composes safely.
+- **New:** Gemini CLI is superseded by **Antigravity CLI** (`agy`); Antigravity
+  is a first-class citizen, gemini-cli is demoted to a frozen legacy tier (§13.3,
+  §13.6).
+
+## 13. Phase-0 Probe Results & Revised Wave-2 Architecture (2026-07-15)
+
+The Phase-0 schema probe (§12 Q1–Q4) plus an adversarial primary-source
+verification pass is complete. This section is the authoritative fact base and
+supersedes the pre-probe Wave-2 sketch (§4.4, §5.4) where they conflict. Wave 1
+(Scale) shipped as 3.5.0 plus a 3.5.1 QA-pass; this section re-scopes the
+second (adapter) wave, whose version is assigned at ship.
+
+### 13.1 Verified fact base (primary sources)
+
+**Gemini CLI → Antigravity CLI.** Gemini CLI stopped serving free/Pro/Ultra
+tiers on 2026-06-18 (announced at I/O 2026-05-19); enterprise/paid-API users are
+unaffected and the OSS repo remains active (v0.50.0, 2026-07-08). The successor
+is **Antigravity CLI** (`agy`), closed-source Go, retaining Agent Skills, Hooks,
+Subagents, and Extensions. Antigravity is RDF's locked-in transition target and
+a first-class adapter citizen.
+
+**Antigravity CLI surface** (confidence noted):
+- Project skills: `<workspace>/.agents/skills/<skill-name>/SKILL.md` — the
+  cross-tool convention — with optional `scripts/`, `examples/`, `resources/`.
+  Skills double as slash commands via fuzzy matching. HIGH.
+- SKILL.md frontmatter: only `name` + `description` documented; unknown-field
+  handling unverified.
+- Commands: NO TOML surface — legacy `.gemini/commands/*.toml` are CONVERTED to
+  skills by `agy plugin import gemini`; skills are the only command surface.
+  MEDIUM-HIGH.
+- Context files: parses BOTH workspace `GEMINI.md` and `AGENTS.md`, plus global
+  `~/.gemini/GEMINI.md`; precedence undocumented. MEDIUM-HIGH.
+- Hooks `<workspace>/.agents/hooks.json` (schema undocumented); subagents
+  (markdown, schema churning); plugins `~/.gemini/antigravity-cli/plugins/<name>/`
+  with `plugin.json`; state root remains `~/.gemini/`.
+- UNVERIFIED: user-level `~/.agents/skills/` scanning (post-migration global
+  skills appear to live at `~/.gemini/skills/`).
+
+**AAIF SKILL.md standard** (agentskills.io/specification): required `name`
+(1–64 chars, lowercase alphanumeric + hyphens, no leading/trailing/consecutive
+hyphens, MUST match the parent directory name) and `description` (1–1024 chars,
+states what + when-to-use); optional `license`, `compatibility` (≤500),
+`metadata` (arbitrary map), `allowed-tools` (experimental, agent-specific).
+`.agents/skills/` is a widely-adopted convention, not a spec mandate. Governance
+attribution is unverified and is deliberately NOT cited.
+
+**Codex CLI:** consumes SKILL.md skills (explicit `$skill-name`, `/skills`,
+implicit description matching); an optional Codex-specific `agents/openai.yaml`
+inside a skill dir carries UI metadata / MCP tool deps / `allow_implicit_invocation`.
+
+**Claude Code:** commands merged into skills — `.claude/commands/deploy.md` and
+`.claude/skills/deploy/SKILL.md` both create `/deploy` and behave identically.
+Commands remain fully supported (never documented as deprecated; skills
+"recommended" for extra features). CC does NOT natively read AGENTS.md (only via
+`@AGENTS.md` import or a symlink). Known bug: `disable-model-invocation` hides
+the skill entirely (anthropics/claude-code#43875) — RDF must not set it.
+
+**Gemini TOML** (legacy adapter): `prompt` required; `description` optional
+(auto-derived from filename). Escaping is TOML-spec-level — basic strings
+(`"..."`, `"""..."""`) process backslash escapes; literal strings (`'''...'''`)
+do not. 15/37 generated command `.toml` files currently fail strict TOML parsing
+because the canonical body (regex `\b`, sed `\|`, etc.) is emitted into a `"""`
+basic multi-line string unescaped (`gemini-cli/adapter.sh:115-117`).
+
+### 13.2 Resolved open questions (§12)
+
+- **Q1 (SKILL.md schema) — RESOLVED / Phase 8 GO.** Required frontmatter is
+  `name` + `description` only. RDF emits exactly these two; `name` == command
+  basename and MUST equal the skill's parent directory name (AAIF constraint).
+  Optional AAIF fields NOT emitted (§13.4).
+- **Q2 (Codex hooks / Antigravity surfaces) — DEFER.** Hook/subagent/plugin
+  schemas are undocumented or churning; Codex `openai.yaml` is optional and
+  Codex-specific. None ship in Reach (§13.7).
+- **Q3 (Wave B pain) — unchanged.** Not a Wave-2 concern; stays in deferred
+  Phase 12 (recommend 3.6).
+- **Q4 (3.4 merge) — RESOLVED: 3.4 HAS MERGED.** `cc_generate_rules`, `_CC_LITE`
+  / `--lite`, and the `--lite` parse block are present in
+  `adapters/claude-code/adapter.sh` and `lib/cmd/generate.sh` on `main`
+  (VERSION 3.5.1). Wave 2's shared shell files are safe to compose on. GO.
+
+### 13.3 First-class trio + legacy tier
+
+Reach targets THREE first-class adapter citizens and ONE frozen legacy tier:
+
+| Tool | Command surface | Skill surface | Context file | Tier |
+|------|-----------------|---------------|--------------|------|
+| Claude Code | `.claude/commands/*.md` + intent `description:` frontmatter | commands ARE skills natively | `CLAUDE.md` (NOT AGENTS.md) | first-class |
+| Codex CLI | `.agents/skills/<cmd>/SKILL.md` (native scan) | shared `.agents/skills/` | own `AGENTS.md` (codex adapter) | first-class |
+| Antigravity CLI | skills (fuzzy-matched slash) | shared `.agents/skills/` | `AGENTS.md` + `GEMINI.md` | first-class |
+| Gemini CLI (enterprise) | `.gemini/commands/*.toml` | via `agy plugin import` | `GEMINI.md` | **legacy / frozen** |
+
+`.agents/skills/` is a **workspace-level shared convention** — one directory at
+the repo root that Codex, Antigravity, and every AAIF client read. It is
+therefore emitted ONCE by a dedicated `agent-skills` adapter, NOT duplicated into
+per-tool output trees.
+
+### 13.4 Adapter-shape decision (design Q1)
+
+- **`.agents/skills/` is emitted by ONE new adapter** (`adapters/agent-skills/`)
+  via `rdf generate agent-skills`. This single artifact serves Codex, Antigravity,
+  and the convention — no duplicate skills machinery in the codex or gemini
+  adapters (a change from the pre-probe §4.4 sketch, which bolted skills emission
+  onto codex + gemini). **`adapters/codex/adapter.sh` is consequently NOT
+  modified in Reach** (Codex auto-discovers the shared `.agents/skills/`).
+- **`rdf generate antigravity` is a thin first-class composite target** — it runs
+  the shared skills emitter (`sk_generate_all`) plus the existing `agents-md`
+  context emitter (`amd_generate_all`), so one command produces Antigravity's full
+  surface (`.agents/skills/` + `AGENTS.md`). It adds no new generation engine,
+  only a case arm calling two existing functions — discoverability parity with
+  `claude-code`/`codex` at near-zero cost. **Decision (accepted asymmetry):** there
+  is deliberately NO `rdf deploy antigravity` target — `.agents/skills/` deploys
+  via the workspace-level `rdf deploy agent-skills` (Phase 10) and `AGENTS.md`/
+  `GEMINI.md` are workspace files the user places directly; a composite deploy
+  would duplicate the codex `--project-root` path for no gain. Generate is a
+  composite; deploy stays per-artifact.
+- **Emitted frontmatter is `name` + `description` ONLY.** `license` is redundant
+  (repo LICENSE governs), `metadata: version/author` drifts on every release and
+  Antigravity's unknown-field handling is unverified, `allowed-tools` is
+  experimental + agent-specific. Adding unverified fields risks parse noise for
+  zero confirmed benefit — deferred, not guessed (audit lesson).
+- **Bounded command set:** lifecycle verbs (`r-spec`, `r-plan`, `r-build`,
+  `r-ship`, `r-start`, `r-save`) + high-value utilities (`r-status`, `r-audit`,
+  `r-refresh`, `r-init`) — ~10 of 37, bounded by `skill-meta.json` keys, not all
+  commands. Trigger text lives in `skill-meta.json` and is reused by CC command
+  frontmatter (§13.5) so one description drives all tools.
+
+### 13.5 Claude Code stays commands (design Q4)
+
+CC output stays `.claude/commands/*.md` and GAINS an intent-trigger
+`description:` frontmatter block (Goal 7 as designed). RDF does NOT migrate CC to
+`.claude/skills/<cmd>/SKILL.md`. Rationale:
+1. Commands are not deprecated; a command's `description:` frontmatter drives
+   model-invoked triggering identically to a skill's — the intent-trigger goal is
+   met without migration.
+2. RDF's deploy model symlinks `output/commands` → `~/.claude/commands`. Migrating
+   to per-command `skills/<cmd>/SKILL.md` subdirectories would break every
+   existing symlink-deploy user for zero functional gain (both forms create
+   `/r-spec`).
+3. Emitting BOTH `.claude/commands/r-spec.md` and `.claude/skills/r-spec/SKILL.md`
+   would create two surfaces that both register `/r-spec` (collision noise); the
+   plugin-citizenship spec already ruled "commands stay commands."
+4. RDF never sets `disable-model-invocation`, side-stepping bug #43875.
+
+### 13.6 Context-file story + gemini-cli demotion (design Q6, Q2)
+
+- **gemini-cli is demoted to a frozen legacy tier.** It keeps its `GEMINI.md`
+  (`gem_generate_context`) and command TOML for enterprise Gemini CLI (paid-API)
+  users, frozen except the TOML-escaping fix. That fix is also strategically
+  correct for the transition: `agy plugin import gemini` converts
+  `.gemini/commands/*.toml` INTO Antigravity skills, so a strictly-valid TOML
+  output is the migration SOURCE — fixing it directly serves Antigravity adoption.
+- **Trade-off recorded for the challenge review (keep vs drop gemini-cli).** DROP
+  would delete one legacy adapter and its tests, but abandon enterprise Gemini CLI
+  users mid-transition and discard the working migration source. KEEP-frozen (the
+  planned default) costs ~one TOML-fix diff plus continued test coverage.
+  Recommendation: KEEP frozen + fix; revisit removal once usage telemetry shows
+  enterprise Gemini CLI has migrated.
+- **Antigravity context** is already served by existing adapters: it reads both
+  `AGENTS.md` (from the `agents-md` adapter) and `GEMINI.md` (from the gemini-cli
+  adapter). No new context adapter is needed; the parity doc maps this.
+- **CC-reads-AGENTS.md: confirmed absent.** A repo grep found no spec/plan text
+  claiming Claude Code natively reads AGENTS.md — the AGENTS.md references are all
+  emission-side (codex/agents-md) or the parity matrix. Nothing to purge.
+
+### 13.7 Deferred Antigravity/Codex surfaces (Non-Goals, probe-gated)
+
+Mirroring the §4.5 Wave-3 deferral style, Reach does NOT build (schemas
+undocumented or churning; revisit behind a future live-docs probe):
+- Antigravity hooks (`<workspace>/.agents/hooks.json`) — schema undocumented.
+- Antigravity subagents (markdown) — schema actively churning.
+- Antigravity plugins (`~/.gemini/antigravity-cli/plugins/<name>/plugin.json`).
+- Codex `agents/openai.yaml` per-skill metadata — Codex-specific, optional, not
+  required for skill consumption.
+- Global/user-level `~/.agents/skills/` scanning — unverified (post-migration
+  global skills appear at `~/.gemini/skills/`).
+- SKILL.md optional AAIF fields (`license`, `metadata`, `allowed-tools`).
+- MCP server work (already a §3 non-goal).
+
+Each ships only after a live-docs probe confirms a stable schema, per the audit
+lesson (runtime-observed facts get an engineer-validation pass before code).

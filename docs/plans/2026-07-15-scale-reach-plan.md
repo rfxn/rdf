@@ -3,7 +3,7 @@
 **Goal:** Add scale-adaptive ceremony to the four verbs (task-class tiers:
 full / quick-plan / bugfix), a Clarify micro-gate in `/r-spec`, a Consistency
 micro-gate in `/r-build`, living/delta specs in `/r-ship`, intent-triggered
-skills + `.agents/skills/` tri-tool emission, and the surviving delta of the
+skills + `.agents/skills/` multi-tool emission, and the surviving delta of the
 2026-04-25 Wave B re-triage — without adding a top-level command, changing the
 6 agents, or altering the 4 lifecycle verbs' identities.
 
@@ -31,19 +31,34 @@ Wave 2: 8–11 + Wave 3: 12; 13 `### Phase N:` headings, N = 0..12)
 
 ## Progress
 
-Not started. Phase 0 (re-triage + 3.4-merge gate) first, then Wave 1.
+**Wave 1 (Scale) SHIPPED** — Phases 0–7 delivered `full/quick-plan/bugfix`
+tiers, the `/r-spec` Clarify micro-gate, `/r-build` consistency gate, and the
+`/r-ship` living-spec fold. Released as **3.5.0** (tiers/clarify/consistency/
+living-spec) and hardened in the **3.5.1** QA-pass. Phases 0–7 below are
+frozen history — do not re-execute.
 
-**RECOMMENDED SPLIT (binding guidance for the controller):** ship **Wave 1 as
-3.5.0** immediately — it is tool-agnostic and has zero SOURCE overlap with the
-unbuilt 3.4 (only two additive shared TEST files: `governance-contracts.bats`,
-appended at EOF, and `tests/Makefile`, appended to the `test:`/`lint:` lists —
-both trivial append-merges; see §4.2 of the spec). Ship **Wave 2 as 3.5.1**
-only after 3.4 has merged (it shares three shell files with 3.4). **Recommend deferring Wave 3 to 3.6** — it is
-probe-dependent and the §4.5 re-triage shows most of Wave B is obsoleted or
-low-ROI; pull forward only the zero-risk phantom-contract cleanup. Waves 2–3
-SHOULD be re-planned with a fresh `/r-plan` once Phase 0 resolves Q1–Q4 — their
-phases below are execution-grade only to the extent the probe allows and are
-marked accordingly.
+**Wave 2 (Reach) — RE-PLANNED 2026-07-15 post-probe (this revision).** Phases
+8–11 were rewritten in place against the completed Phase-0 schema probe +
+adversarial primary-source verification (spec §13). Key re-scope: Gemini CLI is
+superseded by **Antigravity CLI** (`agy`); the three first-class citizens are
+**Claude Code, Codex, Antigravity**; gemini-cli is demoted to a frozen legacy
+tier (keep + TOML-escaping fix). `.agents/skills/` is a single shared
+workspace surface emitted by ONE new `agent-skills` adapter — NOT duplicated
+into the codex/gemini adapters (so `adapters/codex/adapter.sh` is no longer
+modified, spec §13.4). **3.4 has merged** (`cc_generate_rules`/`_CC_LITE`
+present on `main`, VERSION 3.5.1) — Wave 2's shared shell files are safe to
+compose on.
+
+**Release version is NOT pre-allocated.** The Reach release (Phase 11) uses a
+placeholder — `VERSION assigned at ship` — per the release-cadence rule (assign
+the number at ship, never pre-allocate a ladder). The stale "Phase 11: 3.5.1"
+label is void: 3.5.1 already shipped as the QA-pass release.
+
+**Wave 3 (Coordination) — recommend defer to a later minor.** Phase 12 is
+probe-dependent; the §4.5 re-triage shows most of Wave B is obsoleted or
+low-ROI. Pull forward only the zero-risk phantom-contract cleanup; re-plan the
+conditional P6/peer-view parts with a fresh `/r-plan` if Phase 0 Q3 reconfirms
+cross-session pain.
 
 ## Conventions
 
@@ -106,9 +121,10 @@ Helpers with return-code contracts used by new code (verified against source):
 | `canonical/commands/r-spec.md`,`r-plan.md` | `rdf_set_active_tier` | 0 ok / 1 invalid tier | new (Phase 1) — allowlist `full\|quick-plan\|bugfix` |
 | `canonical/agents/dispatcher.md`, `r-build.md` | `rdf_active_tier` | 0 always (defaults `full`) | new (Phase 1) — **marker-authoritative** (plan `**Tier:**` wins, reconciles pointer), else session pointer, else `full` |
 | `canonical/commands/r-ship.md` Stage 3 | `rdf_clear_active_tier` | 0 always (idempotent) | new (Phase 1) — mirrors `rdf_clear_active_plan` |
-| `lib/cmd/generate.sh` `agent-skills` arm | `_generate_adapter` | 0 success / non-0 propagated | `lib/cmd/generate.sh:56-67` |
-| `adapters/agent-skills/adapter.sh` | `rdf_get_active_profiles` | 0 always (echoes list) | `lib/rdf_common.sh:159` (echo + read loop, no non-zero path) |
-| `adapters/claude-code/adapter.sh` (Wave 2) | `cc_generate_commands` | 0 (3.4/3.3 base — direct-copy loop) | `adapters/claude-code/adapter.sh:118-136` |
+| `lib/cmd/generate.sh` `agent-skills`/`antigravity` arms | `_generate_adapter` | 0 success / non-0 propagated (`rdf_die` on missing adapter) | `lib/cmd/generate.sh:59-70` |
+| `adapters/agent-skills/adapter.sh` `sk_generate_all` | `rdf_require_bin jq` / `rdf_require_file` / `rdf_require_dir` | non-return on failure (`rdf_die` exits) — else fall-through | `lib/rdf_common.sh:98-121` (all three `rdf_die` on miss) |
+| `adapters/agent-skills/adapter.sh` `_sk_skill_description` | `jq -r '.[$c] // empty'` | empty string on missing key OR malformed JSON (2>/dev/null) → first-sentence fallback | own `// empty` guard (never hard-fails a skill) |
+| `adapters/claude-code/adapter.sh` (Wave 2) | `cc_generate_command_frontmatter` (NEW) + `cc_generate_commands` | 0 — prepends frontmatter then `command cat` body; hash sidecar over canonical unchanged | `adapters/claude-code/adapter.sh:129-150` (modified copy loop) |
 
 No ambiguous helper names — each grep above returns a single definition
 (`rdf_parse_phase_scope`, `rdf_active_plan_path`, `rdf_set_active_plan` are
@@ -129,7 +145,7 @@ defined once in `state/rdf-bus.sh`).
 | `tests/fixtures/tiers/spec-with-extra-goal.md` | ~15 | spec with an uncovered Goal — warn-path fixture | consumed by bats |
 | `adapters/agent-skills/adapter.sh` | ~180 | `.agents/skills/<cmd>/SKILL.md` emitter | `tests/agent-skills.bats` |
 | `adapters/agent-skills/skill-meta.json` | ~60 | intent-trigger descriptions (lifecycle set) | `tests/agent-skills.bats` |
-| `docs/tri-tool-parity.md` | ~90 | AGENTS.md/Skills/MCP matrix; gemini `{{args}}` edge | N/A (docs) |
+| `docs/multi-tool-parity.md` | ~90 | AGENTS.md/Skills/MCP matrix; gemini `{{args}}` edge | N/A (docs) |
 | `tests/agent-skills.bats` | ~90 | SKILL shape + frontmatter + lossy warning | self |
 | `tests/deploy.bats` | ~120 | deploy symlink + sync coverage (audit M6) | self |
 
@@ -145,12 +161,15 @@ defined once in `state/rdf-bus.sh`).
 | `canonical/reference/plan-schema.md` | Rule 10 (Tier marker) | 1 | `tests/scale-ceremony.bats` |
 | `tests/governance-contracts.bats` | +clarify/tier-cap/living-spec contracts | 1 | self |
 | `tests/Makefile` | add scale-ceremony/agent-skills/deploy to test+lint lists | 1/2 | self |
-| `adapters/claude-code/adapter.sh` | +`cc_generate_command_frontmatter` (on 3.4 base) | 2 | `tests/agent-skills.bats` |
-| `adapters/gemini-cli/adapter.sh` | skills emission + `{{args}}` lossy warning | 2 | `tests/agent-skills.bats` |
-| `adapters/codex/adapter.sh` | skills emission | 2 | `tests/agent-skills.bats` |
-| `adapters/agents-md/adapter.sh` | reference `.agents/skills/` | 2 | `tests/agent-skills.bats` |
-| `lib/cmd/generate.sh` | `agent-skills` target (on 3.4 base) | 2 | `tests/agent-skills.bats` |
-| `lib/cmd/deploy.sh` | skills symlink (on 3.4 base) | 2 | `tests/deploy.bats` |
+| `adapters/claude-code/adapter.sh` | +`cc_generate_command_frontmatter` (intent trigger, on 3.4 base) | 2 | `tests/agent-skills.bats` |
+| `adapters/gemini-cli/adapter.sh` | LEGACY tier: TOML `'''` literal-string fix (15/37) + `{{args}}` lossy warning | 2 | `tests/agent-skills.bats` |
+| `adapters/agents-md/adapter.sh` | `.agents/skills/` pointer | 2 | `tests/agent-skills.bats` |
+| `lib/cmd/generate.sh` | `agent-skills` target + `antigravity` composite (on 3.4 base) | 2 | `tests/agent-skills.bats` |
+| `lib/cmd/deploy.sh` | opt-in `.agents/skills/` symlink (on 3.4 base) | 2 | `tests/deploy.bats` |
+| `lib/cmd/doctor.sh` | content-drift: strip leading command frontmatter, body-`---`-safe (§13.5) | 2 | `tests/doctor.bats` |
+| `lib/cmd/sync.sh` | strip frontmatter on the command sync path (canonical stays frontmatter-free) | 2 | `tests/deploy.bats` |
+| `tests/doctor.bats` | +content-drift regression (command with frontmatter + body `---` rules) | 2 | self |
+| `docs/index.md` | doc-stats: adapters 5→6 (agent-skills) | 2 | N/A (docs) |
 | `canonical/reference/framework.md` | remove phantom `collect-spool.sh` | 3 | N/A (docs) |
 | `state/rdf-bus.sh` | (conditional) P6 status broadcast | 3 | `tests/rdf-bus.bats` |
 | `canonical/commands/r-status.md` | (conditional) peer view | 3 | N/A |
@@ -175,18 +194,20 @@ defined once in `state/rdf-bus.sh`).
 - Phase 5 (dispatcher tier cap): [1]
 - Phase 6 (living specs): [1]
 - Phase 7 (3.5.0 release): [1,2,3,4,5,6]
-- Phase 8 (agent-skills adapter): [0, **3.4 merged**]
-- Phase 9 (intent triggers + gemini/codex skills): [8, **3.4 merged**]
-- Phase 10 (deploy/sync BATS + parity doc): [8]
-- Phase 11 (3.5.1 release): [8,9,10]
-- Phase 12 (Wave B re-triage + cleanup): [0] — **recommend defer to 3.6**
+- Phase 8 (agent-skills adapter + antigravity target): [1–7 shipped; **3.4 merged ✓**]
+- Phase 9 (CC intent frontmatter + gemini TOML fix + agents-md pointer): [8; **3.4 merged ✓**]
+- Phase 10 (deploy/sync BATS + skills symlink + parity doc): [8]
+- Phase 11 (Reach release — **VERSION assigned at ship**): [8,9,10]
+- Phase 12 (Wave B re-triage + cleanup): [0] — **recommend defer to a later minor**
 
 **Parallel batches (`/r-build --parallel`):**
 - Wave 1: after Phase 0 → **{1}**; then **{2, 3, 4, 5, 6}** (disjoint canonical
   files; the two shared test files `scale-ceremony.bats` +
   `governance-contracts.bats` serialize appends via `/r-build`'s
   file-ownership check); then **{7}**.
-- Wave 2 (after 3.4 merged): **{8}** → **{9, 10}** → **{11}**.
+- Wave 2 (3.4 merged ✓ — confirmed 2026-07-15): **{8}** → **{9, 10}** → **{11}**.
+  9 and 10 are file-disjoint (9 = adapters + governance-contracts.bats;
+  10 = deploy.sh + deploy.bats + parity doc), so they parallelize after 8.
 - Wave 3: **{12}** (recommend re-plan first).
 
 `tests/scale-ceremony.bats` is created in Phase 1 and appended by 2/3/4;
@@ -1059,161 +1080,896 @@ Docs, roadmap, changelog, VERSION 3.5.0. Depends on Phases 1–6.
 
 ---
 
-### Phase 8: agent-skills adapter (Reach — GATED on 3.4 merged + Phase-0 Q1)
+### Phase 8: agent-skills adapter + `antigravity` generate target
 
-> **Gating note:** Do NOT start until Phase 0 Step 4 confirms 3.4 has merged and
-> Step 1 confirms the Agent-Skills `SKILL.md` schema. RECOMMEND re-planning
-> Waves 2–3 with a fresh `/r-plan` after Phase 0 — the steps below are
-> execution-grade only to the extent the probe allows.
-
-Emit `.agents/skills/<command>/SKILL.md` from canonical commands + trigger
-descriptions, and wire an `agent-skills` generate target.
+Create the single shared `.agents/skills/` emitter — the ONE workspace surface
+Codex and Antigravity both read (spec §13.3/§13.4) — and wire two generate
+targets: `agent-skills` (the raw convention surface) and `antigravity` (a thin
+composite that also emits the AGENTS.md context). NO skills machinery is added
+to the codex or gemini adapters.
 
 **Files:**
 - Create: `adapters/agent-skills/adapter.sh`
 - Create: `adapters/agent-skills/skill-meta.json`
-- Modify: `lib/cmd/generate.sh` (compose on 3.4)
+- Modify: `lib/cmd/generate.sh`
 - Create: `tests/agent-skills.bats`
 - Modify: `tests/Makefile`
 
 - **Mode**: serial-agent
 - **Goals:** 6
 - **Accept**: `rdf generate agent-skills` writes
-  `.agents/skills/r-spec/SKILL.md` (and the lifecycle set) with `name` +
-  `description` frontmatter validating against the Phase-0 schema; a command
-  with no `skill-meta.json` entry falls back to a first-sentence description
-- **Test**: `tests/agent-skills.bats` — @test "one SKILL.md per lifecycle command with name+description frontmatter"
-- **Edge cases**: spec §11b "no skill-meta entry → first-sentence fallback"
-- **Regression-case**: tests/agent-skills.bats::@test "one SKILL.md per lifecycle command with name+description frontmatter" (file created in this phase)
+  `adapters/agent-skills/output/.agents/skills/<cmd>/SKILL.md` for each
+  `skill-meta.json` key; every SKILL.md frontmatter has a `name:` equal to its
+  parent directory name (AAIF constraint) plus a `description:` trigger and the
+  canonical command body verbatim; a command with no `skill-meta.json` entry
+  falls back to a first-sentence description; `rdf generate antigravity`
+  additionally produces `adapters/agents-md/output/AGENTS.md`
+- **Test**: `tests/agent-skills.bats` — @test "one SKILL.md per skill-meta command; frontmatter name matches dir + carries description", @test "skill description falls back to first sentence when meta absent"
+- **Edge cases**: spec §11b "no skill-meta entry → first-sentence fallback"; §13.4 "codex/gemini adapters get NO skills duplication"
+- **Regression-case**: tests/agent-skills.bats::@test "one SKILL.md per skill-meta command; frontmatter name matches dir + carries description" (file created in this phase)
 
-- [ ] **Step 1: `skill-meta.json`** — map lifecycle + high-value utility command
-  basenames to intent-trigger descriptions ("Use when …"). Bounded set (verbs +
-  r-start/r-save/r-audit/r-refresh — not all 37).
-- [ ] **Step 2: `adapters/agent-skills/adapter.sh`** — `sk_generate_all`:
-  staging-dir + atomic swap (codex adapter pattern); for each command in the
-  meta set, write `.agents/skills/<name>/SKILL.md` = frontmatter (name +
-  description from meta, or first-sentence fallback) + canonical body verbatim.
-  `rdf_require_bin jq`; `command`-prefixed coreutils.
-- [ ] **Step 3: `agent-skills` target in `generate.sh`** — add a `case` arm
-  (compose after 3.4's `--lite` block) calling
-  `_generate_adapter "agent-skills/adapter.sh" "sk_generate_all"`; add to `all`;
-  update `_generate_usage`.
-- [ ] **Step 4: `tests/agent-skills.bats`** + Makefile entry — assert one
-  SKILL.md per meta command, frontmatter has `name:` + `description:`, canonical
-  body present.
-- [ ] **Step 5: Lint + test + commit** (message: "Add agent-skills adapter —
-  `.agents/skills/` intent-triggered commands").
+- [ ] **Step 1: Create `adapters/agent-skills/skill-meta.json`** — a JSON object
+  mapping the bounded command set (spec §13.4) to intent-trigger descriptions.
+  Bounded set = lifecycle verbs + high-value utilities, NOT all 37. Keys are the
+  canonical command basenames; the adapter iterates these keys, so the JSON is
+  the authoritative bound.
+
+  ```json
+  {
+    "_comment": "Maps canonical command basename to an Agent-Skills intent-trigger description. The adapter emits one SKILL.md per key. Reused by the CC command frontmatter (Phase 9). Bounded set — not all 37 commands.",
+    "r-spec": "Use when starting a new feature, subsystem, or design change: turns an idea into an architecture-grade spec through research-driven dialogue.",
+    "r-plan": "Use when a spec is ready and you need an execution-grade, phase-by-phase implementation plan a fresh engineer can run mechanically.",
+    "r-build": "Use when a plan exists and you want it built: dispatches the engineer per phase with the right quality gates for the task tier.",
+    "r-ship": "Use when a plan is built and verified and you want to cut a release: preflight, verification, release prep, and publish.",
+    "r-start": "Use at the start of a session to reload project context and show current health, pipeline position, and open work.",
+    "r-save": "Use at the end of a session to sync state — plan progress, memory, and the session log.",
+    "r-status": "Use to see the project health dashboard: git state, plan progress, and warnings, without changing anything.",
+    "r-audit": "Use when you want a full codebase audit: dispatches parallel reviewer and QA passes across the tree.",
+    "r-refresh": "Use when the codebase has drifted from its governance docs and you want them re-derived from source.",
+    "r-init": "Use to initialize RDF governance on a new or existing repository."
+  }
+  ```
+
+- [ ] **Step 2: Create `adapters/agent-skills/adapter.sh`** — mirror the codex
+  adapter boilerplate (`adapters/codex/adapter.sh:1-11` header +
+  `_SK_ADAPTER_DIR`/`_SK_OUTPUT_DIR`) and its staging-dir + atomic-swap pipeline
+  (`:163-190`). `name` == command basename == parent dir name satisfies the AAIF
+  `name`-matches-directory rule. Frontmatter is `name` + `description` ONLY
+  (spec §13.4 — no optional AAIF fields).
+
+  ```bash
+  #!/usr/bin/env bash
+  # adapters/agent-skills/adapter.sh — Agent Skills (.agents/skills/) adapter
+  # (C) 2026 R-fx Networks <proj@rfxn.com>
+  # GNU GPL v2
+  # Sourced by lib/cmd/generate.sh — do not execute directly
+
+  # Requires: RDF_CANONICAL, RDF_ADAPTERS, jq
+
+  _SK_ADAPTER_DIR="${RDF_ADAPTERS}/agent-skills"
+  _SK_OUTPUT_DIR="${_SK_ADAPTER_DIR}/output"
+  _SK_META="${_SK_ADAPTER_DIR}/skill-meta.json"
+
+  # _sk_skill_description <basename> <src_file> — echo the trigger from
+  # skill-meta.json; fall back to the canonical body's first non-heading line.
+  _sk_skill_description() {
+      local name="$1" src="$2" desc
+      desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_SK_META" 2>/dev/null)"  # missing key → empty
+      if [[ -z "$desc" ]]; then
+          desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "$src")"
+          [[ -z "$desc" ]] && desc="RDF command: ${name}"
+      fi
+      printf '%s' "$desc"
+  }
+
+  # sk_emit_skills <skills_root> — write <skills_root>/<name>/SKILL.md for every
+  # skill-meta.json key (excluding _comment). name == dir name (AAIF rule).
+  sk_emit_skills() {
+      local skills_root="$1" name src desc count=0
+      while IFS= read -r name; do
+          [[ -z "$name" || "$name" == "_comment" ]] && continue
+          src="${RDF_CANONICAL}/commands/${name}.md"
+          if [[ ! -f "$src" ]]; then
+              rdf_warn "agent-skills: no canonical command for skill '${name}' — skipped"
+              continue
+          fi
+          desc="$(_sk_skill_description "$name" "$src")"
+          command mkdir -p "${skills_root}/${name}"
+          {
+              echo "---"
+              echo "name: ${name}"
+              echo "description: >"
+              echo "  ${desc}"
+              echo "---"
+              echo ""
+              command cat "$src"
+          } > "${skills_root}/${name}/SKILL.md"
+          count=$((count + 1))
+      done < <(jq -r 'keys[]' "$_SK_META")
+      rdf_log "agent-skills: generated ${count} SKILL.md files"
+  }
+
+  # sk_generate_all — full pipeline with atomic staging swap (codex pattern).
+  sk_generate_all() {
+      rdf_log "generating Agent Skills adapter output..."
+      rdf_require_dir "$RDF_CANONICAL" "canonical directory"
+      rdf_require_file "$_SK_META" "agent-skills skill-meta.json"
+      rdf_require_bin jq
+
+      local _output_final="$_SK_OUTPUT_DIR"
+      local _output_new="${_SK_OUTPUT_DIR}.new"
+      local _output_old="${_SK_OUTPUT_DIR}.old"
+
+      command rm -rf "$_output_new"
+      command mkdir -p "$_output_new/.agents/skills"
+      sk_emit_skills "${_output_new}/.agents/skills"
+
+      command rm -rf "$_output_old"
+      if [[ -d "$_output_final" ]]; then
+          command mv "$_output_final" "$_output_old"
+      fi
+      command mv "$_output_new" "$_output_final"
+      command rm -rf "$_output_old"
+      rdf_log "Agent Skills generation complete"
+  }
+  ```
+
+  > Self-correction note: `sk_emit_skills` takes an explicit `<skills_root>`
+  > parameter (not a global) so the `antigravity` composite target could reuse it
+  > against any output tree without machinery duplication — spec §13.4's "one
+  > skills emitter, callable by any consumer." Coreutils are `command`-prefixed;
+  > jq is required (`.agents/skills` needs no jq at runtime for the consumer — it
+  > is generation-time only, consistent with the gemini adapter).
+
+- [ ] **Step 3: Add `agent-skills` + `antigravity` targets to `lib/cmd/generate.sh`**
+  — three edits, all additive:
+
+  (a) In `_generate_usage` (generate.sh:13-20), after the `agents-md` line, add:
+  ```
+    agent-skills   Generate .agents/skills/ (Codex + Antigravity shared surface)
+    antigravity    Generate the Antigravity surface (.agents/skills/ + AGENTS.md)
+  ```
+
+  (b) In the `case "${1:-}"` block, after the `agents-md)` arm (generate.sh:131-136)
+  and before `all)`, insert:
+  ```bash
+          agent-skills)
+              _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
+              if [[ $deploy_after -eq 1 ]]; then
+                  rdf_warn "--deploy for agent-skills requires manual 'rdf deploy --project-root <path> agent-skills'"
+              fi
+              ;;
+          antigravity)
+              # First-class composite: shared skills + AGENTS.md context (spec §13.4)
+              _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
+              _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
+              if [[ $deploy_after -eq 1 ]]; then
+                  rdf_warn "--deploy for antigravity: copy .agents/skills/ + AGENTS.md into the workspace root (skills via 'rdf deploy --project-root <path> agent-skills')"
+              fi
+              ;;
+  ```
+
+  (c) In the `all)` block, after the AGENTS.md generation (generate.sh:161-164),
+  add:
+  ```bash
+              # Agent Skills (.agents/skills/) — shared Codex + Antigravity surface
+              if [[ -f "${RDF_ADAPTERS}/agent-skills/adapter.sh" ]]; then
+                  _generate_adapter "agent-skills/adapter.sh" "sk_generate_all" || failed=$((failed + 1))
+              fi
+  ```
+
+  > Self-correction note: the `agent-skills` arm does NOT wire `--deploy`
+  > (mirrors codex/agents-md) — the deploy target lands in Phase 10, so a Phase-8
+  > `--deploy` would reference a not-yet-existing target. Warn + manual is the
+  > ordering-safe choice.
+
+- [ ] **Step 4: Create `tests/agent-skills.bats`** — hermetic harness mirroring
+  `tests/adapter.bats:1-55` (fresh temp RDF home + temp output; source the
+  adapter directly with overridden env). This phase adds the two SKILL tests;
+  Phase 9 appends the frontmatter/TOML/agents-md tests.
+
+  ```bash
+  #!/usr/bin/env bats
+  # tests/agent-skills.bats — RDF Reach: .agents/skills/ + intent triggers
+  # (C) 2026 R-fx Networks <proj@rfxn.com>
+  # GNU GPL v2
+  # shellcheck disable=SC2154,SC2164,SC1090,SC1091,SC2016
+
+  RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+  export RDF_SRC
+
+  # _gen_skills <output_dir> — run sk_generate_all against a temp output tree.
+  _gen_skills() {
+      local output_dir="$1"
+      bash -c '
+          set -euo pipefail
+          rdf_src="$1"; output_dir="$2"
+          RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+          source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+          source "${rdf_src}/adapters/agent-skills/adapter.sh"
+          _SK_OUTPUT_DIR="$output_dir"
+          sk_generate_all
+      ' -- "$RDF_SRC" "$output_dir"
+  }
+
+  setup() { TEST_OUT="$(mktemp -d)"; export TEST_OUT; }
+  teardown() { rm -rf "$TEST_OUT" 2>/dev/null || true; }  # cleanup, ignore errors
+
+  @test "one SKILL.md per skill-meta command; frontmatter name matches dir + carries description" {
+      _gen_skills "$TEST_OUT"
+      local meta="${RDF_SRC}/adapters/agent-skills/skill-meta.json"
+      local n; n="$(jq -r 'keys[] | select(. != "_comment")' "$meta" | wc -l)"
+      local emitted; emitted="$(find "${TEST_OUT}/.agents/skills" -name SKILL.md | wc -l)"
+      [ "$emitted" -eq "$n" ]
+      # r-spec skill: name == dir, has a description, canonical body present
+      local s="${TEST_OUT}/.agents/skills/r-spec/SKILL.md"
+      [ -f "$s" ]
+      grep -q '^name: r-spec$' "$s"
+      grep -q '^description: >' "$s"
+      grep -q 'Design' "$s"   # canonical body verbatim (r-spec heading text)
+  }
+
+  @test "skill description falls back to first sentence when meta absent" {
+      # Temporarily point the adapter at a meta with an unknown key to exercise
+      # the fallback: r-status IS in meta, so assert its meta trigger is used,
+      # and assert the fallback branch by checking a body-derived description for
+      # any command whose meta value is empty is non-empty. Structural proxy:
+      _gen_skills "$TEST_OUT"
+      local s="${TEST_OUT}/.agents/skills/r-status/SKILL.md"
+      grep -q '^description: >' "$s"
+      [ -n "$(sed -n '/^description: >/{n;p;}' "$s")" ]   # description line non-empty
+  }
+  ```
+
+- [ ] **Step 5: Add `agent-skills.bats` to `tests/Makefile`** — append
+  `$(TESTS_DIR)agent-skills.bats` to BOTH the `test:` list (Makefile:19-28,
+  after `scale-ceremony.bats`) and the `lint:` list (Makefile:30-39, after
+  `scale-ceremony.bats`). The Makefile does not glob — list explicitly.
+
+- [ ] **Step 6: Exclude the adapter output from git** — the other adapters'
+  `output/` dirs are in `.git/info/exclude`; `agent-skills/output/` is NOT.
+  Append it so generated SKILL.md files never get committed:
+  ```bash
+  grep -q 'adapters/agent-skills/output/' .git/info/exclude \
+    || printf 'adapters/agent-skills/output/\n' >> .git/info/exclude
+  git check-ignore adapters/agent-skills/output   # expect: the path echoed
+  ```
+  (`.git/info/exclude` is not a tracked file — this step produces no staged
+  change; it prevents an accidental `git add` of output.)
+
+- [ ] **Step 7: Lint + test**
+  ```bash
+  bash -n adapters/agent-skills/adapter.sh && shellcheck adapters/agent-skills/adapter.sh
+  bash -n lib/cmd/generate.sh && shellcheck lib/cmd/generate.sh
+  bin/rdf generate agent-skills
+  head -1 adapters/agent-skills/output/.agents/skills/r-spec/SKILL.md   # expect: ---
+  bin/rdf generate antigravity
+  test -f adapters/agents-md/output/AGENTS.md && echo "antigravity context OK"
+  make -C tests test 2>&1 | tee /tmp/test-rdf-P8-reach.log | grep -c '^not ok'   # expect: 0
+  ```
+
+- [ ] **Step 8: Commit**
+  ```bash
+  git add adapters/agent-skills/adapter.sh adapters/agent-skills/skill-meta.json \
+      lib/cmd/generate.sh tests/agent-skills.bats tests/Makefile
+  git commit -m "Add agent-skills adapter + antigravity generate target
+
+  [New] adapters/agent-skills — emits .agents/skills/<cmd>/SKILL.md (name +
+        intent-trigger description) for a bounded lifecycle+utility set; the ONE
+        shared workspace surface Codex and Antigravity both read
+  [New] rdf generate agent-skills (raw convention surface) + antigravity
+        (composite: shared skills + AGENTS.md context); no skills machinery
+        duplicated into the codex/gemini adapters
+  [New] tests/agent-skills.bats — SKILL.md shape + name/dir + fallback description"
+  ```
 
 ---
 
-### Phase 9: Intent triggers (CC frontmatter) + gemini/codex skills + lossy warning
+### Phase 9: CC intent frontmatter + gemini TOML fix + agents-md pointer
 
-> **Gating note:** on 3.4-merged `adapters/claude-code/adapter.sh`. Add a NEW
-> function + one call; never edit 3.4's `cc_generate_rules`/`--lite` lines.
+Give Claude Code command output an intent-trigger `description:` frontmatter
+(reusing Phase 8's `skill-meta.json`); fix the gemini legacy-tier TOML escaping
+(15/37 `.toml` files fail strict parsing) by switching the prompt to a `'''`
+literal string and emit the `{{args}}` lossy-edge NOTE; add a `.agents/skills/`
+pointer to the cross-tool AGENTS.md; and assert canonical stays frontmatter-free.
+
+> **Compose note (3.4 merged ✓):** in `adapters/claude-code/adapter.sh` add a NEW
+> function and change only the `cc_generate_commands` copy loop
+> (`adapter.sh:136-148`) — never touch 3.4's `cc_generate_rules`/`_CC_LITE`
+> lines. Codex is NOT edited (skills are the shared agent-skills surface, §13.4).
 
 **Files:**
-- Modify: `adapters/claude-code/adapter.sh` (compose on 3.4)
+- Modify: `adapters/claude-code/adapter.sh`
 - Modify: `adapters/gemini-cli/adapter.sh`
-- Modify: `adapters/codex/adapter.sh`
 - Modify: `adapters/agents-md/adapter.sh`
+- Modify: `lib/cmd/doctor.sh`
+- Modify: `lib/cmd/sync.sh`
 - Modify: `tests/agent-skills.bats`
-- Modify: `tests/governance-contracts.bats` (+canonical-frontmatter-free contract)
+- Modify: `tests/doctor.bats`
+- Modify: `tests/governance-contracts.bats`
+
+> **Contract-integrity note (challenge blockers 1+2):** the CC frontmatter
+> injection MUST land in the SAME phase as the two consumers it would otherwise
+> break — `lib/cmd/doctor.sh` (content-drift hashes the deployed command body)
+> and `lib/cmd/sync.sh` (reverse-flow copies command output to canonical). If
+> either lagged a phase, an intervening `rdf doctor` would FAIL every command
+> and an intervening `rdf sync` would write frontmatter INTO canonical
+> (violating the frontmatter-free contract this phase adds). All three change
+> together here.
 
 - **Mode**: serial-agent
 - **Goals:** 6, 7, 8
-- **Accept**: `output/commands/r-spec.md` begins with `---` + a `description:`
-  line (trigger from skill-meta); canonical `r-spec.md` still has no
-  frontmatter (contract); gemini positional-arg command TOML carries the
-  `{{args}}` lossy warning comment; codex + gemini emit `.agents/skills/`
-- **Test**: `tests/agent-skills.bats` — @test "CC command output gains frontmatter; canonical stays frontmatter-free", @test "gemini positional-arg TOML carries lossy warning"
-- **Edge cases**: spec §11b "gemini no-positional command → no warning"
-- **Regression-case**: governance-contracts.bats::@test "canonical commands carry no YAML frontmatter" (added in this phase)
+- **Accept**: `adapters/claude-code/output/commands/r-spec.md` begins with `---`
+  and a `description:` line (trigger from skill-meta, first-sentence fallback for
+  commands absent from meta); canonical `r-spec.md` still has NO frontmatter
+  (contract); every generated gemini `.toml` parses as strict TOML (the 15/37
+  fix) AND uses a `prompt = '''` literal string (python-free structural guard);
+  a gemini command whose body reads `$ARGUMENTS` carries the `{{args}}` NOTE and
+  one that does not (`r-status`) does not; the cross-tool AGENTS.md references
+  `.agents/skills/`; **`rdf doctor` content-drift stays OK on a frontmatter-
+  bearing command whose body contains `---` horizontal rules** (BLOCKER 1); **`rdf
+  sync` writes a frontmatter-stripped body back to `canonical/commands/*.md`,
+  never the frontmatter** (BLOCKER 2)
+- **Test**: `tests/agent-skills.bats` — @test "CC command output gains description frontmatter; canonical stays frontmatter-free", @test "gemini command TOML parses as strict TOML (literal-string fix)", @test "gemini command TOML uses a prompt literal string (python-free guard)", @test "gemini {{args}} NOTE present for arg command, absent for r-status", @test "agents-md AGENTS.md references .agents/skills/"; `tests/doctor.bats` — @test "content-drift OK for a deployed command with frontmatter + body --- rules"; `governance-contracts.bats` — @test "canonical commands carry no YAML frontmatter"
+- **Edge cases**: spec §11b "gemini no-positional command → no warning"; §13.5 "CC stays commands, no `.claude/skills/` migration"; "deployed command body has `---` horizontal rules → doctor strip must not eat them" (BLOCKER 1)
+- **Regression-case**: tests/doctor.bats::@test "content-drift OK for a deployed command with frontmatter + body --- rules" (BLOCKER 1 — the highest-value guard; the body-`---` case is exactly what the old agent awk ate) + tests/agent-skills.bats::@test "gemini command TOML parses as strict TOML (literal-string fix)" (the 15/37 regression) + governance-contracts.bats::@test "canonical commands carry no YAML frontmatter" (all added in this phase)
 
-- [ ] **Step 1: `cc_generate_command_frontmatter`** in `adapters/claude-code/adapter.sh`
-  — new function reading `adapters/agent-skills/skill-meta.json`; call it inside
-  `cc_generate_commands` (adapter.sh:118-136) to prepend `---\ndescription: >\n
-  <trigger>\n---\n` before the canonical body (fallback: first-sentence). Keep
-  the `.rdf-hash` sidecar over the CANONICAL body (unchanged).
-- [ ] **Step 2: gemini/codex skills emission** — call the shared skills logic (or
-  replicate `sk_generate_*`) in `gem_generate_all`/`cdx_generate_all`; both write
-  `.agents/skills/` alongside their existing output.
-- [ ] **Step 3: gemini `{{args}}` lossy warning** — in `_gem_write_command_toml`
-  (gemini adapter :79-118), if the canonical body references a positional arg
-  (grep for `$ARGUMENTS`-with-positional patterns), emit a `# NOTE:` comment
-  documenting that only `{{args}}` is exposed.
-- [ ] **Step 4: agents-md reference** — add a `.agents/skills/` mention to the
-  AGENTS.md generation (`amd_generate_all`).
-- [ ] **Step 5: canonical-frontmatter-free contract** — in
-  `governance-contracts.bats`, assert no `canonical/commands/*.md` starts with
-  `---`.
-- [ ] **Step 6: Lint + test + commit** (message: "Intent triggers + tri-tool
-  skills emission").
+- [ ] **Step 1: CC command frontmatter** in `adapters/claude-code/adapter.sh`.
+
+  (a) After `_CC_COMMAND_META` (adapter.sh:12), add the shared meta path:
+  ```bash
+  _CC_SKILL_META="${RDF_ADAPTERS}/agent-skills/skill-meta.json"
+  ```
+
+  (b) Add a new function above `cc_generate_commands` (before adapter.sh:129):
+  ```bash
+  # cc_generate_command_frontmatter <basename-no-ext> — emit a CC command
+  # frontmatter block with an intent-trigger description. Trigger comes from the
+  # shared agent-skills skill-meta.json; falls back to the canonical body's first
+  # non-heading line. Never sets disable-model-invocation (CC bug #43875).
+  cc_generate_command_frontmatter() {
+      local name="$1" desc
+      desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_CC_SKILL_META" 2>/dev/null)"  # missing key/file → empty
+      if [[ -z "$desc" ]]; then
+          desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "${RDF_CANONICAL}/commands/${name}.md")"
+          [[ -z "$desc" ]] && desc="RDF command: ${name}"
+      fi
+      echo "---"
+      echo "description: >"
+      echo "  ${desc}"
+      echo "---"
+  }
+  ```
+
+  (c) Change the `cc_generate_commands` copy loop body (adapter.sh:143-146) from:
+  ```bash
+          local dst_file="${dst_dir}/${basename_f}"
+          command cp "$src_file" "$dst_file"
+          # Hash the canonical source so doctor can detect post-deploy drift
+          _cc_write_hash_sidecar "$src_file" "$dst_file"
+  ```
+  to:
+  ```bash
+          local dst_file="${dst_dir}/${basename_f}"
+          local name_noext="${basename_f%.md}"
+          {
+              cc_generate_command_frontmatter "$name_noext"
+              echo ""
+              command cat "$src_file"
+          } > "$dst_file"
+          # Hash the CANONICAL source (pre-frontmatter) so doctor still matches
+          _cc_write_hash_sidecar "$src_file" "$dst_file"
+  ```
+
+  > Self-correction note (§13.5): CC stays commands — this prepends frontmatter to
+  > `.claude/commands/*.md`; it does NOT create `.claude/skills/<cmd>/SKILL.md`
+  > (that would break the symlink-deploy model and double-register `/r-spec`). The
+  > hash sidecar still hashes `$src` (the canonical body), unchanged. **But note
+  > (challenge BLOCKER 1): doctor's content-drift check does NOT re-derive from
+  > canonical for commands — `_check_content_drift`/`_hash_deployed_body`
+  > (`doctor.sh:352-362`) hashes the DEPLOYED command file DIRECTLY (kind
+  > `command` → `rdf_hash_stdin < "$deployed"`, no strip). Once this step adds
+  > frontmatter, that direct hash no longer matches the canonical-body sidecar,
+  > so EVERY command would FAIL content-drift.** Step 2 below fixes doctor to
+  > strip the leading frontmatter before hashing. ALL 37 commands gain a
+  > `description:` (meta trigger for the bounded set, first-sentence fallback for
+  > the rest) — additive header the CC loader tolerates (spec §8 migration safety).
+
+- [ ] **Step 2: doctor content-drift — strip leading command frontmatter (BLOCKER 1)**
+  in `lib/cmd/doctor.sh`. `_hash_deployed_body` (`doctor.sh:352-363`) hashes
+  deployed COMMAND files directly (no strip) and strips agent frontmatter with an
+  awk (`/^---/`) that re-triggers on ANY line beginning `---` — eating the 11 body
+  `---` horizontal rules in `r-spec.md`. Replace the whole `_hash_deployed_body`
+  body with a single LEADING-frontmatter strip that (i) engages only when line 1
+  is `---`, (ii) stops permanently after the 2nd `---`, (iii) skips one blank
+  separator, (iv) prints the rest verbatim (body `---` rules preserved) — correct
+  for BOTH agents and commands:
+  ```bash
+  _hash_deployed_body() {
+      local deployed="$1"
+      local kind="$2"   # "agent" | "command" — both strip a LEADING frontmatter
+      # Strip only a leading contiguous --- ... --- block (from line 1) + one
+      # blank separator; never re-enter on body horizontal rules. If line 1 is
+      # not ---, nothing is stripped (fm stays 0) and the whole file is hashed.
+      awk '
+          NR==1 && /^---[[:space:]]*$/ { fm=1; next }
+          fm==1 && /^---[[:space:]]*$/ { fm=2; next }
+          fm==1 { next }
+          fm==2 { fm=3; if ($0 ~ /^[[:space:]]*$/) next }
+          { print }
+      ' "$deployed" | rdf_hash_stdin
+  }
+  ```
+  Leave the two call sites (`doctor.sh:379,402`) unchanged — `kind` is now
+  unused but the signature stays. This also repairs the latent agent-body-`---`
+  bug (the old awk would have mis-hashed any agent whose body carried `---`).
+
+  > Self-correction note: for commands (which now carry frontmatter after Step 1)
+  > the strip removes the leading `---`…`---` + blank and hashes the canonical
+  > body — matching the sidecar. For a command body with `---` rules (`r-spec` has
+  > 11), `fm` is already 3 by the time they appear, so the `/^---/` rules do not
+  > fire and the lines print verbatim. For a frontmatter-less file, line 1 is not
+  > `---`, `fm` stays 0, the whole file hashes as before (backward compatible).
+
+  Add a doctor content-drift regression to `tests/doctor.bats` (mirror the file's
+  existing hermetic harness):
+  ```bash
+  @test "content-drift OK for a deployed command with frontmatter + body --- rules" {
+      # Hermetic temp RDF_HOME whose canonical/commands/x.md body carries --- rules:
+      #   printf 'line1\n\n---\n\nline2\n\n---\n\nline3\n' > canonical/commands/x.md
+      # Generate CC output (prepends frontmatter + writes the canonical-body
+      # sidecar over $src), then run _check_content_drift on that project root and
+      # assert NO "content-drift ... FAIL ... commands/x.md" result — i.e. the
+      # strip removed the frontmatter but preserved the body --- rules.
+      [ "$status" -ne 1 ]   # assert the FAIL code is absent (per test-isolation guidance)
+  }
+  ```
+
+- [ ] **Step 3: rdf sync — strip frontmatter on the command path (BLOCKER 2)** in
+  `lib/cmd/sync.sh`. The commands loop (`sync.sh:98-119`) is "direct copy (no
+  frontmatter)" and `command cp`s deployed output straight into
+  `canonical/commands/` — after Step 1 that copies the injected frontmatter INTO
+  canonical, breaking the very frontmatter-free contract this phase adds. Make the
+  command path mirror the agents path (`sync.sh:66-95`): if the deployed file's
+  first line is `---`, run it through `_strip_frontmatter` (already body-`---`-
+  safe — it only `continue`s on the first two `---`, and prints every line once
+  `frontmatter_count>=2`, so a body `---` pushing the count to 3 still prints) and
+  trim leading blanks; else keep the direct copy. Replace the commands loop body
+  (`sync.sh:102-117`, from `local canon_file=` through `changed=$((changed + 1))`):
+  ```bash
+          local canon_file="${RDF_CANONICAL}/commands/${basename_f}"
+          local body
+          if [[ "$(head -1 "$out_file")" == "---" ]]; then
+              body="$(_strip_frontmatter "$out_file")"
+              body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
+          else
+              body="$(< "$out_file")"
+          fi
+
+          if [[ -f "$canon_file" ]]; then
+              local current; current="$(< "$canon_file")"
+              if [[ "$body" == "$current" ]]; then
+                  unchanged=$((unchanged + 1)); continue
+              fi
+          fi
+
+          if [[ $dry_run -eq 1 ]]; then
+              rdf_log "WOULD UPDATE: canonical/commands/${basename_f}"
+          else
+              printf '%s\n' "$body" > "$canon_file"
+              rdf_log "updated: canonical/commands/${basename_f}"
+          fi
+          changed=$((changed + 1))
+  ```
+  > Self-correction note: `_strip_frontmatter` (`sync.sh:28-44`) is reused
+  > verbatim (body-`---`-safe). The sync round-trip regression using a COMMAND
+  > file lands in Phase 10's `deploy.bats` (Step 2), so the contract is tested
+  > end-to-end while the SOURCE fix lands here in the same phase as the injection.
+
+- [ ] **Step 4: gemini TOML escaping fix + `{{args}}` NOTE** — replace the prompt
+  block in `_gem_write_command_toml` (gemini adapter :99-118). The bug: the
+  canonical body (regex `\b`, sed `\|`, etc.) is emitted into a `"""` BASIC
+  multi-line string, where a backslash before an invalid escape char is a TOML
+  parse error (15/37 files). Fix: emit the prompt as a `'''` LITERAL string,
+  which does no escape processing. Replace from `# Read full canonical body`
+  through the closing `} > "$dst_file"`:
+  ```bash
+      # Read full canonical body as the prompt
+      local body
+      body="$(< "$src_file")"
+
+      # Escape TOML special chars in the description (basic string; Sentinel #9)
+      desc="${desc//\\/\\\\}"
+      desc="${desc//\"/\\\"}"
+
+      # {{args}} lossy-edge NOTE — canonical bodies reference $ARGUMENTS; Gemini
+      # injects the whole invocation as {{args}} and does not tokenize positional
+      # forms (e.g. `/r-build 3`). Advisory only; conditional on $ARGUMENTS use.
+      local args_note=""
+      if grep -q '\$ARGUMENTS' "$src_file"; then
+          args_note="# NOTE: /${basename_f} reads \$ARGUMENTS; Gemini exposes only {{args}} (the whole string) — positional forms like \`/r-build 3\` are not tokenized."
+      fi
+
+      # Prompt uses a TOML literal string ('''…''') so backslashes in the body
+      # need NO escaping — the 15/37 strict-parse fix. Fallback: if the body
+      # itself contains ''' (impossible inside a literal string), escape
+      # backslashes and use a basic """…""" string instead.
+      {
+          echo "# Generated by rdf generate gemini-cli — do not edit"
+          echo "# Source: canonical/commands/${basename_f}.md"
+          echo ""
+          echo "description = \"${desc}\""
+          echo ""
+          [[ -n "$args_note" ]] && echo "$args_note"
+          if [[ "$body" == *"'''"* ]]; then
+              local esc="${body//\\/\\\\}"
+              echo 'prompt = """'
+              echo "${esc}"
+              echo '"""'
+          else
+              echo "prompt = '''"
+              echo "${body}"
+              echo "'''"
+          fi
+      } > "$dst_file"
+  ```
+
+  > Self-correction note: description stays a BASIC `"..."` string (already
+  > escaped, lines above) — only the prompt switches to `'''`. The `'''`-in-body
+  > guard is defensive; RDF's markdown command bodies use ` ``` ` code fences, not
+  > `'''`, so the fallback branch is effectively never taken but keeps the adapter
+  > total. This is the LOCKED-directive fix; gemini-cli remains a frozen legacy
+  > tier otherwise (no other change).
+
+- [ ] **Step 5: agents-md `.agents/skills/` pointer** — in `amd_generate_all`
+  (agents-md adapter.sh:86-91), extend the intro block:
+  ```bash
+      {
+          echo "# AGENTS.md — rfxn Development Framework"
+          echo ""
+          echo "Cross-tool project instructions. Generated by \`rdf generate agents-md\`."
+          echo ""
+          echo "Agent Skills (slash commands) live under \`.agents/skills/\` — generate"
+          echo "them with \`rdf generate agent-skills\`. Codex and Antigravity read that"
+          echo "directory natively."
+          echo ""
+      } > "$dst_file"
+  ```
+
+- [ ] **Step 6: Add tests to `tests/agent-skills.bats`** — add a CC-generate
+  helper (mirror `_gen_skills`, calling `cc_generate_commands`) and a gemini
+  helper (`gem_generate_commands`), then:
+  ```bash
+  @test "CC command output gains description frontmatter; canonical stays frontmatter-free" {
+      _gen_cc_commands "$TEST_OUT"
+      head -1 "${TEST_OUT}/commands/r-spec.md" | grep -q '^---$'
+      grep -q '^description: >' "${TEST_OUT}/commands/r-spec.md"
+      [ "$(head -1 "${RDF_SRC}/canonical/commands/r-spec.md")" != "---" ]
+  }
+
+  @test "gemini command TOML parses as strict TOML (literal-string fix)" {
+      command -v python3 >/dev/null && python3 -c 'import tomllib' >/dev/null 2>&1 || skip "no tomllib"  # 2>/dev/null: probe only; skip handles absence
+      _gen_gem_commands "$TEST_OUT"
+      local bad=0 f
+      for f in "${TEST_OUT}"/.gemini/commands/*.toml; do
+          python3 -c 'import tomllib,sys; tomllib.load(open(sys.argv[1],"rb"))' "$f" || bad=$((bad+1))
+      done
+      [ "$bad" -eq 0 ]
+  }
+
+  @test "gemini command TOML uses a prompt literal string (python-free guard)" {
+      # MINOR 8: guards the fix even when tomllib is absent. Every generated
+      # command prompt must open a ''' literal (or the ''' -in-body fallback """
+      # WITH escaped backslashes) — never a bare """ basic prompt carrying raw
+      # backslashes (the original 15/37 defect).
+      _gen_gem_commands "$TEST_OUT"
+      local f bad=0
+      for f in "${TEST_OUT}"/.gemini/commands/*.toml; do
+          grep -q "^prompt = '''" "$f" && continue          # literal-string prompt (default path)
+          grep -q '^prompt = """' "$f" || { bad=$((bad+1)); continue; }  # neither form → defect
+      done
+      [ "$bad" -eq 0 ]
+      # r-build's body has backslashes (sed/regex); assert its prompt is a literal
+      grep -q "^prompt = '''" "${TEST_OUT}/.gemini/commands/r-build.toml"
+  }
+
+  @test "gemini {{args}} NOTE present for arg command, absent for r-status" {
+      _gen_gem_commands "$TEST_OUT"
+      grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-build.toml"
+      ! grep -q 'NOTE:.*{{args}}' "${TEST_OUT}/.gemini/commands/r-status.toml"
+  }
+
+  @test "agents-md AGENTS.md references .agents/skills/" {
+      _gen_agents_md "$TEST_OUT"
+      grep -q '\.agents/skills/' "${TEST_OUT}/AGENTS.md"
+  }
+  ```
+  (The `_gen_cc_commands`/`_gen_gem_commands`/`_gen_agents_md` helpers each source
+  the relevant adapter with `_*_OUTPUT_DIR="$TEST_OUT"` and call its
+  `*_generate_commands`/`amd_generate_all`, mirroring `tests/adapter.bats`'s
+  `_generate`. r-build reads `$ARGUMENTS`; r-status does not — verified by
+  `grep -l '\$ARGUMENTS' canonical/commands/*.md`.)
+
+- [ ] **Step 7: canonical-frontmatter-free contract** in
+  `tests/governance-contracts.bats` (append at EOF, §4.2 additive):
+  ```bash
+  @test "canonical commands carry no YAML frontmatter" {
+      local root f
+      root="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+      for f in "${root}"/canonical/commands/*.md; do
+          [ "$(head -1 "$f")" != "---" ]
+      done
+  }
+  ```
+
+- [ ] **Step 8: Lint + test + commit**
+  ```bash
+  bash -n adapters/claude-code/adapter.sh adapters/gemini-cli/adapter.sh \
+      adapters/agents-md/adapter.sh lib/cmd/doctor.sh lib/cmd/sync.sh
+  shellcheck adapters/claude-code/adapter.sh adapters/gemini-cli/adapter.sh \
+      adapters/agents-md/adapter.sh lib/cmd/doctor.sh lib/cmd/sync.sh
+  make -C tests test 2>&1 | tee /tmp/test-rdf-P9-reach.log | grep -c '^not ok'   # expect: 0
+  git add adapters/claude-code/adapter.sh adapters/gemini-cli/adapter.sh \
+      adapters/agents-md/adapter.sh lib/cmd/doctor.sh lib/cmd/sync.sh \
+      tests/agent-skills.bats tests/doctor.bats tests/governance-contracts.bats
+  git commit -m "Intent-trigger frontmatter (CC) + gemini TOML fix + consumer guards
+
+  [New] claude-code: cc_generate_command_frontmatter prepends an intent-trigger
+        description: to every command (shared skill-meta trigger, first-sentence
+        fallback); canonical stays frontmatter-free; hash sidecar over canonical
+  [Fix] doctor content-drift: _hash_deployed_body strips only a LEADING frontmatter
+        block (body --- horizontal rules preserved), so commands gaining
+        frontmatter no longer false-FAIL; also repairs the latent agent-body---
+        bug in the old awk
+  [Fix] sync: command reverse-flow strips frontmatter before writing canonical,
+        so an emergency-edit round-trip never writes frontmatter into canonical
+  [Fix] gemini-cli (legacy tier): emit the command prompt as a TOML ''' literal
+        string so canonical backslashes (regex/sed) no longer break strict TOML
+        parsing — 15/37 .toml files now valid; add the {{args}} lossy-edge NOTE
+        for \$ARGUMENTS commands
+  [New] agents-md: reference .agents/skills/ for Codex/Antigravity discovery
+  [New] tests: doctor content-drift (frontmatter + body ---) regression;
+        canonical-commands-carry-no-frontmatter governance contract"
+  ```
 
 ---
 
-### Phase 10: Deploy/sync BATS coverage (audit M6) + parity doc
+### Phase 10: Deploy/sync BATS coverage (audit M6) + skills deploy + parity doc
 
-Close the audit M6 gap (zero deploy/sync test coverage) and document the
-tri-tool parity matrix incl. the Gemini `{{args}}` lossy edge.
+Close the audit M6 gap (zero deploy/sync BATS coverage — the install surface
+every consumer hits), add an `agent-skills` deploy target (symlink
+`.agents/skills/` into a workspace root), and write the multi-tool parity doc
+recast around the new trio + legacy gemini row.
 
 **Files:**
 - Create: `tests/deploy.bats`
-- Create: `docs/tri-tool-parity.md`
+- Create: `docs/multi-tool-parity.md`
 - Modify: `lib/cmd/deploy.sh`
 - Modify: `tests/Makefile`
 
 - **Mode**: serial-agent
 - **Goals:** 9
-- **Accept**: `tests/deploy.bats` covers `_deploy_symlink` create/replace/skip/
-  force and the hooks.json manual-merge skip, plus an `rdf sync` round-trip;
-  `make -C tests test` runs it green; `docs/tri-tool-parity.md` states the
-  AGENTS.md/Skills/MCP matrix and the `{{args}}` limitation
-- **Test**: `tests/deploy.bats` — @test "deploy symlink create/replace/skip/force", @test "deploy skips hooks.json", @test "sync pulls emergency edit back to canonical"
-- **Edge cases**: spec §11b "deploy.bats on host without bats" (Makefile guard)
-- **Regression-case**: tests/deploy.bats::@test "deploy symlink create/replace/skip/force" (file created in this phase)
+- **Accept**: `tests/deploy.bats` covers `_deploy_symlink`
+  create/replace/skip/force and the hooks.json manual-merge skip, the new
+  `agent-skills` `.agents/skills/` symlink into a `--project-root`, and an
+  `rdf sync` round-trip; `make -C tests test` runs it green;
+  `docs/multi-tool-parity.md` states the trio (Claude Code / Codex / Antigravity)
+  + legacy gemini-cli matrix across command surface / skills / context file /
+  hooks, and the `{{args}}` lossy edge
+- **Test**: `tests/deploy.bats` — @test "deploy claude-code symlink create/replace/skip/force", @test "deploy claude-code skips hooks.json", @test "deploy agent-skills symlinks .agents/skills into project root", @test "sync strips frontmatter from a COMMAND on the reverse flow (BLOCKER 2)"
+- **Edge cases**: spec §11b "deploy.bats on host without bats" (Makefile `_bats_check` guard); "sync of a frontmatter-bearing command must not write frontmatter to canonical" (BLOCKER 2)
+- **Regression-case**: tests/deploy.bats::@test "deploy claude-code symlink create/replace/skip/force" (M6 install-surface guard) + tests/deploy.bats::@test "sync strips frontmatter from a COMMAND on the reverse flow (BLOCKER 2)" (guards the Phase-9 sync.sh fix end-to-end)
 
-- [ ] **Step 1: Skills symlink in `lib/cmd/deploy.sh`** (compose on 3.4 base —
-  append after 3.4's opt-in `rules/` symlink in `_deploy_claude_code`, never
-  editing 3.4's lines): opt-in `.agents/skills/` symlink for the agent-skills
-  output. Default off, mirroring 3.4's `--rules` pattern.
-- [ ] **Step 2: `tests/deploy.bats`** — hermetic HOME; generate to a temp
-  output, then exercise `cmd_deploy claude-code` paths: fresh symlink, replace
-  existing symlink, skip real file without `--force`, back-up + replace with
-  `--force`, hooks.json skipped, and the new skills symlink. Add an `rdf sync`
-  round-trip (edit a deployed file, sync, assert canonical updated).
-- [ ] **Step 3: `docs/tri-tool-parity.md`** — matrix of AGENTS.md / Agent-Skills
-  / MCP / hooks across CC/Gemini/Codex; the Gemini `{{args}}`-only lossy edge;
-  the Codex hooks intersection (recommend-deferred, cross-ref Phase 12).
-- [ ] **Step 4: Makefile** — add `deploy.bats` + `agent-skills.bats` to test +
-  lint lists.
-- [ ] **Step 5: Lint + test + commit** — `git add lib/cmd/deploy.sh
-  tests/deploy.bats docs/tri-tool-parity.md tests/Makefile` (message: "Add
-  deploy/sync BATS coverage (audit M6) + skills symlink + tri-tool parity doc").
+- [ ] **Step 1: `agent-skills` deploy target in `lib/cmd/deploy.sh`** — `.agents/skills/`
+  is workspace-level (not `$HOME` like claude-code/gemini), so it mirrors codex's
+  `--project-root` pattern rather than 3.4's `~/.claude/rules` symlink.
+
+  (a) Add a new function after `_deploy_codex` (deploy.sh:246):
+  ```bash
+  # Deploy agent-skills output (.agents/skills/) into a workspace root
+  _deploy_agent_skills() {
+      local dry_run="$1"
+      local force="$2"
+      local project_root="$3"
+      local output_dir="${RDF_ADAPTERS}/agent-skills/output"
+
+      if [[ ! -d "$output_dir" ]] || [[ -z "$(ls -A "$output_dir" 2>/dev/null)" ]]; then  # 2>/dev/null: empty-on-missing is the intended empties→rdf_die value
+          rdf_die "output not found — run 'rdf generate agent-skills' first"
+      fi
+      [[ -n "$project_root" ]] || project_root="$PWD"
+      if [[ ! -d "$project_root" ]]; then
+          rdf_die "project root not a directory: ${project_root}"
+      fi
+
+      rdf_log "deploying agent-skills to ${project_root}/.agents/skills..."
+      _deploy_symlink "${output_dir}/.agents/skills" "${project_root}/.agents/skills" "$dry_run" "$force"
+  }
+  ```
+
+  (b) Add the case arm in `cmd_deploy` (deploy.sh:293-297), after the `codex)` arm:
+  ```bash
+          agent-skills) _deploy_agent_skills "$dry_run" "$force" "$project_root" ;;
+  ```
+
+  (c) Add to `_deploy_usage` (deploy.sh:13-16), after the `codex` target line:
+  ```
+    agent-skills   Deploy .agents/skills/ into a workspace root (--project-root, default CWD)
+  ```
+
+- [ ] **Step 2: Create `tests/deploy.bats`** — hermetic harness mirroring
+  `tests/rules-deploy.bats:1-55`. Copy its `_make_deploy_skeleton <fix_home>`
+  (builds `adapters/claude-code/output/{agents,commands,scripts,governance,rules}`
+  + a `hooks.json` since CC output is local-only/absent on a CI checkout) and
+  `_run_deploy <fix_home> [args...]` (sources `lib/cmd/deploy.sh` under a temp
+  `HOME=<fix_home>/.claude`-style root and runs `cmd_deploy claude-code`). Each
+  `@test` is fully asserted (no prose-only bodies):
+  ```bash
+  setup() { FIX_HOME="$(mktemp -d)"; export FIX_HOME; _make_deploy_skeleton "$FIX_HOME"; }
+  teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
+
+  @test "deploy claude-code symlink create/replace/skip/force" {
+      local out="${FIX_HOME}/adapters/claude-code/output"
+      # 1) fresh create → commands is a symlink to the output
+      run _run_deploy "$FIX_HOME"
+      [ "$status" -eq 0 ]
+      [ -L "${FIX_HOME}/.claude/commands" ]
+      [ "$(readlink "${FIX_HOME}/.claude/commands")" = "${out}/commands" ]
+      # 2) second run → still a symlink (replaced, not skipped)
+      run _run_deploy "$FIX_HOME"
+      [ -L "${FIX_HOME}/.claude/commands" ]
+      # 3) a REAL dir where the symlink would go, no --force → skipped, dir intact
+      rm -f "${FIX_HOME}/.claude/governance"; mkdir -p "${FIX_HOME}/.claude/governance"
+      touch "${FIX_HOME}/.claude/governance/keep.md"
+      run _run_deploy "$FIX_HOME"
+      [ ! -L "${FIX_HOME}/.claude/governance" ]            # untouched real dir
+      [ -f "${FIX_HOME}/.claude/governance/keep.md" ]
+      echo "$output" | grep -q 'not a symlink'
+      # 4) --force → backs up the real dir and symlinks
+      run _run_deploy "$FIX_HOME" --force
+      [ -L "${FIX_HOME}/.claude/governance" ]
+      ls -d "${FIX_HOME}/.claude/governance".bak-* >/dev/null   # backup exists
+  }
+
+  @test "deploy claude-code skips hooks.json" {
+      run _run_deploy "$FIX_HOME"
+      [ ! -e "${FIX_HOME}/.claude/hooks.json" ]           # never symlinked (manual merge)
+      echo "$output" | grep -q 'skipped: hooks.json'
+  }
+
+  @test "deploy agent-skills symlinks .agents/skills into project root" {
+      local out="${FIX_HOME}/adapters/agent-skills/output"
+      mkdir -p "${out}/.agents/skills/r-spec"
+      printf -- '---\nname: r-spec\n---\nbody\n' > "${out}/.agents/skills/r-spec/SKILL.md"
+      local proj; proj="$(mktemp -d)"
+      run _run_deploy "$FIX_HOME" --project-root "$proj" agent-skills
+      [ "$status" -eq 0 ]
+      [ -L "${proj}/.agents/skills" ]
+      [ -f "${proj}/.agents/skills/r-spec/SKILL.md" ]
+      rm -rf "$proj"
+  }
+
+  @test "sync strips frontmatter from a COMMAND on the reverse flow (BLOCKER 2)" {
+      # A deployed command carries frontmatter + a body --- rule; sync must write
+      # back the STRIPPED body to canonical, never the frontmatter.
+      local home="$(mktemp -d)"
+      mkdir -p "${home}/canonical/commands" "${home}/adapters/claude-code/output/commands"
+      printf 'orig body\n---\nrule\n' > "${home}/canonical/commands/x.md"
+      printf -- '---\ndescription: >\n  trigger\n---\n\nEDITED body\n---\nrule\n' \
+          > "${home}/adapters/claude-code/output/commands/x.md"
+      run bash -c '
+          set -euo pipefail
+          RDF_HOME="$1"; RDF_LIBDIR="$2/lib"; RDF_VERSION="0.0.0-test"
+          source "$2/lib/rdf_common.sh"; rdf_init
+          source "$2/lib/cmd/sync.sh"; cmd_sync
+      ' -- "$home" "$RDF_SRC"
+      [ "$status" -eq 0 ]
+      [ "$(head -1 "${home}/canonical/commands/x.md")" != "---" ]   # NO frontmatter
+      grep -q '^EDITED body$' "${home}/canonical/commands/x.md"     # edit landed
+      grep -q '^---$' "${home}/canonical/commands/x.md"             # body --- rule preserved
+      ! grep -q 'description: >' "${home}/canonical/commands/x.md"  # trigger stripped
+      rm -rf "$home"
+  }
+  ```
+  Use `mktemp -d` for every root; bare coreutils inside `.bats`; the sync test
+  sources `lib/cmd/sync.sh` directly (as above) rather than `bin/rdf`, matching
+  the harness style of `tests/adapter.bats`.
+
+- [ ] **Step 3: Create `docs/multi-tool-parity.md`** — recast around the trio +
+  legacy row (spec §13.3). Sections:
+  1. **Matrix** — rows: Claude Code, Codex, Antigravity, Gemini CLI (legacy);
+     columns: command surface, skill surface (`.agents/skills/`), context file,
+     hooks, generate target.
+  2. **The `.agents/skills/` shared convention** — one workspace directory, read
+     by Codex + Antigravity; emitted once by `rdf generate agent-skills`.
+  3. **Gemini `{{args}}` lossy edge** — the §5b.5 example; commands reading
+     `$ARGUMENTS` carry a NOTE; positional forms (`/r-build 3`) are not tokenized.
+  4. **Legacy gemini-cli tier** — frozen for enterprise Gemini CLI users; the
+     TOML `'''`-literal fix; the `agy plugin import gemini` migration path
+     (fixed TOML is the migration source).
+  5. **Deferred surfaces** — Antigravity hooks/subagents/plugins, Codex
+     `openai.yaml`, MCP — cross-ref spec §13.7 (probe-gated).
+
+- [ ] **Step 4: `tests/Makefile`** — append `$(TESTS_DIR)deploy.bats` to BOTH the
+  `test:` and `lint:` lists (after `agent-skills.bats`, added in Phase 8). List
+  explicitly — no glob.
+
+- [ ] **Step 5: Lint + test + commit**
+  ```bash
+  bash -n lib/cmd/deploy.sh && shellcheck lib/cmd/deploy.sh
+  make -C tests test 2>&1 | tee /tmp/test-rdf-P10-reach.log | grep -c '^not ok'   # expect: 0
+  git add lib/cmd/deploy.sh tests/deploy.bats docs/multi-tool-parity.md tests/Makefile
+  git commit -m "Deploy/sync BATS coverage (audit M6) + agent-skills deploy + parity doc
+
+  [New] tests/deploy.bats — symlink create/replace/skip/force, hooks.json skip,
+        agent-skills workspace symlink, and an rdf sync round-trip (closes the
+        audit M6 zero-coverage gap on the install surface)
+  [New] lib/cmd/deploy.sh: agent-skills target — symlink .agents/skills/ into a
+        workspace root (--project-root, default CWD; codex pattern)
+  [New] docs/multi-tool-parity.md — trio (Claude Code/Codex/Antigravity) + legacy
+        gemini row; .agents/skills/ convention; {{args}} lossy edge; deferred
+        Antigravity surfaces (spec §13.7)"
+  ```
 
 ---
 
-### Phase 11: 3.5.1 "Reach" release
+### Phase 11: "Reach" release (VERSION assigned at ship)
 
-VERSION 3.5.1, changelog, README, ROADMAP. Depends on Phases 8–10.
+Docs, roadmap, changelog, VERSION bump. Depends on Phases 8–10.
 
-**Files:** `README.md`, `ROADMAP.md`, `CHANGELOG`, `CHANGELOG.RELEASE`, `VERSION`
+> **Version placeholder — NOT pre-allocated.** Use `<REACH_VERSION>` throughout
+> this phase; the controller assigns the actual number at ship time (per the
+> release-cadence rule: assign at ship, never pre-allocate a ladder). Wave 1
+> already shipped as 3.5.0 + the 3.5.1 QA-pass, so `<REACH_VERSION>` is the NEXT
+> number the controller chooses at ship — do NOT reuse 3.5.1. Substitute the
+> chosen number in VERSION, both changelogs, the commit subject, and the tag.
+
+**Files:** `README.md`, `ROADMAP.md`, `docs/index.md`, `CHANGELOG`, `CHANGELOG.RELEASE`, `VERSION`
 
 - **Mode**: serial-context
 - **Goals:** 11
-- **Accept**: `VERSION` 3.5.1; CHANGELOG block covers skills/intent-triggers/
-  parity/deploy-coverage; ROADMAP checks the tri-tool item; `rdf doctor` 0 FAIL;
-  full suite green
-- **Test**: N/A (docs) — greps below
+- **Accept**: `VERSION` == the ship-assigned `<REACH_VERSION>`; CHANGELOG +
+  CHANGELOG.RELEASE each gain a `## <REACH_VERSION>` block covering
+  agent-skills/antigravity, CC intent frontmatter, the gemini TOML fix, deploy/
+  sync BATS, and the parity doc; README documents the trio + `rdf generate
+  agent-skills`/`antigravity` (and gemini-cli as a frozen legacy tier); ROADMAP
+  checks the first-class multi-tool item; **the doc-stats adapter count reads 6
+  (agent-skills added) in the README badge, the README footer line, and
+  docs/index.md** — so `rdf doctor` doc-stats stays 0 FAIL; full suite green
+- **Test**: N/A (docs + version) — verification greps below
 - **Edge cases**: none
 - **Regression-case**: N/A — docs/release phase
 
-- [ ] **Step 1–4:** README (intent-triggered install), ROADMAP (Reach shipped),
-  CHANGELOG/CHANGELOG.RELEASE (`## 3.5.1`), VERSION `3.5.1`.
-- [ ] **Step 5: Verify + commit**
+- [ ] **Step 1: README** — add/extend a "First-class multi-tool" subsection:
+  Claude Code, Codex, and **Antigravity CLI** as first-class citizens;
+  `rdf generate agent-skills` (shared `.agents/skills/`) and `rdf generate
+  antigravity` (skills + AGENTS.md); note gemini-cli is a **frozen legacy tier**
+  for enterprise Gemini CLI users (kept for the transition, TOML fix included).
+  **Also bump the doc-stats adapter count 5→6** (agent-skills is a new adapter
+  dir): the badge `README.md:6` (`adapters-5`→`adapters-6`) and the footer
+  banner `README.md:602` (`5 adapters`→`6 adapters`). Verify with
+  `bash bin/rdf doctor --all 2>&1 | grep -i 'doc-stat\|adapter'` after the edit —
+  doc-stats counts `adapters/*/` live and will FAIL if the docs still say 5.
+- [ ] **Step 2: docs/index.md** — bump the footer stats line `docs/index.md:23`
+  (`5 adapters`→`6 adapters`) to match the live count.
+- [ ] **Step 3: ROADMAP** — check off the first-class multi-tool / Agent-Skills
+  item; note Antigravity is the locked transition target and gemini-cli is legacy.
+- [ ] **Step 4: CHANGELOG + CHANGELOG.RELEASE** — a `## <REACH_VERSION>` block,
+  soft-wrap + `[New]`/`[Fix]`/`[Change]` tag style per workspace CLAUDE.md.
+- [ ] **Step 5: VERSION** — write the ship-assigned `<REACH_VERSION>`.
+- [ ] **Step 6: Verify + commit**
   ```bash
-  cat VERSION                                 # expect: 3.5.1
+  cat VERSION                                 # expect: <REACH_VERSION>
   bash bin/rdf doctor 2>&1 | grep -c 'FAIL'   # expect: 0
-  make -C tests test 2>&1 | grep -c '^not ok' # expect: 0
+  make -C tests test 2>&1 | tee /tmp/test-rdf-P11-reach.log | grep -c '^not ok'   # expect: 0
+  git add README.md ROADMAP.md docs/index.md CHANGELOG CHANGELOG.RELEASE VERSION
+  git commit -m "<REACH_VERSION> — Reach: first-class Codex + Antigravity skills
+
+  [New] agent-skills adapter (.agents/skills/) + antigravity generate target;
+        CC command intent-trigger frontmatter; multi-tool parity doc
+  [Fix] gemini-cli (legacy tier): TOML ''' literal-string escaping — 15/37
+        command .toml files now parse strictly; {{args}} lossy-edge NOTE
+  [New] deploy/sync BATS coverage (audit M6) + agent-skills deploy target
+  [Change] ROADMAP/README/docs/index.md doc-stats adapters 5→6; VERSION <REACH_VERSION>"
   ```
 
 ---
@@ -1261,14 +2017,34 @@ described in Step 2 prose, not a Files entry, since it is gated on Q3.)
 After the final shipped wave, dispatch an end-of-plan sentinel review
 (mandatory — this plan is dispatched as a batch; the orchestrator does not
 auto-trigger a sentinel for manually dispatched phases). Sentinel must verify:
-no bare coreutils in new shell source; `rdf_active_tier` never fails (defaults
-`full`) and the plan `**Tier:**` marker is authoritative over the pointer (S3);
-the consistency gate does not false-block a legacy clean plan and covers a
-comma-list Files line (M2 multi-path); the tier cap only lowers gates AND never
-drops the security pass on `scope:sensitive`/security-indicator files (M1 — the
-highest-value guard); canonical commands carry no YAML frontmatter (Wave 2);
-and a full-repo grep for stale `collect-spool` references returns 0.
 
-Per the workspace lesson — **run a fresh `/r-plan` for Waves 2–3 after Phase 0
-resolves Q1–Q4**; do not build their phases from this plan's outlines without
-the probe-confirmed schemas.
+**Wave 1 (shipped — regression guard only):** no bare coreutils in new shell
+source; `rdf_active_tier` never fails (defaults `full`) and the plan `**Tier:**`
+marker is authoritative over the pointer (S3); the consistency gate does not
+false-block a legacy clean plan and covers a comma-list Files line (M2
+multi-path); the tier cap only lowers gates AND never drops the security pass on
+`scope:sensitive`/security-indicator files (M1).
+
+**Wave 2 (Reach):** every emitted `SKILL.md` has `name:` == its parent
+directory name (AAIF rule) and a `description:`; every generated gemini `.toml`
+parses as strict TOML (the 15/37 literal-string fix) AND uses a `prompt = '''`
+literal (python-free guard), and only `$ARGUMENTS` commands carry the `{{args}}`
+NOTE; CC command output gains a `description:` while canonical commands carry NO
+YAML frontmatter; **`rdf doctor` content-drift is OK on a frontmatter-bearing
+command whose body has `---` rules (BLOCKER 1) and `rdf sync` writes a
+frontmatter-stripped body to `canonical/commands/` (BLOCKER 2)**; and `.agents/
+skills/` is emitted by ONE adapter. A **source-vocabulary sweep** (per the
+workspace lesson) confirms the dropped per-tool-skills design left no trace in
+shipped source — grep the built artifacts (NOT the design docs, which record the
+supersession in spec §13):
+`grep -rn 'sk_emit_skills\|sk_generate_all' adapters/codex adapters/gemini-cli`
+returns 0 (skills logic lives only in `adapters/agent-skills/`), and
+`grep -rn 'Reach' README.md CHANGELOG VERSION | grep '3\.5\.1'` returns 0 (no
+release doc labels this wave with the already-shipped 3.5.1 number).
+
+**Wave 3:** a full-repo grep for stale `collect-spool` references returns 0.
+
+Wave 2 is re-planned (2026-07-15, spec §13) — its phases are execution-grade.
+**Wave 3's conditional P6/peer-view parts still need a fresh `/r-plan`** if
+Phase 0 Q3 reconfirms cross-session pain; the zero-risk phantom-contract
+cleanup (Phase 12 Step 1) may ship as-is.
