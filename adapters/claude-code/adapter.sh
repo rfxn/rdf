@@ -10,6 +10,9 @@ _CC_ADAPTER_DIR="${RDF_ADAPTERS}/claude-code"
 _CC_OUTPUT_DIR="${_CC_ADAPTER_DIR}/output"
 _CC_AGENT_META="${_CC_ADAPTER_DIR}/agent-meta.json"
 _CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta-v3.json"
+# rdf-lite: 1 = condensed core governance, lifecycle commands only, no hooks.
+# Default 0 keeps the full generation path byte-identical (set by generate.sh).
+_CC_LITE="${_CC_LITE:-0}"
 
 # Fail fast if no SHA tool is available for .rdf-hash sidecar generation.
 # Hashing itself goes through rdf_hash_stdin (portable across GNU/macOS/BSD).
@@ -112,6 +115,14 @@ cc_generate_agents() {
     rdf_log "generated ${count} agent files"
 }
 
+# _cc_is_lite_command file — true when $1 (e.g. r-plan.md) is a lifecycle command.
+_cc_is_lite_command() {
+    case "$1" in
+        r-spec.md|r-plan.md|r-build.md|r-ship.md|r-start.md|r-save.md) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Generate all CC command files
 # Reads canonical/commands/*.md + command-meta.json -> output/commands/*.md
 # Currently: direct copy (commands have no frontmatter in CC)
@@ -126,6 +137,9 @@ cc_generate_commands() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
+        if [[ "$_CC_LITE" -eq 1 ]] && ! _cc_is_lite_command "$basename_f"; then
+            continue   # lite ships only the lifecycle command set
+        fi
         local dst_file="${dst_dir}/${basename_f}"
         command cp "$src_file" "$dst_file"
         # Hash the canonical source so doctor can detect post-deploy drift
@@ -157,6 +171,10 @@ cc_generate_scripts() {
 
 # Copy hooks.json to output
 cc_generate_hooks() {
+    if [[ "$_CC_LITE" -eq 1 ]]; then
+        rdf_log "lite: skipping hooks.json"
+        return 0
+    fi
     local src="${_CC_ADAPTER_DIR}/hooks/hooks.json"
     local dst_dir="${_CC_OUTPUT_DIR}"
 
@@ -219,7 +237,11 @@ cc_generate_rules() {
     active="$(rdf_get_active_profiles)"
     while IFS= read -r profile; do
         [[ -z "$profile" ]] && continue
-        gov_file="${RDF_HOME}/profiles/${profile}/governance-template.md"
+        if [[ "$_CC_LITE" -eq 1 && "$profile" == "core" ]]; then
+            gov_file="${RDF_HOME}/profiles/lite/governance-lite.md"   # condensed core (rdf-lite)
+        else
+            gov_file="${RDF_HOME}/profiles/${profile}/governance-template.md"
+        fi
         [[ -f "$gov_file" ]] || continue
         front="$(_cc_paths_frontmatter "$profile")"
         {
@@ -234,6 +256,7 @@ cc_generate_rules() {
 # Full CC generation pipeline
 cc_generate_all() {
     rdf_log "generating Claude Code adapter output..."
+    [[ "$_CC_LITE" -eq 1 ]] && rdf_log "lite mode: condensed core governance, lifecycle commands only, no hooks"
     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
     rdf_require_file "$_CC_AGENT_META" "agent-meta.json"
     rdf_require_bin jq

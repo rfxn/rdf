@@ -702,7 +702,11 @@ _check_doc_stats() {
         esac
     done
     for f in "${canonical_dir}/agents"/*.md; do [[ -f "$f" ]] && agents=$((agents + 1)); done
-    for f in "${path}/profiles"/*/;          do [[ -d "$f" ]] && profiles=$((profiles + 1)); done
+    for f in "${path}/profiles"/*/;          do
+        [[ -d "$f" ]] || continue
+        [[ "${f%/}" == */lite ]] && continue   # lite is a deploy source, not a governance profile
+        profiles=$((profiles + 1))
+    done
     for f in "${path}/adapters"/*/;          do [[ -d "$f" ]] && adapters=$((adapters + 1)); done
     for f in "${path}/modes"/*/;             do [[ -d "$f" ]] && modes=$((modes + 1)); done
 

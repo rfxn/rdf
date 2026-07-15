@@ -36,6 +36,13 @@
       survives compaction (spec §4.3); rules-deploy.bats (7 tests) guards the
       never-scope-core invariant
 
+[New] rdf-lite minimal deploy variant — rdf generate claude-code --lite emits
+      condensed core governance (profiles/lite/governance-lite.md, ~574 tokens)
+      as rules/core.md, ships only the lifecycle command set, skips hooks;
+      always-loaded footprint ~674 tokens, under the 1000-token budget;
+      default (non-lite) generation byte-identical; rdf-lite.bats (6 tests);
+      doctor doc-stats excludes profiles/lite (deploy source, not a governance
+      profile)
 [New] rdf-state.sh --full emits a deterministic diff_categories object
       (path-prefix counts: commands/agents/scripts/cli/adapters/specs/docs/
       other) so /r-save reads the classification instead of the model

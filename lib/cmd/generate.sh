@@ -21,6 +21,8 @@ Targets:
 Options:
   --deploy       Run 'rdf deploy <target>' after generation completes
   --rules        With --deploy claude-code, also symlink scoped rules/ (opt-in)
+  --lite         Minimal claude-code deploy: condensed core governance,
+                 lifecycle commands only, no hooks (rdf-lite; implies --rules)
 
 The generated output is written to adapters/<target>/output/.
 
@@ -71,15 +73,20 @@ cmd_generate() {
     rdf_profile_init
     local deploy_after=0
     local deploy_rules=0
+    local lite=0
 
-    # Parse leading flags (--deploy, --rules) in any order before the target.
+    # Parse leading flags (--deploy, --rules, --lite) in any order before the target.
     while [[ "${1:-}" == --* ]]; do
         case "$1" in
             --deploy) deploy_after=1; shift ;;
             --rules)  deploy_rules=1; shift ;;
+            --lite)   lite=1; shift ;;
             *)        break ;;   # e.g. --help — let the target case handle it
         esac
     done
+
+    # rdf-lite selects the condensed generation path; the adapter reads _CC_LITE.
+    [[ $lite -eq 1 ]] && export _CC_LITE=1
 
     if [[ $deploy_rules -eq 1 && $deploy_after -eq 0 ]]; then
         rdf_warn "--rules has no effect without --deploy — 'rules/' is generated regardless; deploy it with 'rdf deploy --rules claude-code'"
@@ -92,7 +99,9 @@ cmd_generate() {
             if [[ $deploy_after -eq 1 ]]; then
                 # shellcheck disable=SC1090,SC1091
                 source "${RDF_LIBDIR}/cmd/deploy.sh"
-                if [[ $deploy_rules -eq 1 ]]; then
+                if [[ $lite -eq 1 ]]; then
+                    cmd_deploy --lite claude-code
+                elif [[ $deploy_rules -eq 1 ]]; then
                     cmd_deploy --rules claude-code
                 else
                     cmd_deploy claude-code

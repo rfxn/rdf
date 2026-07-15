@@ -19,6 +19,7 @@ Options:
   --dry-run        Show what would happen without making changes
   --force          Back up real dirs/files and replace with symlinks
   --rules          Also symlink scoped governance rules/ (claude-code; opt-in)
+  --lite           rdf-lite deploy: symlink rules/ as governance, skip hooks
   --project-root   Project root for Codex AGENTS.md deployment
 
 Symlinked directories allow 'rdf generate' to update deployed files in place.
@@ -256,6 +257,7 @@ cmd_deploy() {
             --dry-run)      dry_run=1; shift ;;
             --force)        force=1; shift ;;
             --rules)        deploy_rules=1; shift ;;
+            --lite)         deploy_rules=1; shift ;;   # rdf-lite: rules ARE the governance; hooks skipped as always
             --project-root)
                 if [[ $# -lt 2 ]]; then
                     rdf_die "--project-root requires a value"
