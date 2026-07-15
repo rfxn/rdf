@@ -273,6 +273,39 @@ Model routing (reviewer dispatch):
   pass model: "sonnet" for challenge mode. The dispatcher only
   dispatches sentinel reviews.
 
+### Tier Cap (min(scope_gate, tier_cap)) — with a security floor
+
+Read `TIER` from the dispatch payload (`full` if absent). The tier is a
+ceiling applied AFTER scope→gate selection — it only removes ceremony, never
+adds it. See `reference/tiers.md`.
+
+**Security floor (overrides the cap — evaluate FIRST).** If the phase is
+`scope:sensitive`, OR any changed file matches the security-sensitive
+indicators — **reuse the reviewer Early-Exit Rubric list verbatim**
+(`reviewer.md:183-187`; do NOT define a second list): filename contains
+`auth`, `cred`, `secret`, `token`, `key`, `passwd`, `encrypt`, `hash`, `sign`,
+`cert`, `session`, or `permission`; or flagged security-sensitive in
+`governance/anti-patterns.md` — then the tier cap MUST NOT reduce Gate 3 below
+sentinel-full (3-pass, Security included) and MUST NOT skip Gate 2, regardless
+of tier. Effective selection is `max(security_floor, min(scope_gate,
+tier_cap))`. Rationale: the 3.3.0 C1 RCE fix was a single-file change matching
+the `bugfix` heuristic exactly — a tier must never let a security patch skip
+the Security pass.
+
+- `full`   — no cap. Use the scope→gate mapping as-is.
+- `quick-plan` — cap Gate 3 at sentinel-lite (2-pass) and skip the End-of-Plan
+  Sentinel, keep Gates 1+2, Gate 4 (UAT) only if the file list forces it —
+  **UNLESS the security floor applies** (then sentinel-full + Gate 2).
+- `bugfix` — Gate 1 + a regression-only sentinel-lite; skip Gate 2's full
+  matrix (run the single regression test), skip Gate 4, skip the End-of-Plan
+  Sentinel; the engineer MUST land the failing test first (red→green) —
+  **UNLESS the security floor applies** (then Gate 2 + sentinel-full run in
+  full despite the tier).
+
+The cap can only lower the gate set derived from scope; it can never raise a
+scope:docs phase's gates, and it can never lower below the security floor. If
+`TIER` is unrecognized, treat as `full`.
+
 ### Sentinel Dispatch Payload (target-class derivation)
 
 When dispatching Gate 3 (sentinel) or the End-of-Plan Sentinel, the
@@ -375,7 +408,8 @@ sentinel review on the cumulative diff:
    .rdf/work-output/sentinel-plan-final.md
 
 Plans with 1-2 phases skip this step — per-phase sentinel is
-sufficient for small plans.
+sufficient for small plans. Also skipped for `quick-plan`/`bugfix`
+tiers (Tier Cap), except when the security floor applies.
 
 This is separate from /r-ship's sentinel — /r-ship provides a
 second layer at release time.

@@ -108,3 +108,19 @@ _contract() {
     grep -qE '\[\[ "\$profile" == "core" \]\] && return 0' \
         "${RDF_SRC}/adapters/claude-code/adapter.sh"
 }
+
+# ── Dispatcher: tier cap over scope→gate mapping (3.5 Scale) ──────────────────
+
+@test "dispatcher caps gates by tier, never upgrades" {
+    _contract agents/dispatcher.md 'Tier Cap'
+    _contract agents/dispatcher.md 'only removes ceremony'
+    _contract agents/dispatcher.md 'regression-only sentinel-lite'
+}
+
+@test "tier cap never drops the security pass on scope:sensitive" {
+    # M1 security floor: a bugfix/quick-plan tier must never let a security patch
+    # skip Gate 2 or drop the sentinel Security pass (3.3.0 C1 RCE precedent).
+    _contract agents/dispatcher.md 'Security floor'
+    _contract agents/dispatcher.md 'sentinel-full'
+    _contract agents/dispatcher.md 'scope:sensitive'
+}
