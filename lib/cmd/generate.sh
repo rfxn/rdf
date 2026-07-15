@@ -20,6 +20,7 @@ Targets:
 
 Options:
   --deploy       Run 'rdf deploy <target>' after generation completes
+  --rules        With --deploy claude-code, also symlink scoped rules/ (opt-in)
 
 The generated output is written to adapters/<target>/output/.
 
@@ -69,11 +70,19 @@ _generate_adapter() {
 cmd_generate() {
     rdf_profile_init
     local deploy_after=0
+    local deploy_rules=0
 
-    # Parse --deploy flag if present
-    if [[ "${1:-}" == "--deploy" ]]; then
-        deploy_after=1
-        shift
+    # Parse leading flags (--deploy, --rules) in any order before the target.
+    while [[ "${1:-}" == --* ]]; do
+        case "$1" in
+            --deploy) deploy_after=1; shift ;;
+            --rules)  deploy_rules=1; shift ;;
+            *)        break ;;   # e.g. --help — let the target case handle it
+        esac
+    done
+
+    if [[ $deploy_rules -eq 1 && $deploy_after -eq 0 ]]; then
+        rdf_warn "--rules has no effect without --deploy — 'rules/' is generated regardless; deploy it with 'rdf deploy --rules claude-code'"
     fi
 
     case "${1:-}" in
@@ -83,7 +92,11 @@ cmd_generate() {
             if [[ $deploy_after -eq 1 ]]; then
                 # shellcheck disable=SC1090,SC1091
                 source "${RDF_LIBDIR}/cmd/deploy.sh"
-                cmd_deploy claude-code
+                if [[ $deploy_rules -eq 1 ]]; then
+                    cmd_deploy --rules claude-code
+                else
+                    cmd_deploy claude-code
+                fi
             fi
             ;;
         claude-plugin)

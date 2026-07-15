@@ -22,7 +22,8 @@ test: _bats_check
 	        $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats \
 	        $(TESTS_DIR)portability.bats $(TESTS_DIR)governance-contracts.bats \
 	        $(TESTS_DIR)state-injection.bats $(TESTS_DIR)cmd-migrate-init.bats \
-	        $(TESTS_DIR)hooks-handoff.bats $(TESTS_DIR)doctor.bats
+	        $(TESTS_DIR)hooks-handoff.bats $(TESTS_DIR)doctor.bats \
+	        $(TESTS_DIR)rules-deploy.bats
 
 lint: _bats_check
 	shellcheck $(TESTS_DIR)adapter.bats $(TESTS_DIR)plugin-adapter.bats \
@@ -30,7 +31,8 @@ lint: _bats_check
 	           $(TESTS_DIR)rdf-bus.bats $(TESTS_DIR)pre-commit-anti-patterns.bats \
 	           $(TESTS_DIR)portability.bats $(TESTS_DIR)governance-contracts.bats \
 	           $(TESTS_DIR)state-injection.bats $(TESTS_DIR)cmd-migrate-init.bats \
-	           $(TESTS_DIR)hooks-handoff.bats $(TESTS_DIR)doctor.bats
+	           $(TESTS_DIR)hooks-handoff.bats $(TESTS_DIR)doctor.bats \
+	           $(TESTS_DIR)rules-deploy.bats
 
 help:
 	@echo "Usage: make -C tests [target]"

@@ -18,6 +18,7 @@ Targets:
 Options:
   --dry-run        Show what would happen without making changes
   --force          Back up real dirs/files and replace with symlinks
+  --rules          Also symlink scoped governance rules/ (claude-code; opt-in)
   --project-root   Project root for Codex AGENTS.md deployment
 
 Symlinked directories allow 'rdf generate' to update deployed files in place.
@@ -164,6 +165,7 @@ _deploy_copy_skip() {
 _deploy_claude_code() {
     local dry_run="$1"
     local force="$2"
+    local deploy_rules="${3:-0}"   # opt-in scoped rules/ symlink (default off)
     local output_dir="${RDF_ADAPTERS}/claude-code/output"
     local dest_base="${HOME}/.claude"
 
@@ -185,6 +187,11 @@ _deploy_claude_code() {
     _deploy_symlink "${output_dir}/commands" "${dest_base}/commands" "$dry_run" "$force"
     _deploy_symlink "${output_dir}/scripts" "${dest_base}/scripts" "$dry_run" "$force"
     _deploy_symlink "${output_dir}/governance" "${dest_base}/governance" "$dry_run" "$force"
+
+    # Scoped rules/ are opt-in (--rules): default keeps existing symlink users unchanged.
+    if [[ "$deploy_rules" -eq 1 && -d "${output_dir}/rules" ]]; then
+        _deploy_symlink "${output_dir}/rules" "${dest_base}/rules" "$dry_run" "$force"
+    fi
 
     # Skip hooks.json — requires manual merge
     rdf_log "skipped: hooks.json (manual merge — see 'rdf deploy help')"
@@ -240,6 +247,7 @@ _deploy_codex() {
 cmd_deploy() {
     local dry_run=0
     local force=0
+    local deploy_rules=0
     local project_root=""
     local target=""
 
@@ -247,6 +255,7 @@ cmd_deploy() {
         case "$1" in
             --dry-run)      dry_run=1; shift ;;
             --force)        force=1; shift ;;
+            --rules)        deploy_rules=1; shift ;;
             --project-root)
                 if [[ $# -lt 2 ]]; then
                     rdf_die "--project-root requires a value"
@@ -280,7 +289,7 @@ cmd_deploy() {
     fi
 
     case "$target" in
-        claude-code) _deploy_claude_code "$dry_run" "$force" ;;
+        claude-code) _deploy_claude_code "$dry_run" "$force" "$deploy_rules" ;;
         gemini-cli)  _deploy_gemini_cli "$dry_run" "$force" ;;
         codex)       _deploy_codex "$dry_run" "$force" "$project_root" ;;
         *)           rdf_die "unknown target: ${target} — run 'rdf deploy help' for usage" ;;

@@ -1,5 +1,21 @@
 # RDF Changelog
 
+## 3.4.0
+
+-- New Features --
+
+[New] T3 context-scoped governance rules: cc_generate_rules emits
+      output/rules/<profile>.md; language profiles get a paths: frontmatter
+      block derived from registry.json detect globs, core stays unscoped so it
+      survives compaction (spec §4.3); rules-deploy.bats (7 tests) guards the
+      never-scope-core invariant
+
+-- Changes --
+
+[Change] deploy: opt-in rules/ symlink via --rules (rdf deploy / rdf generate
+         --deploy --rules); default off — no behavior change for existing
+         symlink users
+
 ## 3.3.1
 
 -- New Features --

@@ -189,6 +189,48 @@ cc_generate_governance() {
     rdf_log "generated ${count} governance files"
 }
 
+# Build a paths: frontmatter block from a profile's registry detect globs.
+# Args: $1 = profile name. Emits nothing for core (never scoped — spec §4.3).
+_cc_paths_frontmatter() {
+    local profile="$1"
+    local registry="${RDF_HOME}/profiles/registry.json"
+    [[ "$profile" == "core" ]] && return 0   # core is always-loaded, never scoped (spec §4.3)
+    [[ -f "$registry" ]] || return 0
+    local globs
+    globs="$(jq -r --arg p "$profile" '.profiles[$p].detect[]?' "$registry" 2>/dev/null)"  # missing profile → empty
+    [[ -n "$globs" ]] || return 0
+    echo "---"
+    echo "paths:"
+    while IFS= read -r g; do
+        [[ -z "$g" ]] && continue
+        case "$g" in
+            */) printf '  - "**/%s**"\n' "$g" ;;   # directory glob — recurse into it
+            *)  printf '  - "**/%s"\n' "$g" ;;      # file/extension/path glob
+        esac
+    done <<< "$globs"
+    echo "---"
+}
+
+# Emit output/rules/<profile>.md — core unscoped, language profiles paths-scoped.
+cc_generate_rules() {
+    local dst_dir="${_CC_OUTPUT_DIR}/rules"
+    command mkdir -p "$dst_dir"
+    local count=0 active profile gov_file front
+    active="$(rdf_get_active_profiles)"
+    while IFS= read -r profile; do
+        [[ -z "$profile" ]] && continue
+        gov_file="${RDF_HOME}/profiles/${profile}/governance-template.md"
+        [[ -f "$gov_file" ]] || continue
+        front="$(_cc_paths_frontmatter "$profile")"
+        {
+            [[ -n "$front" ]] && printf '%s\n' "$front"
+            command cat "$gov_file"
+        } > "${dst_dir}/${profile}.md"
+        count=$((count + 1))
+    done <<< "$active"
+    rdf_log "generated ${count} rule files"
+}
+
 # Full CC generation pipeline
 cc_generate_all() {
     rdf_log "generating Claude Code adapter output..."
@@ -211,6 +253,7 @@ cc_generate_all() {
     cc_generate_scripts
     cc_generate_hooks
     cc_generate_governance
+    cc_generate_rules
 
     # Atomic swap
     _CC_OUTPUT_DIR="$_output_final"
@@ -221,10 +264,11 @@ cc_generate_all() {
     command mv "$_output_new" "$_output_final"
     command rm -rf "$_output_old"
 
-    local agent_count command_count script_count
+    local agent_count command_count script_count rule_count
     agent_count="$(find "${_CC_OUTPUT_DIR}/agents" -name '*.md' 2>/dev/null | wc -l)"
     command_count="$(find "${_CC_OUTPUT_DIR}/commands" -name '*.md' 2>/dev/null | wc -l)"
     script_count="$(find "${_CC_OUTPUT_DIR}/scripts" -name '*.sh' 2>/dev/null | wc -l)"
+    rule_count="$(find "${_CC_OUTPUT_DIR}/rules" -name '*.md' 2>/dev/null | wc -l)"  # rules/ absent → 0, not an error
 
-    rdf_log "CC generation complete: ${agent_count} agents, ${command_count} commands, ${script_count} scripts"
+    rdf_log "CC generation complete: ${agent_count} agents, ${command_count} commands, ${script_count} scripts, ${rule_count} rules"
 }
