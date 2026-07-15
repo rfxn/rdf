@@ -118,23 +118,6 @@ rdf_require_dir() {
     fi
 }
 
-# Feature flags — environment-based
-rdf_feature_enabled() {
-    local flag="$1"
-    local val
-    val="${!flag:-false}"
-    [[ "$val" == "true" || "$val" == "1" ]]
-}
-
-# Read a JSON value using jq — dies if jq not available
-rdf_json_get() {
-    local file="$1"
-    local query="$2"
-    rdf_require_bin jq
-    rdf_require_file "$file" "JSON file"
-    jq -r "$query" "$file"
-}
-
 # Profile helpers — used by profile.sh and adapter.sh
 RDF_PROFILES_DIR=""
 RDF_PROFILES_STATE=""
@@ -165,13 +148,4 @@ rdf_get_active_profiles() {
             echo "$line"
         done < "$RDF_PROFILES_STATE"
     fi
-}
-
-# Check if a component belongs to any active profile
-# Args: $1=component type (agents|commands|scripts), $2=component name
-# Returns: 0 if included, 1 if excluded
-# v3: all component types are universal — profile.json filtering removed.
-#     Agents, commands, and scripts are always included.
-rdf_profile_includes() {
-    return 0
 }

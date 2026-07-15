@@ -135,8 +135,6 @@ _cpl_agent_frontmatter() {
 }
 
 # Copy canonical scripts (hook targets) — executable, unconditional.
-# No rdf_profile_includes call: it is a dead return-0 stub queued for
-# removal (2026-07-13 simplicity audit) — don't build new code on it.
 cpl_generate_scripts() {
     local src_dir="${RDF_CANONICAL}/scripts"
     local dst_dir="${_CPL_OUTPUT_DIR}/scripts"

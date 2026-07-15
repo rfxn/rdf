@@ -1,5 +1,28 @@
 # RDF Changelog
 
+## 3.3.1
+
+-- Changes --
+
+[Remove] Agent-Teams triad (3.2 T5 debt cleanup): the deprecated v2 dispatch
+      modules (lib/dispatch.sh, lib/cmd/dispatch.sh) and their `rdf dispatch` CLI
+      route in bin/rdf, the two design specs (dispatch-abstraction.md,
+      task-based-coordination.md), and adapters/claude-code/teams-meta.json; v3
+      runs plans through the dispatcher agent and RDF's 2026-04-21 harness
+      research rejected Agent Teams as tool-locked (the JSON registries these
+      consumed were already removed)
+[Remove] lib/rdf_common.sh rdf_profile_includes() — an unconditional `return 0`
+      stub since v3 dropped profile.json filtering; also dropped its one live
+      caller (the cc_generate_scripts profile gate in the claude-code adapter),
+      which never fired, so all scripts still generate unchanged
+[Remove] lib/rdf_common.sh dead helpers rdf_feature_enabled() (orphaned by the
+      dispatch.sh removal) and rdf_json_get() (zero callers; audit finding I3
+      confirmed)
+[Remove] profiles/registry.md "Starter Profiles" tombstone section (all profiles
+      were promoted to the full tier)
+[Remove] RDF.md teams-meta.json / dispatch.sh tree entries and the "Agent Teams
+      API instability" risk row — they documented the now-retired architecture
+
 ## 3.3.0
 
 -- New Features --

@@ -148,11 +148,6 @@ cc_generate_scripts() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
-        # Profile filter
-        if ! rdf_profile_includes "scripts" "$basename_f"; then
-            rdf_log "  skipped (inactive profile): ${basename_f}"
-            continue
-        fi
         command cp "$src_file" "${dst_dir}/${basename_f}"
         command chmod +x "${dst_dir}/${basename_f}"
         count=$((count + 1))

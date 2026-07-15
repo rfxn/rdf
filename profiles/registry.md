@@ -18,12 +18,6 @@
 | php | core | PHP 8.x. Strict types, PSR standards, Laravel/Symfony patterns |
 | infrastructure | core | Infrastructure as code. Terraform, Kubernetes, Ansible, CI/CD |
 
-## Starter Profiles
-
-| Profile | Requires | Description |
-|---------|----------|-------------|
-| (none — all profiles promoted to full) | | |
-
 ## Profile Tiers
 
 - **Full** -- governance-template.md + 3-4 reference docs. Deep
