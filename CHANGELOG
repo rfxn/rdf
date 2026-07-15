@@ -1,5 +1,57 @@
 # RDF Changelog
 
+## 3.3.0
+
+-- New Features --
+
+[New] claude-plugin adapter (fifth target): generates a Claude Code plugin with
+      namespace-rewritten commands (/r-X → /rdf:r-X), agent/script/hook output,
+      CLAUDE_PLUGIN_ROOT hook paths, and a VERSION-stamped plugin.json; the repo
+      declares itself a marketplace with committed output so `/plugin marketplace
+      add rfxn/rdf` + `/plugin install rdf@rdf` work with no build step
+[New] install-mode detection: `rdf doctor` reports symlink vs plugin install and
+      `rdf deploy` warns when both coexist (dual-install drift)
+[New] CI plugin job — generate, content-drift check, and strict marketplace
+      validation on every push
+[New] LICENSE (GNU GPL v2), community health files (CODE_OF_CONDUCT, CONTRIBUTING,
+      SECURITY), and a public ROADMAP.md
+[New] GitHub Pages landing, 5-minute quickstart, recorded demo in the README first
+      fold, social-preview card, and a privacy-policy page for verified plugin
+      status
+[New] tests/state-injection.bats and tests/cmd-migrate-init.bats — regression
+      coverage for state-script code injection and the migrate/init upgrade paths
+
+-- Bug Fixes --
+
+[Fix] SECURITY: state/context-audit.sh code injection → RCE — a git commit message
+      containing ''' broke out of the json.loads('''...''') triple-quoted python
+      string, so /r-context-audit crawling any workspace repo executed
+      attacker-controlled code; state JSON now flows to python via stdin/argv and
+      _json_str escapes \r/\t (untrusted repo metadata → code execution)
+[Fix] first-run hardening: drop hardcoded /root paths and rfxn-workspace
+      assumptions from doctor, migrate, CLI output, and docs; a missing README on a
+      target project is now WARN, not FAIL
+[Fix] tests/plugin-adapter.bats deploy-warn test uses a hermetic fixture RDF_HOME
+      (CI has no committed claude-code output to lean on)
+
+-- Changes --
+
+[Change] canonical/scripts/context-bar.sh — parse the hook input JSON once (five jq
+         calls → one) and the transcript once for token totals and turn count (was
+         two slurps sharing a filter); output is byte-identical, cutting per-tick
+         subprocesses on the statusline hot path
+[Change] state/git-hooks/pre-commit — batch the anti-pattern scan: prefilter
+         #-suppressed lines once per file, then one grep per class instead of an
+         echo|grep per added line per class; findings are byte-identical
+[Change] command-prefix bare coreutils in first-party source (lib/cmd/deploy.sh,
+         the claude-code/codex/gemini-cli adapters, post-edit-lint.sh,
+         pre-commit-validate.sh) for el6 PATH portability
+[Change] CLAUDE.md — scope the suppression-comment rule to new/modified
+         suppressions (enforced by pre-commit on added lines); note the
+         vendored-script advisory boundary
+[Change] README and docs — reposition for broad public adoption, correct the
+         command inventory, add measured-impact stats, and rebuild the Pages site
+
 ## 3.2.1
 
 -- Changes --
