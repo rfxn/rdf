@@ -114,7 +114,7 @@ dispatcher, or invoked via `/r-review`.
 
 ## 3. Command Reference
 
-### Lifecycle Commands (20)
+### Lifecycle Commands (21)
 
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
@@ -138,13 +138,15 @@ dispatcher, or invoked via `/r-review`.
 | r-verify-claim | /r-verify-claim | -- | Falsifiable claim verification (5 classes) |
 | r-test | /r-test | uat | UAT acceptance |
 | r-review | /r-review | reviewer | Adversarial review |
+| r-review-answer | /r-review-answer | -- | Route review findings (FIX/REBUT/DEFER) |
 
-### Utility Commands (15)
+### Utility Commands (16)
 
 | Command | Slash | Purpose |
 |---------|-------|---------|
 | r-util-mem-compact | /r-util-mem-compact | Archive stale MEMORY.md entries |
 | r-util-mem-audit | /r-util-mem-audit | Fact-check MEMORY.md against live state |
+| r-util-claudemd-review | /r-util-claudemd-review | Review CLAUDE.md for improvements + drift |
 | r-util-chg-gen | /r-util-chg-gen | Generate changelog from diff |
 | r-util-chg-dedup | /r-util-chg-dedup | Deduplicate changelog entries |
 | r-util-rel-squash | /r-util-rel-squash | Release branch squash plan + execution |

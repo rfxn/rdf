@@ -117,7 +117,7 @@ rdf/                                 # Repository root
 |   |   |-- r-verify.md              # QA verification
 |   |   |-- r-test.md                # UAT acceptance
 |   |   |-- r-review.md              # Adversarial review
-|   |   |-- r-util-*.md              # 15 utility commands
+|   |   |-- r-util-*.md              # 16 utility commands
 |   |   +-- templates/               # Governance template docs
 |   |
 |   |-- scripts/                     # Hook scripts (bash, tool-agnostic)
@@ -192,7 +192,7 @@ rdf/                                 # Repository root
 - 37 commands under `/r-` namespace (21 lifecycle + 16 utility)
 - Unified CLI (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
   `rdf refresh`, `rdf sync`, `rdf github`)
-- Tool-specific adapters (Claude Code, Gemini CLI, Codex, AGENTS.md)
+- Tool-specific adapters (Claude Code, Claude Plugin, Gemini CLI, Codex, AGENTS.md)
 - Governance initialization via `/r-init` with profile-based templates
 - GitHub Issues + Projects v2 integration
 - Health checking (`rdf doctor`) with drift detection
@@ -201,7 +201,7 @@ rdf/                                 # Repository root
 
 **Out of scope (deferred):**
 
-- Plugin marketplace publishing
+- Community-marketplace submission (plugin adapter + repo-as-marketplace already shipped)
 - Additional discipline profiles beyond current 11
 - SQLite state store (evaluate if flat files become unwieldy at 30+ projects)
 

@@ -717,6 +717,11 @@ cmd_init() {
     fi
     path="$(cd "$path" && pwd)" || rdf_die "cannot resolve path: $path"
 
+    # jq preflight — hooks and the statusline degrade without it (non-fatal)
+    if ! command -v jq >/dev/null 2>&1; then  # stderr: command -v noise safe to ignore
+        rdf_warn "jq not found on PATH — hooks and statusline degrade until installed (apt/dnf install jq, or brew install jq)"
+    fi
+
     # Validate --type if explicit (now accepts comma-separated profiles)
     if [[ -n "$type" ]]; then
         _validate_profiles "$type"

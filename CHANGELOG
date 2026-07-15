@@ -2,7 +2,26 @@
 
 ## 3.3.1
 
+-- New Features --
+
+[New] rdf doctor [doc-stats] — verify WORKFORCE.md/RDF.md/docs/index.md
+      inventory counts against live filesystem counts; mismatch is a FAIL so
+      count drift cannot ship (doctor runs pre-push and in CI)
+[New] rdf doctor [deps] — non-fatal WARN when jq is absent, with install
+      remediation; rdf deploy and rdf init emit the same early jq preflight
+
+-- Bug Fixes --
+
+[Fix] WORKFORCE.md, RDF.md — command-inventory drift: lifecycle header 20→21,
+      utility header 15→16 (added r-review-answer and r-util-claudemd-review
+      table rows); RDF.md tree comment 15→16 utility (missed by 932ed6a)
+
 -- Changes --
+
+[Change] RDF.md — plugin marketplace no longer out-of-scope: claude-plugin
+         adapter + repo-as-marketplace shipped in 3.3.0, only community-
+         marketplace submission remains deferred; add Claude Plugin to the
+         in-scope adapters list
 
 [Remove] Agent-Teams triad (3.2 T5 debt cleanup): the deprecated v2 dispatch
       modules (lib/dispatch.sh, lib/cmd/dispatch.sh) and their `rdf dispatch` CLI

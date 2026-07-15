@@ -274,6 +274,11 @@ cmd_deploy() {
     _DEPLOY_OK=0
     _DEPLOY_SKIPPED=0
 
+    # jq preflight — hooks and the statusline degrade without it (non-fatal)
+    if ! command -v jq >/dev/null 2>&1; then
+        rdf_warn "jq not found on PATH — deployed hooks and statusline degrade until installed (apt/dnf install jq, or brew install jq)"
+    fi
+
     case "$target" in
         claude-code) _deploy_claude_code "$dry_run" "$force" ;;
         gemini-cli)  _deploy_gemini_cli "$dry_run" "$force" ;;

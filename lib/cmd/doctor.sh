@@ -17,7 +17,7 @@ Options:
   --all                 Scan all workspace projects (path = workspace root)
   --scope SCOPE         Check specific category only:
                         artifacts, drift, memory, plan, github, sync,
-                        content-drift, readme
+                        install-mode, deps, content-drift, doc-stats, readme
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
@@ -661,6 +661,108 @@ _check_readme() {
     fi
 }
 
+# ── Check: deps (runtime dependencies for hooks/statusline) ──
+# jq is optional but hooks and the statusline silently degrade without it.
+# Missing jq is a WARN, never a FAIL — RDF core works without it.
+_check_deps() {
+    if command -v jq >/dev/null 2>&1; then
+        local jq_version=""
+        jq_version="$(jq --version 2>/dev/null || echo "unknown")"  # ancient jq lacks --version
+        _add_result "deps" "$_OK" "jq present (${jq_version})"
+    else
+        _add_result "deps" "$_WARN" "jq not found — statusline context bar and hook JSON parsing degrade; install: apt/dnf install jq (or brew install jq)"
+    fi
+}
+
+# ── Check: doc-stats (RDF-specific) ──
+# Verifies the human-maintained inventory counts in WORKFORCE.md, RDF.md, and
+# docs/index.md against live counts derived from the filesystem. Count drift
+# (e.g. a new command added without updating the tables) becomes a FAIL so it
+# cannot ship — doctor runs pre-push and in CI. Number extraction is pure-bash
+# regex (BASH_REMATCH) to avoid a subprocess-per-field storm.
+_check_doc_stats() {
+    local path="$1"
+
+    local canonical_dir="${path}/canonical"
+    if [[ ! -d "$canonical_dir" ]]; then
+        # Not the RDF project — doc-stats check N/A
+        return 0
+    fi
+
+    # Live counts from the filesystem
+    local total_cmds=0 util_cmds=0 life_cmds=0 agents=0 profiles=0 adapters=0 modes=0
+    local f base
+    for f in "${canonical_dir}/commands"/*.md; do
+        [[ -f "$f" ]] || continue
+        total_cmds=$((total_cmds + 1))
+        base="${f##*/}"
+        case "$base" in
+            r-util-*) util_cmds=$((util_cmds + 1)) ;;
+            *)        life_cmds=$((life_cmds + 1)) ;;
+        esac
+    done
+    for f in "${canonical_dir}/agents"/*.md; do [[ -f "$f" ]] && agents=$((agents + 1)); done
+    for f in "${path}/profiles"/*/;          do [[ -d "$f" ]] && profiles=$((profiles + 1)); done
+    for f in "${path}/adapters"/*/;          do [[ -d "$f" ]] && adapters=$((adapters + 1)); done
+    for f in "${path}/modes"/*/;             do [[ -d "$f" ]] && modes=$((modes + 1)); done
+
+    # Compare one claimed count against the live actual, emitting a result row.
+    _doc_stat_cmp() {
+        local file="$1" what="$2" claimed="$3" actual="$4"
+        if [[ -z "$claimed" ]]; then
+            _add_result "doc-stats" "$_WARN" "${file}: ${what} count not found (actual ${actual})"
+        elif [[ "$claimed" != "$actual" ]]; then
+            _add_result "doc-stats" "$_FAIL" "${file}: ${what} claims ${claimed}, actual ${actual}"
+        else
+            _add_result "doc-stats" "$_OK" "${file}: ${what} = ${actual}"
+        fi
+    }
+
+    # WORKFORCE.md section-header counts
+    local wf="${path}/WORKFORCE.md"
+    if [[ -f "$wf" ]]; then
+        local wf_life="" wf_util="" line
+        while IFS= read -r line; do
+            [[ "$line" =~ Lifecycle\ Commands\ \(([0-9]+)\) ]] && wf_life="${BASH_REMATCH[1]}"
+            [[ "$line" =~ Utility\ Commands\ \(([0-9]+)\) ]] && wf_util="${BASH_REMATCH[1]}"
+        done < <(grep -E 'Commands \([0-9]+\)' "$wf")
+        _doc_stat_cmp "WORKFORCE.md" "lifecycle" "$wf_life" "$life_cmds"
+        _doc_stat_cmp "WORKFORCE.md" "utility"   "$wf_util" "$util_cmds"
+    fi
+
+    # RDF.md scope line: "N commands under `/r-` namespace (X lifecycle + Y utility)"
+    local rdf="${path}/RDF.md"
+    if [[ -f "$rdf" ]]; then
+        local rdf_total="" rdf_life="" rdf_util="" rline=""
+        rline="$(grep -m1 -E '[0-9]+ commands under .*\([0-9]+ lifecycle \+ [0-9]+ utility\)' "$rdf")" || rline=""
+        if [[ "$rline" =~ ([0-9]+)\ commands\ under.*\(([0-9]+)\ lifecycle\ \+\ ([0-9]+)\ utility\) ]]; then
+            rdf_total="${BASH_REMATCH[1]}"
+            rdf_life="${BASH_REMATCH[2]}"
+            rdf_util="${BASH_REMATCH[3]}"
+        fi
+        _doc_stat_cmp "RDF.md" "commands"  "$rdf_total" "$total_cmds"
+        _doc_stat_cmp "RDF.md" "lifecycle" "$rdf_life"  "$life_cmds"
+        _doc_stat_cmp "RDF.md" "utility"   "$rdf_util"  "$util_cmds"
+    fi
+
+    # docs/index.md banner: "A agents · B commands · C profiles · D adapters · E modes"
+    local idx="${path}/docs/index.md"
+    if [[ -f "$idx" ]]; then
+        local iline idx_agents="" idx_cmds="" idx_profiles="" idx_adapters="" idx_modes=""
+        iline="$(grep -m1 -E '[0-9]+ agents.*[0-9]+ modes' "$idx")" || iline=""
+        [[ "$iline" =~ ([0-9]+)\ agents ]]   && idx_agents="${BASH_REMATCH[1]}"
+        [[ "$iline" =~ ([0-9]+)\ commands ]] && idx_cmds="${BASH_REMATCH[1]}"
+        [[ "$iline" =~ ([0-9]+)\ profiles ]] && idx_profiles="${BASH_REMATCH[1]}"
+        [[ "$iline" =~ ([0-9]+)\ adapters ]] && idx_adapters="${BASH_REMATCH[1]}"
+        [[ "$iline" =~ ([0-9]+)\ modes ]]    && idx_modes="${BASH_REMATCH[1]}"
+        _doc_stat_cmp "docs/index.md" "agents"   "$idx_agents"   "$agents"
+        _doc_stat_cmp "docs/index.md" "commands" "$idx_cmds"     "$total_cmds"
+        _doc_stat_cmp "docs/index.md" "profiles" "$idx_profiles" "$profiles"
+        _doc_stat_cmp "docs/index.md" "adapters" "$idx_adapters" "$adapters"
+        _doc_stat_cmp "docs/index.md" "modes"    "$idx_modes"    "$modes"
+    fi
+}
+
 # Version resolver for doctor (avoids sourcing init.sh dependency)
 # ── Check: install-mode ──
 # Detects how RDF is installed for this user: symlink deploy (~/.claude/
@@ -789,7 +891,9 @@ _doctor_one() {
             _check_github "$path"
             _check_sync "$path"
             _check_install_mode "$path"
+            _check_deps
             _check_content_drift "$path"
+            _check_doc_stats "$path"
             _check_readme "$path"
             ;;
         artifacts)      _check_artifacts "$path" ;;
@@ -799,9 +903,11 @@ _doctor_one() {
         github)         _check_github "$path" ;;
         sync)           _check_sync "$path" ;;
         install-mode)   _check_install_mode "$path" ;;
+        deps)           _check_deps ;;
         content-drift)  _check_content_drift "$path" ;;
+        doc-stats)      _check_doc_stats "$path" ;;
         readme)         _check_readme "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, content-drift, readme" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, content-drift, doc-stats, readme" ;;
     esac
 }
 
