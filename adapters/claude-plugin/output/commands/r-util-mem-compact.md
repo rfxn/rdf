@@ -97,6 +97,38 @@ If `$ARGUMENTS` contains `--apply`:
 If `--apply` not specified, end with:
 "Run `/rdf:r-util-mem-compact --apply` to execute these changes."
 
+## Step 7: Lessons / Insights Consolidation (--lessons or near-cap auto)
+
+Runs when `$ARGUMENTS` contains `--lessons`, or automatically when invoked
+with no MEMORY target and `~/.rdf/lessons-learned.md` is within 5 of its
+50-entry cap.
+
+1. Run the deterministic scanner (read-only — never mutates the lessons file):
+   ```bash
+   bash state/rdf-lessons.sh scan ~/.rdf/lessons-learned.md
+   ```
+   Parse the JSON: `duplicates` (token-Jaccard >=50% pairs, each with a
+   `jaccard` score) and `contradictions` (opposing-polarity pairs, 25-49%
+   `overlap`).
+
+2. Present each candidate under the **existing y/n/auto gate** (the same
+   approve control used by `/rdf:r-save` §8):
+   - **Duplicate:** show both bullets by ID + the proposed merge (keep the
+     more-specific, drop the other). `y` merges; `n` skips; `auto` applies
+     all remaining safe duplicate merges.
+   - **Contradiction:** show both bullets by ID. Propose keeping the more
+     specific and flagging the other for review.
+     **`auto` NEVER resolves a contradiction** — it requires an explicit `y`
+     every time, and `auto` is ignored for these candidates. This is the
+     anti-crystallization rule: automatically dropping one side of a
+     contradiction can reinforce the wrong lesson.
+
+3. Apply only gate-approved changes to `~/.rdf/lessons-learned.md`, then
+   rebuild the index (single writer): `bash state/rdf-lessons.sh index`.
+
+4. Repeat the duplicate pass for `~/.rdf/insights.jsonl` (exact-text and
+   token-Jaccard >=50% duplicates only; no contradiction pass on insights).
+
 ## Safety Rules
 
 - NEVER delete content — always archive to a file first
@@ -105,3 +137,6 @@ If `--apply` not specified, end with:
 - NEVER modify CLAUDE.md (that file has its own governance)
 - Always preserve the archive file if it already exists (append, don't overwrite)
 - If MEMORY.md is under 150 lines, report "No compaction needed" and exit
+- NEVER auto-resolve a lessons contradiction — always require an explicit `y`
+- NEVER delete a lesson/insight without gate approval — dedup merges preserve
+  the surviving entry verbatim

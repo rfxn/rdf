@@ -74,11 +74,64 @@ cmd_index() {
     return 0
 }
 
-# cmd_scan — emit dedup/contradiction candidates as JSON. The real Jaccard +
-# polarity heuristic lands with the consolidation pass; this reports none so the
-# scan subcommand is callable now.
+# _tokens text — normalize a bullet to a sorted-unique lowercase letter-only
+# token set (one per line), dropping a small stopword set. grep/sed are not
+# coreutils, so they stay bare (matches cmd_index); tr/sort get the command prefix.
+_tokens() {
+    printf '%s' "$1" | command tr '[:upper:]' '[:lower:]' | command tr -cs '[:alpha:]' '\n' \
+      | grep -vE '^(the|a|an|to|of|for|and|or|in|on|per|before|at|is|be)$' \
+      | command sort -u
+}
+
+# _jaccard_pct set-a set-b — integer-percent Jaccard of two sorted-unique token
+# lists. comm needs sorted input, which _tokens already guarantees.
+_jaccard_pct() {
+    local a="$1" b="$2" inter uni
+    inter="$(command comm -12 <(printf '%s\n' "$a") <(printf '%s\n' "$b") | grep -c . || true)"  # grep -c exits 1 at 0 matches; printed count is the value (anti-pattern #7)
+    uni="$(printf '%s\n%s\n' "$a" "$b" | command sort -u | grep -c . || true)"                   # same grep -c exit-1-at-0 handling
+    [ "$uni" -gt 0 ] || { echo 0; return 0; }
+    echo "$(( inter * 100 / uni ))"
+}
+
+# Polarity flags for order-independent contradiction detection. [^a-z] word
+# boundaries are POSIX (no \b — macOS/BSD grep). grep is not a coreutil (bare).
+_has_max() { printf '%s' "$1" | grep -qiE '(^|[^a-z])(always|every|full|all|must)([^a-z]|$)'; }
+_has_min() { printf '%s' "$1" | grep -qiE '(^|[^a-z])(never|no|not|minimum|only|none)([^a-z]|$)'; }
+
+# Thresholds computed against tests/fixtures/lessons/lessons-sample.md:
+#   dup pair = 50% ; contradiction pair = 36% ; all eight negatives = 0%.
+_DUP_MIN=50; _CONTRA_MIN=25   # contradiction band is [_CONTRA_MIN, _DUP_MIN)
+
+# cmd_scan — propose dedup (token-Jaccard >= _DUP_MIN) and contradiction
+# (opposing polarity, overlap in [_CONTRA_MIN, _DUP_MIN)) candidates as JSON.
+# Flags only — never mutates. Builds JSON without jq (jq-optional).
 cmd_scan() {
-    printf '{"duplicates":[],"contradictions":[]}\n'
+    [ -f "$_LESSONS" ] || { printf '{"duplicates":[],"contradictions":[]}\n'; return 0; }   # no lessons: empty result
+    local -a bodies=() ids=()
+    local line body id
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ "$line" =~ ^-[[:space:]] ]] || continue
+        id="$(printf '%s' "$line" | sed -nE 's/.*<!-- id:([A-Z0-9]+) -->.*/\1/p')"
+        body="$(printf '%s' "$line" | sed -E 's/^-[[:space:]]+//; s/ *<!-- id:[A-Z0-9]+ -->.*//')"
+        bodies+=("$body"); ids+=("${id:-?}")
+    done < "$_LESSONS"
+
+    local dups="" contras="" i j pct
+    for ((i=0; i<${#bodies[@]}; i++)); do
+        for ((j=i+1; j<${#bodies[@]}; j++)); do
+            pct="$(_jaccard_pct "$(_tokens "${bodies[$i]}")" "$(_tokens "${bodies[$j]}")")"
+            if [ "$pct" -ge "$_DUP_MIN" ]; then
+                dups="${dups}{\"a\":\"${ids[$i]}\",\"b\":\"${ids[$j]}\",\"jaccard\":${pct}},"
+            elif [ "$pct" -ge "$_CONTRA_MIN" ]; then
+                # opposing polarity, order-independent: (i.max & j.min) | (i.min & j.max)
+                if { _has_max "${bodies[$i]}" && _has_min "${bodies[$j]}"; } \
+                   || { _has_min "${bodies[$i]}" && _has_max "${bodies[$j]}"; }; then
+                    contras="${contras}{\"a\":\"${ids[$i]}\",\"b\":\"${ids[$j]}\",\"overlap\":${pct}},"
+                fi
+            fi
+        done
+    done
+    printf '{"duplicates":[%s],"contradictions":[%s]}\n' "${dups%,}" "${contras%,}"
     return 0
 }
 

@@ -226,3 +226,29 @@ _minbin() {
     grep -q 'invoke .*/r-util-mem-compact.* in preview' "$RDF_SRC/canonical/commands/r-save.md"
     grep -q 'previewed compaction saves' "$RDF_SRC/canonical/commands/r-start.md"
 }
+
+# ---- Phase 4: rdf-lessons scan (dedup + contradiction heuristic) ------------
+
+@test "rdf-lessons scan flags exactly the 50% duplicate" {
+    mkdir -p "$HOME/.rdf"
+    cp "$LESSONS_FIXTURE" "$HOME/.rdf/lessons-learned.md"
+    bash "$LESSONS" index "$HOME/.rdf/lessons-learned.md"   # tag bullets with stable IDs
+    run bash "$LESSONS" scan "$HOME/.rdf/lessons-learned.md"
+    [ "$status" -eq 0 ]
+    # the two paraphrased worktree bullets compute Jaccard 6/12 = 50% (>= _DUP_MIN)
+    echo "$output" | jq -e '.duplicates | length == 1' >/dev/null
+    echo "$output" | jq -e '.duplicates[0].jaccard == 50' >/dev/null
+}
+
+@test "rdf-lessons scan flags exactly the 36% contradiction" {
+    mkdir -p "$HOME/.rdf"
+    cp "$LESSONS_FIXTURE" "$HOME/.rdf/lessons-learned.md"
+    bash "$LESSONS" index "$HOME/.rdf/lessons-learned.md"
+    run bash "$LESSONS" scan "$HOME/.rdf/lessons-learned.md"
+    [ "$status" -eq 0 ]
+    # the two commit-gating bullets compute 4/11 = 36% overlap + opposing polarity
+    echo "$output" | jq -e '.contradictions | length == 1' >/dev/null
+    echo "$output" | jq -e '.contradictions[0].overlap == 36' >/dev/null
+    # the 50% duplicate is caught by the dup branch first, never the contra branch;
+    # the eight 0%-overlap negative pairs enter neither array
+}

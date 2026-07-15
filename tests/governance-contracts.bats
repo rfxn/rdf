@@ -91,3 +91,20 @@ _contract() {
 @test "r-verify-claim emits UNVERIFIABLE for unclassifiable claims" {
     _contract commands/r-verify-claim.md 'UNVERIFIABLE'
 }
+
+# ── /r-util-mem-compact: anti-crystallization (dedup auto-merges, contradictions
+#    are flagged only — auto NEVER resolves one) ───────────────────────────────
+
+@test "consolidation never auto-resolves a contradiction" {
+    _contract commands/r-util-mem-compact.md 'NEVER resolves a contradiction'
+}
+
+# ── Adapter: core governance is never paths-scoped (spec §4.3). Relocated from
+#    tests/rules-deploy.bats — this is a load-bearing behavioral contract, not a
+#    deployment-shape check, so it belongs in the contract suite. The _contract
+#    helper only greps canonical/, so assert against the adapter source directly.
+
+@test "adapter never scopes core governance (spec 4.3)" {
+    grep -qE '\[\[ "\$profile" == "core" \]\] && return 0' \
+        "${RDF_SRC}/adapters/claude-code/adapter.sh"
+}

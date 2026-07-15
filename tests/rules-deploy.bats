@@ -139,12 +139,3 @@ teardown() {
     [ "$(readlink "${FIX_HOME}/.claude/rules")" = "${FIX_HOME}/adapters/claude-code/output/rules" ]
     rm -rf "$FIX_HOME"
 }
-
-# Never-scope-core adapter invariant (spec §4.3, Goal 6). Placed here rather
-# than tests/governance-contracts.bats because that file is a shared surface a
-# concurrent phase also appends to this wave; the controller should relocate
-# this @test into governance-contracts.bats post-merge (see phase notes).
-@test "adapter never scopes core governance (spec 4.3)" {
-    grep -qE '\[\[ "\$profile" == "core" \]\] && return 0' \
-        "${RDF_SRC}/adapters/claude-code/adapter.sh"
-}

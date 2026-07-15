@@ -43,6 +43,11 @@
       default (non-lite) generation byte-identical; rdf-lite.bats (6 tests);
       doctor doc-stats excludes profiles/lite (deploy source, not a governance
       profile)
+[New] rdf-lessons.sh scan — deterministic token-Jaccard dedup (>=50%) plus an
+      order-independent opposing-polarity contradiction heuristic ([25,50%));
+      flags only, never mutates, jq-optional; governance contract added:
+      consolidation NEVER auto-resolves a contradiction (anti-crystallization);
+      never-scope-core adapter contract relocated into governance-contracts
 [New] rdf-state.sh --full emits a deterministic diff_categories object
       (path-prefix counts: commands/agents/scripts/cli/adapters/specs/docs/
       other) so /r-save reads the classification instead of the model
