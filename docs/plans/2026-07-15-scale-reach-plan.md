@@ -1924,10 +1924,10 @@ recast around the new trio + legacy gemini row.
 
 Docs, roadmap, changelog, VERSION bump. Depends on Phases 8–10.
 
-> **Version placeholder — NOT pre-allocated.** Use `<REACH_VERSION>` throughout
+> **Version placeholder — NOT pre-allocated.** Use `3.6.0` throughout
 > this phase; the controller assigns the actual number at ship time (per the
 > release-cadence rule: assign at ship, never pre-allocate a ladder). Wave 1
-> already shipped as 3.5.0 + the 3.5.1 QA-pass, so `<REACH_VERSION>` is the NEXT
+> already shipped as 3.5.0 + the 3.5.1 QA-pass, so `3.6.0` is the NEXT
 > number the controller chooses at ship — do NOT reuse 3.5.1. Substitute the
 > chosen number in VERSION, both changelogs, the commit subject, and the tag.
 
@@ -1935,8 +1935,8 @@ Docs, roadmap, changelog, VERSION bump. Depends on Phases 8–10.
 
 - **Mode**: serial-context
 - **Goals:** 11
-- **Accept**: `VERSION` == the ship-assigned `<REACH_VERSION>`; CHANGELOG +
-  CHANGELOG.RELEASE each gain a `## <REACH_VERSION>` block covering
+- **Accept**: `VERSION` == the ship-assigned `3.6.0`; CHANGELOG +
+  CHANGELOG.RELEASE each gain a `## 3.6.0` block covering
   agent-skills/antigravity, CC intent frontmatter, the gemini TOML fix, deploy/
   sync BATS, and the parity doc; README documents the trio + `rdf generate
   agent-skills`/`antigravity` (and gemini-cli as a frozen legacy tier); ROADMAP
@@ -1959,23 +1959,23 @@ Docs, roadmap, changelog, VERSION bump. Depends on Phases 8–10.
   already says `6 adapters` (bumped in Phase 8); update any other drifted stats.
 - [ ] **Step 3: ROADMAP** — check off the first-class multi-tool / Agent-Skills
   item; note Antigravity is the locked transition target and gemini-cli is legacy.
-- [ ] **Step 4: CHANGELOG + CHANGELOG.RELEASE** — a `## <REACH_VERSION>` block,
+- [ ] **Step 4: CHANGELOG + CHANGELOG.RELEASE** — a `## 3.6.0` block,
   soft-wrap + `[New]`/`[Fix]`/`[Change]` tag style per workspace CLAUDE.md.
-- [ ] **Step 5: VERSION** — write the ship-assigned `<REACH_VERSION>`.
+- [ ] **Step 5: VERSION** — write the ship-assigned `3.6.0`.
 - [ ] **Step 6: Verify + commit**
   ```bash
-  cat VERSION                                 # expect: <REACH_VERSION>
+  cat VERSION                                 # expect: 3.6.0
   bash bin/rdf doctor 2>&1 | grep -c 'FAIL'   # expect: 0
   make -C tests test 2>&1 | tee /tmp/test-rdf-P11-reach.log | grep -c '^not ok'   # expect: 0
   git add README.md ROADMAP.md docs/index.md CHANGELOG CHANGELOG.RELEASE VERSION
-  git commit -m "<REACH_VERSION> — Reach: first-class Codex + Antigravity skills
+  git commit -m "3.6.0 — Reach: first-class Codex + Antigravity skills
 
   [New] agent-skills adapter (.agents/skills/) + antigravity generate target;
         CC command intent-trigger frontmatter; multi-tool parity doc
   [Fix] gemini-cli (legacy tier): TOML ''' literal-string escaping — 15/37
         command .toml files now parse strictly; {{args}} lossy-edge NOTE
   [New] deploy/sync BATS coverage (audit M6) + agent-skills deploy target
-  [Change] ROADMAP/README/docs/index.md doc-stats adapters 5→6; VERSION <REACH_VERSION>"
+  [Change] ROADMAP/README/docs/index.md doc-stats adapters 5→6; VERSION 3.6.0"
   ```
 
 ---

@@ -46,7 +46,7 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 git clone https://github.com/rfxn/rdf.git && cd rdf
 
 # 2. Generate adapter output for your AI tool
-bin/rdf generate claude-code          # or: gemini-cli, codex, agents-md, all
+bin/rdf generate claude-code          # or: codex, antigravity, agent-skills, agents-md, gemini-cli (legacy), all
 
 # 3. Deploy (symlinks -- regeneration auto-updates)
 bin/rdf deploy claude-code            # or: bin/rdf deploy gemini-cli
@@ -218,7 +218,7 @@ Run 'rdf <command> help' for details.
 
 | Command | Key Operations |
 |---------|----------------|
-| `rdf generate <target>` | `claude-code`, `gemini-cli`, `codex`, `agents-md`, `all` |
+| `rdf generate <target>` | `claude-code`, `codex`, `antigravity`, `agent-skills`, `agents-md`, `gemini-cli` (legacy), `all` |
 | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
 | `rdf init <path> [--type] [--tools] [--github]` | Project initialization with governance templates |
@@ -255,14 +255,28 @@ Write content once in tool-agnostic markdown. Generate for any runtime:
 
 | Adapter | Output | Deploy Target |
 |---------|--------|---------------|
-| **Claude Code** | YAML-frontmattered agents + markdown commands | `~/.claude/` |
-| **Gemini CLI** | TOML commands + YAML agents + GEMINI.md | `~/.gemini/` |
-| **Codex** | Consolidated AGENTS.md + config.toml | Project root |
+| **Claude Code** | YAML-frontmattered agents + intent-triggered commands | `~/.claude/` |
+| **Codex** | Consolidated AGENTS.md + config.toml + shared skills | Project root |
+| **Antigravity CLI** | Shared `.agents/skills/` SKILL.md + AGENTS.md | Workspace root |
+| **Agent Skills** | `.agents/skills/<cmd>/SKILL.md` (open convention) | Workspace root |
 | **AGENTS.md** | Cross-tool documentation | Project root |
+| **Gemini CLI** (legacy) | TOML commands + YAML agents + GEMINI.md | `~/.gemini/` |
 
 ```bash
-bin/rdf generate all                  # builds all four in one pass
+bin/rdf generate all                  # builds all six adapters in one pass
 ```
+
+#### First-class multi-tool
+
+Claude Code, Codex, and **Antigravity CLI** are first-class citizens: all
+three get intent-triggered commands — Claude Code via `description:`
+frontmatter on every generated command, Codex and Antigravity via the shared
+`.agents/skills/` SKILL.md surface (`rdf generate agent-skills`, or
+`rdf generate antigravity` for skills + AGENTS.md in one pass). The
+`gemini-cli` adapter is a **frozen legacy tier** for enterprise Gemini CLI
+users (Gemini CLI stopped serving free/Pro/Ultra tiers on 2026-06-18;
+Antigravity CLI is its successor and converts the generated TOML on import).
+Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
 
 ### Profiles + Modes
 
@@ -447,8 +461,9 @@ rdf/
 |   +-- documentation/                 # Read-then-write accuracy review
 |-- adapters/
 |   |-- claude-code/                   # CC adapter + metadata + hooks
-|   |-- gemini-cli/                    # Gemini CLI adapter (TOML)
+|   |-- agent-skills/                  # Shared .agents/skills/ (Codex + Antigravity)
 |   |-- codex/                         # Codex adapter (AGENTS.md)
+|   |-- gemini-cli/                    # Gemini CLI adapter (TOML, legacy tier)
 |   +-- agents-md/                     # Cross-tool AGENTS.md
 |-- state/
 |   |-- rdf-state.sh                   # Project state -> JSON (<1s, timeout-guarded)
@@ -584,6 +599,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[RDF.md](RDF.md)** | Architecture scope, risk analysis, directory structure |
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
+| **[docs/multi-tool-parity.md](docs/multi-tool-parity.md)** | First-class trio + legacy gemini feature matrix |
 | **[CHANGELOG](CHANGELOG)** | Development history |
 | **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (latest release) |
 

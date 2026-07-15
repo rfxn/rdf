@@ -62,19 +62,28 @@ citizenship:
       spec↔plan↔tasks)
 - [x] Living current-state spec (`docs/specs/CURRENT.md`) folded at `/r-ship`
 
-## Next — "Reach" (Wave 2, version assigned at ship)
+## Shipped in 3.6.0 — "Reach" (Wave 2)
 
-Intent-triggered skills + `.agents/skills/` emission for Codex/Gemini parity,
-deploy/sync BATS coverage, and the gemini-cli adapter TOML-escaping fix
-(15/37 command files fail a strict TOML parser — pre-existing, surfaced by
-the 3.5.0 QA pass). Gated on a live Skills-schema probe, then a fresh
-re-plan of Phases 8-11. Spec + plan:
+Built on a primary-source Skills-schema probe + fresh re-plan of Phases 8-11
+(as gated). Antigravity CLI locked in as a first-class citizen alongside
+Claude Code and Codex; gemini-cli demoted to a frozen legacy tier for
+enterprise Gemini CLI users. Spec + plan:
 [design](docs/specs/2026-07-15-scale-reach-design.md) ·
 [plan](docs/plans/2026-07-15-scale-reach-plan.md).
 
+- [x] agent-skills adapter — shared `.agents/skills/<cmd>/SKILL.md` surface
+      (Codex + Antigravity), `rdf generate agent-skills` + `antigravity`
+      composite, workspace deploy symlink
+- [x] Claude Code intent-trigger `description:` frontmatter on generated
+      commands (canonical stays frontmatter-free — contract-tested)
+- [x] gemini-cli TOML-escaping fix (`'''` literal strings; 15/37 command
+      files previously failed strict parsing) + `{{args}}` lossy NOTE
+- [x] Deploy/sync BATS coverage (audit M6) + doctor/sync frontmatter-strip
+      guards + [multi-tool parity matrix](docs/multi-tool-parity.md)
+
 ## Deferred (tracked, not scheduled)
 
-- Wave 3 coordination re-triage → 3.6 (message bus recommended against —
+- Wave 3 coordination re-triage → a later minor (message bus recommended against —
   obsoleted by native background agents; only phantom collect-spool cleanup
   and an optional read-only peer view survive)
 - Debt cleanup follow-ups beyond the executed 3.2 T5 cuts (shipped in 3.3.1)

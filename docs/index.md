@@ -11,7 +11,7 @@ permalink: /
 {: .fs-5 .fw-300 }
 
 RDF is a convention governance layer for AI coding agents. It sits
-between you and the AI runtime (Claude Code, Gemini CLI, Codex),
+between you and the AI runtime (Claude Code, Codex, Antigravity CLI),
 encoding project conventions, quality gates, and domain expertise into
 typed agent personas — so the AI writes code that actually follows your
 rules.

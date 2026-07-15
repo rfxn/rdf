@@ -119,7 +119,7 @@ themes and the deferral tail (§7 stages them into releases).
    `## <version> — <date>` delta section after a `/r-ship`; a contract asserts
    the fold step is present in `r-ship.md` Stage 3.
 
-**Theme Reach (Wave 2 — `<REACH_VERSION>` assigned at ship; §13):**
+**Theme Reach (Wave 2 — `3.6.0` assigned at ship; §13):**
 
 6. `rdf generate` emits `.agents/skills/<command>/SKILL.md` for the lifecycle
    commands from canonical sources, carrying a natural-language `description:`
@@ -602,7 +602,7 @@ $ grep -A1 'positional' adapters/gemini-cli/output/.gemini/commands/r-build.toml
 | Wave | Release | Items | Ships | Gate |
 |------|---------|-------|-------|------|
 | 1 | **3.5.0 "Scale"** | 1,2,3,5 | tiers, clarify, consistency, living-spec | none — canonical + state only; **no 3.4 SOURCE conflict** (two additive shared test files, §4.2) |
-| 2 | **`<REACH_VERSION>` "Reach"** | 4,6(core),8,9 | `.agents/skills` + intent triggers, gemini TOML fix, deploy/sync BATS | **3.4 merged ✓** + Skills-schema probe done (§13) |
+| 2 | **`3.6.0` "Reach"** | 4,6(core),8,9 | `.agents/skills` + intent triggers, gemini TOML fix, deploy/sync BATS | **3.4 merged ✓** + Skills-schema probe done (§13) |
 | 3 | **3.6 (recommend defer)** | 6(heavy),7 | Codex hooks, settings fragments, Wave B delta | Phase-0 re-triage; only zero-risk survivors pulled forward |
 
 **Why this split:** Wave 1 is the highest adoption-per-effort work, is

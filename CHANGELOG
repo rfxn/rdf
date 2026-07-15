@@ -1,5 +1,46 @@
 # RDF Changelog
 
+## 3.6.0
+
+-- New Features --
+
+[New] agent-skills adapter: emits .agents/skills/<cmd>/SKILL.md (AAIF-compliant
+      name + intent-trigger description, first-sentence fallback) for a bounded
+      lifecycle+utility set — the ONE shared workspace surface Codex and
+      Antigravity CLI both read; rdf generate agent-skills + antigravity
+      (composite: skills + AGENTS.md); rdf deploy agent-skills workspace
+      symlink (--project-root)
+[New] claude-code: intent-trigger description: frontmatter prepended to every
+      generated command (shared skill-meta trigger); canonical commands stay
+      frontmatter-free — enforced by a new governance contract test
+[New] agents-md: AGENTS.md references .agents/skills/ for Codex/Antigravity
+      skill discovery
+[New] tests: deploy/sync BATS coverage (deploy.bats — closes audit M6
+      install-surface gap), agent-skills.bats, doctor content-drift regression
+[New] docs/multi-tool-parity.md: first-class trio (Claude Code, Codex,
+      Antigravity CLI) + frozen gemini-cli legacy matrix; {{args}} lossy edge;
+      deferred Antigravity surfaces (probe-gated)
+
+-- Bug Fixes --
+
+[Fix] gemini-cli (legacy tier): command prompts emitted as TOML ''' literal
+      strings — 15/37 generated .toml files failed strict TOML parsing on
+      canonical backslashes; {{args}} lossy-edge NOTE for $ARGUMENTS commands
+[Fix] doctor content-drift: _hash_deployed_body strips only a LEADING
+      frontmatter block (body --- horizontal rules preserved) so
+      frontmattered commands no longer false-FAIL; repairs the latent
+      agent-body--- strip bug
+[Fix] sync: command reverse-flow strips frontmatter before writing canonical;
+      unclosed-frontmatter guard skips (warns) instead of blanking canonical
+      on a malformed emergency edit
+
+-- Changes --
+
+[Change] Gemini CLI demoted to a frozen legacy tier (serves enterprise only
+         since 2026-06-18); Antigravity CLI is the locked transition target
+         and joins Claude Code + Codex as first-class citizens
+[Change] doc-stats: adapters 5→6 across README badge/footer and docs/index.md
+
 ## 3.5.1
 
 -- Bug Fixes --
