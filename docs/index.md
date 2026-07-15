@@ -98,4 +98,5 @@ RDF governs the development of security tooling running on
 [Issues](https://github.com/rfxn/rdf/issues) ·
 [Discussions](https://github.com/rfxn/rdf/discussions) ·
 [Contributing](https://github.com/rfxn/rdf/blob/main/CONTRIBUTING.md) ·
-[Security policy](https://github.com/rfxn/rdf/blob/main/SECURITY.md)
+[Security policy](https://github.com/rfxn/rdf/blob/main/SECURITY.md) ·
+[Privacy policy](privacy)
