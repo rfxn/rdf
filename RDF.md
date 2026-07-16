@@ -79,7 +79,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 | engineer | rdf-engineer | opus | Universal implementation |
 | qa | rdf-qa | sonnet | Verification gate |
 | uat | rdf-uat | sonnet | User acceptance testing |
-| reviewer | rdf-reviewer | opus | Adversarial review (challenge + sentinel) |
+| reviewer | rdf-reviewer | opus / sonnet | Adversarial review (sentinel=opus, challenge=sonnet) |
 
 **Slash commands:** `/r-{name}` (lifecycle) or `/r-util-{name}` (utility)
 
@@ -231,7 +231,7 @@ rdf/                                 # Repository root
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | Governance template gap for new domain | Medium | Medium | Profile system seeds templates; engineer reads project CLAUDE.md |
-| Adapter adds complexity without value | Low | Medium | Proven by v2 pipeline; 6 months production use |
+| Adapter adds complexity without value | Low | Medium | Proven by the pre-RDF v2 pipeline (2025, ~6 months production use) |
 | CLI scope creep delays delivery | Medium | Medium | Lazy-sourced modules; each subcommand is independent |
 | GitHub integration couples to API changes | Low | Medium | All operations use `gh` CLI; adapter isolated from API versioning |
 | Cross-reference breakage during rename | Low | High | Automated stale-name grep in rdf doctor |

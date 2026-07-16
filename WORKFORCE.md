@@ -1,20 +1,24 @@
-# RDF 3.1 Agent Workforce
+# RDF Agent Workforce
 
 ---
 
 ## 1. Organization Chart
 
 ```
-RDF 3.1 — UNIVERSAL AGENT WORKFORCE
+RDF — UNIVERSAL AGENT WORKFORCE
 ════════════════════════════════════════════════════════════════════
 
 USER
  │
- ├─► /r-plan ──► planner  (opus)      Research & Planning
- │                                     Specs, plans, brainstorming
+ ├─► /r-start    (self-contained)     Session Init — loads context,
+ │                                     scans state; dispatches nothing
  │
- ├─► /r-start ─► dispatcher  (sonnet) Plan Execution
- │   /r-build     │                    Phase orchestration, quality gates
+ ├─► /r-plan ──► planner  (opus)      Research & Planning
+ │               reviewer (sonnet)     Specs, plans; mandatory challenge
+ │                challenge mode       review before presenting for approval
+ │
+ ├─► /r-build ─► dispatcher  (sonnet) Plan Execution
+ │                │                    Phase orchestration, quality gates
  │                │
  │                ├─► engineer  (opus)  Universal Implementation
  │                │                    TDD, governance-driven protocol
@@ -22,9 +26,9 @@ USER
  │                ├─► qa  (sonnet)     Verification Gate — read-only
  │                │                    Lint, tests, anti-patterns
  │                │
- │                ├─► reviewer  (opus) Adversarial Review — read-only
- │                │                    Challenge mode (pre-impl)
- │                │                    Sentinel mode (post-impl 2-3 pass)
+ │                ├─► reviewer         Adversarial Review — read-only
+ │                │                    Challenge mode (pre-impl, sonnet)
+ │                │                    Sentinel mode (post-impl, opus, 2-3 pass)
  │                │
  │                └─► uat  (sonnet)   User Acceptance — read-only
  │                                    End-user persona, real scenarios
@@ -34,8 +38,7 @@ USER
 
 ════════════════════════════════════════════════════════════════════
 LIFECYCLE PIPELINE
-  USER → /r-plan (planner)
-       → [/r-review --challenge (reviewer)]
+  USER → /r-plan (planner + mandatory reviewer challenge pass, sonnet)
        → /r-build [N] (dispatcher → engineer → qa/reviewer/uat gates)
        → /r-ship → MERGE
 ════════════════════════════════════════════════════════════════════
@@ -43,10 +46,14 @@ LIFECYCLE PIPELINE
 
 ### Model Summary
 
-| Model  | Agents                          |
-|--------|---------------------------------|
-| opus   | planner, engineer, reviewer     |
-| sonnet | dispatcher, qa, uat             |
+| Model  | Agents                                    |
+|--------|-------------------------------------------|
+| opus   | planner, engineer, reviewer (sentinel)    |
+| sonnet | dispatcher, qa, uat, reviewer (challenge) |
+
+Dynamic model routing: the dispatcher downgrades engineer to sonnet for
+`scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet,
+sentinel stays opus.
 
 ### Concurrent-Session Primitives (3.1.0)
 
@@ -97,7 +104,7 @@ User acceptance testing. Runs real-world scenarios from an end-user
 persona. Read-only -- cannot modify source files. Dispatched by
 dispatcher or invoked via `/r-test`.
 
-### reviewer (opus)
+### reviewer (opus sentinel / sonnet challenge)
 
 Adversarial reviewer with two modes:
 - **Challenge mode** (pre-impl): Reviews specs and plans for design flaws,

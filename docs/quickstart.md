@@ -6,8 +6,8 @@ nav_order: 2
 # Quickstart — RDF on Your Repo in 5 Minutes
 
 No rfxn context required. You need `git`, `bash` 4.1+, `jq`, and an AI
-coding runtime (Claude Code, Codex, or Antigravity CLI (Gemini CLI
-supported as a legacy tier)). Examples below use Claude Code.
+coding runtime — Claude Code, Codex, or Antigravity CLI (Gemini CLI is
+supported as a legacy tier). Examples below use Claude Code.
 
 ## 1. Install RDF (once per machine)
 
@@ -26,14 +26,23 @@ bin/rdf doctor
 
 **Prefer a one-command install?** RDF is also a Claude Code plugin:
 `/plugin marketplace add rfxn/rdf` then `/plugin install rdf@rdf`.
-Plugin commands are namespaced (`/rdf:r-start` instead of `/r-start`);
-everything else is identical. Hooks and the status line require `jq`
-on your PATH in both modes.
+Plugin commands are namespaced (`/rdf:r-start` instead of `/r-start`).
+Note: plugin-only installs run in a **degraded mode** for the state-backed
+commands (`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`,
+`r-refresh`, `r-context-audit`, `r-vpe`, `r-util-mem-compact`) — full
+session state needs the `~/.rdf/state/` helpers that only the symlink
+deploy above populates ([parity details](multi-tool-parity)). Hooks are
+never auto-installed in either mode: merge
+`adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json`
+manually (see `rdf deploy help`); hooks and the status line also require
+`jq`.
 
 ## 2. Initialize your project
 
-Point `rdf init` at any repo. It auto-detects the stack and scaffolds
-governance:
+Point `rdf init` at any **existing** project directory — it fails with
+`directory not found` if the path does not exist, so clone any small repo
+or use a project you already have (the transcript below is a two-file Flask
+app). It auto-detects the stack and scaffolds governance:
 
 ```bash
 bin/rdf init ~/projects/my-app

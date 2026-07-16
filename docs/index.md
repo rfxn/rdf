@@ -41,6 +41,12 @@ verify health. 42 seconds, no edits, ends at `0 FAIL`.*
 /plugin install rdf@rdf
 ```
 
+Plugin-only installs run in a **degraded mode** for the 10 state-backed
+commands (`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`,
+`r-refresh`, `r-context-audit`, `r-vpe`, `r-util-mem-compact`): the full
+session-state machinery needs the `~/.rdf/state/` helpers that only the
+symlink deploy below populates. See [multi-tool parity](multi-tool-parity).
+
 **Or symlink deploy** (contributor mode, bare `/r-*` commands):
 
 ```bash
@@ -49,7 +55,10 @@ bin/rdf generate claude-code && bin/rdf deploy claude-code
 bin/rdf init ~/projects/my-app     # auto-detects your stack
 ```
 
-Hooks and the status line require `jq` on your PATH in both modes.
+Hooks are never auto-installed in either mode — merge
+`adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json`
+manually (see `rdf deploy help`); hooks and the status line also require
+`jq` on your PATH.
 Context cost is published and CI-guarded: the default deploy adds ~0.1K
 always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
 `rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).
@@ -70,7 +79,7 @@ too.
 |-----------|---------------|
 | **Governance as code** | Conventions live in versioned files the AI reads every session — not in your head or a wiki |
 | **Adversarial quality gates** | Reviewer agents challenge specs before implementation and audit code after it, with scope-derived depth |
-| **Convention inheritance** | Workspace → project → profile layering; one edit propagates everywhere |
+| **Convention inheritance** | project → workspace → profile → core layering (most specific wins); one edit propagates everywhere |
 | **Multi-adapter** | Author governance once; deploy to Claude Code (symlink or plugin), Codex, Antigravity CLI, Gemini CLI (legacy), or plain AGENTS.md |
 
 ## Proven on production infrastructure
@@ -82,7 +91,7 @@ RDF governs the development of security tooling running on
 - **518 governed sessions** across 30+ projects at a sustained
   **~4.3 sessions/day**, landing **2,513 git-verified commits**
 - **Three major releases shipped under governance** — LMD 2.0, APF 2.0,
-  BFD 2.0 — plus **19 RDF releases in 19 weeks**
+  BFD 2.0 — plus **26 RDF releases in 18 weeks**
 - **6,871 BATS tests** across 13 governed repos, all CI-runnable
 - Every release backed by committed design specs (25) and implementation
   plans (22) — we design in the open:

@@ -103,7 +103,10 @@ Runs when `$ARGUMENTS` contains `--lessons`, or automatically when invoked
 with no MEMORY target and `~/.rdf/lessons-learned.md` is within 5 of its
 50-entry cap.
 
-1. Run the deterministic scanner (read-only — never mutates the lessons file):
+1. Run the deterministic scanner (read-only — never mutates the lessons file).
+   If `~/.rdf/state/rdf-lessons.sh` is absent (plugin-only install), skip this
+   consolidation step — MEMORY.md compaction still works; the scanner needs the
+   symlink deploy (`rdf generate claude-code`).
    ```bash
    bash ~/.rdf/state/rdf-lessons.sh scan ~/.rdf/lessons-learned.md
    ```

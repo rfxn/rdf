@@ -184,7 +184,7 @@ Updated edge case table. Spec committed.
 
 **Artifacts:**
 - `docs/specs/2026-03-17-csig-batch-engine-design.md` (committed)
-- `.rdf/work-output/spec-progress.md` (crash recovery state)
+- `.rdf/work-output/spec-progress-<SESSION_ID>.md` (crash recovery state; session-scoped as of 3.1.0)
 
 ---
 
@@ -389,9 +389,9 @@ Verdict: **APPROVE**
 - [x] Phase 5 — Legacy cleanup
 ```
 
-**Artifacts per phase:**
-- `.rdf/work-output/phase-N-result.md` — commits, files, verification evidence
-- `.rdf/work-output/phase-N-status.md` — gate verdicts, sentinel findings
+**Artifacts per phase** (session-scoped as of 3.1.0):
+- `.rdf/work-output/phase-N-result-<SESSION_ID>.md` — commits, files, verification evidence
+- `.rdf/work-output/phase-N-status-<SESSION_ID>.md` — gate verdicts, sentinel findings
 - Git commits (one per phase)
 
 ---
@@ -481,7 +481,7 @@ comments, and surrounding code before reporting. Findings that
 survive this filter are high-signal.
 
 **Crash recovery** — The spec recorded decisions after each question
-to `spec-progress.md`. If the session died mid-brainstorm,
+to `spec-progress-<SESSION_ID>.md`. If the session died mid-brainstorm,
 `/r-spec --resume` picks up where it left off. Plans and ship
 stages have the same resume protocol.
 

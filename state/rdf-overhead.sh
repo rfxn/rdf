@@ -20,6 +20,16 @@ if [[ -n "${RDF_HOME:-}" ]]; then
     _rdf_home="$RDF_HOME"
 else
     _rdf_home="$(cd "$(command dirname "$0")/.." && pwd)" || exit 1
+    # Deployed copy at ~/.rdf/state/ resolves to ~/.rdf (no adapters/ tree) — recover
+    # the checkout from the deploy symlink. Plain readlink, not -f: macOS has no -f.
+    if [[ ! -d "${_rdf_home}/adapters/claude-code/output" ]]; then
+        _link="$(readlink "${RDF_TARGET:-${HOME}/.claude}/commands" 2>/dev/null)" || _link=""   # no deploy symlink → warn below
+        if [[ -n "$_link" && -d "${_link%/adapters/*}/adapters/claude-code/output" ]]; then
+            _rdf_home="${_link%/adapters/*}"
+        else
+            echo "rdf-overhead: deploy symlink absent — rules/lite figures may be inaccurate" >&2
+        fi
+    fi
 fi
 _out="${1:-${_rdf_home}/adapters/claude-code/output}"
 _lite_src="${_rdf_home}/profiles/lite/governance-lite.md"

@@ -16,7 +16,10 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 
 ## Resume Detection
 
-Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`. Then look for
+Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`. If the helper is
+absent (plugin-only install), skip resume detection and proceed without
+session-scoped progress; full state requires the symlink deploy (`rdf generate
+claude-code`). Then look for
 `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md`. If not found, glob
 `.rdf/work-output/ship-progress-*.md` and present candidates ordered by mtime.
 If exactly one un-suffixed `.rdf/work-output/ship-progress.md` exists (legacy

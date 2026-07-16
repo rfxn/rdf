@@ -87,6 +87,9 @@ enterprise Gemini CLI users. Spec + plan:
   obsoleted by native background agents; only phantom collect-spool cleanup
   and an optional read-only peer view survive)
 - Debt cleanup follow-ups beyond the executed 3.2 T5 cuts (shipped in 3.3.1)
+- claude-plugin state-helper parity — ship `~/.rdf/state` helpers via a plugin
+  SessionStart hook + a plugin-parity BATS suite (plugin seam has broken 3× via
+  spot-fixes; needs a designed fix)
 
 ---
 

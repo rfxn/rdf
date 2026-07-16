@@ -39,7 +39,13 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 #   In Claude Code:
 #     /plugin marketplace add rfxn/rdf
 #     /plugin install rdf@rdf
-#   Note: hooks + status line require jq on PATH.
+#   Degraded mode: 10 state-backed commands (r-spec/r-plan/r-build/r-ship/
+#     r-status/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) need
+#     the ~/.rdf/state/ helpers only Option B's symlink deploy populates —
+#     see docs/multi-tool-parity.md.
+#   Hooks are never auto-installed (either mode): merge adapters/claude-code/
+#     hooks/hooks.json into ~/.claude/settings.json (see 'rdf deploy help');
+#     hooks + status line also need jq on PATH.
 
 # ── Option B: symlink deploy (contributor/power mode — bare /r-*) ──
 # 1. Clone
@@ -503,7 +509,7 @@ Daily check-ins from government (NIST, NOAA, NIH), defense (NATO CCDCOE), univer
 | Governed work sessions logged | 518 across 30+ projects (~17 weeks, ~4.3/day sustained) |
 | Commits landed portfolio-wide | 2,513 (git-verified; ~4 per committing session) |
 | BATS test cases across governed repos | 6,871 (13 repos, all CI-runnable) |
-| Major releases shipped under governance | LMD 2.0, APF 2.0, BFD 2.0 — plus 19 RDF releases in 19 weeks |
+| Major releases shipped under governance | LMD 2.0, APF 2.0, BFD 2.0 — plus 26 RDF releases in 18 weeks |
 | Design artifacts committed | 25 specs, 22 implementation plans — designed in the open |
 
 One operator, thirty-plus projects, sustained multi-month cadence — with

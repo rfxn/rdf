@@ -44,6 +44,10 @@ source ~/.rdf/state/rdf-bus.sh
 rdf_session_init
 ```
 
+*If `~/.rdf/state/rdf-bus.sh` is absent (plugin-only install), skip session
+init and default the tier to `full`; session-scoped state requires the symlink
+deploy (`rdf generate claude-code`).*
+
 - **Flag override.** If `--full`, `--quick`, or `--bugfix` is present, it wins:
   map to `full` / `quick-plan` / `bugfix` and record it with `rdf_set_active_tier <tier>`.
 - **No flag.** Assess the ask against the heuristic signals in

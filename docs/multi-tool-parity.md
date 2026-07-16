@@ -23,6 +23,16 @@ legacy tier**, Gemini CLI (enterprise). Design rationale lives in
 Tiers: the first three rows are first-class; Gemini CLI is **legacy / frozen**
 (kept for enterprise paid-API users, changed only for the TOML-escaping fix).
 
+**Claude Code — plugin install vs. symlink deploy.** The Claude Code row above
+describes the **symlink deploy** (`rdf deploy claude-code`), which also populates
+the `~/.rdf/state/` session-state helpers via `rdf generate claude-code`. A
+**plugin install** (`/plugin install rdf@rdf`) ships commands and agents only —
+it does **not** deploy those helpers, so the 10 state-backed commands (`r-spec`,
+`r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`, `r-refresh`,
+`r-context-audit`, `r-vpe`, `r-util-mem-compact`) run in a **degraded mode**
+until the symlink deploy runs. `r-start` degrades gracefully (probe + fallback);
+the others require the helpers for full session-scoped state.
+
 ## 2. The `.agents/skills/` shared convention
 
 `.agents/skills/` is a **workspace-level shared directory** at the repo root —

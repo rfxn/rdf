@@ -61,6 +61,11 @@ rdf_session_init
 tier="$(rdf_active_tier)"        # inherits the tier /rdf:r-spec set, else full
 ```
 
+*If `~/.rdf/state/rdf-bus.sh` is absent (plugin-only install), skip session
+init, treat the tier as `full`, and resolve the plan from the committed
+`docs/plans/` file directly; full session state requires the symlink deploy
+(`rdf generate claude-code`).*
+
 - **Flag override.** If `--full`, `--quick`, or `--bugfix` is present, it wins:
   map to `full` / `quick-plan` / `bugfix` and record it with
   `rdf_set_active_tier <tier>`.

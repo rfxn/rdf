@@ -14,7 +14,9 @@ commits) and note that governance is not initialized.
 
 ### 2. Read Plan Progress
 
-Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`.
+Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. If the helper is absent
+(plugin-only install), show plan progress from the committed plan file and git
+only, skipping session-scoped signals.
 `plan_path="$(rdf_active_plan_path)"`. If empty, display: "No active
 plan. Run /r-plan to create one."
 

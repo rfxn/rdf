@@ -24,7 +24,9 @@ Arguments:
 
 ### 1. Locate and Validate the Active Plan
 
-- Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`.
+- Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`. If the helper
+  is absent (plugin-only install), stop and tell the user: `/rdf:r-build` needs the
+  session-state helpers — run `rdf generate claude-code` (symlink deploy) first.
 - `plan_path="$(rdf_active_plan_path)"` — resolves via three-tier
   fallback (session pointer → un-suffixed pointer → root PLAN.md).
 - If `$plan_path` is empty, report error and stop:
