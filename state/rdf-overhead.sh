@@ -22,7 +22,7 @@ else
     _rdf_home="$(cd "$(command dirname "$0")/.." && pwd)" || exit 1
     # Deployed copy at ~/.rdf/state/ resolves to ~/.rdf (no adapters/ tree) — recover
     # the checkout from the deploy symlink. Plain readlink, not -f: macOS has no -f.
-    if [[ ! -d "${_rdf_home}/adapters/claude-code/output" ]]; then
+    if [[ ! -d "${_rdf_home}/adapters/claude-code" ]]; then
         _link="$(readlink "${RDF_TARGET:-${HOME}/.claude}/commands" 2>/dev/null)" || _link=""   # no deploy symlink → warn below
         if [[ -n "$_link" && -d "${_link%/adapters/*}/adapters/claude-code/output" ]]; then
             _rdf_home="${_link%/adapters/*}"
