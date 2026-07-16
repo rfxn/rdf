@@ -1,5 +1,36 @@
 # RDF Changelog
 
+## 3.6.1
+
+-- Bug Fixes --
+
+[Fix] codex adapter: generated AGENTS.md carried a fabricated RDF-2.0 command
+      catalog (mgr, sys-*, audit-* — none exist); catalog now derived from
+      canonical/commands/*.md with a glob-derived regression test
+[Fix] claude-plugin: command output now carries the intent-trigger
+      description: frontmatter — the 3.6.0 headline was previously true only
+      on the symlink-deploy path, not plugin install
+[Fix] reviewer pass-structure docs: "4 adversarial passes ... performance"
+      corrected to the real 2-pass lite / 3-pass full ladder across README,
+      WORKFORCE, agent-meta (CC + gemini), 7 mode contexts, diagrams,
+      demo-walkthrough, r-review/r-audit; performance-MODE content preserved
+[Fix] rdf init --tools: warns not-yet-implemented instead of silently
+      accepting; deploy: documented RDF_TARGET env var actually wired;
+      canonical r-start: maintainer-machine absolute path removed
+[Fix] docs/multi-tool-parity.md accuracy: gemini {{args}} is flagged with a
+      NOTE (bodies are not translated); skills surface disclosed as the
+      10-command lifecycle set; AGENTS.md scoped as RDF-self documentation
+
+-- Changes --
+
+[Change] docs/specs/CURRENT.md: fold the missed 3.6.0 block; Adapters 5→6
+[Change] README/RDF.md accuracy sweep: scripts 12→16, doctor 7→11 checks,
+         all 6 adapters in both architecture trees, migrate + claude-plugin
+         documented, canonical/reference/tiers.md link, first-class trio
+         framing (CC/Codex/Antigravity + gemini legacy) across 7 files
+[Change] .gitignore: never-tracked adapter output dirs ignored so fresh
+         clones stay git-status clean
+
 ## 3.6.0
 
 -- New Features --
