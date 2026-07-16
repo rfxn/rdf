@@ -1,5 +1,40 @@
 # RDF Changelog
 
+## 3.6.3
+
+-- Bug Fixes --
+
+[Fix] plugin-tier honesty: plugin-only installs (/plugin install rdf@rdf)
+      never receive the ~/.rdf/state helpers, so 10 state-backed commands
+      ran degraded with no disclosure — README Option A, quickstart, docs
+      index, and the parity doc now say so, and 9 canonical commands gain
+      graceful-absence guards at first helper use (3.6.2's state-helper fix
+      is hereby scoped: it applies to the symlink deploy path; plugin
+      parity is a tracked ROADMAP item)
+[Fix] rdf-overhead.sh: the deployed ~/.rdf/state copy mis-resolved RDF_HOME
+      and returned wrong rules/lite figures (100/null instead of
+      2068/674); now recovers the checkout via the deploy symlink with a
+      warning fallback; 2 new BATS cases
+[Fix] WORKFORCE.md: stale "RDF 3.1" title dropped; /r-plan's mandatory
+      challenge review shown (was bracketed as optional); /r-start removed
+      from the dispatcher arrow (it dispatches nothing); reviewer model
+      disclosed as opus (sentinel) / sonnet (challenge) here and in RDF.md
+[Fix] production-context stat re-derived from git: "19 RDF releases in 19
+      weeks" → 26 releases in 18 weeks (README + docs index)
+[Fix] quickstart truthfulness: rdf init requires an existing project dir
+      (documented); hooks.json is never auto-installed — the manual-merge
+      step is now documented in README/index/quickstart (jq was not the
+      real gate); demo-walkthrough artifact names session-scoped;
+      index.md inheritance order matches README; RDF.md risk row labeled
+      as the pre-RDF v2-era assessment
+
+-- Changes --
+
+[Change] ROADMAP: deferred claude-plugin state-helper parity (plugin
+         SessionStart hook + plugin-parity BATS suite — designed fix for a
+         seam that has broken three times via spot-fixes)
+[Change] tests 220 → 222 (rdf-overhead deployed-copy resolution cases)
+
 ## 3.6.2
 
 -- Bug Fixes --
