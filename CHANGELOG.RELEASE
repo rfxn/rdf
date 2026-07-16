@@ -1,33 +1,38 @@
-# RDF 3.6.1 Release Notes
+# RDF 3.6.2 Release Notes
 
-## 3.6.1
+## 3.6.2
 
 -- Bug Fixes --
 
-[Fix] codex adapter: generated AGENTS.md carried a fabricated RDF-2.0 command
-      catalog (mgr, sys-*, audit-* — none exist); catalog now derived from
-      canonical/commands/*.md with a glob-derived regression test
-[Fix] claude-plugin: command output now carries the intent-trigger
-      description: frontmatter — the 3.6.0 headline was previously true only
-      on the symlink-deploy path, not plugin install
-[Fix] reviewer pass-structure docs: "4 adversarial passes ... performance"
-      corrected to the real 2-pass lite / 3-pass full ladder across README,
-      WORKFORCE, agent-meta (CC + gemini), 7 mode contexts, diagrams,
-      demo-walkthrough, r-review/r-audit; performance-MODE content preserved
-[Fix] rdf init --tools: warns not-yet-implemented instead of silently
-      accepting; deploy: documented RDF_TARGET env var actually wired;
-      canonical r-start: maintainer-machine absolute path removed
-[Fix] docs/multi-tool-parity.md accuracy: gemini {{args}} is flagged with a
-      NOTE (bodies are not translated); skills surface disclosed as the
-      10-command lifecycle set; AGENTS.md scoped as RDF-self documentation
+[Fix] systemic state-helper paths: canonical commands/agents referenced
+      state/rdf-bus.sh, rdf-consistency.sh, rdf-lessons.sh by bare relative
+      paths that resolve only inside the RDF checkout — session-ID/tier/plan
+      machinery silently failed in every consuming project; all references
+      now use the deployed ~/.rdf/state/ location, and r-context-audit's
+      workspace-relative rdf/state/ paths are fixed the same way
+[Fix] worktree scope-enforcement pre-commit hook was never deployed outside
+      the RDF checkout: rdf generate now installs it (and rdf-overhead.sh)
+      to ~/.rdf/state/; dispatcher and /r-build probe the deployed hook
+      first and warn+continue when absent
+[Fix] framework.md: stale v3.1 title pin dropped, command counts corrected
+      17/14 → 21/16, phantom collect-spool.sh contract row removed (plan
+      Phase 12 Step 1 pulled forward); doctor doc-stats now guards
+      framework.md counts against future drift
+[Fix] doctor: sync-symlink and install-mode checks honor RDF_TARGET so
+      doctor agrees with deploy on custom targets
+[Fix] GitHub Pages: multi-tool-parity.md and memory-context.md had no
+      Jekyll front matter and no inbound links (unrendered orphans); both
+      now render and are linked from the docs index
+[Fix] claude-plugin: frontmatter descriptions get the /rdf: namespace
+      rewrite; agent-skills r-build trigger names the plan-execution
+      orchestrator instead of the engineer
 
 -- Changes --
 
-[Change] docs/specs/CURRENT.md: fold the missed 3.6.0 block; Adapters 5→6
-[Change] README/RDF.md accuracy sweep: scripts 12→16, doctor 7→11 checks,
-         all 6 adapters in both architecture trees, migrate + claude-plugin
-         documented, canonical/reference/tiers.md link, first-class trio
-         framing (CC/Codex/Antigravity + gemini legacy) across 7 files
-[Change] .gitignore: never-tracked adapter output dirs ignored so fresh
-         clones stay git-status clean
+[Change] runtime-trio staleness swept: quickstart, privacy, SECURITY now
+         list Claude Code, Codex, Antigravity CLI with Gemini CLI as the
+         legacy tier; profile registry core summary corrected to 5
+         reference docs
+[Change] tests 217 → 220: state-helper/hook deploy coverage, framework.md
+         count-drift guard, RDF_TARGET install-mode probe
 

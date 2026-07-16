@@ -1,5 +1,41 @@
 # RDF Changelog
 
+## 3.6.2
+
+-- Bug Fixes --
+
+[Fix] systemic state-helper paths: canonical commands/agents referenced
+      state/rdf-bus.sh, rdf-consistency.sh, rdf-lessons.sh by bare relative
+      paths that resolve only inside the RDF checkout — session-ID/tier/plan
+      machinery silently failed in every consuming project; all references
+      now use the deployed ~/.rdf/state/ location, and r-context-audit's
+      workspace-relative rdf/state/ paths are fixed the same way
+[Fix] worktree scope-enforcement pre-commit hook was never deployed outside
+      the RDF checkout: rdf generate now installs it (and rdf-overhead.sh)
+      to ~/.rdf/state/; dispatcher and /r-build probe the deployed hook
+      first and warn+continue when absent
+[Fix] framework.md: stale v3.1 title pin dropped, command counts corrected
+      17/14 → 21/16, phantom collect-spool.sh contract row removed (plan
+      Phase 12 Step 1 pulled forward); doctor doc-stats now guards
+      framework.md counts against future drift
+[Fix] doctor: sync-symlink and install-mode checks honor RDF_TARGET so
+      doctor agrees with deploy on custom targets
+[Fix] GitHub Pages: multi-tool-parity.md and memory-context.md had no
+      Jekyll front matter and no inbound links (unrendered orphans); both
+      now render and are linked from the docs index
+[Fix] claude-plugin: frontmatter descriptions get the /rdf: namespace
+      rewrite; agent-skills r-build trigger names the plan-execution
+      orchestrator instead of the engineer
+
+-- Changes --
+
+[Change] runtime-trio staleness swept: quickstart, privacy, SECURITY now
+         list Claude Code, Codex, Antigravity CLI with Gemini CLI as the
+         legacy tier; profile registry core summary corrected to 5
+         reference docs
+[Change] tests 217 → 220: state-helper/hook deploy coverage, framework.md
+         count-drift guard, RDF_TARGET install-mode probe
+
 ## 3.6.1
 
 -- Bug Fixes --
