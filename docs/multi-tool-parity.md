@@ -48,16 +48,26 @@ antigravity`** target: `rdf generate antigravity` is a composite (skills +
 files the user places directly. Generate is a composite; deploy stays
 per-artifact (§13.4).
 
+**Bounded surface.** The shared skills tree covers the **10 lifecycle
+commands** — `/r-spec`, `/r-plan`, `/r-build`, `/r-ship`, `/r-start`,
+`/r-save`, `/r-status`, `/r-audit`, `/r-refresh`, `/r-init` — not all 37 RDF
+commands (source of truth: `adapters/agent-skills/skill-meta.json`). Utility
+commands stay Claude-Code-only for now. Separately, the generated `AGENTS.md`
+documents the RDF *workspace* surface itself; per-project `AGENTS.md`
+generation is not yet implemented.
+
 ## 3. Gemini `{{args}}` lossy edge
 
-Gemini CLI command TOML uses `{{args}}` token substitution. RDF commands that
-read their argument via `$ARGUMENTS` are translated and carry a NOTE in the
-emitted TOML. Positional invocation forms are **not** tokenized: a command
-invoked as `/r-build 3` receives the raw `3` and is not rewritten to a
-`{{args}}` placeholder. Commands whose canonical body relies on positional
-arguments therefore lose that argument on the Gemini surface — the NOTE flags
-this so a Gemini CLI user knows to pass the argument through the `{{args}}`
-form instead.
+Gemini CLI command TOML uses `{{args}}` token substitution. RDF command bodies
+are **not translated**: the canonical body is emitted verbatim into the prompt,
+so a body that reads `$ARGUMENTS` keeps that literal token — Gemini performs no
+substitution on it. What RDF adds is a **NOTE** comment (emitted only when the
+body references `$ARGUMENTS`) documenting that Gemini exposes just `{{args}}`
+(the whole invocation string) and does not tokenize positional forms: a command
+invoked as `/r-build 3` receives the raw `3`, unbound to any placeholder. The
+body's `$ARGUMENTS` therefore stays unsubstituted on the Gemini surface — an
+accepted limitation of the frozen legacy tier. The NOTE flags it so a Gemini
+CLI user knows to pass the argument through the `{{args}}` form instead.
 
 ## 4. Legacy gemini-cli tier
 

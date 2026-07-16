@@ -15,6 +15,24 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.6.0 — 2026-07-15
+
+ADDED: `agent-skills` adapter — emits the shared `.agents/skills/<cmd>/SKILL.md`
+surface (Codex + Antigravity) from `adapters/agent-skills/skill-meta.json`, one
+SKILL.md per lifecycle command; `rdf generate agent-skills`.
+ADDED: `antigravity` composite generate target (skills + `AGENTS.md`) and an
+`agent-skills` deploy target (`--project-root`, default CWD).
+ADDED: Claude Code intent-trigger `description:` frontmatter on every generated
+command (shared skill-meta trigger, first-sentence fallback); `rdf sync` and
+`rdf doctor` strip the leading frontmatter block on the reverse flow so canonical
+stays frontmatter-free.
+ADDED: `docs/multi-tool-parity.md` — first-class trio (Claude Code, Codex,
+Antigravity CLI) plus frozen legacy Gemini CLI feature matrix; deploy/sync
+install-surface BATS coverage (`tests/deploy.bats`).
+MODIFIED: `gemini-cli` recast as a frozen legacy tier — command TOML now emits
+`'''`-literal prompt bodies (strict-parse escaping fix), otherwise unchanged.
+MODIFIED: `README.md`, `RDF.md`, `docs/_config.yml` — trio framing.
+
 ## 3.5.0 — 2026-07-15
 
 ADDED: task-class tiers (`full`/`quick-plan`/`bugfix`) — `reference/tiers.md`,
@@ -37,8 +55,9 @@ MODIFIED: `r-spec.md`, `r-plan.md`, `r-build.md`, `r-ship.md`,
 
 **Agents (6):** `dispatcher`, `planner`, `engineer`, `qa`, `reviewer`, `uat`.
 
-**Adapters (5):** `claude-code`, `claude-plugin`, `codex`, `gemini-cli`,
-`agents-md` — each generated from tool-agnostic `canonical/` content.
+**Adapters (6):** `claude-code`, `claude-plugin`, `codex`, `gemini-cli`,
+`agents-md`, `agent-skills` — each generated from tool-agnostic `canonical/`
+content.
 
 **State:** `state/rdf-bus.sh` is the session bus (active-plan pointer + tier
 pointer); governance is loaded from `.rdf/governance/`.

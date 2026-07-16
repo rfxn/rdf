@@ -1,3 +1,8 @@
+---
+description: >
+  Switch the operational mode for the current session.
+---
+
 Switch the operational mode for the current session.
 
 ## Usage

@@ -19,7 +19,7 @@ Options:
   --type PROFILES       Force profile(s): comma-separated list of profile names
                         (e.g., shell, rust,infrastructure, python,database)
                         (default: auto-detect from project signals)
-  --tools TOOLS         Comma-separated tool targets (default: claude-code)
+  --tools TOOLS         Tool targets (reserved — not yet implemented; claude-code only)
   --version X.Y.Z       Initial version string (default: from VERSION file or 0.1.0)
   --no-memory           Skip MEMORY.md placeholder creation
   --github              Create labels + repo project board via gh CLI
@@ -676,11 +676,10 @@ _validate_profiles() {
     done
 }
 
-# shellcheck disable=SC2034  # tools reserved for Phase 8
 cmd_init() {
     local path=""
     local type=""
-    local tools="claude-code"  # reserved for Phase 8 multi-tool support
+    local tools="claude-code"  # multi-tool targeting not yet implemented
     local version=""
     local no_memory=0
     local do_github=0
@@ -710,6 +709,11 @@ cmd_init() {
     done
 
     [[ -z "$path" ]] && rdf_die "missing path — run 'rdf init help'"
+
+    # --tools is parsed for forward-compatibility but multi-tool init is unbuilt.
+    if [[ "$tools" != "claude-code" ]]; then
+        rdf_warn "--tools is not yet implemented (claude-code only)"
+    fi
 
     # Resolve to absolute path
     if [[ ! -d "$path" ]]; then

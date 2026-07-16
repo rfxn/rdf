@@ -1,3 +1,8 @@
+---
+description: >
+  Use at the end of a session to sync state — plan progress, memory, and the session log.
+---
+
 # /rdf:r-save — Session State Sync
 
 End-of-session state sync. Updates tracking files to reflect what

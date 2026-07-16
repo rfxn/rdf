@@ -1,3 +1,8 @@
+---
+description: >
+  Analyze the current diff to recommend which tests to run and map
+---
+
 # /rdf:r-util-test-scope — Test Scope Recommendation
 
 Analyze the current diff to recommend which tests to run and map

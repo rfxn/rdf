@@ -1,3 +1,8 @@
+---
+description: >
+  Use to initialize RDF governance on a new or existing repository.
+---
+
 Governance initialization for any codebase. Scans the project, ingests
 existing convention files, detects languages and tooling, and generates
 supplementary governance under `.rdf/governance/`.

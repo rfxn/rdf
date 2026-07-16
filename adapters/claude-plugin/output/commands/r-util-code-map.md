@@ -1,3 +1,8 @@
+---
+description: >
+  Structural map of a source file — classes, functions, methods with
+---
+
 Structural map of a source file — classes, functions, methods with
 line ranges. Reduces context cost when an agent needs one symbol from
 a large file by letting it read only the relevant line range.

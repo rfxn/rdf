@@ -1,3 +1,8 @@
+---
+description: >
+  You are the test command. You dispatch the UAT subagent to run
+---
+
 You are the test command. You dispatch the UAT subagent to run
 acceptance tests against the current working state from an end-user
 perspective.

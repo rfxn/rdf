@@ -69,11 +69,10 @@ Refactoring mode elevates regression detection.
 
 ## Reviewer Focus
 
-Modified 4-pass sentinel with refactoring emphasis:
+Modified 3-pass full sentinel with refactoring emphasis:
 1. Anti-slop (standard -- watch for scope creep into "improvements")
-2. **Regression** (ELEVATED -- every moved function must have before/after test)
+2. **Regression** (ELEVATED -- every moved function must have before/after test; verify no degradation from restructuring)
 3. Security (standard)
-4. Performance (standard -- verify no degradation from restructuring)
 
 Reviewer additionally checks:
 - Old-name grep output included in phase results (zero hits required)

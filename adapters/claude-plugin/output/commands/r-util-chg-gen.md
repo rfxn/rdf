@@ -1,3 +1,8 @@
+---
+description: >
+  Generate changelog entries from the current diff or commit range. Read
+---
+
 Generate changelog entries from the current diff or commit range. Read
 governance for changelog format rules.
 

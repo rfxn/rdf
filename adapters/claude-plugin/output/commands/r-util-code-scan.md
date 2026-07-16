@@ -1,3 +1,8 @@
+---
+description: >
+  Structured pattern-class bug finder. Searches project files for instances
+---
+
 Structured pattern-class bug finder. Searches project files for instances
 of known anti-patterns or a custom pattern. Groups results by file and
 function, cross-references AUDIT.md for tracked instances.

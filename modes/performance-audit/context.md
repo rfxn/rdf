@@ -64,18 +64,20 @@ Performance mode adds benchmark verification to quality gates.
 | Override | Effect |
 |----------|--------|
 | Gate 2 (QA) | Must include before/after benchmark comparison |
-| Gate 3 (reviewer) | Performance pass findings are MUST-FIX |
+| Gate 3 (reviewer) | Performance-focus findings are MUST-FIX |
 | Regression bar | No performance regression beyond 5% on any measured path |
 | Evidence requirement | Findings without measurement data are returned as hypotheses |
 
 ## Reviewer Focus
 
-Modified 4-pass sentinel with performance emphasis:
+Modified 3-pass full sentinel with performance emphasis:
 1. Anti-slop (standard)
-2. Regression (ELEVATED -- performance regression detection)
+2. **Regression** (ELEVATED -- performance regression detection)
 3. Security (standard)
-4. **Performance** (ELEVATED -- O(n^2) detection, allocation analysis,
-   unbounded queries, missing pagination, cache effectiveness)
+
+Mode-specific performance focus (ELEVATED, layered on the standard passes):
+O(n^2) detection, allocation analysis, unbounded queries, missing pagination,
+cache effectiveness.
 
 Reviewer additionally checks:
 - Every reported bottleneck backed by measurement, not code inspection alone

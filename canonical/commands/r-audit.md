@@ -125,7 +125,8 @@ Dispatch reviewer subagent in sentinel mode:
 
 ### 2c. Reviewer — Performance Focus
 Dispatch reviewer subagent in sentinel mode:
-- Focus pass: performance (pass 4)
+- Focus: performance (audit-specific dimension — beyond the standard
+  sentinel passes)
 - Scope: entire codebase with emphasis on hot paths, loops,
   data structure choices, I/O patterns
 - Write results to: .rdf/work-output/reviewer-performance.md

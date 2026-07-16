@@ -169,7 +169,7 @@ _deploy_claude_code() {
     local force="$2"
     local deploy_rules="${3:-0}"   # opt-in scoped rules/ symlink (default off)
     local output_dir="${RDF_ADAPTERS}/claude-code/output"
-    local dest_base="${HOME}/.claude"
+    local dest_base="${RDF_TARGET:-${HOME}/.claude}"
 
     # Pre-flight: output must exist and be non-empty
     if [[ ! -d "$output_dir" ]] || [[ -z "$(ls -A "$output_dir" 2>/dev/null)" ]]; then

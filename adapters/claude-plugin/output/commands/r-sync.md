@@ -1,3 +1,8 @@
+---
+description: >
+  You are running the /r-sync canonical source synchronization. This is
+---
+
 You are running the /rdf:r-sync canonical source synchronization. This is
 an RDF-internal command that pulls emergency edits made directly to
 ~/.claude/ back into the rdf canonical source tree.

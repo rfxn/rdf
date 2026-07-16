@@ -1,3 +1,8 @@
+---
+description: >
+  Use when a plan is built and verified and you want to cut a release: preflight, verification, release prep, and publish.
+---
+
 You are running the /rdf:r-ship release workflow. This is a composite
 workflow that verifies readiness, dispatches quality gates, prepares
 release artifacts, and publishes a PR.

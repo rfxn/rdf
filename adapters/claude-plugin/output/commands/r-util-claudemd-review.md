@@ -1,3 +1,8 @@
+---
+description: >
+  Analyze recent conversations to find improvements for CLAUDE.md files,
+---
+
 # /rdf:r-util-claudemd-review — CLAUDE.md Conversation-Driven Review
 
 Analyze recent conversations to find improvements for CLAUDE.md files,

@@ -26,7 +26,7 @@ Run ONE command to gather all state. Resolve `rdf-state.sh` using
 this probe order — use the first path that exists:
 
 1. `~/.rdf/state/rdf-state.sh` — deployed by `rdf generate claude-code`
-2. `/root/admin/work/proj/rdf/state/rdf-state.sh` — canonical install
+2. `<rdf-checkout>/state/rdf-state.sh` — the RDF checkout this deployment was generated from (dev installs only)
 
 ```bash
 bash ~/.rdf/state/rdf-state.sh --full .

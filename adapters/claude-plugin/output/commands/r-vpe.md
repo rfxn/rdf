@@ -1,3 +1,8 @@
+---
+description: >
+  Optional end-to-end pipeline orchestrator. Takes outcome-oriented
+---
+
 # /rdf:r-vpe — Pipeline Orchestrator
 
 Optional end-to-end pipeline orchestrator. Takes outcome-oriented

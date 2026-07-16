@@ -1,3 +1,8 @@
+---
+description: >
+  Verify a falsifiable claim about the current state of the codebase,
+---
+
 # /rdf:r-verify-claim — Evidence Verification Skill
 
 Verify a falsifiable claim about the current state of the codebase,

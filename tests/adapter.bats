@@ -554,3 +554,56 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" -ge 2 ]
 }
+
+# ── Test 36: Codex AGENTS.md command catalog is derived, not fabricated ────────
+# Generate the codex AGENTS.md into a temp dir and assert every command token in
+# the "Available Commands" section maps to a real canonical/commands/*.md file.
+# Expected set is derived from the glob — no hardcoded list.
+
+_generate_codex() {
+    local output_dir="$1"
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; output_dir="$2"
+        RDF_HOME="$rdf_src"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        rdf_profile_init
+        _CDX_ADAPTER_DIR="${RDF_ADAPTERS}/codex"
+        _CDX_OUTPUT_DIR="$output_dir"
+        source "${rdf_src}/adapters/codex/adapter.sh"
+        _CDX_OUTPUT_DIR="$output_dir"
+        cdx_generate_agents_md
+    ' -- "$RDF_SRC" "$output_dir"
+}
+
+@test "codex AGENTS.md command catalog names only existing canonical commands" {
+    output_dir="$(mktemp -d)"
+    _generate_codex "$output_dir"
+    [ -f "$output_dir/AGENTS.md" ]
+
+    # Isolate the Available Commands section, extract /r-* tokens.
+    local section tokens t base
+    section="$(awk '/^## Available Commands/{f=1;next} /^## /{f=0} f' "$output_dir/AGENTS.md")"
+    tokens="$(printf '%s\n' "$section" | grep -oE '/r-[a-z-]+[a-z]' | sort -u)"
+    [ -n "$tokens" ]
+
+    while IFS= read -r t; do
+        base="${t#/}"
+        [ -f "${RDF_SRC}/canonical/commands/${base}.md" ]
+    done <<< "$tokens"
+
+    # Completeness: catalog covers every canonical command (no more, no less).
+    local catalog_count canonical_count
+    catalog_count="$(printf '%s\n' "$tokens" | wc -l)"
+    canonical_count="$(find "${RDF_SRC}/canonical/commands" -maxdepth 1 -name '*.md' | wc -l)"
+    [ "$catalog_count" -eq "$canonical_count" ]
+
+    # No stale RDF-2.0 persona/audit vocabulary from the old fabricated catalog.
+    run grep -E '/(mgr|sys-eng|audit-quick|rel-prep|proj-status|mem-save)' "$output_dir/AGENTS.md"
+    [ "$status" -ne 0 ]
+
+    command rm -rf "$output_dir"
+}

@@ -8,6 +8,7 @@
 
 _CPL_ADAPTER_DIR="${RDF_ADAPTERS}/claude-plugin"
 _CPL_OUTPUT_DIR="${_CPL_ADAPTER_DIR}/output"
+_CPL_SKILL_META="${RDF_ADAPTERS}/agent-skills/skill-meta.json"   # shared intent-trigger source (mirrors cc adapter)
 
 # Rewrite /r-NAME cross-references to /rdf:r-NAME in a command body.
 # Plugin commands are always namespaced by the loader; unrewritten
@@ -42,9 +43,26 @@ _cpl_command_names_longest_first() {
     done | sort -rn | cut -d' ' -f2-
 }
 
+# cpl_generate_command_frontmatter <basename-no-ext> — emit an intent-trigger
+# description: frontmatter block, mirroring cc_generate_command_frontmatter.
+# Trigger comes from the shared agent-skills skill-meta.json; falls back to the
+# canonical body's first non-heading line.
+cpl_generate_command_frontmatter() {
+    local name="$1" desc
+    desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_CPL_SKILL_META" 2>/dev/null || true)"  # missing key/file → empty (falls back to body)
+    if [[ -z "$desc" ]]; then
+        desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "${RDF_CANONICAL}/commands/${name}.md")"
+        [[ -z "$desc" ]] && desc="RDF command: ${name}"
+    fi
+    echo "---"
+    echo "description: >"
+    echo "  ${desc}"
+    echo "---"
+}
+
 # Generate plugin command files: canonical/commands/*.md -> output/commands/
-# with namespace rewrite. No .rdf-hash sidecars — strict plugin validation
-# rejects non-component files in the commands dir.
+# with intent-trigger frontmatter + namespace rewrite of the body. No .rdf-hash
+# sidecars — strict plugin validation rejects non-component files in the dir.
 cpl_generate_commands() {
     local src_dir="${RDF_CANONICAL}/commands"
     local dst_dir="${_CPL_OUTPUT_DIR}/commands"
@@ -56,10 +74,17 @@ cpl_generate_commands() {
         [[ -f "$src_file" ]] || continue
         local basename_f
         basename_f="$(basename "$src_file")"
-        _cpl_rewrite_namespace "$src_file" "${dst_dir}/${basename_f}"
+        local dst_file="${dst_dir}/${basename_f}"
+        _cpl_rewrite_namespace "$src_file" "${dst_file}.body"
+        {
+            cpl_generate_command_frontmatter "${basename_f%.md}"
+            echo ""
+            command cat "${dst_file}.body"
+        } > "$dst_file"
+        command rm -f "${dst_file}.body"
         count=$((count + 1))
     done
-    rdf_log "generated ${count} command files (namespace-rewritten)"
+    rdf_log "generated ${count} command files (intent-trigger frontmatter, namespace-rewritten)"
 }
 
 # Generate plugin agent files with CC YAML frontmatter, no hash sidecars.

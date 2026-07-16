@@ -1,3 +1,8 @@
+---
+description: >
+  Use when you want a full codebase audit: dispatches parallel reviewer and QA passes across the tree.
+---
+
 You are running the /rdf:r-audit full codebase audit. This command
 dispatches multiple reviewer and qa subagents in parallel to scan the
 entire codebase for latent issues, then synthesizes findings into a
@@ -125,7 +130,8 @@ Dispatch reviewer subagent in sentinel mode:
 
 ### 2c. Reviewer — Performance Focus
 Dispatch reviewer subagent in sentinel mode:
-- Focus pass: performance (pass 4)
+- Focus: performance (audit-specific dimension — beyond the standard
+  sentinel passes)
 - Scope: entire codebase with emphasis on hot paths, loops,
   data structure choices, I/O patterns
 - Write results to: .rdf/work-output/reviewer-performance.md

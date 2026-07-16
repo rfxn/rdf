@@ -1,3 +1,8 @@
+---
+description: >
+  Use when a spec is ready and you need an execution-grade, phase-by-phase implementation plan a fresh engineer can run mechanically.
+---
+
 # /rdf:r-plan — Planning Command
 
 Take a spec (or equivalent input) and decompose it into an

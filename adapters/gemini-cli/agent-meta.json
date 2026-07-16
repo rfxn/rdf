@@ -21,6 +21,6 @@
   },
   "reviewer": {
     "name": "rdf-reviewer",
-    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 4-pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r-review."
+    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 2-3 pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r-review."
   }
 }

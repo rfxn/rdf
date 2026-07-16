@@ -358,8 +358,8 @@ flowchart TD
     Scope -->|"scope:docs\nchangelog, README, comments"| G1Only[Gate 1 Only\nEngineer Self-Report]
     Scope -->|"scope:focused\nsingle file, config, one function"| G1G2[Gates 1 + 2\nSelf-Report + QA]
     Scope -->|"scope:multi-file\n2+ files, standard feature/refactor"| G1G2G3L[Gates 1 + 2 + 3-lite\nSelf-Report + QA + Sentinel 2-pass]
-    Scope -->|"scope:cross-cutting\ninstall, CLI, cross-OS, breaking"| G1G2G3F[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
-    Scope -->|"scope:sensitive\nsecurity, shared libs, data migration"| G1G2G3S[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 4-pass]
+    Scope -->|"scope:cross-cutting\ninstall, CLI, cross-OS, breaking"| G1G2G3F[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 3-pass]
+    Scope -->|"scope:sensitive\nsecurity, shared libs, data migration"| G1G2G3S[Gates 1 + 2 + 3-full\nSelf-Report + QA + Sentinel 3-pass]
     Scope -->|"+ CLI/help files"| G4[Add Gate 4\n+ UAT]
 
     G1Only --> Verdict
@@ -394,8 +394,8 @@ flowchart TD
 | `docs` | changelog, README, comments | 1 | engineer (self-report) |
 | `focused` | single file, config, one function | 1 + 2 | engineer + qa |
 | `multi-file` | 2+ files, standard feature/refactor | 1 + 2 + 3-lite | engineer + qa + reviewer (2-pass) |
-| `cross-cutting` | install, CLI, cross-OS, breaking changes | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
-| `sensitive` | security, shared libs, data migration | 1 + 2 + 3-full | engineer + qa + reviewer (4-pass) |
+| `cross-cutting` | install, CLI, cross-OS, breaking changes | 1 + 2 + 3-full | engineer + qa + reviewer (3-pass) |
+| `sensitive` | security, shared libs, data migration | 1 + 2 + 3-full | engineer + qa + reviewer (3-pass) |
 | any + CLI/help files | user-facing output or help text | add Gate 4 | + uat |
 
 ---
@@ -536,10 +536,8 @@ flowchart TD
     P1[Pass 1: Anti-Slop\nnaming, copy-paste, scope creep] --> SOut
     P2[Pass 2: Regression\nbehavior, contracts, exit codes] --> SOut
     P3[Pass 3: Security\ninjection, credentials, eval] --> SOut
-    P4[Pass 4: Performance\nO n2, spawning, redundant I/O] --> SOut
     Mode -->|"--sentinel"| P2
     Mode -->|"--sentinel"| P3
-    Mode -->|"--sentinel"| P4
 
     SOut([Sentinel Report\nMUST-FIX / SHOULD-FIX / INFORMATIONAL])
 
@@ -550,7 +548,6 @@ flowchart TD
     style P1 fill:#9b2c2c,color:#fff
     style P2 fill:#9b2c2c,color:#fff
     style P3 fill:#9b2c2c,color:#fff
-    style P4 fill:#9b2c2c,color:#fff
     style Input fill:#4a5568,color:#fff
     style Mode fill:#2b6cb0,color:#fff
     style COut fill:#975a16,color:#fff
@@ -560,7 +557,7 @@ flowchart TD
 | Mode | Lenses | Focus | Invoked By |
 |------|--------|-------|------------|
 | Challenge | Design, edge cases, alternatives, risk | Specs and plans | planner, `/r-review --challenge` |
-| Sentinel | Anti-slop, regression, security, performance | Diffs | dispatcher, `/r-review --sentinel` |
+| Sentinel | Anti-slop, regression, security | Diffs | dispatcher, `/r-review --sentinel` |
 
 ---
 

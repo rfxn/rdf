@@ -1,3 +1,8 @@
+---
+description: >
+  Archive stale MEMORY.md entries. Detects staleness, identifies completed
+---
+
 Archive stale MEMORY.md entries. Detects staleness, identifies completed
 work ready for archival, and proposes compaction. Preview mode by default
 — only modifies files when user explicitly confirms.

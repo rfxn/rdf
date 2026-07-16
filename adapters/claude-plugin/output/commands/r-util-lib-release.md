@@ -1,3 +1,8 @@
+---
+description: >
+  Shared library release lifecycle. Handles pre-flight checks, release
+---
+
 Shared library release lifecycle. Handles pre-flight checks, release
 preparation, and consumer drift notification.
 

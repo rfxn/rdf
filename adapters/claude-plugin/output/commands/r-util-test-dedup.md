@@ -1,3 +1,8 @@
+---
+description: >
+  Find duplicate, overlapping, tautological, dead, and low-value tests in
+---
+
 Find duplicate, overlapping, tautological, dead, and low-value tests in
 the project's test suite. Read-only static analysis — does not modify
 any files or execute the test suite.

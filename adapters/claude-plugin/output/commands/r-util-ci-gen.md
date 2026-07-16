@@ -1,3 +1,8 @@
+---
+description: >
+  Generate a GitHub Actions CI workflow from the project's test
+---
+
 Generate a GitHub Actions CI workflow from the project's test
 infrastructure. Creates workflow files for user review — does NOT commit.
 

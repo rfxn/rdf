@@ -311,7 +311,7 @@ you: /r-build
 ```
 
 This is the core change — `risk:high` and `type:refactor` triggers
-the full 4-pass sentinel review:
+the full 3-pass sentinel review:
 
 ```markdown
 ### Phase 2 Gates
@@ -320,7 +320,7 @@ the full 4-pass sentinel review:
 |------|-------|--------|--------|
 | G1 | Engineer | PASS | TDD: 5 tests red→green, merged worker matches hit output |
 | G2 | QA | PASS | 495 tests pass (Debian 12), 0 anti-pattern hits |
-| G3-full | Sentinel | PASS | 4-pass, 2 findings (S-001 SHOULD-FIX, S-002 SHOULD-FIX) |
+| G3-full | Sentinel | PASS | 3-pass, 2 findings (S-001 SHOULD-FIX, S-002 SHOULD-FIX) |
 ```
 
 The sentinel found real issues:
@@ -365,14 +365,13 @@ review — this plan has 5 phases (above the 3-phase threshold):
 ### End-of-Plan Sentinel
 
 Scope: `git diff badb200..HEAD` (5 phases, 8 commits, 14 files)
-Depth: full (4-pass)
+Depth: full (3-pass)
 
 | Pass | Findings |
 |------|----------|
 | Anti-slop | 0 |
 | Regression | 0 |
 | Security | 0 |
-| Performance | 0 |
 
 Verdict: **APPROVE**
 
@@ -423,7 +422,7 @@ not the sum:
 ```markdown
 ### Verification Gates
 - [x] **QA**: PASS — 598 tests, 0 failures, shellcheck clean
-- [x] **Sentinel**: APPROVE — 4-pass, 0 MUST-FIX findings
+- [x] **Sentinel**: APPROVE — 3-pass, 0 MUST-FIX findings
 ```
 
 ### Release Prep
@@ -467,7 +466,7 @@ didn't have to think about:
 
 **Gate selection** — The dispatcher read phase metadata (risk, type)
 and auto-selected gate depth. Phase 2 (`risk:high`, `type:refactor`)
-got a full 4-pass sentinel; Phase 4 (`risk:low`, `type:config`) got
+got a full 3-pass sentinel; Phase 4 (`risk:low`, `type:config`) got
 engineer self-report only. The developer never configured this.
 
 **Governance loading** — Each agent received project-specific

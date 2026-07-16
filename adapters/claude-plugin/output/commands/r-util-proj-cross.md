@@ -1,3 +1,8 @@
+---
+description: >
+  Cross-project analysis for rfxn projects. Reads MEMORY.md, PLAN.md,
+---
+
 # /rdf:r-util-proj-cross — Cross-Project Analysis
 
 Cross-project analysis for rfxn projects. Reads MEMORY.md, PLAN.md,

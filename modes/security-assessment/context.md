@@ -85,11 +85,10 @@ scope classification. The reviewer sentinel always runs with security weighting.
 
 ## Reviewer Focus
 
-Modified 4-pass sentinel with security emphasis:
+Modified 3-pass full sentinel with security emphasis:
 1. Anti-slop (standard)
 2. Regression (standard)
-3. **Security** (ELEVATED -- OWASP methodology, findings are blocking)
-4. Performance (standard, but check for DoS vectors)
+3. **Security** (ELEVATED -- OWASP methodology, findings are blocking; include DoS vectors)
 
 Reviewer additionally checks:
 - Every finding includes a source→sink trace or equivalent evidence

@@ -1,3 +1,8 @@
+---
+description: >
+  Measure, score, and report on Claude Code context overhead for this
+---
+
 # /rdf:r-context-audit — Context Weight Audit
 
 Measure, score, and report on Claude Code context overhead for this

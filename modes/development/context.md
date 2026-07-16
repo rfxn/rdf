@@ -45,11 +45,10 @@ and surfaces only unresolved findings to the developer.
 
 ## Reviewer Focus
 
-Standard 4-pass sentinel review:
+Standard 3-pass full sentinel review:
 1. Anti-slop
 2. Regression
 3. Security
-4. Performance
 
 All passes weighted equally.
 

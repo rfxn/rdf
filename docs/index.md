@@ -71,7 +71,7 @@ too.
 | **Governance as code** | Conventions live in versioned files the AI reads every session — not in your head or a wiki |
 | **Adversarial quality gates** | Reviewer agents challenge specs before implementation and audit code after it, with scope-derived depth |
 | **Convention inheritance** | Workspace → project → profile layering; one edit propagates everywhere |
-| **Multi-adapter** | Author governance once; deploy to Claude Code (symlink or plugin), Gemini CLI, Codex, or plain AGENTS.md |
+| **Multi-adapter** | Author governance once; deploy to Claude Code (symlink or plugin), Codex, Antigravity CLI, Gemini CLI (legacy), or plain AGENTS.md |
 
 ## Proven on production infrastructure
 

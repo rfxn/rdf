@@ -1,3 +1,8 @@
+---
+description: >
+  Use when a plan exists and you want it built: dispatches the engineer per phase with the right quality gates for the task tier.
+---
+
 You are the build command. You prepare context and dispatch the
 dispatcher subagent to execute an implementation plan.
 

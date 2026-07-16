@@ -24,3 +24,10 @@ PLAN-*.md
 
 # Active-plan pointer (resolver state)
 .rdf/active-plan*
+
+# Generated adapter output — local-only (regenerate via `rdf generate`).
+# agents-md/ and claude-plugin/ output ARE tracked (release + plugin artifacts).
+adapters/claude-code/output/
+adapters/gemini-cli/output/
+adapters/codex/output/
+adapters/agent-skills/output/

@@ -1,3 +1,8 @@
+---
+description: >
+  Use when starting a new feature, subsystem, or design change: turns an idea into an architecture-grade spec through research-driven dialogue.
+---
+
 # /rdf:r-spec — Design Command
 
 Guide the user from idea to architecture-grade spec through

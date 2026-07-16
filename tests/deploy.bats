@@ -79,6 +79,29 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     ls -d "${FIX_HOME}/.claude/governance".bak-* >/dev/null   # backup exists
 }
 
+@test "deploy claude-code honors RDF_TARGET override" {
+    local out="${FIX_HOME}/adapters/claude-code/output"
+    local target; target="$(mktemp -d)"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; fix_home="$2"; target="$3"
+        HOME="$fix_home"
+        RDF_HOME="$fix_home"
+        RDF_TARGET="$target"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/deploy.sh"
+        cmd_deploy claude-code
+    ' -- "$RDF_SRC" "$FIX_HOME" "$target"
+    [ "$status" -eq 0 ]
+    # Symlinks land under RDF_TARGET, not ~/.claude
+    [ -L "${target}/commands" ]
+    [ "$(readlink "${target}/commands")" = "${out}/commands" ]
+    [ ! -e "${FIX_HOME}/.claude/commands" ]
+    rm -rf "$target"
+}
+
 @test "deploy claude-code skips hooks.json" {
     run _run_deploy "$FIX_HOME"
     [ ! -e "${FIX_HOME}/.claude/hooks.json" ]           # never symlinked (manual merge)

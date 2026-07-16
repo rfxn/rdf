@@ -1,3 +1,8 @@
+---
+description: >
+  Cross-project shared library drift detection. Compares canonical library
+---
+
 Cross-project shared library drift detection. Compares canonical library
 sources against all consumer copies. Report mode by default; optional
 sync mode copies and verifies.

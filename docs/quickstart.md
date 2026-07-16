@@ -47,6 +47,7 @@ rdf: initializing: my-app (profiles=python, version=0.1.0)
 rdf:   created CLAUDE.md (profiles=python, sections=18)
 rdf:   added 5 entries to .git/info/exclude
 rdf:   created .rdf/{governance,work-output,memory,scopes}
+rdf:   created .rdf/docs-level (floor)
 rdf:   copied reference docs from 2 profile(s)
 rdf:   created SECURITY.md
 rdf:   created CONTRIBUTING.md

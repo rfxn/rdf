@@ -1,3 +1,8 @@
+---
+description: >
+  Use to see the project health dashboard: git state, plan progress, and warnings, without changing anything.
+---
+
 # /rdf:r-status — Project Health Dashboard
 
 Display a structured overview of project health: plan progress, phase

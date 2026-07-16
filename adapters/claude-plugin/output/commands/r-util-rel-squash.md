@@ -1,3 +1,8 @@
+---
+description: >
+  Generate a squash plan for the current release branch by grouping
+---
+
 # /rdf:r-util-rel-squash — Release Branch Squash
 
 Generate a squash plan for the current release branch by grouping

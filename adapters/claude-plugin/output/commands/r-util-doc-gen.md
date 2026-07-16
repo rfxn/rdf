@@ -1,3 +1,8 @@
+---
+description: >
+  Generate publication-ready documentation for a specific surface of the
+---
+
 Generate publication-ready documentation for a specific surface of the
 current project. Reads existing content, applies project documentation
 standards from governance, ensures cross-surface consistency, and presents

@@ -1,3 +1,8 @@
+---
+description: >
+  Assess codebase modernization maturity and generate a phased remediation
+---
+
 Assess codebase modernization maturity and generate a phased remediation
 plan. This is a **read-only assessment** — it does NOT modify any project
 files.

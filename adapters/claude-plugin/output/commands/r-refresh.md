@@ -1,3 +1,8 @@
+---
+description: >
+  Use when the codebase has drifted from its governance docs and you want them re-derived from source.
+---
+
 You are running the /rdf:r-refresh governance refresh. This command
 re-scans the codebase and updates governance files to match current
 reality, preserving user modifications.

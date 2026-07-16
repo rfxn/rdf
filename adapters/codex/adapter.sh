@@ -63,46 +63,37 @@ cdx_generate_agents_md() {
     done
     echo "" >> "$dst_file"
 
-    # Section 3: Available Commands
+    # Section 3: Available Commands — derived from canonical/commands/, grouped
+    # into lifecycle (/r-*) and utility (/r-util-*). Never hardcode the catalog:
+    # it drifts silently as commands are added or renamed.
     {
         echo "## Available Commands"
         echo ""
-        echo "Commands are invoked as slash commands (e.g., \`/mgr\`, \`/audit\`)."
+        echo "Commands are invoked as slash commands (e.g., \`/r-spec\`, \`/r-audit\`)."
         echo ""
     } >> "$dst_file"
 
     local cmd_count=0
+    local lifecycle_cmds="" util_cmds=""
     for cmd_file in "${RDF_CANONICAL}/commands"/*.md; do
         [[ -f "$cmd_file" ]] || continue
+        local cmd_name
+        cmd_name="$(basename "$cmd_file" .md)"
+        case "$cmd_name" in
+            r-util-*) util_cmds="${util_cmds:+${util_cmds}, }/${cmd_name}" ;;
+            *)        lifecycle_cmds="${lifecycle_cmds:+${lifecycle_cmds}, }/${cmd_name}" ;;
+        esac
         cmd_count=$((cmd_count + 1))
     done
     echo "Total commands available: ${cmd_count}" >> "$dst_file"
     echo "" >> "$dst_file"
 
-    # Group commands by category
     {
-        echo "### Persona Commands"
-        echo "mgr, sys-eng, sys-qa, sys-uat, po, scope, sys-sentinel,"
-        echo "sys-challenger, sys-ux, sec-eng, fe-qa, fe-uat"
+        echo "### Lifecycle Commands"
+        echo "${lifecycle_cmds}"
         echo ""
-        echo "### Audit Pipeline"
-        echo "audit, audit-quick, audit-delta, audit-compile, audit-condense,"
-        echo "audit-context, audit-plan, audit-feedback, audit-schema,"
-        echo "audit-regression, audit-latent, audit-security, audit-standards,"
-        echo "audit-version, audit-cli, audit-docs, audit-config,"
-        echo "audit-test-coverage, audit-test-exec, audit-install,"
-        echo "audit-build-ci, audit-upgrade, audit-interfaces, audit-modernize"
-        echo ""
-        echo "### Release"
-        echo "rel-prep, rel-ship, rel-merge, rel-notes, rel-chg-dedup,"
-        echo "rel-chg-diff, rel-scrub"
-        echo ""
-        echo "### Project"
-        echo "proj-status, proj-health, proj-cross, proj-cross-audit,"
-        echo "proj-lib-sync, proj-scaffold"
-        echo ""
-        echo "### Memory & State"
-        echo "mem-save, mem-audit, mem-compact, refresh, reload, status"
+        echo "### Utility Commands"
+        echo "${util_cmds}"
         echo ""
     } >> "$dst_file"
 

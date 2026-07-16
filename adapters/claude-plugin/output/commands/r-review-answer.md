@@ -1,3 +1,8 @@
+---
+description: >
+  Route every finding in a sentinel or challenge report to a structured
+---
+
 # /rdf:r-review-answer — Reviewer-Feedback Routing
 
 Route every finding in a sentinel or challenge report to a structured

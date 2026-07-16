@@ -74,11 +74,10 @@ Documentation mode elevates user acceptance testing.
 
 ## Reviewer Focus
 
-Modified 4-pass sentinel with documentation emphasis:
+Modified 3-pass full sentinel with documentation emphasis:
 1. Anti-slop (standard -- no unnecessary verbosity, no filler)
 2. **Regression** (ELEVATED -- do existing docs still match after changes?)
 3. Security (standard -- docs should not expose internal secrets or paths)
-4. Performance (N/A for docs)
 
 Additional documentation-specific checks:
 - Every documented function/option verified against source

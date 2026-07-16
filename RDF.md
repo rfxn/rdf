@@ -6,8 +6,8 @@ Canonical-first convention governance with governance-driven universal agents,
 unified CLI, GitHub-native project management (phase-level tracking with
 initiative/release/phase hierarchy and two-horizon roadmap), and tool-specific
 adapter generation. RDF is the single source of truth for all agent definitions,
-commands, scripts, and governance deployed into Claude Code, Gemini CLI,
-Codex, or AGENTS.md environments.
+commands, scripts, and governance deployed into Claude Code, Codex,
+Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 
 **Version:** see [`VERSION`](VERSION) · [releases](https://github.com/rfxn/rdf/releases)
 **License:** GNU GPL v2
@@ -33,8 +33,8 @@ Codex, or AGENTS.md environments.
 - **Unified CLI:** Single `rdf` dispatcher with lazy-sourced subcommand modules
   (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
   `rdf refresh`, `rdf sync`, `rdf github`).
-- **Not a runtime:** Claude Code / Gemini CLI / Codex IS the runtime. RDF is the
-  governance layer that tells the runtime how to behave.
+- **Not a runtime:** Claude Code / Codex / Antigravity CLI IS the runtime
+  (Gemini CLI legacy). RDF is the governance layer that tells the runtime how to behave.
 - **Plugin is an adapter, not the architecture:** Claude Code plugin structure
   is one delivery mechanism. The canonical source works regardless of tool.
 - **GitHub-native project management:** GitHub Issues + Projects v2 is the durable
@@ -96,7 +96,7 @@ rdf/                                 # Repository root
 |   |-- rdf_common.sh                # Shared init, version, config, cleanup
 |   +-- cmd/                         # Subcommand handlers (sourced, not executed)
 |       |-- deploy.sh                # rdf deploy <claude-code|gemini-cli>
-|       |-- generate.sh              # rdf generate <claude-code|gemini-cli|codex|agents-md|all> [--rules|--lite]
+|       |-- generate.sh              # rdf generate <claude-code|claude-plugin|codex|agent-skills|antigravity|agents-md|gemini-cli|all> [--rules|--lite]
 |       |-- profile.sh               # rdf profile <list|install|remove|status>
 |       |-- init.sh                  # rdf init <path> [--type] [--batch] [--tools] [--github]
 |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
@@ -178,6 +178,7 @@ rdf/                                 # Repository root
 |   |   +-- output/                  # GENERATED + COMMITTED (plugin installs clone the repo)
 |   |-- gemini-cli/
 |   |-- codex/
+|   |-- agent-skills/                # Shared .agents/skills/ (Codex + Antigravity)
 |   +-- agents-md/
 |
 |-- state/
@@ -210,7 +211,7 @@ rdf/                                 # Repository root
 - 37 commands under `/r-` namespace (21 lifecycle + 16 utility)
 - Unified CLI (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
   `rdf refresh`, `rdf sync`, `rdf github`)
-- Tool-specific adapters (Claude Code, Claude Plugin, Gemini CLI, Codex, AGENTS.md)
+- Tool-specific adapters (Claude Code, Claude Plugin, Codex, Agent Skills, Gemini CLI, AGENTS.md)
 - Governance initialization via `/r-init` with profile-based templates
 - GitHub Issues + Projects v2 integration
 - Health checking (`rdf doctor`) with drift detection

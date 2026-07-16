@@ -133,6 +133,15 @@ teardown() {
     [ "$status" -ne 0 ]
 }
 
+@test "plugin commands carry intent-trigger frontmatter" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    # First line is the frontmatter opener, second is the description key.
+    [ "$(head -1 "${_TEST_OUT}/commands/r-example.md")" = "---" ]
+    [ "$(sed -n '2p' "${_TEST_OUT}/commands/r-example.md")" = "description: >" ]
+    # Canonical body is preserved below the frontmatter (not replaced by it).
+    grep -q 'RDF_TEST_MARKER_r_example' "${_TEST_OUT}/commands/r-example.md"
+}
+
 @test "plugin agents carry frontmatter" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     head -1 "${_TEST_OUT}/agents/example.md" | grep -q -- '---'

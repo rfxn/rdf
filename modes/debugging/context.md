@@ -73,11 +73,10 @@ None -- development gates apply. Reviewer checks root-cause quality.
 
 ## Reviewer Focus
 
-Modified 4-pass sentinel with debugging emphasis:
+Modified 3-pass full sentinel with debugging emphasis:
 1. Anti-slop (standard -- no drive-by fixes to unrelated code)
 2. **Regression** (ELEVATED -- does the fix include a test that reproduces the original bug?)
 3. Security (standard -- bugs are often security-adjacent)
-4. Performance (standard)
 
 Reviewer additionally checks:
 - Root cause identified with causal mechanism, not just "it works after this change"

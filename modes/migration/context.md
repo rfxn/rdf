@@ -74,11 +74,10 @@ verification.
 
 ## Reviewer Focus
 
-Modified 4-pass sentinel with migration emphasis:
+Modified 3-pass full sentinel with migration emphasis:
 1. Anti-slop (standard)
-2. **Regression** (ELEVATED -- backward compatibility is critical)
+2. **Regression** (ELEVATED -- backward compatibility is critical; verify no degradation post-migration)
 3. Security (standard -- migration paths are attack surfaces)
-4. Performance (standard -- verify no degradation post-migration)
 
 Reviewer additionally checks:
 - Each planned remediation item traces to verified project usage

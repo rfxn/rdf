@@ -1,3 +1,8 @@
+---
+description: >
+  You are the verify command. You dispatch the QA subagent to run
+---
+
 You are the verify command. You dispatch the QA subagent to run
 verification checks against the current working state or a specified
 scope.

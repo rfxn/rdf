@@ -8,7 +8,7 @@ one of two modes: challenge (spec review) or sentinel (diff review).
 - `--challenge <file>` — review a spec or plan file for design flaws,
   missed edge cases, and simpler alternatives
 - `--sentinel [scope]` — review a diff for anti-slop, regression,
-  security, and performance issues
+  and security issues
 - No flags — defaults to `--sentinel` against current branch diff
 
 ## Protocol

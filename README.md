@@ -8,7 +8,7 @@
 
 **Governance-driven AI development for teams that ship to production.**
 
-RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Gemini CLI, Codex), encoding project conventions, quality gates, and domain expertise into typed agent personas -- so the AI writes code that actually follows your rules.
+RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Codex, Antigravity CLI — plus Gemini CLI legacy), encoding project conventions, quality gates, and domain expertise into typed agent personas -- so the AI writes code that actually follows your rules.
 
 > **Drop it on any repo.** `/r-init` auto-detects your stack and scaffolds governance, quality gates, and typed agent personas -- no rfxn context required. Battle-tested on production security tooling (APF, LMD, BFD), built to generalize. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context-window management. *Issues and PRs welcome -- support is best-effort and community-driven.* **[Quickstart: your repo in 5 minutes ->](docs/quickstart.md)**
 
@@ -46,7 +46,7 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 git clone https://github.com/rfxn/rdf.git && cd rdf
 
 # 2. Generate adapter output for your AI tool
-bin/rdf generate claude-code          # or: codex, antigravity, agent-skills, agents-md, gemini-cli (legacy), all
+bin/rdf generate claude-code          # or: claude-plugin, codex, antigravity, agent-skills, agents-md, gemini-cli (legacy), all
 
 # 3. Deploy (symlinks -- regeneration auto-updates)
 bin/rdf deploy claude-code            # or: bin/rdf deploy gemini-cli
@@ -156,7 +156,7 @@ lifecycle commands only, hooks skipped).
 (condensed single-artifact plan, lighter gates), or `--bugfix`
 (failing-test-first, minimal gates). A 5-line fix is just `/r-plan --bugfix`.
 Tiers only remove ceremony, never safety: security-sensitive changes keep the
-full security review regardless of tier. See `reference/tiers.md`.
+full security review regardless of tier. See `canonical/reference/tiers.md`.
 
 ### 4.2. Design → Ship Pipeline Commands
 
@@ -212,21 +212,23 @@ Commands:
   refresh    Agent-driven governance and state updates
   sync       Pull deployed edits back to canonical sources
   github     GitHub Issues + Projects integration
+  migrate    Migrate project layout from .claude/ + work-output/ to .rdf/
 
 Run 'rdf <command> help' for details.
 ```
 
 | Command | Key Operations |
 |---------|----------------|
-| `rdf generate <target>` | `claude-code`, `codex`, `antigravity`, `agent-skills`, `agents-md`, `gemini-cli` (legacy), `all` |
+| `rdf generate <target>` | `claude-code`, `claude-plugin`, `codex`, `antigravity`, `agent-skills`, `agents-md`, `gemini-cli` (legacy), `all` |
 | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
 | `rdf init <path> [--type] [--tools] [--github]` | Project initialization with governance templates |
-| `rdf doctor [--scope] [--all]` | 7 checks: artifacts, drift, memory, plan, github, sync, content-drift |
+| `rdf doctor [--scope] [--all]` | 11 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, content-drift, doc-stats, readme |
 | `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
+| `rdf migrate [--dry-run] [--all]` | Migrate project layout from `.claude/` + work-output/ to `.rdf/` |
 
 ### 4.5. Exit Codes
 
@@ -276,6 +278,8 @@ frontmatter on every generated command, Codex and Antigravity via the shared
 `gemini-cli` adapter is a **frozen legacy tier** for enterprise Gemini CLI
 users (Gemini CLI stopped serving free/Pro/Ultra tiers on 2026-06-18;
 Antigravity CLI is its successor and converts the generated TOML on import).
+The shared `.agents/skills/` surface is bounded to the 10 lifecycle commands
+(not all 37) — the parity doc lists them.
 Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
 
 ### Profiles + Modes
@@ -337,7 +341,7 @@ The dispatcher auto-derives verification depth from phase content:
 | G3 | Reviewer sentinel (rdf-reviewer) | scope:cross-cutting or scope:sensitive |
 | G4 | UAT (rdf-uat) | User-facing changes |
 
-The reviewer runs 4 adversarial passes: anti-slop, regression, security, performance. Security findings are **MUST-FIX** in security mode.
+The reviewer runs adversarial passes — 2-pass lite (anti-slop, regression) or 3-pass full (adds security). Security findings are **MUST-FIX** in security mode.
 
 ---
 
@@ -375,7 +379,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 *\*Dynamic model routing: dispatcher downgrades engineer to sonnet for `scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet, sentinel stays opus.*
 
-### Scripts (12)
+### Scripts (16)
 
 | Script | Purpose |
 |--------|---------|
@@ -387,6 +391,10 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | color-preview.sh | Terminal color palette preview |
 | test-half-clone.sh | Test harness for half-clone |
 | subagent-stop.sh | Capture agent completion events |
+| precompact-snapshot.sh | PreCompact hook -- snapshot session state before compaction |
+| session-start-context.sh | SessionStart(compact) hook -- re-inject pre-compaction handoff |
+| session-start-inject.sh | SessionStart hook -- inject the lessons ID-index |
+| session-end-capture.sh | SessionEnd hook -- git snapshot to the session journal |
 | pre-commit-validate.sh | Pre-commit lint + anti-pattern greps |
 | post-edit-lint.sh | Post-edit shellcheck on modified files |
 | comment-metrics.sh | Per-file comment cruft metrics for shell source |
@@ -404,7 +412,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 3. **Profiles are expertise, modes are methodology.** Profiles define *what the code is* (shell, Python, frontend). Modes define *how you work* (development, security assessment). They compose independently.
 
-4. **Not a runtime.** Claude Code / Gemini CLI / Codex IS the runtime. RDF is the governance layer that tells the runtime how to behave.
+4. **Not a runtime.** Claude Code / Codex / Antigravity CLI IS the runtime (Gemini CLI legacy). RDF is the governance layer that tells the runtime how to behave.
 
 5. **Convention over configuration.** Project CLAUDE.md > profile defaults > core defaults. The most specific rule always wins.
 
@@ -434,7 +442,7 @@ rdf/
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
 |   |-- commands/                      # 37 commands (/r- namespace)
-|   |-- scripts/                       # 12 hook scripts (bash)
+|   |-- scripts/                       # 16 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
 |   |-- registry.json                  # Machine-readable profile catalog
@@ -461,6 +469,7 @@ rdf/
 |   +-- documentation/                 # Read-then-write accuracy review
 |-- adapters/
 |   |-- claude-code/                   # CC adapter + metadata + hooks
+|   |-- claude-plugin/                 # CC plugin adapter (namespaced /rdf:r-*, committed output)
 |   |-- agent-skills/                  # Shared .agents/skills/ (Codex + Antigravity)
 |   |-- codex/                         # Codex adapter (AGENTS.md)
 |   |-- gemini-cli/                    # Gemini CLI adapter (TOML, legacy tier)

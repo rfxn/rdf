@@ -1,3 +1,8 @@
+---
+description: >
+  AI slop audit. Finds dead code, orphan helpers, noop functions,
+---
+
 AI slop audit. Finds dead code, orphan helpers, noop functions,
 tautological guards, redundant implementations, and over-engineered
 abstractions. Read-only static analysis. Uses a discovery-first protocol

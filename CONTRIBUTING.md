@@ -8,7 +8,7 @@ a **canonical → generated** architecture, so *where* you edit matters.
 ## Where to make changes
 
 RDF is tool-agnostic. Agent and command content is authored once as pure
-markdown and deployed to each harness (Claude Code, Gemini CLI, Codex, …) by a
+markdown and deployed to each harness (Claude Code, Codex, Antigravity CLI, …) by a
 generator. There are two kinds of source:
 
 | You want to change… | Edit here | Then run |

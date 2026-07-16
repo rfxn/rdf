@@ -1,3 +1,8 @@
+---
+description: >
+  Stale memory and contradiction detection. Reads MEMORY.md files and
+---
+
 # /rdf:r-util-mem-audit — Memory Fact-Check
 
 Stale memory and contradiction detection. Reads MEMORY.md files and

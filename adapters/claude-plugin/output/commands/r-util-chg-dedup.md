@@ -1,3 +1,8 @@
+---
+description: >
+  Deduplicate changelog entries for the current version. Scans CHANGELOG
+---
+
 Deduplicate changelog entries for the current version. Scans CHANGELOG
 and CHANGELOG.RELEASE for duplicates, overlapping entries, tracking
 artifacts, fluff, and section proliferation. Report mode by default —

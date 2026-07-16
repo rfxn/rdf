@@ -24,7 +24,7 @@ USER
  │                │
  │                ├─► reviewer  (opus) Adversarial Review — read-only
  │                │                    Challenge mode (pre-impl)
- │                │                    Sentinel mode (post-impl 4-pass)
+ │                │                    Sentinel mode (post-impl 2-3 pass)
  │                │
  │                └─► uat  (sonnet)   User Acceptance — read-only
  │                                    End-user persona, real scenarios
@@ -104,8 +104,8 @@ Adversarial reviewer with two modes:
   edge cases, missing considerations, and simpler alternatives. In Challenge
   mode, falsifiable MUST-FIX assertions require a `/r-verify-claim` probe
   before the finding is emitted.
-- **Sentinel mode** (post-impl): 4-pass code review -- anti-slop,
-  regression, security, performance.
+- **Sentinel mode** (post-impl): 2-pass lite (anti-slop, regression) or
+  3-pass full (adds security) code review.
 
 Read-only -- cannot modify source files. Dispatched by planner,
 dispatcher, or invoked via `/r-review`.
@@ -187,7 +187,7 @@ dispatcher, or invoked via `/r-review`.
 ### Adversarial Review
 ```
 /r-review --challenge PLAN.md    # Pre-implementation challenge
-/r-review --sentinel             # Post-implementation 4-pass review
+/r-review --sentinel             # Post-implementation sentinel review (2-3 pass)
 ```
 
 ### Release a Project
