@@ -6,7 +6,7 @@
       "tier": "full",
       "detect": [],
       "description": "Always active. Commit protocol, verification, security hygiene, dependency management, AI agent discipline",
-      "summary": "governance-template + 3 reference docs"
+      "summary": "governance-template + 5 reference docs"
     },
     "shell": {
       "requires": ["core"],

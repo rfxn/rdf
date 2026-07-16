@@ -110,7 +110,7 @@ with no MEMORY target and `~/.rdf/lessons-learned.md` is within 5 of its
 
 1. Run the deterministic scanner (read-only — never mutates the lessons file):
    ```bash
-   bash state/rdf-lessons.sh scan ~/.rdf/lessons-learned.md
+   bash ~/.rdf/state/rdf-lessons.sh scan ~/.rdf/lessons-learned.md
    ```
    Parse the JSON: `duplicates` (token-Jaccard >=50% pairs, each with a
    `jaccard` score) and `contradictions` (opposing-polarity pairs, 25-49%
@@ -129,7 +129,7 @@ with no MEMORY target and `~/.rdf/lessons-learned.md` is within 5 of its
      contradiction can reinforce the wrong lesson.
 
 3. Apply only gate-approved changes to `~/.rdf/lessons-learned.md`, then
-   rebuild the index (single writer): `bash state/rdf-lessons.sh index`.
+   rebuild the index (single writer): `bash ~/.rdf/state/rdf-lessons.sh index`.
 
 4. Repeat the duplicate pass for `~/.rdf/insights.jsonl` (exact-text and
    token-Jaccard >=50% duplicates only; no contradiction pass on insights).

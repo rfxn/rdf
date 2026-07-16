@@ -31,5 +31,5 @@ unless you request otherwise.
 
 - RDF agents and commands are prompt content, not executable code — but
   the `bin/`, `lib/`, and `state/` shell tooling is in scope.
-- Third-party AI runtimes (Claude Code, Codex, Antigravity CLI, Gemini CLI) are out of
-  scope; report those to their vendors.
+- Third-party AI runtimes (Claude Code, Codex, Antigravity CLI, and Gemini CLI as a
+  legacy tier) are out of scope; report those to their vendors.

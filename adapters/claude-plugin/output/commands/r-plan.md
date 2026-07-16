@@ -56,7 +56,7 @@ Before planning, resolve the task-class tier
 tier semantics and gate caps):
 
 ```bash
-source state/rdf-bus.sh
+source ~/.rdf/state/rdf-bus.sh
 rdf_session_init
 tier="$(rdf_active_tier)"        # inherits the tier /rdf:r-spec set, else full
 ```
@@ -113,7 +113,7 @@ mark its task `in_progress`. After completing, mark `completed`.
 
 If `--resume` (with or without `<path>`) is specified, OR if `rdf_active_plan_path` returns a plan with incomplete phases:
 
-1. Source `state/rdf-bus.sh`; `rdf_session_init`. Read the active plan:
+1. Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. Read the active plan:
    `plan_path="$(rdf_active_plan_path)"`. If `--resume <path>` was given,
    call `rdf_set_active_plan "<path>"` first.
 2. Detect phase completion status:
@@ -585,7 +585,7 @@ The plan is now a tracked artifact and cannot be silently overwritten by a subse
 After committing:
 
 ```bash
-source state/rdf-bus.sh
+source ~/.rdf/state/rdf-bus.sh
 rdf_set_active_plan "$PLAN_FILE"
 ```
 

@@ -21,7 +21,7 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 
 ## Resume Detection
 
-Source `state/rdf-bus.sh` and call `rdf_session_init`. Then look for
+Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`. Then look for
 `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md`. If not found, glob
 `.rdf/work-output/ship-progress-*.md` and present candidates ordered by mtime.
 If exactly one un-suffixed `.rdf/work-output/ship-progress.md` exists (legacy
@@ -48,7 +48,7 @@ Run all three checks and display results as a task list. Each check
 is pass/fail — a checked box means the gate passed.
 
 ### 1a. Plan Completion Check
-- Source `state/rdf-bus.sh`; `rdf_session_init`. Resolve the active
+- Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. Resolve the active
   plan: `plan_path="$(rdf_active_plan_path)"`.
 - Read `$plan_path` — verify ALL phases are marked complete.
 - If any phases are incomplete, report which ones and STOP.
@@ -162,7 +162,7 @@ when `rdf_active_tier` is `bugfix`** (a defect fix does not change the
 architecture) and when the plan File Map cannot be parsed (degrade — never
 block the release).
 
-1. `source state/rdf-bus.sh; tier="$(rdf_active_tier)"`. If `bugfix`, skip.
+1. `source ~/.rdf/state/rdf-bus.sh; tier="$(rdf_active_tier)"`. If `bugfix`, skip.
 2. Read `docs/specs/CURRENT.md` (create with a living-spec header if absent).
 3. Derive an ADDED / MODIFIED / REMOVED delta from the shipped plan's File
    Map (New→ADDED, Modified→MODIFIED, Deleted→REMOVED) plus the changelog
@@ -180,7 +180,7 @@ OpenSpec precedent; this must stay lightweight, never ceremony.
 After the release tag/commit lands, clear the session pointers:
 
 ```bash
-source state/rdf-bus.sh
+source ~/.rdf/state/rdf-bus.sh
 rdf_clear_active_plan
 rdf_clear_active_tier
 ```

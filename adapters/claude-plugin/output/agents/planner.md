@@ -65,7 +65,7 @@ grep -n '^func <name>' <source-file>
 ```
 | call-site-file:line | helper | expected-rc | rc-source |
 |---------------------|--------|-------------|-----------|
-| path/to/caller.sh:42 | rdf_parse_phase_scope | 0=ok, 1=not-found | state/rdf-bus.sh:120 return paths |
+| path/to/caller.sh:42 | rdf_parse_phase_scope | 0=ok, 1=not-found | ~/.rdf/state/rdf-bus.sh:120 return paths |
 ```
 
 **Ambiguity rule:** if the same function name is defined more than once

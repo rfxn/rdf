@@ -177,7 +177,7 @@ Mark task "Refresh state files" as in_progress.
 - Size guard: warn if >= 180 lines
 
 ### 5b. Refresh the Active Plan
-- Source `state/rdf-bus.sh`; `rdf_session_init`; resolve
+- Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`; resolve
   `plan_path="$(rdf_active_plan_path)"`. If empty, skip.
 - Cross-reference `$plan_path` phases against git log.
 - Mark completed phases with commit hash evidence.

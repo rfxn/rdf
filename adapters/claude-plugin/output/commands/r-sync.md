@@ -1,6 +1,6 @@
 ---
 description: >
-  You are running the /r-sync canonical source synchronization. This is
+  You are running the /rdf:r-sync canonical source synchronization. This is
 ---
 
 You are running the /rdf:r-sync canonical source synchronization. This is

@@ -47,7 +47,7 @@ A SessionEnd hook may have precomputed this session's deterministic state.
 `.consumed`. On a hit, parse it, SKIP the `rdf-state.sh --full` re-run, and
 rename the file to `*.consumed`. If no cache is found, run:
 ```bash
-bash state/rdf-state.sh --full .
+bash ~/.rdf/state/rdf-state.sh --full .
 ```
 
 Read `.diff_categories` from the state JSON and format the top-3 summary from
@@ -101,7 +101,7 @@ Record all values for the report.
 
 ### 2. Sync the Plan with Git
 
-Source `state/rdf-bus.sh`; `rdf_session_init`. Resolve the plan:
+Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. Resolve the plan:
 `plan_path="$(rdf_active_plan_path)"`. If empty, skip.
 
 For each phase in `$plan_path`:
@@ -114,7 +114,7 @@ For each phase in `$plan_path`:
   with the commit hash as evidence
 
 **Record spec path:**
-- Source `state/rdf-bus.sh`; `rdf_session_init`. If
+- Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. If
   `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` exists,
   read the `SPEC_PATH`. If not, fall back to glob
   `.rdf/work-output/spec-progress-*.md` (most recent by mtime);
@@ -307,7 +307,7 @@ appending, note it as a warning in the report.
 **Rebuild the lessons index (single writer, F7).** After appending
 (y or auto), run:
 ```bash
-bash state/rdf-lessons.sh index
+bash ~/.rdf/state/rdf-lessons.sh index
 ```
 This rebuilds `~/.rdf/lessons-index.md` AND backfills any missing
 `<!-- id:X -->` markers on lessons bullets (idempotent). This is the

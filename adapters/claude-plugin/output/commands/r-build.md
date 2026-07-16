@@ -1,6 +1,6 @@
 ---
 description: >
-  Use when a plan exists and you want it built: dispatches the engineer per phase with the right quality gates for the task tier.
+  Use when a plan exists and you want it built: dispatches the plan-execution orchestrator (engineer/QA/review gates) per phase at the right tier.
 ---
 
 You are the build command. You prepare context and dispatch the
@@ -24,7 +24,7 @@ Arguments:
 
 ### 1. Locate and Validate the Active Plan
 
-- Source `state/rdf-bus.sh` and call `rdf_session_init`.
+- Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`.
 - `plan_path="$(rdf_active_plan_path)"` — resolves via three-tier
   fallback (session pointer → un-suffixed pointer → root PLAN.md).
 - If `$plan_path` is empty, report error and stop:
@@ -57,7 +57,7 @@ Arguments:
 - **Consistency micro-gate (spec↔plan↔tasks).** After schema validation,
   run the deterministic cross-check:
   ```bash
-  bash state/rdf-consistency.sh check "$plan_path"
+  bash ~/.rdf/state/rdf-consistency.sh check "$plan_path"
   ```
   (If a source spec is known, pass it as the second argument for goal /
   edge-case coverage.) Exit 2 = structural break (File-Map/phase mismatch
@@ -69,7 +69,7 @@ Arguments:
 
   **Escape hatch.** For a rare legitimate structural false-positive (an
   intentional File-Map entry a reviewer approved), re-run with
-  `state/rdf-consistency.sh check --warn-only "$plan_path"` to downgrade
+  `~/.rdf/state/rdf-consistency.sh check --warn-only "$plan_path"` to downgrade
   the exit-2 block to an exit-1 warning. Using `--warn-only` REQUIRES the
   operator to state the reason in the `/rdf:r-build` invocation (e.g.
   `/rdf:r-build --consistency-warn-only "reason: File-Map intentionally lists
@@ -210,7 +210,7 @@ dispatches, quality gates, commit strategy.
 
 ### 6b. Dispatch Parallel Batch
 
-Before any worktree creation, source `state/rdf-bus.sh` and call
+Before any worktree creation, source `~/.rdf/state/rdf-bus.sh` and call
 `rdf_session_init` to ensure `RDF_SESSION_ID` is set. Worktree paths
 and branch names use the full UUID for collision-free identification
 across concurrent sessions on the same repository.
@@ -239,8 +239,14 @@ parallel within each batch):
 
    ```
    wt_git_dir=$(git -C .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} rev-parse --git-dir)
-   command cp state/git-hooks/pre-commit "${wt_git_dir}/hooks/pre-commit"
-   command chmod +x "${wt_git_dir}/hooks/pre-commit"
+   hook_src=~/.rdf/state/git-hooks/pre-commit
+   [[ -f "$hook_src" ]] || hook_src=state/git-hooks/pre-commit  # RDF self-hosting fallback
+   if [[ -f "$hook_src" ]]; then
+       command cp "$hook_src" "${wt_git_dir}/hooks/pre-commit"
+       command chmod +x "${wt_git_dir}/hooks/pre-commit"
+   else
+       echo "warn: pre-commit hook not found (checked ~/.rdf/state and state/); worktree scope guard disabled" >&2
+   fi
    ```
 
    The hook enforces phase scope (Files ∪ Tests-may-touch) at
@@ -300,7 +306,7 @@ After merging all worktrees in a batch, run a batch-level QA check:
 
 **Progress tracking:**
 Write batch progress to `.rdf/work-output/build-progress-${RDF_SESSION_ID}.md`
-(derived via `rdf_scoped_filename` from `state/rdf-bus.sh`):
+(derived via `rdf_scoped_filename` from `~/.rdf/state/rdf-bus.sh`):
   DISPATCH_MODE: parallel
   TOTAL_PHASES: {N}
   TOTAL_BATCHES: {N}

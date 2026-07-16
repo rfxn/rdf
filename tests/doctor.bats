@@ -170,3 +170,51 @@ _run_doc_stats() {
     [[ "$output" == *"deps|OK|jq present"* ]]
     [[ "$output" == *"deps|WARN|jq not found"* ]]
 }
+
+@test "doc-stats FAILs when framework.md command counts drift" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/canonical/reference"
+    touch "$fix/canonical/commands/r-a.md" "$fix/canonical/commands/r-util-b.md"
+    # live: 1 lifecycle, 1 utility; framework.md over-claims lifecycle
+    printf -- '- `/r-{name}` — lifecycle commands (9)\n- `/r-util-{subject}-{verb}` — utility commands (1)\n' \
+        > "$fix/canonical/reference/framework.md"
+    run _run_doc_stats "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-stats|FAIL|framework.md: lifecycle claims 9, actual 1"* ]]
+    [[ "$output" == *"doc-stats|OK|framework.md: utility = 1"* ]]
+    rm -rf "$fix"
+}
+
+# Usage: _run_install_mode <home> <rdf_target-or-empty> — prints _RESULTS rows
+_run_install_mode() {
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; home="$2"; rdf_target="$3"
+        HOME="$home"
+        [ -n "$rdf_target" ] && export RDF_TARGET="$rdf_target"
+        RDF_HOME="$(mktemp -d)"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_install_mode
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$1" "$2"
+}
+
+@test "install-mode symlink probe honors RDF_TARGET override" {
+    local home; home="$(mktemp -d)"
+    local target; target="$(mktemp -d)"
+    ln -s /nonexistent/output "${target}/commands"   # symlink lives under RDF_TARGET
+    # With RDF_TARGET set → the probe finds the symlink → symlink deploy
+    run _run_install_mode "$home" "$target"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"install-mode|OK|symlink deploy"* ]]
+    # Without RDF_TARGET → probe defaults to ~/.claude (absent) → no install
+    run _run_install_mode "$home" ""
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"no user-level RDF install"* ]]
+    rm -rf "$home" "$target"
+}

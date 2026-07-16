@@ -2,7 +2,7 @@
   "_comment": "Maps canonical command basename to an Agent-Skills intent-trigger description. The adapter emits one SKILL.md per key. Reused by the CC command frontmatter (Phase 9). Bounded set — not all 37 commands.",
   "r-spec": "Use when starting a new feature, subsystem, or design change: turns an idea into an architecture-grade spec through research-driven dialogue.",
   "r-plan": "Use when a spec is ready and you need an execution-grade, phase-by-phase implementation plan a fresh engineer can run mechanically.",
-  "r-build": "Use when a plan exists and you want it built: dispatches the engineer per phase with the right quality gates for the task tier.",
+  "r-build": "Use when a plan exists and you want it built: dispatches the plan-execution orchestrator (engineer/QA/review gates) per phase at the right tier.",
   "r-ship": "Use when a plan is built and verified and you want to cut a release: preflight, verification, release prep, and publish.",
   "r-start": "Use at the start of a session to reload project context and show current health, pipeline position, and open work.",
   "r-save": "Use at the end of a session to sync state — plan progress, memory, and the session log.",

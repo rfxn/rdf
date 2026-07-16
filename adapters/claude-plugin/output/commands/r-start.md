@@ -144,7 +144,7 @@ For 3+ signals, use bulleted blockquote:
 Signal priority: Handoff > Spec > VPE > Ship > Build > Plan (in-progress) >
 Plan (pending) > Dispatch (stale).
 
-Signals and their display text (source `state/rdf-bus.sh`; call `rdf_session_init`;
+Signals and their display text (source `~/.rdf/state/rdf-bus.sh`; call `rdf_session_init`;
 `plan_path="$(rdf_active_plan_path)"`; look for the current-session scoped file,
 glob for any session-scoped file if absent, fall back to the legacy un-suffixed
 file with a one-shot import prompt):

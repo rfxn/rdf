@@ -31,7 +31,8 @@ These files are yours. Deleting them removes everything RDF knows.
 ## Third-party AI runtimes
 
 RDF is governance content executed *by* an AI runtime you choose (Claude
-Code, Codex, Antigravity CLI). Your prompts, code, and RDF's governance text
+Code, Codex, Antigravity CLI, and Gemini CLI as a legacy tier). Your
+prompts, code, and RDF's governance text
 are processed by that runtime under its own privacy policy — for Claude
 Code, see [Anthropic's privacy policy](https://www.anthropic.com/legal/privacy).
 RDF does not add any data flow beyond what your chosen runtime already

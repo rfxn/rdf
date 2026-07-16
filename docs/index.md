@@ -92,6 +92,8 @@ RDF governs the development of security tooling running on
 
 - **[Quickstart — your repo in 5 minutes](quickstart)**
 - [Demo walkthrough — a real production change, spec to ship](demo-walkthrough)
+- [Multi-tool parity — Claude Code, Codex, Antigravity (+ Gemini legacy)](multi-tool-parity)
+- [Memory & context — RDF alongside native auto-memory](memory-context)
 - [Full command reference (README)](https://github.com/rfxn/rdf#4-usage)
 - [Roadmap](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
 

@@ -19,7 +19,7 @@ commits) and note that governance is not initialized.
 
 ### 2. Read Plan Progress
 
-Source `state/rdf-bus.sh`; `rdf_session_init`.
+Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`.
 `plan_path="$(rdf_active_plan_path)"`. If empty, display: "No active
 plan. Run /rdf:r-plan to create one."
 
@@ -104,7 +104,7 @@ Show the 4-stage spec-plan-build-ship pipeline position as a table.
 ```
 
 **Detection logic:**
-Source `state/rdf-bus.sh` and call `rdf_session_init`. For each progress file
+Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`. For each progress file
 below, look for the current-session scoped file first, then glob for any
 session-scoped file (other sessions may be in progress), then fall back to
 the legacy un-suffixed file (pre-3.1.0) with a one-shot import prompt.
@@ -123,7 +123,7 @@ the legacy un-suffixed file (pre-3.1.0) with a one-shot import prompt.
   number and total as the artifact. Status: *complete* if all phases
   are complete, *in-progress* if any phase is in-progress or has
   commits, *pending* if no phases have started.
-- **Ship**: source `state/rdf-bus.sh`; `rdf_session_init`. Check for
+- **Ship**: source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. Check for
   `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md`; if absent,
   glob `.rdf/work-output/ship-progress-*.md`. If present, read the
   `STAGE` line for the current stage. Status: *complete* if stage is

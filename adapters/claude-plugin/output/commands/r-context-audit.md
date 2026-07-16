@@ -22,14 +22,14 @@ to catch context creep before it impacts session quality.
 Execute the automated measurement script:
 
 ```bash
-bash rdf/state/context-audit.sh 2>/dev/null
+bash ~/.rdf/state/context-audit.sh 2>/dev/null
 ```
 
 If a baseline file exists at `~/.rdf/context-audit-baseline.json`,
 run with comparison mode:
 
 ```bash
-bash rdf/state/context-audit.sh --baseline ~/.rdf/context-audit-baseline.json 2>/dev/null
+bash ~/.rdf/state/context-audit.sh --baseline ~/.rdf/context-audit-baseline.json 2>/dev/null
 ```
 
 Parse the JSON output. Do NOT make additional file reads or greps —
@@ -38,7 +38,7 @@ the script measures everything.
 Then measure RDF's own always-loaded boot cost:
 
 ```bash
-bash rdf/state/rdf-overhead.sh
+bash ~/.rdf/state/rdf-overhead.sh
 ```
 
 Surface the three deploy figures from its JSON — `default_boot_tokens`
@@ -185,6 +185,6 @@ This audit is designed to run as a recurring health check:
 4. **After /rdf:r-init or /rdf:r-refresh**: Run to verify governance didn't bloat
 5. **Quarterly**: Compare against baseline, update baseline if score improved
 
-The measurement script (`rdf/state/context-audit.sh`) can also be
+The measurement script (`~/.rdf/state/context-audit.sh`) can also be
 called from CI, cron, or other automation — it outputs pure JSON
 with no side effects.

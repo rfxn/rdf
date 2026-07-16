@@ -2006,7 +2006,8 @@ described in Step 2 prose, not a Files entry, since it is gated on Q3.)
 - **Edge cases**: spec §11b "Codex hooks probe unknown → defer", "Wave B native-covered → drop P6"
 - **Regression-case**: N/A — docs cleanup (conditional runtime parts get their own regression case at re-plan time)
 
-- [ ] **Step 1: Remove the phantom `collect-spool.sh` contract** from
+- [x] **Step 1: Remove the phantom `collect-spool.sh` contract** (pulled
+  forward — done in 3.6.2 QA wave) from
   `framework.md:171` (the `collect-spool.sh | .rdf/work-output/spool/*.jsonl |
   5s` table row) — it references code that has never existed in v3. Zero-risk
   documentation cleanup; may be pulled forward into any earlier phase.

@@ -244,7 +244,7 @@ Three call sites consume this rule:
   same union check.
 
 All three derive scope via `rdf_parse_phase_scope` from
-`state/rdf-bus.sh`.
+`~/.rdf/state/rdf-bus.sh`.
 
 **Failure (out of scope):** *"Phase N: file <path> not in **Files:**
 list and not matched by **Tests-may-touch:** glob."*

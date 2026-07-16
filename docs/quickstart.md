@@ -6,8 +6,8 @@ nav_order: 2
 # Quickstart — RDF on Your Repo in 5 Minutes
 
 No rfxn context required. You need `git`, `bash` 4.1+, `jq`, and an AI
-coding runtime (Claude Code, Gemini CLI, or Codex). Examples below use
-Claude Code.
+coding runtime (Claude Code, Codex, or Antigravity CLI (Gemini CLI
+supported as a legacy tier)). Examples below use Claude Code.
 
 ## 1. Install RDF (once per machine)
 

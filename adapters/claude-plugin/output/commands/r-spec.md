@@ -15,7 +15,7 @@ This is the first stage of the spec-plan-build-ship pipeline.
 - No args → start fresh design session
 - GitHub URL (starts with `http`/`https`) → fetch as design seed
 - Issue shorthand (`#` + digits) → `gh issue view {N}` as design seed
-- `--resume` → source `state/rdf-bus.sh`, call `rdf_session_init`, and look for
+- `--resume` → source `~/.rdf/state/rdf-bus.sh`, call `rdf_session_init`, and look for
   `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`. If not found, glob
   `.rdf/work-output/spec-progress-*.md` (other sessions). If exactly one
   un-suffixed `.rdf/work-output/spec-progress.md` exists (legacy from pre-3.1.0),
@@ -45,7 +45,7 @@ tier semantics and gate caps). `/rdf:r-plan`, `/rdf:r-build`, and the dispatcher
 whatever `/rdf:r-spec` records here, so resolve the tier before Discover:
 
 ```bash
-source state/rdf-bus.sh
+source ~/.rdf/state/rdf-bus.sh
 rdf_session_init
 ```
 
@@ -117,7 +117,7 @@ PHASE 3: SPEC         — write formal design document, get it reviewed
 
 ## Resume Protocol
 
-If `--resume` is specified, source `state/rdf-bus.sh`, call `rdf_session_init`,
+If `--resume` is specified, source `~/.rdf/state/rdf-bus.sh`, call `rdf_session_init`,
 and look for `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md`. If not
 found, glob `.rdf/work-output/spec-progress-*.md` and present candidates ordered
 by mtime. If exactly one legacy `.rdf/work-output/spec-progress.md` exists (un-suffixed,

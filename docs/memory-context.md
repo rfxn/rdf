@@ -1,3 +1,8 @@
+---
+title: Memory & Context
+nav_order: 5
+---
+
 # Memory & Context — RDF alongside native auto-memory
 
 RDF 3.4 assumes Claude Code's native auto-memory is present and does not

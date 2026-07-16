@@ -24,7 +24,7 @@ dispatch engineer, qa, uat, and reviewer subagents as needed.
 ## Protocol
 
 ### Load
-- Source `state/rdf-bus.sh`; `rdf_session_init`.
+- Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`.
 - Resolve plan: `plan_path="$(rdf_active_plan_path)"`. Error and stop
   if empty.
 - Read `$plan_path` — identify target phase (argument or next pending)
@@ -37,7 +37,7 @@ dispatch engineer, qa, uat, and reviewer subagents as needed.
   subagent in the dispatch payload so QA can derive the scoped
   result file path:
   `.rdf/work-output/phase-<N>-result-<RDF_SESSION_ID>.md`
-  (See `state/rdf-bus.sh::rdf_scoped_filename`.)
+  (See `~/.rdf/state/rdf-bus.sh::rdf_scoped_filename`.)
 
 ### Execute (one of three modes)
 
@@ -88,7 +88,7 @@ automatically. Older legacy projects may still have a root `PLAN.md`
 resolver returned a legacy path.
 
 ```bash
-source "${PROJECT_ROOT_MAIN}/state/rdf-bus.sh"
+source ~/.rdf/state/rdf-bus.sh
 rdf_session_init
 _main_plan="$(rdf_active_plan_path "$PROJECT_ROOT_MAIN")"
 if [[ -z "$_main_plan" ]]; then
@@ -106,16 +106,24 @@ This sync is one-shot at worktree creation; subsequent operator edits
 to the main-repo plan are not reflected in worktrees. If the operator
 changes the plan mid-build, dispatch must be re-invoked.
 
-**(b) Install the pre-commit hook.**
+**(b) Install the pre-commit hook.** Probe the deployed hook first;
+fall back to `${PROJECT_ROOT_MAIN}/state/` only when RDF builds itself.
 ```bash
 worktree_git_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-dir)
-command cp "${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit" \
-            "${worktree_git_dir}/hooks/pre-commit"
-command chmod +x "${worktree_git_dir}/hooks/pre-commit"
+_hook_src="${HOME}/.rdf/state/git-hooks/pre-commit"
+[[ -f "$_hook_src" ]] || _hook_src="${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit"
+if [[ -f "$_hook_src" ]]; then
+    command cp "$_hook_src" "${worktree_git_dir}/hooks/pre-commit"
+    command chmod +x "${worktree_git_dir}/hooks/pre-commit"
+else
+    echo "dispatcher: pre-commit hook not found (checked ~/.rdf/state and ${PROJECT_ROOT_MAIN}/state); continuing without scope guard" >&2
+fi
 ```
 
-`${PROJECT_ROOT_MAIN}` is the main project root (where `state/`
-lives) — passed in the dispatch payload separately from
+The hook is normally the deployed `~/.rdf/state/git-hooks/pre-commit`
+(written by `rdf generate`); the `${PROJECT_ROOT_MAIN}/state/` copy
+exists only in an RDF checkout. `${PROJECT_ROOT_MAIN}` is the main
+project root — passed in the dispatch payload separately from
 `PROJECT_ROOT` (which is the worktree path).
 
 The hook reads the active plan from the worktree (now synced via step
@@ -137,7 +145,7 @@ layers cite `plan-schema.md` Rule 8.
 
 Procedure:
 
-1. Source `state/rdf-bus.sh`, parse phase scope via the safe read-loop
+1. Source `~/.rdf/state/rdf-bus.sh`, parse phase scope via the safe read-loop
    pattern (NOT `eval` — plan files are committed and may carry shell
    metachars in Files entries that `rdf_parse_phase_scope`'s
    regex-metachar escape does not strip):
@@ -531,7 +539,7 @@ SHOULD-FIX findings — advisory:
 
 INFORMATIONAL findings — logged:
   1. Written to .rdf/work-output/phase-<N>-status-<RDF_SESSION_ID>.md
-     (derived via rdf_scoped_filename from state/rdf-bus.sh).
+     (derived via rdf_scoped_filename from ~/.rdf/state/rdf-bus.sh).
   2. No output to developer unless they read the status file
   3. Available for review but never block, never prompt
 

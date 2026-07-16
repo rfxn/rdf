@@ -38,13 +38,14 @@ Examples:
 USAGE
 }
 
-# Deploy rdf-state.sh and context-audit.sh to ~/.rdf/state/ so /r-start
-# can resolve them without a relative path or find fallback.
+# Deploy state helpers and the worktree pre-commit hook to ~/.rdf/state/
+# so deployed commands/agents can resolve them without a relative path
+# (the RDF-checkout state/ is only present in dev installs).
 _generate_deploy_state_helpers() {
     local state_dst="${HOME}/.rdf/state"
     local _helper src
     command mkdir -p "$state_dst"
-    for _helper in rdf-state.sh context-audit.sh rotate-work-output.sh rdf-bus.sh rdf-consistency.sh rdf-lessons.sh; do
+    for _helper in rdf-state.sh context-audit.sh rdf-overhead.sh rotate-work-output.sh rdf-bus.sh rdf-consistency.sh rdf-lessons.sh; do
         src="${RDF_HOME}/state/${_helper}"
         if [[ -f "$src" ]]; then
             command cp "$src" "${state_dst}/${_helper}"
@@ -54,6 +55,16 @@ _generate_deploy_state_helpers() {
             rdf_warn "state helper not found: ${src} — skipped"
         fi
     done
+
+    local hook_src="${RDF_HOME}/state/git-hooks/pre-commit"
+    if [[ -f "$hook_src" ]]; then
+        command mkdir -p "${state_dst}/git-hooks"
+        command cp "$hook_src" "${state_dst}/git-hooks/pre-commit"
+        command chmod +x "${state_dst}/git-hooks/pre-commit"
+        rdf_log "deployed git hook: ${state_dst}/git-hooks/pre-commit"
+    else
+        rdf_warn "git hook not found: ${hook_src} — skipped"
+    fi
 }
 
 # Source and run a single adapter

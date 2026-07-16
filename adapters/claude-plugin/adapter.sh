@@ -17,10 +17,8 @@ _CPL_SKILL_META="${RDF_ADAPTERS}/agent-skills/skill-meta.json"   # shared intent
 # backtick, (, |, ", ', *; trailing boundary is EOL or any char outside
 # [a-z-]. Names are applied longest-first so /r-example-extra rewrites
 # before /r-example can partially match. POSIX BRE only (macOS CI).
-# Args: $1 = src file, $2 = dst file
-_cpl_rewrite_namespace() {
-    local src="$1"
-    local dst="$2"
+# Apply the /r-NAME -> /rdf:r-NAME rewrite to stdin, emit to stdout.
+_cpl_rewrite_namespace_text() {
     local sed_args=()
     local name
     while IFS= read -r name; do
@@ -30,7 +28,12 @@ _cpl_rewrite_namespace() {
         sed_args+=(-e "s#\([[:space:]\`(|\"'*]\)/${name}\$#\1/rdf:${name}#")
         sed_args+=(-e "s#\([[:space:]\`(|\"'*]\)/${name}\([^a-z-]\)#\1/rdf:${name}\2#g")
     done < <(_cpl_command_names_longest_first)
-    sed "${sed_args[@]}" "$src" > "$dst"
+    sed "${sed_args[@]}"
+}
+
+# Args: $1 = src file, $2 = dst file
+_cpl_rewrite_namespace() {
+    _cpl_rewrite_namespace_text < "$1" > "$2"
 }
 
 # Emit canonical command basenames (no .md), longest name first.
@@ -54,6 +57,9 @@ cpl_generate_command_frontmatter() {
         desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "${RDF_CANONICAL}/commands/${name}.md")"
         [[ -z "$desc" ]] && desc="RDF command: ${name}"
     fi
+    # Plugin commands are namespaced by the loader; the description text must
+    # use /rdf:r-* too or it points at commands that do not exist here.
+    desc="$(printf '%s\n' "$desc" | _cpl_rewrite_namespace_text)"
     echo "---"
     echo "description: >"
     echo "  ${desc}"

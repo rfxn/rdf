@@ -469,11 +469,12 @@ _check_sync() {
         _add_result "sync" "$_OK" "command count matches (${canon_cmds})"
     fi
 
-    # Check symlink health: ~/.claude/* -> output/
+    # Check symlink health: <target>/* -> output/ (honors RDF_TARGET override)
     local link_ok=0
     local link_fail=0
+    local claude_base="${RDF_TARGET:-${HOME}/.claude}"
     for target in commands agents scripts; do
-        local link="${HOME}/.claude/${target}"
+        local link="${claude_base}/${target}"
         if [[ -L "$link" ]]; then
             local link_dest
             link_dest="$(rdf_canonical_path "$link")"
@@ -765,6 +766,19 @@ _check_doc_stats() {
         _doc_stat_cmp "RDF.md" "utility"   "$rdf_util"  "$util_cmds"
     fi
 
+    # canonical/reference/framework.md command-naming counts:
+    # "lifecycle commands (N)" / "utility commands (M)"
+    local fw="${canonical_dir}/reference/framework.md"
+    if [[ -f "$fw" ]]; then
+        local fw_life="" fw_util="" fwline
+        while IFS= read -r fwline; do
+            [[ "$fwline" =~ lifecycle\ commands\ \(([0-9]+)\) ]] && fw_life="${BASH_REMATCH[1]}"
+            [[ "$fwline" =~ utility\ commands\ \(([0-9]+)\) ]] && fw_util="${BASH_REMATCH[1]}"
+        done < <(grep -E '(lifecycle|utility) commands \([0-9]+\)' "$fw")
+        _doc_stat_cmp "framework.md" "lifecycle" "$fw_life" "$life_cmds"
+        _doc_stat_cmp "framework.md" "utility"   "$fw_util" "$util_cmds"
+    fi
+
     # docs/index.md banner: "A agents · B commands · C profiles · D adapters · E modes"
     local idx="${path}/docs/index.md"
     if [[ -f "$idx" ]]; then
@@ -812,7 +826,7 @@ _check_install_mode() {
     local symlink_mode=0
     local plugin_mode=0
 
-    [[ -L "${HOME}/.claude/commands" ]] && symlink_mode=1
+    [[ -L "${RDF_TARGET:-${HOME}/.claude}/commands" ]] && symlink_mode=1
     if [[ -f "$manifest" ]] \
         && jq -e '.plugins | has("rdf@rdf")' "$manifest" >/dev/null 2>&1; then  # absent or malformed manifest = not plugin-installed
         plugin_mode=1

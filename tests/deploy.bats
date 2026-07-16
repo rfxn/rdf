@@ -142,3 +142,25 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -ne 0 ]                                           # trigger stripped (absent)
     rm -rf "$home"
 }
+
+@test "generate deploys state helpers + pre-commit hook to ~/.rdf/state" {
+    # RDF_HOME is the real source (helpers + git-hooks live there); HOME is a
+    # throwaway so the deploy lands under a temp ~/.rdf/state, never the dev's.
+    local home; home="$(mktemp -d)"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; fix_home="$2"
+        HOME="$fix_home"
+        RDF_HOME="$rdf_src"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/generate.sh"
+        _generate_deploy_state_helpers
+    ' -- "$RDF_SRC" "$home"
+    [ "$status" -eq 0 ]
+    [ -x "${home}/.rdf/state/rdf-bus.sh" ]
+    [ -x "${home}/.rdf/state/rdf-overhead.sh" ]
+    [ -x "${home}/.rdf/state/git-hooks/pre-commit" ]
+    rm -rf "$home"
+}

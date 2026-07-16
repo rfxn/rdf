@@ -1,4 +1,4 @@
-# rfxn Development Framework (RDF) v3.1
+# rfxn Development Framework (RDF) — v3
 
 Artifact taxonomy, handoff model, and session continuity protocol for all
 rfxn projects. Authoritative reference for what each artifact is, where it
@@ -86,7 +86,7 @@ Agent work products created during a session. Structured files in
 | `uat-phase-N-verdict-<SESSION_ID>.md` | uat | dispatcher |
 
 **Session Identity (`RDF_SESSION_ID`):** Set by the `rdf_session_init`
-helper in `state/rdf-bus.sh`. UUIDv7 string. Subagents inherit from
+helper in `~/.rdf/state/rdf-bus.sh`. UUIDv7 string. Subagents inherit from
 parent (env passthrough). Used as filename suffix for transient state
 files to prevent collisions between concurrent sessions on the same
 repository. Helper functions:
@@ -154,8 +154,8 @@ Agent personas, commands, hooks, and scripts that define the pipeline.
 **Agent naming:** `rdf-{role}` (e.g., `rdf-engineer`, `rdf-qa`)
 
 **Command naming:**
-- `/r-{name}` — lifecycle commands (17)
-- `/r-util-{subject}-{verb}` — utility commands (14)
+- `/r-{name}` — lifecycle commands (21)
+- `/r-util-{subject}-{verb}` — utility commands (16)
 
 ### Category 5: Integration (monitoring)
 
@@ -168,7 +168,6 @@ Contracts between the framework and the monitoring system.
 | collect-plans.sh | PLAN*.md phase status | 30s |
 | collect-audits.sh | AUDIT.md severity counts | 60s |
 | collect-agents.sh | .rdf/work-output/*.md status | 3s |
-| collect-spool.sh | .rdf/work-output/spool/*.jsonl | 5s |
 
 ### Category 6: Archive (historical)
 

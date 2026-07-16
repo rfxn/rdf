@@ -80,6 +80,6 @@ When reconstructing state, use these sources in priority order:
 | agent-feed.log | Forensic | Agent completion events |
 | .rdf/work-output/*.md | Forensic | In-flight state at session end |
 
-Active plan is resolved via `rdf_active_plan_path` (state/rdf-bus.sh) —
+Active plan is resolved via `rdf_active_plan_path` (~/.rdf/state/rdf-bus.sh) —
 three-tier fallback: session pointer → un-suffixed pointer → root
 PLAN.md legacy.

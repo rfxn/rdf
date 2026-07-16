@@ -1,3 +1,8 @@
+---
+title: Multi-Tool Parity
+nav_order: 4
+---
+
 # Multi-Tool Parity
 
 RDF emits governance, commands, and skills for several AI coding tools from one

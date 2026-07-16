@@ -41,7 +41,7 @@ TaskCreate: "Ship: release workflow"
 
 ## Resume Protocol
 
-If --resume is specified, source `state/rdf-bus.sh`, call
+If --resume is specified, source `~/.rdf/state/rdf-bus.sh`, call
 `rdf_session_init`, and look for
 `.rdf/work-output/vpe-progress-${RDF_SESSION_ID}.md`. If not
 found, glob `.rdf/work-output/vpe-progress-*.md` and present
