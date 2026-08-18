@@ -55,10 +55,10 @@ bin/rdf generate claude-code && bin/rdf deploy claude-code
 bin/rdf init ~/projects/my-app     # auto-detects your stack
 ```
 
-Hooks are never auto-installed in either mode — merge
-`adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json`
-manually (see `rdf deploy help`); hooks and the status line also require
-`jq` on your PATH.
+Hooks auto-register on the plugin install; the symlink deploy requires a
+manual merge of `adapters/claude-code/hooks/hooks.json` into
+`~/.claude/settings.json` (see `rdf deploy help`). Hooks and the status
+line require `jq` on your PATH.
 Context cost is published and CI-guarded: the default deploy adds ~0.1K
 always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
 `rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).

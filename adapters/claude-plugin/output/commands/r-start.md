@@ -30,7 +30,7 @@ Run /clear to reset conversation context before loading fresh state.
 Run ONE command to gather all state. Resolve `rdf-state.sh` using
 this probe order — use the first path that exists:
 
-1. `~/.rdf/state/rdf-state.sh` — deployed by `rdf generate claude-code`
+1. `~/.rdf/state/rdf-state.sh` — delivered by `rdf deploy claude-code` (checkout) or the plugin SessionStart bootstrap
 2. `<rdf-checkout>/state/rdf-state.sh` — the RDF checkout this deployment was generated from (dev installs only)
 
 ```bash

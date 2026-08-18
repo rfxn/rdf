@@ -684,9 +684,11 @@ _check_catalogs() {
             jq -e --arg a "$b" 'has($a)' "$agent_meta" >/dev/null 2>&1 \
                 || missing="${missing:+${missing}, }${b}"   # jq -e false/parse-fail both count as missing
         done
+        # Orphan scan considers only agent-shaped entries (object with .name) —
+        # structural keys (nested command metadata, _-prefixed) are not agents.
         while IFS= read -r b; do
             [[ -f "${agents_dir}/${b}.md" ]] || orphans="${orphans:+${orphans}, }${b}"
-        done < <(jq -r 'keys[]' "$agent_meta" 2>/dev/null)  # unparseable meta → empty list (missing loop already flagged)
+        done < <(jq -r 'to_entries[] | select((.key | startswith("_") | not) and (.value | type == "object" and has("name"))) | .key' "$agent_meta" 2>/dev/null)  # unparseable meta → empty list (missing loop already flagged)
         if [[ -n "$missing" ]]; then
             _add_result "catalogs" "$_FAIL" "agent-meta.json missing agents: ${missing} — rdf generate will refuse"
         else
@@ -700,7 +702,7 @@ _check_catalogs() {
         orphans=""
         while IFS= read -r b; do
             [[ -f "${RDF_CANONICAL}/commands/${b}.md" ]] || orphans="${orphans:+${orphans}, }${b}"
-        done < <(jq -r 'keys[]' "$skill_meta" 2>/dev/null)  # unparseable meta → empty list, WARN below not triggered
+        done < <(jq -r 'keys[] | select(startswith("_") | not)' "$skill_meta" 2>/dev/null)  # _-prefixed = schema docs, not commands; unparseable meta → empty list
         if [[ -n "$orphans" ]]; then
             _add_result "catalogs" "$_WARN" "skill-meta.json orphan entries (no canonical command): ${orphans}"
         else
@@ -716,7 +718,7 @@ _check_catalogs() {
 # class); absent → WARN with remediation.
 _check_state_helpers() {
     local state_dst="${HOME}/.rdf/state"
-    local src dst b stale="" absent="" foreign=""
+    local src dst b stale="" absent="" foreign="" has_copy=0
     for src in "${RDF_HOME}/state/"*.sh; do
         [[ -f "$src" ]] || continue
         b="$(command basename "$src")"
@@ -725,6 +727,7 @@ _check_state_helpers() {
             [[ "$(rdf_canonical_path "$dst")" == "$(rdf_canonical_path "$src")" ]] \
                 || foreign="${foreign:+${foreign}, }${b}"
         elif [[ -f "$dst" ]]; then
+            has_copy=1
             [[ "$(rdf_hash_stdin < "$dst")" == "$(rdf_hash_stdin < "$src")" ]] \
                 || stale="${stale:+${stale}, }${b}"
         else
@@ -732,16 +735,18 @@ _check_state_helpers() {
         fi
     done
     if [[ -n "$stale" ]]; then
-        _add_result "state-helpers" "$_FAIL" "stale deployed copies: ${stale} — re-run 'rdf deploy claude-code' (checkout) or restart your session (plugin)"
+        _add_result "state-helpers" "$_FAIL" "stale deployed copies: ${stale} — run 'rdf deploy --force claude-code' (checkout; backs up your copies) or restart your session (plugin)"
     fi
     [[ -n "$foreign" ]] && _add_result "state-helpers" "$_WARN" "symlinks point outside this checkout: ${foreign}"
     [[ -n "$absent" ]] && _add_result "state-helpers" "$_WARN" "helpers not deployed: ${absent} — run 'rdf deploy claude-code'"
     if [[ -z "$stale" && -z "$foreign" && -z "$absent" ]]; then
         _add_result "state-helpers" "$_OK" "all state helpers current"
     fi
-    if [[ -f "${state_dst}/.rdf-version" ]] \
+    # Stamp comparison only means something while bootstrap copies exist —
+    # deploy retires the stamps when symlinks take ownership.
+    if [[ "$has_copy" -eq 1 && -f "${state_dst}/.rdf-version" ]] \
         && [[ "$(command cat "${state_dst}/.rdf-version")" != "$RDF_VERSION" ]]; then
-        _add_result "state-helpers" "$_WARN" "bootstrap stamp $(command cat "${state_dst}/.rdf-version") != checkout ${RDF_VERSION}"
+        _add_result "state-helpers" "$_WARN" "bootstrap stamp $(command cat "${state_dst}/.rdf-version") != checkout ${RDF_VERSION} — restart your session to re-bootstrap"
     fi
     return 0
 }

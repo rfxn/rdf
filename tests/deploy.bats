@@ -171,19 +171,33 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
 }
 
 @test "generate claude-code writes nothing under HOME" {
-    local home; home="$(mktemp -d)"
+    # A REAL generation run against a fixture checkout: the contract is that
+    # cmd_generate touches only adapters/<t>/output, never $HOME.
+    local fix home; fix="$(mktemp -d)"; home="$(mktemp -d)"
+    mkdir -p "${fix}/canonical/agents" "${fix}/canonical/commands" \
+             "${fix}/canonical/scripts" "${fix}/adapters/claude-code/hooks" \
+             "${fix}/adapters/agent-skills" "${fix}/profiles"
+    printf 'body\n' > "${fix}/canonical/agents/ghost.md"
+    printf 'desc\n' > "${fix}/canonical/commands/r-x.md"
+    printf '{"ghost":{"name":"g","description":"d","model":"sonnet"}}\n' \
+        > "${fix}/adapters/claude-code/agent-meta.json"
+    printf '{}\n' > "${fix}/adapters/agent-skills/skill-meta.json"
+    printf '{"hooks":{}}\n' > "${fix}/adapters/claude-code/hooks/hooks.json"
+    cp "$RDF_SRC/adapters/claude-code/adapter.sh" "${fix}/adapters/claude-code/"
     run bash -c '
         set -euo pipefail
-        rdf_src="$1"; fix_home="$2"
-        HOME="$fix_home"; RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"
+        rdf_src="$1"; fix="$2"; fix_home="$3"
+        HOME="$fix_home"
+        RDF_HOME="$fix"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
         source "${rdf_src}/lib/rdf_common.sh"; rdf_init
         source "${rdf_src}/lib/cmd/generate.sh"
-        type _generate_deploy_state_helpers 2>/dev/null && exit 99
-        exit 0
-    ' -- "$RDF_SRC" "$home"
-    [ "$status" -eq 0 ]                                    # function fully removed
-    [ -z "$(find "$home" -mindepth 1 2>/dev/null)" ]       # HOME untouched
-    rm -rf "$home"
+        cmd_generate claude-code
+    ' -- "$RDF_SRC" "$fix" "$home"
+    [ "$status" -eq 0 ]
+    [ -f "${fix}/adapters/claude-code/output/agents/ghost.md" ]   # generation actually ran
+    [ -z "$(find "$home" -mindepth 1 2>/dev/null)" ]              # HOME untouched
+    [ "$(grep -c '^_generate_deploy_state_helpers()' "$RDF_SRC/lib/cmd/generate.sh")" = "0" ]
+    rm -rf "$fix" "$home"
 }
 
 @test "deploy --dry-run logs helper symlinks without writing" {

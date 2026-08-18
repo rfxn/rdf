@@ -28,7 +28,7 @@ else
             _rdf_home="${_link%/adapters/*}"
         elif [[ -f "${HOME}/.rdf/state/.rdf-source" ]] \
             && _src="$(command cat "${HOME}/.rdf/state/.rdf-source")" \
-            && [[ -d "${_src}/adapters/claude-code" ]]; then
+            && [[ -d "${_src}/adapters/claude-code/output" ]]; then
             _rdf_home="$_src"   # plugin install: bootstrap stamps the source root
         else
             echo "rdf-overhead: deploy symlink absent — rules/lite figures may be inaccurate" >&2

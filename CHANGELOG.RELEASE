@@ -1,4 +1,4 @@
-# RDF 3.6.3 Release Notes
+# RDF Release Notes
 
 ## Unreleased
 
@@ -8,7 +8,7 @@
       (version-stamped) — the full pipeline now runs on the plugin tier
 [New] doctor scopes: catalogs (agent/skill-meta integrity), state-helpers
       (stale-copy FAIL) — 13 checks
-[New] tests: strip/sync/bootstrap suites + deploy/doctor coverage (222 → 244)
+[New] tests: strip/sync/bootstrap suites + deploy/doctor coverage (222 → 246)
 
 -- Bug Fixes --
 
@@ -19,6 +19,9 @@
 
 [Change] one shared frontmatter-strip (rdf_strip_frontmatter) for sync +
          doctor; generation fails when agent-meta.json misses an agent
+[Change] upgrade note: run 'rdf deploy claude-code' once after updating a
+         checkout install — generate no longer refreshes ~/.rdf/state; add
+         --force if your deployed copies differ from source (backed up first)
 [Change] state-helper delivery moved from generate (copy) to deploy
          (per-file symlinks, auto-migrating identical legacy copies);
          generate no longer writes under $HOME

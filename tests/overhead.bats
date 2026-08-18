@@ -162,6 +162,34 @@ _nbytes() {
     grep -q 'deploy symlink absent' "$errfile"                   # warning surfaced on stderr
 }
 
+@test "deployed copy resolves a checkout-shaped root via the .rdf-source stamp" {
+    local checkout="$TEST_TMP/plugroot"
+    local out="$checkout/adapters/claude-code/output"
+    mkdir -p "$out/commands" "$out/rules" "$checkout/profiles/lite"
+    _nbytes "$out/rules/core.md" 800 x                            # 200 tokens
+    _nbytes "$checkout/profiles/lite/governance-lite.md" 400 y    # 100 tokens
+    mkdir -p "$HOME/.rdf/state" "$HOME/.claude"                   # no deploy symlink
+    cp "$OVERHEAD" "$HOME/.rdf/state/rdf-overhead.sh"
+    printf '%s\n' "$checkout" > "$HOME/.rdf/state/.rdf-source"
+    local errfile="$TEST_TMP/err"
+    run bash -c "env -u RDF_HOME bash '$HOME/.rdf/state/rdf-overhead.sh' 2>'$errfile'"
+    [ "$status" -eq 0 ]
+    [ ! -s "$errfile" ]                                           # resolved via stamp: no warning
+    [ "$(echo "$output" | jq -r .breakdown.core_governance_rule)" -eq 200 ]
+}
+
+@test ".rdf-source pointing at an output-less root still warns (guard parity)" {
+    local badroot="$TEST_TMP/badroot"
+    mkdir -p "$badroot/adapters/claude-code"                      # marketplace shape: no output/
+    mkdir -p "$HOME/.rdf/state" "$HOME/.claude"
+    cp "$OVERHEAD" "$HOME/.rdf/state/rdf-overhead.sh"
+    printf '%s\n' "$badroot" > "$HOME/.rdf/state/.rdf-source"
+    local errfile="$TEST_TMP/err"
+    run bash -c "env -u RDF_HOME bash '$HOME/.rdf/state/rdf-overhead.sh' 2>'$errfile'"
+    [ "$status" -eq 0 ]
+    grep -q 'deploy symlink absent' "$errfile"                    # disclosed degradation, not silent zeros
+}
+
 @test "published README default figure is within tolerance of measurement (drift guard)" {
     local measured published_k meas_k ok
     measured="$(bash "$OVERHEAD" | jq -r .default_boot_tokens)"   # cap-derived, deterministic

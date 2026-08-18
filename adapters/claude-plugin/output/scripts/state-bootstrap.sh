@@ -10,7 +10,9 @@ trap 'exit 0' EXIT   # SessionStart errors must not disrupt startup — force ex
 root="${0%/adapters/*}"
 [[ -d "${root}/state" && -f "${root}/VERSION" ]] || exit 0
 
-state_dst="${HOME:-/tmp}/.rdf/state"
+# Hard-require a real HOME — a /tmp fallback would put executed code in a world-writable path.
+[[ -n "${HOME:-}" && -d "${HOME}" ]] || exit 0
+state_dst="${HOME}/.rdf/state"
 
 # A symlinked helper means a checkout deploy owns this dir — never overwrite.
 [[ -L "${state_dst}/rdf-bus.sh" ]] && exit 0
@@ -33,6 +35,8 @@ if [[ -f "${root}/state/git-hooks/pre-commit" && ! -L "${state_dst}/git-hooks/pr
     command cp "${root}/state/git-hooks/pre-commit" "${state_dst}/git-hooks/pre-commit"
     command chmod +x "${state_dst}/git-hooks/pre-commit"
 fi
+# A planted symlink must not redirect the stamp writes.
+[[ -L "${state_dst}/.rdf-version" || -L "${state_dst}/.rdf-source" ]] && exit 0
 printf '%s\n' "$version" > "${state_dst}/.rdf-version"
 printf '%s\n' "$root" > "${state_dst}/.rdf-source"
 exit 0

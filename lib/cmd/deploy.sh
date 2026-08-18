@@ -167,31 +167,37 @@ _deploy_copy_skip() {
 # no hard-coded list). The dir itself stays real: handoff/ inside it is a
 # runtime write target. Helpers are per-user, so the destination is always
 # $HOME-scoped and does not follow RDF_TARGET.
+# Symlink one helper, migrating a byte-identical legacy copy without --force;
+# differing real files keep _deploy_symlink's skip-with-warn (--force to replace).
+_deploy_state_link() {
+    local src="$1" dst="$2" dry_run="$3" force="$4"
+    if [[ -f "$dst" && ! -L "$dst" ]] && diff -q "$src" "$dst" >/dev/null 2>&1; then  # identical = machine-managed copy, safe to replace
+        if [[ $dry_run -eq 1 ]]; then
+            rdf_log "[dry-run] would migrate identical copy: ${dst} -> ${src}"
+            _DEPLOY_OK=$((_DEPLOY_OK + 1))
+            return 0
+        fi
+        command rm -f "$dst"
+    fi
+    _deploy_symlink "$src" "$dst" "$dry_run" "$force"
+}
+
 _deploy_state_helpers() {
     local dry_run="$1"
     local force="$2"
     local state_dst="${HOME}/.rdf/state"
-    local src dst
+    local src
     for src in "${RDF_HOME}/state/"*.sh; do
         [[ -f "$src" ]] || continue
-        dst="${state_dst}/$(basename "$src")"
-        # Migration pre-step (NEW, not _deploy_symlink semantics): a real file
-        # byte-identical to source is our own old copy-deploy artifact —
-        # remove it so the symlink lands without --force. Differing files
-        # fall through to _deploy_symlink's skip-with-warn.
-        if [[ -f "$dst" && ! -L "$dst" ]] && diff -q "$src" "$dst" >/dev/null 2>&1; then  # identical = machine-managed copy, safe to replace
-            [[ $dry_run -eq 1 ]] || command rm -f "$dst"
-        fi
-        _deploy_symlink "$src" "$dst" "$dry_run" "$force"
+        _deploy_state_link "$src" "${state_dst}/$(command basename "$src")" "$dry_run" "$force"
     done
     src="${RDF_HOME}/state/git-hooks/pre-commit"
     if [[ -f "$src" ]]; then
-        dst="${state_dst}/git-hooks/pre-commit"
-        if [[ -f "$dst" && ! -L "$dst" ]] && diff -q "$src" "$dst" >/dev/null 2>&1; then  # same migration rule
-            [[ $dry_run -eq 1 ]] || command rm -f "$dst"
-        fi
-        _deploy_symlink "$src" "$dst" "$dry_run" "$force"
+        _deploy_state_link "$src" "${state_dst}/git-hooks/pre-commit" "$dry_run" "$force"
     fi
+    # Symlink delivery supersedes plugin-bootstrap copies — retire the stamps.
+    [[ $dry_run -eq 1 ]] || command rm -f "${state_dst}/.rdf-version" "${state_dst}/.rdf-source"
+    return 0
 }
 
 # Deploy Claude Code adapter output to ~/.claude/

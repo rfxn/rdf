@@ -8,7 +8,7 @@ if [[ -n "${RDF_STATE_DIR:-}" && -f "${RDF_STATE_DIR}/rdf-bus.sh" ]]; then
     # shellcheck source=/dev/null
     source "${RDF_STATE_DIR}/rdf-bus.sh"
 else
-    rdf_die "state/rdf-bus.sh not found (RDF_STATE_DIR=${RDF_STATE_DIR:-<unset>}) — run 'rdf generate <adapter>' to deploy state helpers"
+    rdf_die "state/rdf-bus.sh not found (RDF_STATE_DIR=${RDF_STATE_DIR:-<unset>}) — broken checkout; state helpers deploy via 'rdf deploy claude-code' or the plugin session bootstrap"
 fi
 
 _refresh_usage() {

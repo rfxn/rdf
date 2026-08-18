@@ -44,9 +44,9 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 #     r-status/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) run
 #     degraded only before the first session restart after install — see
 #     docs/multi-tool-parity.md.
-#   Hooks are never auto-installed (either mode): merge adapters/claude-code/
-#     hooks/hooks.json into ~/.claude/settings.json (see 'rdf deploy help');
-#     hooks + status line also need jq on PATH.
+#   Hooks auto-register on this path — plugin.json declares them; no manual
+#     merge. Hooks + status line need jq on PATH. (Only the symlink deploy
+#     below requires the manual hooks.json merge.)
 
 # ── Option B: symlink deploy (contributor/power mode — bare /r-*) ──
 # 1. Clone
