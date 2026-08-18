@@ -11,7 +11,7 @@ Usage: rdf deploy [options] <target>
 Deploy generated adapter output to its tool-specific destination.
 
 Targets:
-  claude-code    Deploy to ~/.claude/ (agents, commands, scripts, governance)
+  claude-code    Deploy to ~/.claude/ (agents, commands, scripts, governance) + ~/.rdf/state helpers
   gemini-cli     Deploy to ~/.gemini/ (agents, commands, GEMINI.md)
   codex          Deploy to ~/.codex/ + project root (requires --project-root)
   agent-skills   Deploy .agents/skills/ into a workspace root (--project-root, default CWD)
@@ -163,6 +163,37 @@ _deploy_copy_skip() {
     fi
 }
 
+# Deploy state helpers as per-file symlinks into ~/.rdf/state/ (glob-driven —
+# no hard-coded list). The dir itself stays real: handoff/ inside it is a
+# runtime write target. Helpers are per-user, so the destination is always
+# $HOME-scoped and does not follow RDF_TARGET.
+_deploy_state_helpers() {
+    local dry_run="$1"
+    local force="$2"
+    local state_dst="${HOME}/.rdf/state"
+    local src dst
+    for src in "${RDF_HOME}/state/"*.sh; do
+        [[ -f "$src" ]] || continue
+        dst="${state_dst}/$(basename "$src")"
+        # Migration pre-step (NEW, not _deploy_symlink semantics): a real file
+        # byte-identical to source is our own old copy-deploy artifact —
+        # remove it so the symlink lands without --force. Differing files
+        # fall through to _deploy_symlink's skip-with-warn.
+        if [[ -f "$dst" && ! -L "$dst" ]] && diff -q "$src" "$dst" >/dev/null 2>&1; then  # identical = machine-managed copy, safe to replace
+            [[ $dry_run -eq 1 ]] || command rm -f "$dst"
+        fi
+        _deploy_symlink "$src" "$dst" "$dry_run" "$force"
+    done
+    src="${RDF_HOME}/state/git-hooks/pre-commit"
+    if [[ -f "$src" ]]; then
+        dst="${state_dst}/git-hooks/pre-commit"
+        if [[ -f "$dst" && ! -L "$dst" ]] && diff -q "$src" "$dst" >/dev/null 2>&1; then  # same migration rule
+            [[ $dry_run -eq 1 ]] || command rm -f "$dst"
+        fi
+        _deploy_symlink "$src" "$dst" "$dry_run" "$force"
+    fi
+}
+
 # Deploy Claude Code adapter output to ~/.claude/
 _deploy_claude_code() {
     local dry_run="$1"
@@ -194,6 +225,8 @@ _deploy_claude_code() {
     if [[ "$deploy_rules" -eq 1 && -d "${output_dir}/rules" ]]; then
         _deploy_symlink "${output_dir}/rules" "${dest_base}/rules" "$dry_run" "$force"
     fi
+
+    _deploy_state_helpers "$dry_run" "$force"
 
     # Skip hooks.json — requires manual merge
     rdf_log "skipped: hooks.json (manual merge — see 'rdf deploy help')"

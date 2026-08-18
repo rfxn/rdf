@@ -38,35 +38,6 @@ Examples:
 USAGE
 }
 
-# Deploy state helpers and the worktree pre-commit hook to ~/.rdf/state/
-# so deployed commands/agents can resolve them without a relative path
-# (the RDF-checkout state/ is only present in dev installs).
-_generate_deploy_state_helpers() {
-    local state_dst="${HOME}/.rdf/state"
-    local _helper src
-    command mkdir -p "$state_dst"
-    for _helper in rdf-state.sh context-audit.sh rdf-overhead.sh rotate-work-output.sh rdf-bus.sh rdf-consistency.sh rdf-lessons.sh; do
-        src="${RDF_HOME}/state/${_helper}"
-        if [[ -f "$src" ]]; then
-            command cp "$src" "${state_dst}/${_helper}"
-            command chmod +x "${state_dst}/${_helper}"
-            rdf_log "deployed state helper: ${state_dst}/${_helper}"
-        else
-            rdf_warn "state helper not found: ${src} — skipped"
-        fi
-    done
-
-    local hook_src="${RDF_HOME}/state/git-hooks/pre-commit"
-    if [[ -f "$hook_src" ]]; then
-        command mkdir -p "${state_dst}/git-hooks"
-        command cp "$hook_src" "${state_dst}/git-hooks/pre-commit"
-        command chmod +x "${state_dst}/git-hooks/pre-commit"
-        rdf_log "deployed git hook: ${state_dst}/git-hooks/pre-commit"
-    else
-        rdf_warn "git hook not found: ${hook_src} — skipped"
-    fi
-}
-
 # Source and run a single adapter
 # Args: $1 = adapter script relative to RDF_ADAPTERS, $2 = generation function name
 _generate_adapter() {
@@ -108,7 +79,6 @@ cmd_generate() {
     case "${1:-}" in
         claude-code)
             _generate_adapter "claude-code/adapter.sh" "cc_generate_all"
-            _generate_deploy_state_helpers
             if [[ $deploy_after -eq 1 ]]; then
                 # shellcheck disable=SC1090,SC1091
                 source "${RDF_LIBDIR}/cmd/deploy.sh"

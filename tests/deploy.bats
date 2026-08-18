@@ -143,25 +143,56 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     rm -rf "$home"
 }
 
-@test "generate deploys state helpers + pre-commit hook to ~/.rdf/state" {
-    # RDF_HOME is the real source (helpers + git-hooks live there); HOME is a
-    # throwaway so the deploy lands under a temp ~/.rdf/state, never the dev's.
+@test "deploy claude-code symlinks state helpers per-file (glob)" {
+    local home; home="$(mktemp -d)"
+    _make_deploy_skeleton "$home"
+    cp -R "$RDF_SRC/state" "$home/state"
+    run _run_deploy "$home"
+    [ "$status" -eq 0 ]
+    [ -L "${home}/.rdf/state/rdf-bus.sh" ]
+    [ -L "${home}/.rdf/state/rdf-overhead.sh" ]
+    [ -L "${home}/.rdf/state/git-hooks/pre-commit" ]
+    [ "$(find "${home}/.rdf/state" -maxdepth 1 -type l | wc -l | tr -d ' ')" = "7" ]
+    rm -rf "$home"
+}
+
+@test "deploy migrates byte-identical helper copies to symlinks; differing copy skipped" {
+    local home; home="$(mktemp -d)"
+    _make_deploy_skeleton "$home"; cp -R "$RDF_SRC/state" "$home/state"
+    mkdir -p "${home}/.rdf/state"
+    cp "$home/state/rdf-bus.sh" "${home}/.rdf/state/rdf-bus.sh"          # identical → migrate
+    printf 'locally modified\n' > "${home}/.rdf/state/rdf-state.sh"      # differs → skip
+    run _run_deploy "$home"
+    [ -L "${home}/.rdf/state/rdf-bus.sh" ]
+    [ ! -L "${home}/.rdf/state/rdf-state.sh" ]
+    grep -q '^locally modified$' "${home}/.rdf/state/rdf-state.sh"
+    echo "$output" | grep -q 'not a symlink'
+    rm -rf "$home"
+}
+
+@test "generate claude-code writes nothing under HOME" {
     local home; home="$(mktemp -d)"
     run bash -c '
         set -euo pipefail
         rdf_src="$1"; fix_home="$2"
-        HOME="$fix_home"
-        RDF_HOME="$rdf_src"
-        RDF_LIBDIR="${rdf_src}/lib"
-        source "${rdf_src}/lib/rdf_common.sh"
-        rdf_init
+        HOME="$fix_home"; RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
         source "${rdf_src}/lib/cmd/generate.sh"
-        _generate_deploy_state_helpers
+        type _generate_deploy_state_helpers 2>/dev/null && exit 99
+        exit 0
     ' -- "$RDF_SRC" "$home"
+    [ "$status" -eq 0 ]                                    # function fully removed
+    [ -z "$(find "$home" -mindepth 1 2>/dev/null)" ]       # HOME untouched
+    rm -rf "$home"
+}
+
+@test "deploy --dry-run logs helper symlinks without writing" {
+    local home; home="$(mktemp -d)"
+    _make_deploy_skeleton "$home"; cp -R "$RDF_SRC/state" "$home/state"
+    run _run_deploy "$home" --dry-run
     [ "$status" -eq 0 ]
-    [ -x "${home}/.rdf/state/rdf-bus.sh" ]
-    [ -x "${home}/.rdf/state/rdf-overhead.sh" ]
-    [ -x "${home}/.rdf/state/git-hooks/pre-commit" ]
+    echo "$output" | grep -q 'would symlink.*rdf-bus.sh'
+    [ ! -e "${home}/.rdf/state/rdf-bus.sh" ]
     rm -rf "$home"
 }
 
