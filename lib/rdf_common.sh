@@ -82,6 +82,36 @@ rdf_hash_stdin() {
     fi
 }
 
+# rdf_strip_frontmatter FILE — emit FILE's body, stripping ONLY a leading
+# --- ... --- frontmatter block plus one following blank separator; files not
+# starting with --- pass through verbatim. Single strip implementation for
+# sync (reverse flow) and doctor (drift hashing). Unclosed frontmatter emits
+# nothing — callers must empty-guard.
+rdf_strip_frontmatter() {
+    command awk '
+        NR==1 && /^---[[:space:]]*$/ { fm=1; next }
+        fm==1 && /^---[[:space:]]*$/ { fm=2; next }
+        fm==1 { next }
+        fm==2 { fm=3; if ($0 ~ /^[[:space:]]*$/) next }
+        { print }
+    ' "$1"
+}
+
+# rdf_require_agent_meta META_FILE AGENTS_DIR — die listing canonical agents
+# absent from the catalog: a plain-copied agent deploys broken and arms the
+# sync truncation path, so generation must fail instead.
+rdf_require_agent_meta() {
+    local meta="$1" agents_dir="$2" missing="" f b
+    for f in "${agents_dir}"/*.md; do
+        [[ -f "$f" ]] || continue
+        b="$(command basename "$f" .md)"
+        if ! jq -e --arg a "$b" 'has($a)' "$meta" >/dev/null 2>&1; then  # missing key → collect for the die message
+            missing="${missing:+${missing}, }${b}"
+        fi
+    done
+    [[ -z "$missing" ]] || rdf_die "agents missing from agent-meta.json: ${missing} — add entries before generating"
+}
+
 rdf_die() {
     echo "rdf: error: $*" >&2
     exit 1
