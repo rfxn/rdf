@@ -28,6 +28,13 @@ Four verified defect groups make that false today:
      copied into **every** adapter's `scripts/` output. *(net-new, same class)*
    - `canonical/commands/r-util-proj-cross.md:9` and
      `r-util-mem-audit.md:10` hardcode `/root/admin/work/proj/` in prose.
+   - `canonical/reference/framework.md:21,26` hardcodes the workspace path
+     in its artifact table — and that table is extracted into the
+     **tracked** `adapters/agents-md/output/AGENTS.md` (:73/:78) by the
+     agents-md adapter, so the leak is already committed in a release
+     artifact. *(net-new, same class — completes the 9-hit canonical/
+     workspace-path accounting: subagent-stop ×4, r-util commands ×2,
+     comment-snapshot ×1, framework.md ×2)*
 2. **Missing reference/ docs in every install.** 24 deployed files link
    `../reference/*.md` (claude-code: 8 commands; claude-plugin: 8
    commands; agent-skills: 8 SKILL.md — agent files mention reference
@@ -86,6 +93,12 @@ Four verified defect groups make that false today:
 - No auto-detection heuristics for `rfxn-workspace` (git-remote sniffing
   rejected as fragile — opt-in only).
 - No renaming of existing profiles; no registry schema changes.
+- No de-branding of the agents-md adapter's self-description (title
+  "AGENTS.md — rfxn Development Framework", the rfxn-ecosystem context
+  paragraph in `sections.json`): the adapter is RDF-self-referential by
+  documented design decision — it describes the RDF project itself, not a
+  consumer repo. Only its hardcoded workspace-path rows (inherited from
+  framework.md) are in scope.
 
 ## 4. Architecture
 
@@ -115,6 +128,8 @@ inventing a new mechanism.
 | `canonical/scripts/subagent-stop.sh` | modified | ~±8 | `~/.rdf/agent-feed.log` fallback, HOME guard |
 | `canonical/commands/r-util-proj-cross.md` | modified | ~±4 | Generic workspace-root wording |
 | `canonical/commands/r-util-mem-audit.md` | modified | ~±4 | Generic workspace-root wording |
+| `canonical/reference/framework.md` | modified | ±2 | Artifact-table rows :21/:26 → `<workspace>/…` placeholders (also fixes tracked AGENTS.md :73/:78 via regeneration) |
+| `adapters/agents-md/output/AGENTS.md` | regenerated | — | Tracked release artifact — inherits framework.md fix on `rdf generate all` |
 | `adapters/claude-code/adapter.sh` | modified | +25 | `cc_generate_reference()` + wire into `cc_generate_all` + count line |
 | `adapters/claude-plugin/adapter.sh` | modified | +22 | `cpl_generate_reference()` + wire into `cpl_generate_all` |
 | `adapters/agent-skills/adapter.sh` | modified | +12 | Emit `.agents/skills/reference/` |
@@ -353,7 +368,7 @@ $ echo $?
 
 | Finding | Action |
 |---------|--------|
-| `comment-snapshot.sh` in stale committed outputs (gemini-cli, codex) | Removed by `rdf generate all` regeneration in the build |
+| `comment-snapshot.sh` in adapter outputs | Only `adapters/claude-plugin/output/` is git-tracked (`.gitignore`/`.git/info/exclude` cover the rest — local build artifacts); regeneration drops the script from the tracked plugin output and from any locally generated trees |
 | No other dead code found in touched files | — |
 
 ## 10a. Test Strategy
@@ -385,7 +400,7 @@ New `tests/derfxn.bats` unless noted; fixtures under `tests/fixtures/`.
 grep -rn '/root/admin/work/proj' canonical/ lib/ state/ bin/
 # expect: no output (exit 1)
 
-grep -rn '/root/admin/work/proj' adapters/claude-code/output adapters/claude-plugin/output adapters/agent-skills/output
+grep -rn '/root/admin/work/proj' adapters/claude-code/output adapters/claude-plugin/output adapters/agent-skills/output adapters/agents-md/output
 # expect: no output (exit 1)
 
 ls adapters/claude-code/output/reference/*.md | wc -l
