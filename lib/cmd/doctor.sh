@@ -344,18 +344,10 @@ _check_content_drift() {
     local missing_sidecar_count=0
     local checked_count=0
 
-    # _hash_deployed_body <deployed-file> — hash after stripping ONLY a leading
-    # contiguous --- ... --- frontmatter block (+ one blank separator); body ---
-    # horizontal rules are preserved, frontmatter-less files hash verbatim.
+    # _hash_deployed_body <deployed-file> — hash the frontmatter-stripped body
+    # (single strip implementation: rdf_strip_frontmatter in rdf_common.sh).
     _hash_deployed_body() {
-        local deployed="$1"
-        awk '
-            NR==1 && /^---[[:space:]]*$/ { fm=1; next }
-            fm==1 && /^---[[:space:]]*$/ { fm=2; next }
-            fm==1 { next }
-            fm==2 { fm=3; if ($0 ~ /^[[:space:]]*$/) next }
-            { print }
-        ' "$deployed" | rdf_hash_stdin
+        rdf_strip_frontmatter "$1" | rdf_hash_stdin
     }
 
     # Check agents: hash deployed body (frontmatter stripped) vs sidecar

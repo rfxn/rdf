@@ -23,26 +23,6 @@ Examples:
 USAGE
 }
 
-# Strip YAML frontmatter from a file, output body to stdout
-# Frontmatter: starts and ends with "---" on its own line
-_strip_frontmatter() {
-    local file="$1"
-    local frontmatter_count=0
-
-    while IFS= read -r line; do
-        if [[ "$line" == "---" ]]; then
-            frontmatter_count=$((frontmatter_count + 1))
-            if [[ $frontmatter_count -le 2 ]]; then
-                continue
-            fi
-        fi
-
-        if [[ $frontmatter_count -ge 2 ]]; then
-            echo "$line"
-        fi
-    done < "$file"
-}
-
 cmd_sync() {
     local dry_run=0
     local target="claude-code"
@@ -63,7 +43,7 @@ cmd_sync() {
 
     rdf_log "syncing from ${target} adapter output to canonical..."
 
-    # Sync agents — strip frontmatter
+    # Sync agents — strip frontmatter if present (canonical stays frontmatter-free)
     if [[ -d "${output_dir}/agents" ]]; then
         for out_file in "${output_dir}/agents"/*.md; do
             [[ -f "$out_file" ]] || continue
@@ -71,24 +51,28 @@ cmd_sync() {
             basename_f="$(basename "$out_file")"
             local canon_file="${RDF_CANONICAL}/agents/${basename_f}"
             local body
-            body="$(_strip_frontmatter "$out_file")"
-
-            # Trim leading blank lines from body
-            body="$(echo "$body" | sed '/./,$!d')"
+            if [[ "$(head -1 "$out_file")" == "---" ]]; then
+                body="$(rdf_strip_frontmatter "$out_file")"
+                body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
+                if [[ -z "$body" ]]; then
+                    rdf_warn "skipping agents/${basename_f}: unclosed frontmatter (empty body after strip)"
+                    continue
+                fi
+            else
+                body="$(< "$out_file")"
+            fi
 
             if [[ -f "$canon_file" ]]; then
-                local current
-                current="$(< "$canon_file")"
+                local current; current="$(< "$canon_file")"
                 if [[ "$body" == "$current" ]]; then
-                    unchanged=$((unchanged + 1))
-                    continue
+                    unchanged=$((unchanged + 1)); continue
                 fi
             fi
 
             if [[ $dry_run -eq 1 ]]; then
                 rdf_log "WOULD UPDATE: canonical/agents/${basename_f}"
             else
-                echo "$body" > "$canon_file"
+                printf '%s\n' "$body" > "$canon_file"
                 rdf_log "updated: canonical/agents/${basename_f}"
             fi
             changed=$((changed + 1))
@@ -104,7 +88,7 @@ cmd_sync() {
             local canon_file="${RDF_CANONICAL}/commands/${basename_f}"
             local body
             if [[ "$(head -1 "$out_file")" == "---" ]]; then
-                body="$(_strip_frontmatter "$out_file")"
+                body="$(rdf_strip_frontmatter "$out_file")"
                 body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
                 if [[ -z "$body" ]]; then
                     rdf_warn "skipping commands/${basename_f}: unclosed frontmatter (empty body after strip)"

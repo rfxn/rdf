@@ -63,3 +63,8 @@ _strip() {  # run rdf_strip_frontmatter against a fixture file
     [ -z "$output" ]
     rm -rf "$d"
 }
+
+@test "strip: sync.sh defines no local strip implementation" {
+    run grep -c '^_strip_frontmatter()' "$RDF_SRC/lib/cmd/sync.sh"
+    [ "$output" = "0" ]
+}
