@@ -630,6 +630,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 37 commands -- 16 scripts -- 11 profiles -- 6 adapters -- 7 modes**
+**6 agents -- 37 commands -- 17 scripts -- 11 profiles -- 6 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

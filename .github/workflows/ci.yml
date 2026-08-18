@@ -138,3 +138,12 @@ jobs:
           /bin/bash -c 'source state/rdf-bus.sh; rdf_session_init; printf "%s\n" "$RDF_SESSION_ID"' \
             | grep -qE '^[0-9a-f]{8}-'
           echo "bash 3.2 bus smoke: OK"
+
+      - name: Smoke state-bootstrap under system bash 3.2 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          /bin/bash -n canonical/scripts/state-bootstrap.sh
+          root="$(mktemp -d)"; mkdir -p "$root/adapters/x"
+          cp canonical/scripts/state-bootstrap.sh "$root/adapters/x/boot.sh"
+          HOME="$(mktemp -d)" /bin/bash "$root/adapters/x/boot.sh"
+          echo "bash 3.2 bootstrap smoke: OK"

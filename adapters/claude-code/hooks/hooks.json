@@ -56,6 +56,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "~/.claude/scripts/state-bootstrap.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "~/.claude/scripts/session-start-inject.sh",
             "timeout": 5
           }
