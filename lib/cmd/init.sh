@@ -36,7 +36,7 @@ USAGE
 }
 
 # Known profile names for validation (excludes 'core' — always implicit)
-_KNOWN_PROFILES="shell python go rust typescript perl php frontend database infrastructure minimal rfxn-workspace"
+_KNOWN_PROFILES="shell python go rust typescript perl php node frontend database infrastructure minimal rfxn-workspace"
 
 # Check if a project directory has files matching a glob pattern.
 # Uses git ls-files in git repos, find(1) otherwise.
@@ -137,6 +137,15 @@ _detect_profiles() {
     # php: composer.json, *.php
     if [[ -f "${path}/composer.json" ]] || _has_files "$path" "*.php"; then
         profiles="${profiles:+${profiles},}php"
+        has_language=1
+    fi
+
+    # node: package.json is the sole activation gate — a stray
+    # webpack.config.js in a non-JS repo must not activate; suppressed
+    # when typescript already matched (TS repos all have package.json)
+    if [[ -f "${path}/package.json" ]] \
+            && [[ ",${profiles}," != *",typescript,"* ]]; then
+        profiles="${profiles:+${profiles},}node"
         has_language=1
     fi
 

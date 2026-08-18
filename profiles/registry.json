@@ -64,6 +64,14 @@
       "description": "TypeScript/Node.js. Strict mode, async discipline, backend patterns",
       "summary": "governance-template + 3 reference docs"
     },
+    "node": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "full",
+      "detect": ["package.json", "*.js", "*.mjs", "*.cjs"],
+      "description": "Node.js (plain JavaScript). Module-system discipline, async patterns, npm hygiene",
+      "summary": "governance-template only"
+    },
     "perl": {
       "requires": ["core"],
       "removable": true,

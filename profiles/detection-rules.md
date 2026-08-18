@@ -44,6 +44,19 @@ Confidence boost (not activation alone):
 - `src/components/` directory
 - `public/` or `static/` directory
 
+### node
+
+Activate when ALL of:
+- Config: `package.json` present
+- The typescript profile did NOT activate (no `tsconfig.json`, no real
+  `.ts` files) — TS repos are covered by the typescript profile
+
+Notes:
+- `.js`/`.mjs`/`.cjs` files alone never activate node — a stray
+  `webpack.config.js` in a Python repo is not a Node project
+- Registry detect globs include the JS extensions for rules
+  paths-scoping only
+
 ### database
 
 Activate when 2+ of:

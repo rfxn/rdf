@@ -71,3 +71,24 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     run bash -c 'echo "{\"agent_id\":\"t\"}" | env -u HOME bash "$1/canonical/scripts/subagent-stop.sh"' -- "$RDF_SRC"
     [ "$status" -eq 0 ]
 }
+
+@test "plain node fixture detects node profile" {
+    echo '{}' > "$FIX/package.json"; echo 'x' > "$FIX/index.js"
+    run _rdf_call _detect_profiles "$FIX"
+    [ "$status" -eq 0 ]
+    [ "$output" = "node" ]
+    # spec 11b: .jsx + package.json, no framework dep → node,frontend
+    local jx; jx="$(mktemp -d)"
+    echo '{}' > "$jx/package.json"; echo 'x' > "$jx/app.jsx"
+    run _rdf_call _detect_profiles "$jx"
+    [ "$status" -eq 0 ]
+    [ "$output" = "node,frontend" ]
+    rm -rf "$jx"
+}
+
+@test "typescript fixture does not add node profile" {
+    echo '{}' > "$FIX/package.json"; echo '{}' > "$FIX/tsconfig.json"
+    run _rdf_call _detect_profiles "$FIX"
+    [ "$status" -eq 0 ]
+    [ "$output" = "typescript" ]
+}
