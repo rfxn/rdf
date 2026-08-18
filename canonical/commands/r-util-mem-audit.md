@@ -7,7 +7,7 @@ Read-only report — no modifications.
 ## Scope
 
 - If CWD is a project directory: audit that project's MEMORY.md only
-- If CWD is `/root/admin/work/proj/`: audit all project MEMORY.md files
+- If CWD is a workspace root (non-git parent of project repos): audit all project MEMORY.md files
 
 MEMORY.md location:
 `.rdf/memory/MEMORY.md`

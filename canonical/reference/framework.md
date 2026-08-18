@@ -18,12 +18,12 @@ the framework evolves. Never contains volatile data.
 
 | Artifact | Location | Owner |
 |----------|----------|-------|
-| Parent CLAUDE.md | `/root/admin/work/proj/CLAUDE.md` | Human |
+| Parent CLAUDE.md | `<workspace>/CLAUDE.md` | Human |
 | Project CLAUDE.md | `<project>/CLAUDE.md` | Human |
 | Governance index | `<project>/.rdf/governance/index.md` | `/r-init` |
 | Governance files | `<project>/.rdf/governance/*.md` | `/r-init`, `/r-refresh` |
 | `ignore.md` | `<project>/.rdf/governance/ignore.md` | `/r-init`, `/r-refresh` (agents consume: grep-exclude input) |
-| Shared reference | `/root/admin/work/proj/reference/*.md` | Human |
+| Shared reference | `<workspace>/reference/*.md` | Human |
 | Project reference | `<project>/reference/*.md` | Human |
 
 **Rules:**

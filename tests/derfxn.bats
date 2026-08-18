@@ -46,3 +46,28 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -eq 0 ]
     [ ! -f "$FIX/.rdf/governance/reference/cross-project.md" ]
 }
+
+@test "no rfxn workspace path in canonical, lib, state, bin" {
+    run grep -rn '/root/admin/work/proj' "$RDF_SRC/canonical" "$RDF_SRC/lib" "$RDF_SRC/state" "$RDF_SRC/bin"
+    [ "$status" -ne 0 ]
+}
+
+@test "subagent-stop falls back to HOME .rdf without hardcoded path" {
+    local h; h="$(mktemp -d)"
+    cd "$FIX"
+    run bash -c 'echo "{\"agent_id\":\"t\"}" | HOME="$1" bash "$2/canonical/scripts/subagent-stop.sh"' -- "$h" "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    grep -q AGENT_STOP "$h/.rdf/agent-feed.log"
+    # middle branch (spec 11b): cwd has .rdf/ but no work-output/ → local log, not HOME
+    mkdir "$FIX/.rdf"
+    run bash -c 'echo "{\"agent_id\":\"t\"}" | HOME="$1" bash "$2/canonical/scripts/subagent-stop.sh"' -- "$h" "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    grep -q AGENT_STOP "$FIX/.rdf/agent-feed.log"
+    rm -rf "$h"
+}
+
+@test "subagent-stop exits 0 when HOME unset" {
+    cd "$FIX"
+    run bash -c 'echo "{\"agent_id\":\"t\"}" | env -u HOME bash "$1/canonical/scripts/subagent-stop.sh"' -- "$RDF_SRC"
+    [ "$status" -eq 0 ]
+}

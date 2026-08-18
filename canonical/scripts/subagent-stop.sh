@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SubagentStop hook: log subagent completion to agent-feed.log.
 # Appends timestamped entry for retrospective status tracking and
 # crash recovery visibility.
@@ -30,16 +30,17 @@ fi
 
 # Determine the feed log location.
 # Project-level: .rdf/work-output/agent-feed.log (inside work-output, project-scoped)
-# Workspace-level: .rdf/agent-feed.log (flat, cross-project)
+# Workspace-level: ./.rdf/agent-feed.log (flat, when cwd is a workspace root)
+# Fallback: ~/.rdf/agent-feed.log (machine-global; no hardcoded paths)
 feed_log=""
 if [[ -d "./.rdf/work-output" ]]; then
     feed_log="./.rdf/work-output/agent-feed.log"
-elif [[ -d "/root/admin/work/proj/.rdf" ]]; then
-    feed_log="/root/admin/work/proj/.rdf/agent-feed.log"
+elif [[ -d "./.rdf" ]]; then
+    feed_log="./.rdf/agent-feed.log"
 else
-    # Create workspace .rdf/ if nothing exists
-    command mkdir -p "/root/admin/work/proj/.rdf"
-    feed_log="/root/admin/work/proj/.rdf/agent-feed.log"
+    [[ -z "${HOME:-}" ]] && exit 0   # hooks must never error; no HOME means nowhere safe to log
+    command mkdir -p "${HOME}/.rdf"
+    feed_log="${HOME}/.rdf/agent-feed.log"
 fi
 timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
