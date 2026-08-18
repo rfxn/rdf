@@ -126,6 +126,7 @@ tests.
 - Modify: `lib/rdf_common.sh` (add two functions after `rdf_hash_stdin`, i.e. after line 83)
 - Create: `tests/strip.bats` (test: itself)
 
+- **Goals:** 2
 - **Mode**: serial-agent
 - **Accept**: `bash -n lib/rdf_common.sh` exits 0; `grep -c '^rdf_strip_frontmatter()' lib/rdf_common.sh` → 1; `grep -c '^rdf_require_agent_meta()' lib/rdf_common.sh` → 1; strip.bats 6 tests pass.
 - **Test**: `tests/strip.bats` — 6 tests listed in Step 2.
@@ -264,6 +265,7 @@ guards, both loops use the shared function, doctor's hasher consumes it too.
 - Create: `tests/sync.bats` (test: itself)
 - Modify: `tests/strip.bats` (add single-implementation grep guard)
 
+- **Goals:** 1, 2
 - **Mode**: serial-agent
 - **Accept**: `grep -c '^_strip_frontmatter()' lib/cmd/sync.sh` → 0; sync of a frontmatter-less agent output leaves canonical byte-identical; `rdf doctor --scope content-drift` behavior unchanged on a clean tree.
 - **Test**: 4 tests — the 3 `tests/sync.bats` tests in Step 3 plus the 1 `tests/strip.bats` guard in Step 4.
@@ -429,6 +431,7 @@ guards, both loops use the shared function, doctor's hasher consumes it too.
 - Modify: `adapters/claude-plugin/adapter.sh` (one call in `cpl_generate_all`, after line 247 `rdf_require_bin jq`)
 - Modify: `tests/deploy.bats` (2 new tests)
 
+- **Goals:** 3
 - **Mode**: serial-agent
 - **Accept**: generating with a canonical agent absent from agent-meta.json exits 1 naming the agent, for both targets; a normal `./bin/rdf generate claude-code` still succeeds.
 - **Test**: tests/deploy.bats — the 2 tests in Step 2.
@@ -546,6 +549,7 @@ guards, both loops use the shared function, doctor's hasher consumes it too.
 - Modify: `tests/deploy.bats` (rewrite the test at line 146; add 3)
 - Modify: `tests/overhead.bats` (only if the 2 deployed-copy tests break — see Step 5)
 
+- **Goals:** 4
 - **Mode**: serial-agent
 - **Accept**: `HOME=$(mktemp -d) ./bin/rdf generate claude-code` writes nothing under that HOME; after `deploy claude-code` (in the BATS fixture HOME), `find $HOME/.rdf/state -maxdepth 1 -type l | wc -l` = 7 and `git-hooks/pre-commit` is a symlink; a pre-existing identical real copy is upgraded to a symlink without `--force`; a differing copy is skipped with warning.
 - **Test**: tests/deploy.bats — 4 tests in Step 4 (1 rewritten + 3 added, net +3 to the suite).
@@ -736,6 +740,7 @@ guards, both loops use the shared function, doctor's hasher consumes it too.
 - Modify: `.github/workflows/ci.yml` (bash-3.2 smoke)
 - Modify: `adapters/claude-plugin/output/**` (regenerated — committed output)
 
+- **Goals:** 5, 8
 - **Mode**: serial-agent
 - **Accept**: bootstrap run with a plugin-root-shaped `$0` copies 7 helpers + hook + stamps `.rdf-version`/`.rdf-source`; re-run exits 0 with no copies (stamp current); symlinked `~/.rdf/state` → no-op; unwritable HOME → exit 0; regenerated plugin hooks.json contains the `${CLAUDE_PLUGIN_ROOT}` bootstrap path first in the unmatched SessionStart group.
 - **Test**: tests/bootstrap.bats — 5 tests in Step 3.
@@ -952,6 +957,7 @@ guards, both loops use the shared function, doctor's hasher consumes it too.
 - Modify: `tests/doctor.bats` (2 new tests)
 - Modify: `README.md` (line 232 "11 checks: …" → 13 + new scope names)
 
+- **Goals:** 6
 - **Mode**: serial-agent
 - **Accept**: `./bin/rdf doctor --scope catalogs .` and `--scope state-helpers .` run; a fixture with a missing agent-meta key FAILs catalogs; a stale helper copy FAILs state-helpers; symlinked helpers OK; `grep -n '11 checks' README.md RDF.md WORKFORCE.md docs/index.md docs/quickstart.md docs/multi-tool-parity.md` → no output (specs/plans are point-in-time snapshots and intentionally keep their historical "11 checks" prose).
 - **Test**: tests/doctor.bats — 2 tests in Step 3.
@@ -1171,6 +1177,7 @@ guards, both loops use the shared function, doctor's hasher consumes it too.
 - Modify: `adapters/claude-plugin/output/**` (regenerated)
 - Modify: `CHANGELOG`, `CHANGELOG.RELEASE` (consolidated wave entries)
 
+- **Goals:** 7
 - **Mode**: serial-agent
 - **Accept**: `grep -rln 'plugin-only install' canonical/commands/ | wc -l` → 0; the 9 commands + r-build hard-stop describe the bootstrap reality; README/quickstart/parity no longer claim plugin installs lack state helpers; plugin output regenerated and staged; CHANGELOG + CHANGELOG.RELEASE carry the wave's entries.
 - **Test**: verification commands below (docs phase — no new BATS).
