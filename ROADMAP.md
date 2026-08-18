@@ -10,17 +10,18 @@ against any of this are welcome (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 - [x] Community health files: security policy, code of conduct, issue templates
 - [x] User-agnostic paths throughout docs and CLI output (`~/.claude`, not
       hardcoded home directories)
-- [ ] Custom social-preview image and project homepage
+- [x] Custom social-preview image and project homepage
 
 ## Next — the five-minute on-ramp
 
 Make "drop it on any repo" true for someone with zero rfxn context:
 
-- [ ] Quickstart: clone → generate → deploy → `/r-init` on your own repo,
+- [x] Quickstart: clone → generate → deploy → `/r-init` on your own repo,
       with a worked example on a generic project
-- [ ] Recorded demo (real session, not mockups) at the top of the README
+- [x] Recorded demo (real session, not mockups) at the top of the README
 - [ ] First-run hardening: everything works from a fresh clone under any
-      user account — no rfxn workspace assumptions
+      user account — no rfxn workspace assumptions (folded into the
+      2026-08 top-5, item 2 below)
 
 ## Soon — first-class Claude Code plugin
 
@@ -32,7 +33,36 @@ citizenship:
 - [x] Design pass on command namespacing (`/r-start` vs `/rdf:r-start`)
       and dual install modes (symlink deploy vs plugin install)
 - [x] `claude plugin validate --strict` in CI
-- [ ] Submission to the community plugin marketplace
+- [x] Plugin-tier state parity: SessionStart bootstrap delivers the
+      `~/.rdf/state` helpers, so the full pipeline runs on plugin installs
+      (3.6.4)
+- [x] Submission to the community plugin marketplace
+
+## Now — the 2026-08 top-5
+
+From a full product-quality pass (architecture, docs, assumptions, measured
+usage, industry landscape — every item below verified against source before
+it earned a slot):
+
+1. [x] **Core-seam reliability** — shipped in 3.6.4 (see below)
+2. [ ] **Make "drop it on any repo" true** — remove remaining rfxn-workspace
+       assumptions from deployed hooks and `/r-init` output, ship the
+       `reference/` docs that deployed commands cite, and fix the fresh-user
+       doc gaps (partial-deploy exit code, unimplemented flags, bash-floor
+       claims, broken links, Node/JS profile detection)
+3. [ ] **Right-size the command surface to measured usage** — fold session
+       bookkeeping into hooks, retire unwired commands, fix the
+       security-floor substring matching, deduplicate the phase/plan/ship
+       triple review; target ~20 commands
+4. [ ] **Consolidate adapters on evidence** — shared frontmatter core for the
+       two Claude surfaces, freeze the bespoke Codex adapter at the legacy
+       tier, promote consumer-project `AGENTS.md` generation (AAIF-governed
+       standard), prune dead catalogs/scripts
+5. [ ] **Platform-alignment gate + eval hardening** — per-minor
+       native-capability re-triage at `/r-ship` (first case: Agent Teams vs
+       the dispatcher), trigger/activation evals and model-absorption
+       retirement checks on the contract harness, OWASP Agentic Skills
+       Top 10 posture
 
 ## Later — ecosystem
 
@@ -51,6 +81,21 @@ citizenship:
 - [x] Published per-session context cost with the `rdf-overhead.sh` harness
       (default ~0.1K / `--rules` ~2.1K / `rdf-lite` ~0.7K always-loaded tokens)
 - [x] `rdf-lite` minimal deploy variant
+
+## Shipped in 3.6.4 — core-seam reliability
+
+Top-5 item 1, executed spec → plan → build → sentinel in one pass.
+[design](docs/specs/2026-08-18-core-seam-reliability-design.md) ·
+[plan](docs/plans/2026-08-18-core-seam-reliability-plan.md).
+
+- [x] `rdf sync` truncation data-loss path closed; one shared
+      frontmatter-strip for sync + doctor
+- [x] Generation hard-fails when an agent is missing from `agent-meta.json`
+- [x] State-helper delivery inverted: deploy-owned per-file symlinks
+      (drift-impossible on checkouts), `rdf generate` never writes to `$HOME`
+- [x] Plugin SessionStart bootstrap — full pipeline on plugin installs
+- [x] Doctor `catalogs` + `state-helpers` scopes (11 → 13 checks); BATS
+      222 → 246
 
 ## Delivered — 3.5.0 "Scale"
 
@@ -87,9 +132,6 @@ enterprise Gemini CLI users. Spec + plan:
   obsoleted by native background agents; only phantom collect-spool cleanup
   and an optional read-only peer view survive)
 - Debt cleanup follow-ups beyond the executed 3.2 T5 cuts (shipped in 3.3.1)
-- claude-plugin state-helper parity — ship `~/.rdf/state` helpers via a plugin
-  SessionStart hook + a plugin-parity BATS suite (plugin seam has broken 3× via
-  spot-fixes; needs a designed fix)
 
 ---
 
