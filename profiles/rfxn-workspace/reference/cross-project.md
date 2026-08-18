@@ -1,7 +1,8 @@
 # Cross-Project Coordination Reference
 
-> Reference for core profile. Patterns for managing
-> shared libraries and consumer updates across the rfxn ecosystem.
+> Reference for the rfxn-workspace profile (opt-in org overlay).
+> Patterns for managing shared libraries and consumer updates across
+> the rfxn ecosystem.
 
 ## Library Integration Pattern
 

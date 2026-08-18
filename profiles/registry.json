@@ -87,6 +87,14 @@
       "detect": ["*.tf", "Dockerfile", "k8s/", "ansible/"],
       "description": "Infrastructure as code. Terraform, Kubernetes, Ansible, CI/CD",
       "summary": "governance-template + 3 reference docs"
+    },
+    "rfxn-workspace": {
+      "requires": ["core"],
+      "removable": true,
+      "tier": "full",
+      "detect": [],
+      "description": "R-fx Networks org overlay. Opt-in only (never auto-detected): shared-library release workflow, consumer verification, workspace tooling",
+      "summary": "governance-template + 1 reference doc"
     }
   }
 }

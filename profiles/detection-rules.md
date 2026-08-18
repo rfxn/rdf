@@ -134,3 +134,11 @@ When security artifacts detected during /r-init:
 - Config: security-focused CI job (SAST, DAST, dependency scanning)
 
 Suggest: `/r-mode security` for assessment work. Do not activate a profile.
+
+### rfxn-workspace (opt-in only)
+
+Never auto-detected (`detect: []`). The R-fx Networks org overlay is
+activated explicitly: `rdf init --type <lang>,rfxn-workspace` or
+`rdf profile install rfxn-workspace`. Auto-detection heuristics
+(git-remote sniffing, path matching) were rejected as fragile — org
+overlays must be a deliberate choice (see spec 2026-08-18 §4).

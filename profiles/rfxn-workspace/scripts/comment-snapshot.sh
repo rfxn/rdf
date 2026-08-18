@@ -6,7 +6,7 @@
 set -u
 
 WORKSPACE="${WORKSPACE:-/root/admin/work/proj}"
-METRICS="$(command dirname "$0")/comment-metrics.sh"
+METRICS="$(command dirname "$0")/../../../canonical/scripts/comment-metrics.sh"
 
 if [[ ! -x "$METRICS" ]]; then
     printf 'comment-snapshot: metrics script not found or not executable: %s\n' "$METRICS" >&2

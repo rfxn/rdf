@@ -36,7 +36,7 @@ USAGE
 }
 
 # Known profile names for validation (excludes 'core' — always implicit)
-_KNOWN_PROFILES="shell python go rust typescript perl php frontend database infrastructure minimal"
+_KNOWN_PROFILES="shell python go rust typescript perl php frontend database infrastructure minimal rfxn-workspace"
 
 # Check if a project directory has files matching a glob pattern.
 # Uses git ls-files in git repos, find(1) otherwise.
