@@ -15,6 +15,30 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.6.4 — 2026-08-18
+
+ADDED: `canonical/scripts/state-bootstrap.sh` — SessionStart hook delivering
+`~/.rdf/state` helpers on plugin installs (version-stamped, no-op on checkout
+installs); the full pipeline now runs on the plugin tier.
+ADDED: `rdf_strip_frontmatter` + `rdf_require_agent_meta` in `lib/rdf_common.sh`
+— single frontmatter-strip implementation (sync + doctor) and a generate
+preflight that fails when an agent is missing from `agent-meta.json`.
+ADDED: doctor scopes `catalogs` and `state-helpers` (11 → 13 checks).
+ADDED: `tests/strip.bats`, `tests/sync.bats`, `tests/bootstrap.bats` (BATS
+222 → 246).
+MODIFIED: state-helper delivery inverted — `rdf deploy claude-code` owns
+`~/.rdf/state` as glob-driven per-file symlinks (auto-migrating byte-identical
+legacy copies; stamps retired on ownership); `rdf generate` no longer writes
+under `$HOME`; `rdf-overhead.sh` resolves checkout-shaped plugin roots via the
+`.rdf-source` stamp.
+MODIFIED: `rdf sync` agents path guarded (head-1 + empty-body) — the
+frontmatter-less truncation data-loss path is closed.
+MODIFIED: plugin-tier wording in 9 lifecycle commands and
+README/quickstart/index — hooks auto-register via `plugin.json`; degraded mode
+applies only before the first post-install session restart.
+REMOVED: `_generate_deploy_state_helpers` (generate-side copy delivery) and
+sync's count-based `_strip_frontmatter`.
+
 ## 3.6.0 — 2026-07-15
 
 ADDED: `agent-skills` adapter — emits the shared `.agents/skills/<cmd>/SKILL.md`
