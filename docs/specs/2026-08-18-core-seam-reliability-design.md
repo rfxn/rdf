@@ -446,8 +446,9 @@ HOME=$(mktemp -d) bash canonical/scripts/state-bootstrap.sh   # invoked via a
 # Goal 7 — no stale wording
 grep -rln 'plugin-only install' canonical/commands/ | wc -l
 # expect: 0   (superseded wording removed; guards reworded)
-grep -rn '11 checks' README.md docs/ RDF.md WORKFORCE.md
-# expect: (no output — scope-count prose updated to 13)
+grep -n '11 checks' README.md RDF.md WORKFORCE.md docs/index.md docs/quickstart.md docs/multi-tool-parity.md
+# expect: (no output — living-doc scope-count prose updated to 13; specs/plans
+# keep their historical prose and are excluded)
 
 # Goal 8 — suite
 make -C tests test 2>&1 | tee /tmp/test-rdf-seam-debian12.log | tail -3
@@ -472,7 +473,7 @@ make -C tests test 2>&1 | tee /tmp/test-rdf-seam-debian12.log | tail -3
 4. **Doc claims of "11 checks" go stale** (README.md and siblings; doctor
    itself has no machine assertion on its scope count). *Mitigation:* all
    scope-count prose updated to 13 in the same commit; §10b adds a grep
-   verification (`grep -rn '11 checks' README.md docs/` → no output).
+   verification scoped to the living docs (specs/plans keep historical prose).
 5. **macOS/bash-3.2 regressions** (no `readlink -f`, no `ln --relative`).
    *Mitigation:* plain `readlink`, absolute-path `ln -snf` (existing
    `_deploy_symlink` is already portable); CI macOS job gates push.
