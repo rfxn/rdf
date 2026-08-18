@@ -164,3 +164,48 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -x "${home}/.rdf/state/git-hooks/pre-commit" ]
     rm -rf "$home"
 }
+
+@test "generate claude-code fails listing agents missing from agent-meta" {
+    home="$(mktemp -d)"
+    mkdir -p "${home}/canonical/agents" "${home}/canonical/commands" \
+             "${home}/canonical/scripts" "${home}/adapters/claude-code/hooks" \
+             "${home}/adapters/agent-skills" "${home}/profiles"
+    printf 'body\n' > "${home}/canonical/agents/ghost.md"
+    printf '{}\n' > "${home}/adapters/claude-code/agent-meta.json"
+    printf '{}\n' > "${home}/adapters/claude-code/command-meta-v3.json"
+    printf '{}\n' > "${home}/adapters/agent-skills/skill-meta.json"
+    printf '{"hooks":{}}\n' > "${home}/adapters/claude-code/hooks/hooks.json"
+    run bash -c '
+        set -euo pipefail
+        RDF_HOME="$1"; RDF_LIBDIR="$2/lib"; RDF_VERSION="0.0.0-test"
+        source "$2/lib/rdf_common.sh"; rdf_init
+        source "$2/adapters/claude-code/adapter.sh"
+        cc_generate_all
+    ' -- "$home" "$RDF_SRC"
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q 'agents missing from agent-meta.json: ghost'
+    rm -rf "$home"
+}
+
+@test "generate claude-plugin fails on same missing agent-meta" {
+    home="$(mktemp -d)"
+    mkdir -p "${home}/canonical/agents" "${home}/canonical/commands" \
+             "${home}/canonical/scripts" "${home}/adapters/claude-code/hooks" \
+             "${home}/adapters/claude-plugin" "${home}/adapters/agent-skills" \
+             "${home}/.claude-plugin"
+    printf 'body\n' > "${home}/canonical/agents/ghost.md"
+    printf '{}\n' > "${home}/adapters/claude-code/agent-meta.json"
+    printf '{}\n' > "${home}/adapters/agent-skills/skill-meta.json"
+    printf '{"hooks":{}}\n' > "${home}/adapters/claude-code/hooks/hooks.json"
+    printf '{"name":"rdf"}\n' > "${home}/.claude-plugin/plugin.json"
+    run bash -c '
+        set -euo pipefail
+        RDF_HOME="$1"; RDF_LIBDIR="$2/lib"; RDF_VERSION="0.0.0-test"
+        source "$2/lib/rdf_common.sh"; rdf_init
+        source "$2/adapters/claude-plugin/adapter.sh"
+        RDF_ADAPTERS="$1/adapters" _CPL_OUTPUT_DIR="$1/adapters/claude-plugin/output" cpl_generate_all
+    ' -- "$home" "$RDF_SRC"
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q 'agents missing from agent-meta.json: ghost'
+    rm -rf "$home"
+}

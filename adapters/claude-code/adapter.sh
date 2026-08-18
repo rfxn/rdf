@@ -283,6 +283,7 @@ cc_generate_all() {
     [[ "$_CC_LITE" -eq 1 ]] && rdf_log "lite mode: condensed core governance, lifecycle commands only, no hooks"
     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
     rdf_require_file "$_CC_AGENT_META" "agent-meta.json"
+    rdf_require_agent_meta "$_CC_AGENT_META" "${RDF_CANONICAL}/agents"
     rdf_require_bin jq
     _cc_resolve_hash_cmd
 

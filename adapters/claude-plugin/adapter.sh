@@ -245,6 +245,7 @@ cpl_generate_all() {
     rdf_log "generating Claude Plugin adapter output..."
     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
     rdf_require_bin jq
+    rdf_require_agent_meta "${RDF_ADAPTERS}/claude-code/agent-meta.json" "${RDF_CANONICAL}/agents"
 
     local _output_final="$_CPL_OUTPUT_DIR"
     local _output_new="${_CPL_OUTPUT_DIR}.new"
