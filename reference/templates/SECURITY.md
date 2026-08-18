@@ -12,7 +12,7 @@
 
 **Do not open a public issue for security vulnerabilities.**
 
-Email: {{CONTACT_EMAIL}}
+Contact: {{CONTACT_EMAIL}}
 
 Include:
 - Description of the vulnerability

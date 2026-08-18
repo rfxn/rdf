@@ -92,3 +92,14 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -eq 0 ]
     [ "$output" = "typescript" ]
 }
+
+@test "init companion files carry no rfxn contact when remote absent" {
+    git -C "$FIX" init -q    # no repo-local user.email set — --local read must NOT fall through to the operator's global identity
+    touch "$FIX/x.sh"
+    run _rdf_call cmd_init "$FIX" --type shell --no-memory
+    [ "$status" -eq 0 ]
+    run grep -l 'rfxn' "$FIX/SECURITY.md" "$FIX/CONTRIBUTING.md"
+    [ "$status" -ne 0 ]
+    grep -q 'Contact: the maintainers via the repository issue tracker' "$FIX/SECURITY.md"
+    grep -q 'under the terms in the LICENSE file' "$FIX/CONTRIBUTING.md"
+}

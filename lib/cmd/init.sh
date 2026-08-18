@@ -499,8 +499,8 @@ _generate_companion_files() {
     local name
     name="$(basename "$path")"
 
-    # Resolve org from git remote (fallback: rfxn)
-    local org="rfxn"
+    # Resolve org from git remote (fallback: project name)
+    local org="$name"
     if [[ -d "${path}/.git" ]]; then
         local remote_url
         remote_url="$(git -C "$path" remote get-url origin 2>/dev/null || echo "")"  # stderr: no remote is safe to ignore
@@ -515,8 +515,28 @@ _generate_companion_files() {
         fi
     fi
 
-    local contact_email="proj@rfxn.com"
-    local license="GNU GPL v2"
+    # Contact: repo-LOCAL git identity only — plain `git config` falls
+    # through to the operator's global user.email, which would leak the
+    # machine owner's personal address into the target repo
+    local contact_email
+    contact_email="$(git -C "$path" config --local user.email 2>/dev/null || echo "")"  # non-git dir (exit 128) / unset key (exit 1) → generic fallback below
+    [[ -z "$contact_email" ]] && contact_email="the maintainers via the repository issue tracker"
+
+    # License: detect from LICENSE head; phrase completes "under the {{LICENSE}}."
+    local license="terms in the LICENSE file"
+    if [[ -f "${path}/LICENSE" ]]; then
+        local license_head
+        license_head="$(command head -5 "${path}/LICENSE")"
+        case "$license_head" in
+            *"MIT License"*)                license="MIT License" ;;
+            *"Apache License"*)             license="Apache License 2.0" ;;
+            *"GNU GENERAL PUBLIC LICENSE"*)
+                case "$license_head" in
+                    *"Version 3"*) license="GNU GPL v3" ;;
+                    *"Version 2"*) license="GNU GPL v2" ;;
+                esac ;;
+        esac
+    fi
     local tmpl_dir="${RDF_HOME}/reference/templates"
 
     # SECURITY.md
