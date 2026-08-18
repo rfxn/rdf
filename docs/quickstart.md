@@ -27,11 +27,11 @@ bin/rdf doctor
 **Prefer a one-command install?** RDF is also a Claude Code plugin:
 `/plugin marketplace add rfxn/rdf` then `/plugin install rdf@rdf`.
 Plugin commands are namespaced (`/rdf:r-start` instead of `/r-start`).
-Note: plugin-only installs run in a **degraded mode** for the state-backed
-commands (`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`,
-`r-refresh`, `r-context-audit`, `r-vpe`, `r-util-mem-compact`) — full
-session state needs the `~/.rdf/state/` helpers that only the symlink
-deploy above populates ([parity details](multi-tool-parity)). Hooks are
+Note: a SessionStart hook bootstraps the `~/.rdf/state/` helpers on the
+plugin's first session start after install; the state-backed commands
+(`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`, `r-refresh`,
+`r-context-audit`, `r-vpe`, `r-util-mem-compact`) run in a **degraded mode**
+only before that first restart ([parity details](multi-tool-parity)). Hooks are
 never auto-installed in either mode: merge
 `adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json`
 manually (see `rdf deploy help`); hooks and the status line also require

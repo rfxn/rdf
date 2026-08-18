@@ -39,10 +39,11 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 #   In Claude Code:
 #     /plugin marketplace add rfxn/rdf
 #     /plugin install rdf@rdf
-#   Degraded mode: 10 state-backed commands (r-spec/r-plan/r-build/r-ship/
-#     r-status/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) need
-#     the ~/.rdf/state/ helpers only Option B's symlink deploy populates —
-#     see docs/multi-tool-parity.md.
+#   Bootstrap: a SessionStart hook delivers the ~/.rdf/state/ helpers on
+#     install — 10 state-backed commands (r-spec/r-plan/r-build/r-ship/
+#     r-status/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) run
+#     degraded only before the first session restart after install — see
+#     docs/multi-tool-parity.md.
 #   Hooks are never auto-installed (either mode): merge adapters/claude-code/
 #     hooks/hooks.json into ~/.claude/settings.json (see 'rdf deploy help');
 #     hooks + status line also need jq on PATH.

@@ -50,9 +50,10 @@ rename the file to `*.consumed`. If no cache is found, run:
 bash ~/.rdf/state/rdf-state.sh --full .
 ```
 
-*If the `~/.rdf/state/` helpers are absent (plugin-only install), `/rdf:r-save`
-cannot sync session state — tell the user to run `rdf generate claude-code`
-(symlink deploy) first.*
+*If the `~/.rdf/state/` helpers are absent (helpers not yet bootstrapped —
+fresh plugin install before its first session restart), `/rdf:r-save` cannot sync
+session state — tell the user to restart the session (plugin) or run `rdf
+deploy claude-code` (checkout) to deliver them.*
 
 Read `.diff_categories` from the state JSON and format the top-3 summary from
 it — do NOT re-classify files by hand; that classification is now

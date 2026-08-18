@@ -184,8 +184,10 @@ Mark task "Refresh state files" as in_progress.
 ### 5b. Refresh the Active Plan
 - Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`; resolve
   `plan_path="$(rdf_active_plan_path)"`. If empty, skip. If the helper is
-  absent (plugin-only install), skip this active-plan refresh — the rest of
-  `/rdf:r-refresh` proceeds; full state requires the symlink deploy.
+  absent (helpers not yet bootstrapped — fresh plugin install before its
+  first session restart), skip this active-plan refresh — the rest of
+  `/rdf:r-refresh` proceeds; restart the session (plugin) or run `rdf deploy
+  claude-code` (checkout) to deliver them.
 - Cross-reference `$plan_path` phases against git log.
 - Mark completed phases with commit hash evidence.
 - Update status summary.

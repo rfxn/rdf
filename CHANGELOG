@@ -1,5 +1,28 @@
 # RDF Changelog
 
+## Unreleased
+
+-- New Features --
+
+[New] SessionStart state-bootstrap delivers ~/.rdf/state on plugin installs
+      (version-stamped) — the full pipeline now runs on the plugin tier
+[New] doctor scopes: catalogs (agent/skill-meta integrity), state-helpers
+      (stale-copy FAIL) — 13 checks
+[New] tests: strip/sync/bootstrap suites + deploy/doctor coverage (222 → 244)
+
+-- Bug Fixes --
+
+[Fix] rdf sync could truncate canonical agents to empty when the deployed
+      copy had no frontmatter — agents loop now guards like the commands loop
+
+-- Changes --
+
+[Change] one shared frontmatter-strip (rdf_strip_frontmatter) for sync +
+         doctor; generation fails when agent-meta.json misses an agent
+[Change] state-helper delivery moved from generate (copy) to deploy
+         (per-file symlinks, auto-migrating identical legacy copies);
+         generate no longer writes under $HOME
+
 ## 3.6.3
 
 -- Bug Fixes --

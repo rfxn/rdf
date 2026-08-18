@@ -109,9 +109,10 @@ with no MEMORY target and `~/.rdf/lessons-learned.md` is within 5 of its
 50-entry cap.
 
 1. Run the deterministic scanner (read-only — never mutates the lessons file).
-   If `~/.rdf/state/rdf-lessons.sh` is absent (plugin-only install), skip this
-   consolidation step — MEMORY.md compaction still works; the scanner needs the
-   symlink deploy (`rdf generate claude-code`).
+   If `~/.rdf/state/rdf-lessons.sh` is absent (helpers not yet bootstrapped —
+   fresh plugin install before its first session restart), skip this
+   consolidation step — MEMORY.md compaction still works; restart the session
+   (plugin) or run `rdf deploy claude-code` (checkout) to deliver them.
    ```bash
    bash ~/.rdf/state/rdf-lessons.sh scan ~/.rdf/lessons-learned.md
    ```

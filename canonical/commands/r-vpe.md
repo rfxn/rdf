@@ -48,8 +48,10 @@ found, glob `.rdf/work-output/vpe-progress-*.md` and present
 candidates ordered by mtime. If exactly one un-suffixed
 `.rdf/work-output/vpe-progress.md` exists (legacy from pre-3.1.0),
 prompt: "Found legacy progress file. Import? [Y/n]".
-If `~/.rdf/state/rdf-bus.sh` is absent (plugin-only install), `--resume` is
-unavailable: run a fresh pipeline, or use the symlink deploy for session state.
+If `~/.rdf/state/rdf-bus.sh` is absent (helpers not yet bootstrapped — fresh
+plugin install before its first session restart), `--resume` is unavailable:
+run a fresh pipeline; restart the session (plugin) or run `rdf deploy
+claude-code` (checkout) to deliver them.
 
 1. Read the state file
 2. Determine pipeline stage reached
