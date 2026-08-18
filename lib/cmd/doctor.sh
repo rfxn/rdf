@@ -17,7 +17,8 @@ Options:
   --all                 Scan all workspace projects (path = workspace root)
   --scope SCOPE         Check specific category only:
                         artifacts, drift, memory, plan, github, sync,
-                        install-mode, deps, content-drift, doc-stats, readme
+                        install-mode, deps, catalogs, state-helpers,
+                        content-drift, doc-stats, readme
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
@@ -664,6 +665,87 @@ _check_deps() {
     fi
 }
 
+# ── Check: catalogs — adapter metadata catalogs vs canonical globs ──
+# Missing agent-meta key = FAIL (generate refuses; sync-truncation armer);
+# orphan entries = WARN. skill-meta is a curated subset — orphans only.
+_check_catalogs() {
+    local agents_dir="${RDF_CANONICAL}/agents"
+    local agent_meta="${RDF_ADAPTERS}/claude-code/agent-meta.json"
+    local skill_meta="${RDF_ADAPTERS}/agent-skills/skill-meta.json"
+    if ! command -v jq >/dev/null 2>&1; then
+        _add_result "catalogs" "$_WARN" "jq not found — catalog checks skipped"
+        return 0
+    fi
+    local f b missing="" orphans=""
+    if [[ -f "$agent_meta" ]]; then
+        for f in "${agents_dir}"/*.md; do
+            [[ -f "$f" ]] || continue
+            b="$(command basename "$f" .md)"
+            jq -e --arg a "$b" 'has($a)' "$agent_meta" >/dev/null 2>&1 \
+                || missing="${missing:+${missing}, }${b}"   # jq -e false/parse-fail both count as missing
+        done
+        while IFS= read -r b; do
+            [[ -f "${agents_dir}/${b}.md" ]] || orphans="${orphans:+${orphans}, }${b}"
+        done < <(jq -r 'keys[]' "$agent_meta" 2>/dev/null)  # unparseable meta → empty list (missing loop already flagged)
+        if [[ -n "$missing" ]]; then
+            _add_result "catalogs" "$_FAIL" "agent-meta.json missing agents: ${missing} — rdf generate will refuse"
+        else
+            _add_result "catalogs" "$_OK" "agent-meta.json covers all canonical agents"
+        fi
+        [[ -n "$orphans" ]] && _add_result "catalogs" "$_WARN" "agent-meta.json orphan entries (no canonical agent): ${orphans}"
+    else
+        _add_result "catalogs" "$_FAIL" "agent-meta.json not found: ${agent_meta}"
+    fi
+    if [[ -f "$skill_meta" ]]; then
+        orphans=""
+        while IFS= read -r b; do
+            [[ -f "${RDF_CANONICAL}/commands/${b}.md" ]] || orphans="${orphans:+${orphans}, }${b}"
+        done < <(jq -r 'keys[]' "$skill_meta" 2>/dev/null)  # unparseable meta → empty list, WARN below not triggered
+        if [[ -n "$orphans" ]]; then
+            _add_result "catalogs" "$_WARN" "skill-meta.json orphan entries (no canonical command): ${orphans}"
+        else
+            _add_result "catalogs" "$_OK" "skill-meta.json keys all resolve to canonical commands"
+        fi
+    fi
+    return 0
+}
+
+# ── Check: state-helpers — ~/.rdf/state delivery integrity ──
+# Symlink → OK (or WARN if it points outside this checkout); real file →
+# hash-compare against source (stale = FAIL, the 3.6.x silent-degradation
+# class); absent → WARN with remediation.
+_check_state_helpers() {
+    local state_dst="${HOME}/.rdf/state"
+    local src dst b stale="" absent="" foreign=""
+    for src in "${RDF_HOME}/state/"*.sh; do
+        [[ -f "$src" ]] || continue
+        b="$(command basename "$src")"
+        dst="${state_dst}/${b}"
+        if [[ -L "$dst" ]]; then
+            [[ "$(rdf_canonical_path "$dst")" == "$(rdf_canonical_path "$src")" ]] \
+                || foreign="${foreign:+${foreign}, }${b}"
+        elif [[ -f "$dst" ]]; then
+            [[ "$(rdf_hash_stdin < "$dst")" == "$(rdf_hash_stdin < "$src")" ]] \
+                || stale="${stale:+${stale}, }${b}"
+        else
+            absent="${absent:+${absent}, }${b}"
+        fi
+    done
+    if [[ -n "$stale" ]]; then
+        _add_result "state-helpers" "$_FAIL" "stale deployed copies: ${stale} — re-run 'rdf deploy claude-code' (checkout) or restart your session (plugin)"
+    fi
+    [[ -n "$foreign" ]] && _add_result "state-helpers" "$_WARN" "symlinks point outside this checkout: ${foreign}"
+    [[ -n "$absent" ]] && _add_result "state-helpers" "$_WARN" "helpers not deployed: ${absent} — run 'rdf deploy claude-code'"
+    if [[ -z "$stale" && -z "$foreign" && -z "$absent" ]]; then
+        _add_result "state-helpers" "$_OK" "all state helpers current"
+    fi
+    if [[ -f "${state_dst}/.rdf-version" ]] \
+        && [[ "$(command cat "${state_dst}/.rdf-version")" != "$RDF_VERSION" ]]; then
+        _add_result "state-helpers" "$_WARN" "bootstrap stamp $(command cat "${state_dst}/.rdf-version") != checkout ${RDF_VERSION}"
+    fi
+    return 0
+}
+
 # ── Check: doc-stats (RDF-specific) ──
 # Verifies the human-maintained inventory counts in WORKFORCE.md, RDF.md, and
 # docs/index.md against live counts derived from the filesystem. Count drift
@@ -937,6 +1019,8 @@ _doctor_one() {
             _check_sync "$path"
             _check_install_mode "$path"
             _check_deps
+            _check_catalogs
+            _check_state_helpers
             _check_content_drift "$path"
             _check_doc_stats "$path"
             _check_readme "$path"
@@ -949,10 +1033,12 @@ _doctor_one() {
         sync)           _check_sync "$path" ;;
         install-mode)   _check_install_mode "$path" ;;
         deps)           _check_deps ;;
+        catalogs)       _check_catalogs ;;
+        state-helpers)  _check_state_helpers ;;
         content-drift)  _check_content_drift "$path" ;;
         doc-stats)      _check_doc_stats "$path" ;;
         readme)         _check_readme "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, content-drift, doc-stats, readme" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme" ;;
     esac
 }
 

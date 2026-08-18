@@ -218,3 +218,55 @@ _run_install_mode() {
     [[ "$output" == *"no user-level RDF install"* ]]
     rm -rf "$home" "$target"
 }
+
+# Usage: _run_check <check_fn> <fix_rdf_home> <fix_home> — prints _RESULTS rows
+_run_check() {
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; check_fn="$2"; fix_rdf="$3"; fix_home="$4"
+        HOME="$fix_home"
+        RDF_HOME="$fix_rdf"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        "$check_fn"
+        if [ "${#_RESULTS[@]}" -gt 0 ]; then
+            printf "%s\n" "${_RESULTS[@]}"
+        fi
+    ' -- "$RDF_SRC" "$@"
+}
+
+@test "doctor catalogs: missing agent-meta entry FAILs, orphan WARNs" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/agents" "$fix/canonical/commands" \
+             "$fix/adapters/claude-code" "$fix/adapters/agent-skills"
+    touch "$fix/canonical/agents/a.md" "$fix/canonical/agents/b.md"
+    printf '{"a":{"name":"a"},"ghost":{"name":"g"}}\n' > "$fix/adapters/claude-code/agent-meta.json"
+    printf '{"r-a":"desc"}\n' > "$fix/adapters/agent-skills/skill-meta.json"
+    touch "$fix/canonical/commands/r-a.md"
+    run _run_check _check_catalogs "$fix" "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"catalogs|FAIL|agent-meta.json missing agents: b"* ]]
+    [[ "$output" == *"catalogs|WARN|agent-meta.json orphan entries (no canonical agent): ghost"* ]]
+    [[ "$output" == *"catalogs|OK|skill-meta.json keys all resolve to canonical commands"* ]]
+    rm -rf "$fix"
+}
+
+@test "doctor state-helpers: stale copy FAILs, symlink OKs, absent WARNs" {
+    fix="$(mktemp -d)"; home="$(mktemp -d)"
+    mkdir -p "$fix/state" "$home/.rdf/state"
+    printf 'one\n' > "$fix/state/linked.sh"
+    printf 'two\n' > "$fix/state/stale.sh"
+    printf 'three\n' > "$fix/state/missing.sh"
+    ln -s "$fix/state/linked.sh" "$home/.rdf/state/linked.sh"
+    printf 'MUTATED\n' > "$home/.rdf/state/stale.sh"
+    run _run_check _check_state_helpers "$fix" "$home"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"state-helpers|FAIL|stale deployed copies: stale.sh"* ]]
+    [[ "$output" == *"state-helpers|WARN|helpers not deployed: missing.sh"* ]]
+    [[ "$output" != *"linked.sh"* ]]                       # symlink to source = clean
+    rm -rf "$fix" "$home"
+}

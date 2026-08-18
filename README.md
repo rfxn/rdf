@@ -229,7 +229,7 @@ Run 'rdf <command> help' for details.
 | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
 | `rdf init <path> [--type] [--tools] [--github]` | Project initialization with governance templates |
-| `rdf doctor [--scope] [--all]` | 11 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, content-drift, doc-stats, readme |
+| `rdf doctor [--scope] [--all]` | 13 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme |
 | `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
