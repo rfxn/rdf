@@ -70,7 +70,9 @@
 | `lib/cmd/deploy.sh` | reference symlink; exit 1 on skips; usage how-to | `tests/deploy.bats` |
 | `tests/deploy.bats` | skeleton += reference; 3 new tests; skip-case status updates | (self) |
 | `reference/templates/SECURITY.md` | `Email:` → `Contact:` | `tests/derfxn.bats` |
-| `README.md` | drop `--tools`; `/r-init` out of bash fences | `tests/derfxn.bats` (grep) |
+| `README.md` | drop `--tools`; `/r-init` out of bash fences; doc-stats counts (P3) | `tests/derfxn.bats` (grep) |
+| `WORKFORCE.md` | doc-stats scripts count 17→16 (P3) | N/A (docs) |
+| `docs/index.md` | doc-stats profiles count 11→13 (P3) | N/A (docs) |
 | `docs/quickstart.md` | bash 3.2+; absolute links | `tests/derfxn.bats` (grep) |
 | `docs/memory-context.md` | absolute spec link | N/A (docs) |
 | `adapters/claude-plugin/output/**` | regenerated + committed (Phases 5, 8) — tracked (plugin install artifact) | `tests/derfxn.bats` |
@@ -513,6 +515,14 @@ Add the `node` profile and close the plain-JS detection gap.
 - Modify: `profiles/registry.json`
 - Modify: `profiles/detection-rules.md`
 - Modify: `tests/derfxn.bats`
+- Modify: `README.md`
+- Modify: `WORKFORCE.md`
+- Modify: `docs/index.md`
+
+(README/WORKFORCE/docs-index: doc-stats count reconciliation — Phase 1
+changed scripts 17→16 and profiles 11→12; this phase adds node → 13.
+Counts stabilize here, restoring `rdf doctor --scope doc-stats` to 0 FAIL
+before Phase 5's doctor.bats run. Surfaced by Phase 1's build gate.)
 
 - **Goals:** 8
 - **Mode**: serial-agent
@@ -659,6 +669,35 @@ Add the `node` profile and close the plain-JS detection gap.
     paths-scoping only
   ```
 
+- [ ] **Step 5b: Reconcile doc-stats counts (scripts 17→16 from Phase 1; profiles 11→13 after this phase)**
+
+  `README.md:634`, old→new:
+
+  ```
+  # old
+  **6 agents -- 37 commands -- 17 scripts -- 11 profiles -- 6 adapters -- 7 modes**
+  # new
+  **6 agents -- 37 commands -- 16 scripts -- 13 profiles -- 6 adapters -- 7 modes**
+  ```
+
+  `WORKFORCE.md:253`, old→new:
+
+  ```
+  # old
+  **Total: 6 agents + 37 commands + 17 scripts = 60 primitives**
+  # new
+  **Total: 6 agents + 37 commands + 16 scripts = 59 primitives**
+  ```
+
+  `docs/index.md:23`, old→new:
+
+  ```
+  # old
+  **6 agents · 37 commands · 11 profiles · 6 adapters · 7 modes**
+  # new
+  **6 agents · 37 commands · 13 profiles · 6 adapters · 7 modes**
+  ```
+
 - [ ] **Step 6: Append this phase's 2 tests to `tests/derfxn.bats`**
 
   ```bash
@@ -692,13 +731,15 @@ Add the `node` profile and close the plain-JS detection gap.
   jq -e '.profiles.node.requires == ["core"]' profiles/registry.json && echo REG-OK
   # expect: true + REG-OK
   bats tests/derfxn.bats 2>&1 | tail -1
-  # expect: 0 failures
+  # expect: all tests ok, exit 0
+  ./bin/rdf doctor --scope doc-stats 2>&1 | grep -c FAIL
+  # expect: 0 (counts reconciled — was 4 FAIL after Phase 1)
   ```
 
 - [ ] **Step 8: Commit**
 
   ```bash
-  git add profiles/node/governance-template.md profiles/registry.json profiles/detection-rules.md lib/cmd/init.sh tests/derfxn.bats
+  git add profiles/node/governance-template.md profiles/registry.json profiles/detection-rules.md lib/cmd/init.sh tests/derfxn.bats README.md WORKFORCE.md docs/index.md
   git commit -m "Add node profile: plain-JS projects no longer detect as minimal
 
 [New] profiles/node/ governance template (module system, async discipline,
@@ -707,6 +748,8 @@ Add the `node` profile and close the plain-JS detection gap.
       when typescript matched; JS globs scope rules only
 [Change] detection-rules.md documents the node signals and the deliberate
          template-only asymmetry (simplicity budget)
+[Change] doc-stats counts reconciled: 16 scripts (comment-snapshot moved to
+         rfxn-workspace profile), 13 profiles (+rfxn-workspace, +node)
 [New] derfxn.bats: node detection + typescript suppression tests"
   ```
 
