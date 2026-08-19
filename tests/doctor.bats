@@ -93,12 +93,16 @@ _run_doc_stats() {
     mkdir -p "$fix/canonical/agents" "$fix/canonical/commands" \
              "$fix/adapters/claude-code/output/commands" \
              "$fix/adapters/claude-code/output/agents" \
-             "$fix/adapters/claude-code/output/scripts"
+             "$fix/adapters/claude-code/output/scripts" \
+             "$fix/adapters/claude-code/output/governance" \
+             "$fix/adapters/claude-code/output/reference"
     fakehome="$(mktemp -d)"
     mkdir -p "$fakehome/.claude"
-    ln -s "$fix/adapters/claude-code/output/commands" "$fakehome/.claude/commands"
-    ln -s "$fix/adapters/claude-code/output/agents"   "$fakehome/.claude/agents"
-    ln -s "$fix/adapters/claude-code/output/scripts"  "$fakehome/.claude/scripts"
+    ln -s "$fix/adapters/claude-code/output/commands"   "$fakehome/.claude/commands"
+    ln -s "$fix/adapters/claude-code/output/agents"     "$fakehome/.claude/agents"
+    ln -s "$fix/adapters/claude-code/output/scripts"    "$fakehome/.claude/scripts"
+    ln -s "$fix/adapters/claude-code/output/governance" "$fakehome/.claude/governance"
+    ln -s "$fix/adapters/claude-code/output/reference"  "$fakehome/.claude/reference"
     run bash -c '
         set -euo pipefail
         rdf_src="$1"; proj="$2"; export HOME="$3"
@@ -114,7 +118,7 @@ _run_doc_stats() {
     ' -- "$RDF_SRC" "$fix" "$fakehome"
     [ "$status" -eq 0 ]
     [[ "$output" != *"wrong target"* ]]
-    [[ "$output" == *"sync|OK|all 3 symlinks correct"* ]]
+    [[ "$output" == *"sync|OK|all 5 symlinks correct"* ]]
     rm -rf "$fix" "$fakehome"
 }
 

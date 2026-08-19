@@ -398,6 +398,29 @@ _check_content_drift() {
         checked_count=$((checked_count + 1))
     done
 
+    # Check reference docs: plain files, same sidecar contract as commands
+    for dst_file in "${output_dir}/reference"/*.md; do
+        [[ -f "$dst_file" ]] || continue
+        basename_f="$(basename "$dst_file")"
+        sidecar="${dst_file}.rdf-hash"
+
+        if [[ ! -f "$sidecar" ]]; then
+            missing_sidecar_count=$((missing_sidecar_count + 1))
+            continue
+        fi
+
+        local stored_hash actual_hash
+        stored_hash="$(< "$sidecar")"
+        actual_hash="$(_hash_deployed_body "$dst_file")"
+
+        if [[ "$stored_hash" != "$actual_hash" ]]; then
+            _add_result "content-drift" "$_FAIL" \
+                "deployed file modified since last generate: reference/${basename_f}"
+            drift_count=$((drift_count + 1))
+        fi
+        checked_count=$((checked_count + 1))
+    done
+
     if [[ $missing_sidecar_count -gt 0 ]]; then
         _add_result "content-drift" "$_WARN" \
             "${missing_sidecar_count} file(s) missing .rdf-hash sidecar — run 'rdf generate claude-code'"
@@ -466,7 +489,8 @@ _check_sync() {
     local link_ok=0
     local link_fail=0
     local claude_base="${RDF_TARGET:-${HOME}/.claude}"
-    for target in commands agents scripts; do
+    # governance was a pre-existing gap — folded in while editing
+    for target in commands agents scripts governance reference; do
         local link="${claude_base}/${target}"
         if [[ -L "$link" ]]; then
             local link_dest

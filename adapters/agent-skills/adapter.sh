@@ -64,6 +64,10 @@ sk_generate_all() {
     command mkdir -p "$_output_new/.agents/skills"
     sk_emit_skills "${_output_new}/.agents/skills"
 
+    # SKILL.md bodies link ../reference/*.md — resolve from skills root
+    command mkdir -p "${_output_new}/.agents/skills/reference"
+    command cp "${RDF_CANONICAL}/reference/"*.md "${_output_new}/.agents/skills/reference/"
+
     command rm -rf "$_output_old"
     if [[ -d "$_output_final" ]]; then
         command mv "$_output_final" "$_output_old"

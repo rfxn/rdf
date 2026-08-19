@@ -1,28 +1,23 @@
 ---
 description: >
-  Cross-project analysis for rfxn projects. Reads MEMORY.md, PLAN.md,
+  Cross-project analysis for workspace project sets. Reads MEMORY.md, PLAN.md,
 ---
 
 # /rdf:r-util-proj-cross — Cross-Project Analysis
 
-Cross-project analysis for rfxn projects. Reads MEMORY.md, PLAN.md,
+Cross-project analysis for workspace project sets. Reads MEMORY.md, PLAN.md,
 AUDIT.md, and CLAUDE.md from all projects to identify shared patterns,
 duplicate effort, convention drift, and alignment opportunities.
 
 ## Projects
 
-Scan all directories under `/root/admin/work/proj/` that contain a
-`CLAUDE.md` or `.git/` directory. Known projects:
+The workspace root is the parent directory of the current project (or
+CWD itself when it is a non-git directory containing project repos).
+Scan all directories under the workspace root that contain a
+`CLAUDE.md` or `.git/` directory.
 
-| Alias | Directory |
-|-------|-----------|
-| apf | advanced-policy-firewall |
-| bfd | brute-force-detection |
-| lmd | linux-malware-detect |
-| rdf | rdf |
-
-Also scan shared libraries if present: tlog_lib, alert_lib, elog_lib,
-pkg_lib, geoip_lib, batsman.
+Also scan shared-library repos if present (directories whose name ends
+in `_lib` or that a workspace profile's cross-project reference lists).
 
 ## Protocol
 

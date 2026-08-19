@@ -193,6 +193,26 @@ cc_generate_scripts() {
     rdf_log "generated ${count} script files"
 }
 
+# Generate reference docs — commands link ../reference/*.md; ship the
+# target with hash sidecars so doctor covers drift like commands.
+cc_generate_reference() {
+    local src_dir="${RDF_CANONICAL}/reference"
+    local dst_dir="${_CC_OUTPUT_DIR}/reference"
+    local count=0
+
+    command mkdir -p "$dst_dir"
+
+    for src_file in "${src_dir}"/*.md; do
+        [[ -f "$src_file" ]] || continue
+        local basename_f
+        basename_f="$(basename "$src_file")"
+        command cp "$src_file" "${dst_dir}/${basename_f}"
+        _cc_write_hash_sidecar "$src_file" "${dst_dir}/${basename_f}"
+        count=$((count + 1))
+    done
+    rdf_log "generated ${count} reference docs"
+}
+
 # Copy hooks.json to output
 cc_generate_hooks() {
     if [[ "$_CC_LITE" -eq 1 ]]; then
@@ -299,6 +319,7 @@ cc_generate_all() {
     cc_generate_agents
     cc_generate_commands
     cc_generate_scripts
+    cc_generate_reference
     cc_generate_hooks
     cc_generate_governance
     cc_generate_rules
@@ -312,11 +333,12 @@ cc_generate_all() {
     command mv "$_output_new" "$_output_final"
     command rm -rf "$_output_old"
 
-    local agent_count command_count script_count rule_count
+    local agent_count command_count script_count rule_count reference_count
     agent_count="$(find "${_CC_OUTPUT_DIR}/agents" -name '*.md' 2>/dev/null | wc -l)"
     command_count="$(find "${_CC_OUTPUT_DIR}/commands" -name '*.md' 2>/dev/null | wc -l)"
     script_count="$(find "${_CC_OUTPUT_DIR}/scripts" -name '*.sh' 2>/dev/null | wc -l)"
     rule_count="$(find "${_CC_OUTPUT_DIR}/rules" -name '*.md' 2>/dev/null | wc -l)"  # rules/ absent → 0, not an error
+    reference_count="$(find "${_CC_OUTPUT_DIR}/reference" -name '*.md' 2>/dev/null | wc -l)"  # reference/ absent → 0, not an error
 
-    rdf_log "CC generation complete: ${agent_count} agents, ${command_count} commands, ${script_count} scripts, ${rule_count} rules"
+    rdf_log "CC generation complete: ${agent_count} agents, ${command_count} commands, ${script_count} scripts, ${rule_count} rules, ${reference_count} reference docs"
 }

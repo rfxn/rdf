@@ -184,6 +184,23 @@ cpl_generate_scripts() {
     rdf_log "generated ${count} script files"
 }
 
+# Copy reference docs — plugin commands link ../reference/*.md relative
+# to the plugin output root.
+cpl_generate_reference() {
+    local src_dir="${RDF_CANONICAL}/reference"
+    local dst_dir="${_CPL_OUTPUT_DIR}/reference"
+    local count=0
+
+    command mkdir -p "$dst_dir"
+
+    for src_file in "${src_dir}"/*.md; do
+        [[ -f "$src_file" ]] || continue
+        command cp "$src_file" "${dst_dir}/$(basename "$src_file")"
+        count=$((count + 1))
+    done
+    rdf_log "generated ${count} reference docs"
+}
+
 # Transform hooks.json: every "command" value under ~/.claude/scripts/
 # (ANYWHERE in the document — includes top-level statusLine, a sibling
 # of "hooks") -> ${CLAUDE_PLUGIN_ROOT}-relative path. Prompt-type hooks
@@ -259,6 +276,7 @@ cpl_generate_all() {
     cpl_generate_commands
     cpl_generate_agents
     cpl_generate_scripts
+    cpl_generate_reference
     cpl_generate_hooks
     cpl_stamp_plugin_version
 
