@@ -45,11 +45,12 @@ usage, industry landscape — every item below verified against source before
 it earned a slot):
 
 1. [x] **Core-seam reliability** — shipped in 3.6.4 (see below)
-2. [ ] **Make "drop it on any repo" true** — remove remaining rfxn-workspace
-       assumptions from deployed hooks and `/r-init` output, ship the
-       `reference/` docs that deployed commands cite, and fix the fresh-user
-       doc gaps (partial-deploy exit code, unimplemented flags, bash-floor
-       claims, broken links, Node/JS profile detection)
+2. [x] **Make "drop it on any repo" true** — shipped in 3.6.5: rfxn content
+       extracted to the opt-in `rfxn-workspace` profile (hooks, `/r-init`
+       output, commands, reference docs all generic + grep-guarded),
+       `reference/` ships in CC-family outputs and `~/.claude/reference`,
+       deploy exits 1 on skips with a real hooks-merge how-to, node profile
+       detection, doc truth sweep (bash 3.2+ floor, links, `--tools`)
 3. [ ] **Right-size the command surface to measured usage** — fold session
        bookkeeping into hooks, retire unwired commands, fix the
        security-floor substring matching, deduplicate the phase/plan/ship
