@@ -15,6 +15,38 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.6.5 — 2026-08-18
+
+ADDED: `profiles/rfxn-workspace/` — opt-in org overlay (`detect: []`, never
+auto-detected) housing `reference/cross-project.md` and
+`scripts/comment-snapshot.sh` (both moved out of the generic core); overlay
+pattern per ESLint shareable-configs / Renovate presets / Spec Kit precedent.
+ADDED: `profiles/node/` — plain-JS governance; `_detect_profiles` gains a
+node branch (package.json sole gate, suppressed when typescript matches;
+counts as a language, so Dockerfile now co-activates infrastructure).
+ADDED: `canonical/reference/` ships as a first-class adapter artifact —
+`cc_generate_reference` (hash sidecars) / `cpl_generate_reference` /
+agent-skills reference dir; `rdf deploy claude-code` symlinks
+`~/.claude/reference`; doctor content-drift + sync loops cover it (sync also
+gained the pre-existing missing `governance` target).
+ADDED: `tests/derfxn.bats` — 13-test de-rfxn regression suite including a
+canonical org-identifier allowlist guard; suite 246 → 262.
+MODIFIED: `canonical/scripts/subagent-stop.sh` — hardcoded workspace fallback
+replaced by `./.rdf` → `~/.rdf/agent-feed.log` (HOME-guarded, 100 KB
+size-capped, mktemp-staged rotation).
+MODIFIED: `lib/cmd/deploy.sh` — exits 1 when any item is skipped; usage
+carries the real hooks.json jq-merge how-to (mktemp-staged) and the exit
+contract; hooks.json notice is exit-neutral.
+MODIFIED: `lib/cmd/init.sh` — companion files de-rfxn'd (contact via
+repo-local git identity with private-vulnerability-reporting fallback,
+license detected from LICENSE head, org/repo-URL from the actual remote).
+MODIFIED: docs made truthful — README (`--tools`, `/r-init` fences, scripts
+table), quickstart (bash 3.2+ floor, absolute Pages links), CLAUDE.md floor
+wording, doc-stats counts (16 scripts / 13 profiles).
+REMOVED: `profiles/core/reference/cross-project.md`,
+`canonical/scripts/comment-snapshot.sh` (both relocated into the org
+overlay; no rfxn content remains in what `rdf init`/adapters deliver).
+
 ## 3.6.4 — 2026-08-18
 
 ADDED: `canonical/scripts/state-bootstrap.sh` — SessionStart hook delivering
