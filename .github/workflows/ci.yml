@@ -37,7 +37,12 @@ jobs:
             find canonical/scripts/ -name "*.sh" 2>/dev/null |
             sort
           )
-          ALL=("${FILES[@]}" "${ADAPTER_FILES[@]}" "${CANONICAL_FILES[@]}")
+          # Profile-scoped scripts (e.g. rfxn-workspace org tools)
+          mapfile -t PROFILE_FILES < <(
+            find profiles -path '*/scripts/*.sh' 2>/dev/null |
+            sort
+          )
+          ALL=("${FILES[@]}" "${ADAPTER_FILES[@]}" "${CANONICAL_FILES[@]}" "${PROFILE_FILES[@]}")
           printf '%s\n' "${ALL[@]}" > /tmp/shell-files.txt
           echo "Found $(wc -l < /tmp/shell-files.txt) shell files"
           cat /tmp/shell-files.txt

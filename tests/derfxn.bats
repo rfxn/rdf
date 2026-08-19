@@ -84,6 +84,14 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -eq 0 ]
     [ "$output" = "node,frontend" ]
     rm -rf "$jx"
+    # sentinel F9 (accepted behavior): node counts as a language, so
+    # Dockerfile now activates infrastructure — consistent with python/go/etc.
+    local dk; dk="$(mktemp -d)"
+    echo '{}' > "$dk/package.json"; touch "$dk/Dockerfile"
+    run _rdf_call _detect_profiles "$dk"
+    [ "$status" -eq 0 ]
+    [ "$output" = "node,infrastructure" ]
+    rm -rf "$dk"
 }
 
 @test "typescript fixture does not add node profile" {
@@ -96,12 +104,25 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
 @test "init companion files carry no rfxn contact when remote absent" {
     git -C "$FIX" init -q    # no repo-local user.email set — --local read must NOT fall through to the operator's global identity
     touch "$FIX/x.sh"
-    run _rdf_call cmd_init "$FIX" --type shell --no-memory
+    # Hermetic global-identity sentinel: plant a known global user.email in a
+    # temp HOME so the test discriminates --local from plain `git config`
+    # even on CI runners that have no global identity of their own
+    local ghome; ghome="$(mktemp -d)"
+    HOME="$ghome" git config --global user.email 'leak@should-not-appear.test'
+    run bash -c '
+        rdf_src="$1"; fix="$2"; ghome="$3"; shift 3
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/init.sh"
+        HOME="$ghome" cmd_init "$fix" --type shell --no-memory
+    ' -- "$RDF_SRC" "$FIX" "$ghome"
     [ "$status" -eq 0 ]
-    run grep -l 'rfxn' "$FIX/SECURITY.md" "$FIX/CONTRIBUTING.md"
+    run grep -l -e 'rfxn' -e 'leak@should-not-appear.test' "$FIX/SECURITY.md" "$FIX/CONTRIBUTING.md"
     [ "$status" -ne 0 ]
-    grep -q 'Contact: the maintainers via the repository issue tracker' "$FIX/SECURITY.md"
+    grep -q 'private vulnerability reporting' "$FIX/SECURITY.md"
     grep -q 'under the terms in the LICENSE file' "$FIX/CONTRIBUTING.md"
+    rm -rf "$ghome"
 }
 
 @test "cc output ships reference docs with hash sidecars" {
@@ -136,5 +157,21 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -d "$RDF_SRC/adapters/claude-code/output" ] && dirs+=("$RDF_SRC/adapters/claude-code/output")
     [ -d "$RDF_SRC/adapters/agent-skills/output" ] && dirs+=("$RDF_SRC/adapters/agent-skills/output")
     run grep -rn '/root/admin/work/proj' "${dirs[@]}"
+    [ "$status" -ne 0 ]
+}
+
+@test "canonical carries no rfxn org identifiers beyond the allowlist" {
+    # Enforces spec §4 Dependency Rules ("no rfxn org identifier in core").
+    # Allowlist: product name, org copyright/contact headers, repo URLs,
+    # the opt-in org profile's own name, and the vendored upstream scripts.
+    run bash -c '
+        grep -rin "rfxn" "$1/canonical" \
+            | grep -vi "rfxn-workspace" \
+            | grep -v "github.com/rfxn" \
+            | grep -v "proj@rfxn.com" \
+            | grep -v "rfxn Development Framework" \
+            | grep -v "R-fx Networks" \
+            | grep -vE "canonical/scripts/(context-bar|setup|clone-conversation|half-clone-conversation|test-half-clone|color-preview|check-context)\.sh"
+    ' -- "$RDF_SRC"
     [ "$status" -ne 0 ]
 }

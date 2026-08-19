@@ -520,7 +520,9 @@ _generate_companion_files() {
     # machine owner's personal address into the target repo
     local contact_email
     contact_email="$(git -C "$path" config --local user.email 2>/dev/null || echo "")"  # non-git dir (exit 128) / unset key (exit 1) → generic fallback below
-    [[ -z "$contact_email" ]] && contact_email="the maintainers via the repository issue tracker"
+    # Fallback must NOT point at the public issue tracker — the template's
+    # preceding line forbids public issues for vulnerabilities
+    [[ -z "$contact_email" ]] && contact_email="this repository's private vulnerability reporting (GitHub Security tab -> Report a vulnerability), or the maintainer listed in the repository metadata"
 
     # License: detect from LICENSE head; phrase completes "under the {{LICENSE}}."
     local license="terms in the LICENSE file"
@@ -565,9 +567,12 @@ _generate_companion_files() {
     elif [[ "$dry_run" -eq 1 ]]; then
         rdf_log "  WOULD CREATE: CONTRIBUTING.md (project=${name}, org=${org})"
     else
+        local repo_url="${remote_url:-}"
+        [[ -z "$repo_url" ]] && repo_url="<your-repository-url>"
         sed -e "s|{{PROJECT}}|${name}|g" \
             -e "s|{{ORG}}|${org}|g" \
             -e "s|{{LICENSE}}|${license}|g" \
+            -e "s|{{REPO_URL}}|${repo_url}|g" \
             "$con_tmpl" > "$con_dest"
         rdf_log "  created CONTRIBUTING.md"
     fi

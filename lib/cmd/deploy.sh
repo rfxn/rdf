@@ -24,15 +24,18 @@ Options:
   --project-root   Project root for Codex AGENTS.md deployment
 
 Hooks merge (claude-code symlink deploy only; plugin installs auto-register):
-  hooks.json is never symlinked. Merge it into ~/.claude/settings.json:
-    jq -s '.[0] * .[1]' ~/.claude/settings.json adapters/claude-code/hooks/hooks.json > /tmp/settings.merged && cp /tmp/settings.merged ~/.claude/settings.json
+  hooks.json is never symlinked. From the RDF checkout root, merge it into
+  ~/.claude/settings.json (settings.json controls what your agent executes —
+  stage through mktemp, never a predictable /tmp path):
+    t=$(mktemp) && jq -s '.[0] * .[1]' ~/.claude/settings.json adapters/claude-code/hooks/hooks.json > "$t" && cp "$t" ~/.claude/settings.json && rm -f "$t"
   Review the result: '*' merges objects recursively but REPLACES arrays —
   if you already define hooks for the same event, merge those manually.
 
 Exit status: 0 all items deployed; 1 if any item was skipped.
 
 Symlinked directories allow 'rdf generate' to update deployed files in place.
-Files that require manual merge (e.g., hooks.json) are skipped with a notice.
+Files that require manual merge (e.g., hooks.json) are reported with a
+notice and do not affect the exit status.
 
 Examples:
   rdf deploy claude-code
@@ -244,7 +247,7 @@ _deploy_claude_code() {
     _deploy_state_helpers "$dry_run" "$force"
 
     # Skip hooks.json — requires manual merge
-    rdf_log "skipped: hooks.json (manual merge — see 'rdf deploy help')"
+    rdf_log "manual merge required: hooks.json (see 'rdf deploy help'; does not affect exit status)"
 }
 
 # Deploy Gemini CLI adapter output to ~/.gemini/

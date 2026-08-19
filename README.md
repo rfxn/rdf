@@ -409,7 +409,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | pre-commit-validate.sh | Pre-commit lint + anti-pattern greps |
 | post-edit-lint.sh | Post-edit shellcheck on modified files |
 | comment-metrics.sh | Per-file comment cruft metrics for shell source |
-| comment-snapshot.sh | Comment metrics snapshot across shared library set |
+| state-bootstrap.sh | SessionStart hook -- deliver ~/.rdf/state helpers on plugin installs |
 
 ---
 

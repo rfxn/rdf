@@ -18,7 +18,7 @@ Two layers reviewed in every run:
 
 1. **Global** — `~/.claude/CLAUDE.md`
 2. **Project** — every `CLAUDE.md` reachable from CWD upward to the
-   workspace root (typical rfxn layout: project root + workspace
+   workspace root (typical layout: project root + workspace
    parent + global). Ignore vendored copies inside `node_modules/`,
    `.git/`, or other dependency directories.
 
@@ -194,7 +194,7 @@ edits.
 - Conversation transcripts may contain private workflow detail.
   Scratch directory is `mktemp`-isolated and deleted at session end
   unless the user asks to retain it.
-- D1–D4 filters compose with the parent rfxn CLAUDE.md's existing
+- D1–D4 filters compose with the parent workspace CLAUDE.md's existing
   rule: "Volatile data does not belong in any CLAUDE.md — derive
   from source." This skill operationalizes that rule against the
   written content.

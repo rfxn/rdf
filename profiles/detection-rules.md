@@ -56,6 +56,9 @@ Notes:
   `webpack.config.js` in a Python repo is not a Node project
 - Registry detect globs include the JS extensions for rules
   paths-scoping only
+- node counts as a language signal: a JS repo with a `Dockerfile` (or
+  other infra markers) now also activates `infrastructure`, consistent
+  with every other language profile
 
 ### database
 

@@ -52,6 +52,12 @@ if [[ -n "${last_msg:-}" ]]; then
     entry="${entry} | preview=${clean_msg}"
 fi
 
+# Size cap: same 100 KB / 1000-line contract as rotate-work-output.sh —
+# the ~/.rdf fallback has no other rotation path
+if [[ -f "$feed_log" ]] && [[ "$(command wc -c < "$feed_log" 2>/dev/null || echo 0)" -gt 102400 ]]; then  # unreadable log → treat as size 0, skip rotation
+    command tail -n 1000 "$feed_log" > "${feed_log}.tmp" 2>/dev/null && command mv "${feed_log}.tmp" "$feed_log"  # rotation failure is non-fatal — hook must never error
+fi
+
 # Append to feed log
 echo "$entry" >> "$feed_log"
 

@@ -105,7 +105,8 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
 @test "deploy claude-code skips hooks.json" {
     run _run_deploy "$FIX_HOME"
     [ ! -e "${FIX_HOME}/.claude/hooks.json" ]           # never symlinked (manual merge)
-    echo "$output" | grep -q 'skipped: hooks.json'
+    echo "$output" | grep -q 'manual merge required: hooks.json'
+    [ "$status" -eq 0 ]                                 # hooks notice never trips the skip exit contract
 }
 
 @test "deploy agent-skills symlinks .agents/skills into project root" {

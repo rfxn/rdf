@@ -48,7 +48,7 @@ case "$file_path" in
         if head -1 "$file_path" 2>/dev/null | grep -qE '^#!\s*(/usr)?/bin/(env\s+)?bash'; then
             is_shell=true
         fi
-        # Also check known rfxn shell files without extensions
+        # Also check known extensionless shell files (harmless extra matches elsewhere)
         basename=$(basename "$file_path")
         case "$basename" in
             apf|bfd|maldet|internals.conf|conf.*|*.def)

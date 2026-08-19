@@ -20,7 +20,8 @@
 
 [Fix] subagent-stop.sh hardcoded /root/admin/work/proj fallback removed —
       plugin users on other machines no longer get permission-denied
-      stderr per subagent stop; fallback is ./.rdf -> ~/.rdf
+      stderr per subagent stop; fallback is ./.rdf -> ~/.rdf/agent-feed.log
+      (new machine-global sink, size-capped at 100 KB / last 1000 lines)
 [Fix] rdf init no longer writes rfxn artifacts into consumer repos:
       cross-project.md (APF/BFD/LMD tables), proj@rfxn.com contact,
       forced rfxn org and GPL v2 in SECURITY.md/CONTRIBUTING.md
@@ -35,7 +36,10 @@
 [Change] rdf deploy exits 1 when any item is skipped — established
          ~/.claude setups get a loud partial-deploy signal instead of a
          silent exit-0 half-install
-[Change] rfxn machines: run 'rdf profile install rfxn-workspace' once to
-         re-activate org governance after upgrade; stale
-         .rdf/governance/reference/cross-project.md copies in initialized
-         repos are harmless and refresh out via /r-refresh
+[Change] rfxn-machine migration is two-step: (1) 'rdf profile install
+         rfxn-workspace' then 'rdf generate claude-code && rdf deploy
+         claude-code' restores org governance at the machine level;
+         (2) per-project org reference (cross-project.md + the
+         Cross-Project Coordination CLAUDE.md section) needs 'rdf init
+         <path> --type <existing>,rfxn-workspace' per repo — /r-refresh
+         alone regenerates from the clean core set and drops it

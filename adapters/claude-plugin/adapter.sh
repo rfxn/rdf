@@ -293,5 +293,7 @@ cpl_generate_all() {
     agent_count="$(find "${_CPL_OUTPUT_DIR}/agents" -name '*.md' 2>/dev/null | wc -l)"      # dir may not exist on partial generation
     script_count="$(find "${_CPL_OUTPUT_DIR}/scripts" -name '*.sh' 2>/dev/null | wc -l)"    # dir may not exist on partial generation
 
-    rdf_log "plugin generation complete: ${command_count} commands, ${agent_count} agents, ${script_count} scripts"
+    local reference_count
+    reference_count="$(find "${_CPL_OUTPUT_DIR}/reference" -name '*.md' 2>/dev/null | wc -l)"  # dir may not exist on partial generation
+    rdf_log "plugin generation complete: ${command_count} commands, ${agent_count} agents, ${script_count} scripts, ${reference_count} reference docs"
 }

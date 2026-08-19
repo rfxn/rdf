@@ -98,7 +98,7 @@ rdf/                                 # Repository root
 |       |-- deploy.sh                # rdf deploy <claude-code|gemini-cli>
 |       |-- generate.sh              # rdf generate <claude-code|claude-plugin|codex|agent-skills|antigravity|agents-md|gemini-cli|all> [--rules|--lite]
 |       |-- profile.sh               # rdf profile <list|install|remove|status>
-|       |-- init.sh                  # rdf init <path> [--type] [--batch] [--tools] [--github]
+|       |-- init.sh                  # rdf init <path> [--type] [--batch] [--github]
 |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
 |       |-- migrate.sh               # rdf migrate (version migration helpers)
 |       |-- state.sh                 # rdf state [path] -> JSON to stdout

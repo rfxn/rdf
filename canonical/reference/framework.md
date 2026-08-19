@@ -1,8 +1,8 @@
 # rfxn Development Framework (RDF) — v3
 
-Artifact taxonomy, handoff model, and session continuity protocol for all
-rfxn projects. Authoritative reference for what each artifact is, where it
-lives, who writes it, and how it survives sessions.
+Artifact taxonomy, handoff model, and session continuity protocol for
+RDF-governed projects. Authoritative reference for what each artifact is,
+where it lives, who writes it, and how it survives sessions.
 
 ---
 

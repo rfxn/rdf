@@ -16,6 +16,10 @@ CWD itself when it is a non-git directory containing project repos).
 Scan all directories under the workspace root that contain a
 `CLAUDE.md` or `.git/` directory.
 
+If the resolved workspace root is `$HOME` or `/`, stop and ask the user
+for an explicit root — a home directory is not a workspace. Cap the scan
+at 25 sibling directories and report when the cap is hit.
+
 Also scan shared-library repos if present (directories whose name ends
 in `_lib` or that a workspace profile's cross-project reference lists).
 
@@ -51,8 +55,9 @@ per-project differences from unintentional drift.
 
 ### 4. Shared Library Drift
 
-For each shared library (tlog_lib, alert_lib, elog_lib, pkg_lib,
-geoip_lib), check all consuming projects:
+For each shared library the workspace profile's cross-project reference
+lists (or any `*_lib` repo found in the scan), check all consuming
+projects:
 
 - Compare version variables across canonical and consumer copies
 - Compute `sha256sum` of all copies — warn if checksums differ
@@ -77,17 +82,17 @@ memory sections. Flag:
 ## Open Work Overlap ({N} batch opportunities)
 | Item | Projects | Action |
 |------|----------|--------|
-| {description} | APF, BFD | Batch across both |
+| {description} | {project-a}, {project-b} | Batch across both |
 
 ## Convention Drift ({N} differences)
-| Convention | APF | BFD | LMD | Aligned? |
-|-----------|-----|-----|-----|----------|
-| Commit format | VERSION \| desc | VERSION \| desc | [Type] desc | NO |
+| Convention | {project-a} | {project-b} | {project-c} | Aligned? |
+|-----------|-------------|-------------|-------------|----------|
+| Commit format | {format-a} | {format-a} | {format-b} | NO |
 
 ## Shared Library Drift ({N} mismatches)
-| Library | Canonical | APF | BFD | LMD | Status |
-|---------|-----------|-----|-----|-----|--------|
-| tlog_lib | 1.2.0 | 1.2.0 | 1.1.9 | 1.2.0 | DRIFT |
+| Library | Canonical | {consumer-a} | {consumer-b} | Status |
+|---------|-----------|--------------|--------------|--------|
+| {lib} | 1.2.0 | 1.2.0 | 1.1.9 | DRIFT |
 
 ## Lessons to Propagate ({N})
 - {lesson from project X} → add to parent CLAUDE.md § {section}
@@ -99,7 +104,8 @@ memory sections. Flag:
 ## Rules
 - Read-only — do NOT modify any files
 - Report convention drift as differences, not violations — some
-  differences are intentional (e.g., LMD commit format)
+  differences are intentional (e.g., a project with a deliberately
+  different commit-message format)
 - For library drift, the canonical copy is authoritative
 - Focus on actionable items — skip trivial differences
 - If a project has no PLAN.md/AUDIT.md/MEMORY.md, note it and

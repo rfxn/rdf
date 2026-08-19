@@ -9,7 +9,7 @@
 ## Development Setup
 
 ```bash
-git clone https://github.com/{{ORG}}/{{PROJECT}}.git
+git clone {{REPO_URL}}
 cd {{PROJECT}}
 # Project-specific setup instructions
 ```
