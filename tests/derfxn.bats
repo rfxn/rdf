@@ -128,3 +128,13 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     run bash -c 'awk "/^\`\`\`bash/,/^\`\`\`$/" "$1/README.md" | grep "/r-init"' -- "$RDF_SRC"
     [ "$status" -ne 0 ]
 }
+
+@test "generated CC-family outputs contain no rfxn workspace path" {
+    # plugin + agents-md outputs are always present (committed); the
+    # others only when generated locally — grep whichever exist
+    local dirs=("$RDF_SRC/adapters/claude-plugin/output" "$RDF_SRC/adapters/agents-md/output")
+    [ -d "$RDF_SRC/adapters/claude-code/output" ] && dirs+=("$RDF_SRC/adapters/claude-code/output")
+    [ -d "$RDF_SRC/adapters/agent-skills/output" ] && dirs+=("$RDF_SRC/adapters/agent-skills/output")
+    run grep -rn '/root/admin/work/proj' "${dirs[@]}"
+    [ "$status" -ne 0 ]
+}

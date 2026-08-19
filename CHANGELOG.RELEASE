@@ -1,27 +1,41 @@
-# RDF 3.6.4 Release Notes
+# RDF 3.6.5 Release Notes
 
-## 3.6.4
+## 3.6.5
 
 -- New Features --
 
-[New] SessionStart state-bootstrap delivers ~/.rdf/state on plugin installs
-      (version-stamped) — the full pipeline now runs on the plugin tier
-[New] doctor scopes: catalogs (agent/skill-meta integrity), state-helpers
-      (stale-copy FAIL) — 13 checks
-[New] tests: strip/sync/bootstrap suites + deploy/doctor coverage (222 → 246)
+[New] rfxn-workspace profile — opt-in org overlay (detect: []) housing
+      cross-project.md and comment-snapshot.sh; core stays generic
+[New] node profile: plain package.json projects no longer detect as
+      minimal (package.json sole gate; suppressed when typescript matches)
+[New] canonical/reference/ ships in claude-code (hash sidecars), plugin,
+      and agent-skills outputs; deploy symlinks ~/.claude/reference —
+      24 ../reference/*.md links now resolve in installs
+[New] doctor: content-drift covers reference/*.md; sync completeness loop
+      gains reference + governance
+[New] tests/derfxn.bats de-rfxn regression suite; deploy.bats exit-code
+      and reference-symlink tests
 
 -- Bug Fixes --
 
-[Fix] rdf sync could truncate canonical agents to empty when the deployed
-      copy had no frontmatter — agents loop now guards like the commands loop
+[Fix] subagent-stop.sh hardcoded /root/admin/work/proj fallback removed —
+      plugin users on other machines no longer get permission-denied
+      stderr per subagent stop; fallback is ./.rdf -> ~/.rdf
+[Fix] rdf init no longer writes rfxn artifacts into consumer repos:
+      cross-project.md (APF/BFD/LMD tables), proj@rfxn.com contact,
+      forced rfxn org and GPL v2 in SECURITY.md/CONTRIBUTING.md
+[Fix] doc truth: README --tools advertisement removed, /r-init out of
+      bash fences, quickstart bash floor 3.2+ (was 4.1+), Pages links
+      absolute (README/ROADMAP/spec links were 404 on Pages)
+[Fix] rdf deploy help now contains the hooks.json jq-merge how-to it
+      points to
 
 -- Changes --
 
-[Change] one shared frontmatter-strip (rdf_strip_frontmatter) for sync +
-         doctor; generation fails when agent-meta.json misses an agent
-[Change] upgrade note: run 'rdf deploy claude-code' once after updating a
-         checkout install — generate no longer refreshes ~/.rdf/state; add
-         --force if your deployed copies differ from source (backed up first)
-[Change] state-helper delivery moved from generate (copy) to deploy
-         (per-file symlinks, auto-migrating identical legacy copies);
-         generate no longer writes under $HOME
+[Change] rdf deploy exits 1 when any item is skipped — established
+         ~/.claude setups get a loud partial-deploy signal instead of a
+         silent exit-0 half-install
+[Change] rfxn machines: run 'rdf profile install rfxn-workspace' once to
+         re-activate org governance after upgrade; stale
+         .rdf/governance/reference/cross-project.md copies in initialized
+         repos are harmless and refresh out via /r-refresh
