@@ -23,6 +23,14 @@ Options:
   --lite           rdf-lite deploy: symlink rules/ as governance, skip hooks
   --project-root   Project root for Codex AGENTS.md deployment
 
+Hooks merge (claude-code symlink deploy only; plugin installs auto-register):
+  hooks.json is never symlinked. Merge it into ~/.claude/settings.json:
+    jq -s '.[0] * .[1]' ~/.claude/settings.json adapters/claude-code/hooks/hooks.json > /tmp/settings.merged && cp /tmp/settings.merged ~/.claude/settings.json
+  Review the result: '*' merges objects recursively but REPLACES arrays —
+  if you already define hooks for the same event, merge those manually.
+
+Exit status: 0 all items deployed; 1 if any item was skipped.
+
 Symlinked directories allow 'rdf generate' to update deployed files in place.
 Files that require manual merge (e.g., hooks.json) are skipped with a notice.
 
@@ -226,6 +234,7 @@ _deploy_claude_code() {
     _deploy_symlink "${output_dir}/commands" "${dest_base}/commands" "$dry_run" "$force"
     _deploy_symlink "${output_dir}/scripts" "${dest_base}/scripts" "$dry_run" "$force"
     _deploy_symlink "${output_dir}/governance" "${dest_base}/governance" "$dry_run" "$force"
+    _deploy_symlink "${output_dir}/reference" "${dest_base}/reference" "$dry_run" "$force"
 
     # Scoped rules/ are opt-in (--rules): default keeps existing symlink users unchanged.
     if [[ "$deploy_rules" -eq 1 && -d "${output_dir}/rules" ]]; then
@@ -360,7 +369,7 @@ cmd_deploy() {
     # Summary with skip reporting
     if [[ $_DEPLOY_SKIPPED -gt 0 ]]; then
         rdf_warn "deploy complete: ${_DEPLOY_OK} deployed, ${_DEPLOY_SKIPPED} skipped (use --force to override)"
-    else
-        rdf_log "deploy complete: ${_DEPLOY_OK} items deployed"
+        return 1
     fi
+    rdf_log "deploy complete: ${_DEPLOY_OK} items deployed"
 }

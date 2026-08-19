@@ -21,7 +21,7 @@ _make_deploy_skeleton() {
     local fix_home="$1"
     local out="${fix_home}/adapters/claude-code/output"
     mkdir -p "${out}/agents" "${out}/commands" "${out}/scripts" \
-             "${out}/governance" "${out}/rules"
+             "${out}/governance" "${out}/rules" "${out}/reference"
     touch "${out}/commands/x.md" "${out}/governance/core-governance.md" \
           "${out}/rules/core.md"
 }
@@ -253,4 +253,35 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -eq 1 ]
     echo "$output" | grep -q 'agents missing from agent-meta.json: ghost'
     rm -rf "$home"
+}
+
+@test "deploy exit codes: clean deploy 0, skipped items 1" {
+    run _run_deploy "$FIX_HOME" claude-code
+    [ "$status" -eq 0 ]
+    rm -rf "${FIX_HOME}/.claude"
+    mkdir -p "${FIX_HOME}/.claude/commands"     # real dir → skip
+    run _run_deploy "$FIX_HOME" claude-code
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"skipped"* ]]
+    run _run_deploy "$FIX_HOME" --dry-run claude-code   # dry-run predicts the same skip
+    [ "$status" -eq 1 ]
+    # spec 11b: ONLY reference conflicts → other items deploy, still exit 1
+    rm -rf "${FIX_HOME}/.claude"
+    mkdir -p "${FIX_HOME}/.claude/reference"
+    run _run_deploy "$FIX_HOME" claude-code
+    [ "$status" -eq 1 ]
+    [ -L "${FIX_HOME}/.claude/commands" ]
+}
+
+@test "deploy claude-code symlinks reference into target" {
+    run _run_deploy "$FIX_HOME" claude-code
+    [ "$status" -eq 0 ]
+    [ -L "${FIX_HOME}/.claude/reference" ]
+}
+
+@test "deploy help documents the hooks.json merge" {
+    run _run_deploy "$FIX_HOME" help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"jq -s"* ]]
+    [[ "$output" == *"Exit status"* ]]
 }

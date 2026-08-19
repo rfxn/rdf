@@ -42,7 +42,7 @@ _make_deploy_skeleton() {
     local fix_home="$1"
     local out="${fix_home}/adapters/claude-code/output"
     mkdir -p "${out}/agents" "${out}/commands" "${out}/scripts" \
-             "${out}/governance" "${out}/rules"
+             "${out}/governance" "${out}/rules" "${out}/reference"
     touch "${out}/commands/x.md" "${out}/governance/core-governance.md" \
           "${out}/rules/core.md"
 }
