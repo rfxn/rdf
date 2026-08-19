@@ -58,10 +58,12 @@ bin/rdf generate claude-code          # or: claude-plugin, codex, antigravity, a
 # 3. Deploy (symlinks -- regeneration auto-updates)
 bin/rdf deploy claude-code            # or: bin/rdf deploy gemini-cli
 
-# 4. Initialize a project with governance
+# 4. Go to your project
 cd /path/to/your/project
-/r-init                               # auto-detects project type, suggests profiles
 ```
+
+Then, inside your agent session (Claude Code prompt, not the shell), run
+`/r-init` — it auto-detects the project type and suggests profiles.
 
 That's it. Your AI agent now has project-specific governance, quality gates, and domain expertise.
 
@@ -91,8 +93,10 @@ Most users do not need to override these — `bin/rdf` resolves paths from its o
 
 ```bash
 cd /path/to/project
-/r-init                               # auto-detects profiles, generates governance
 ```
+
+Then, from your agent session: `/r-init` — auto-detects profiles and
+generates governance.
 
 `rdf init` creates (inside the target project):
 
@@ -229,7 +233,7 @@ Run 'rdf <command> help' for details.
 | `rdf generate <target>` | `claude-code`, `claude-plugin`, `codex`, `antigravity`, `agent-skills`, `agents-md`, `gemini-cli` (legacy), `all` |
 | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
-| `rdf init <path> [--type] [--tools] [--github]` | Project initialization with governance templates |
+| `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
 | `rdf doctor [--scope] [--all]` | 13 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme |
 | `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
@@ -600,7 +604,7 @@ Contract: read from `${RDF_CANONICAL}`, write to adapter `output/`. Never modify
 <summary><strong>Onboard a Project</strong></summary>
 
 ```bash
-rdf init /path/to/project --type shell --tools claude-code --github
+rdf init /path/to/project --type shell --github
 ```
 
 Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, and optionally GitHub labels + project board.

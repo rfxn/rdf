@@ -24,7 +24,7 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 ## Shell Standards
 - Shebang: `#!/usr/bin/env bash`
 - `set -euo pipefail` in all scripts
-- Bash 4.1+ floor (CentOS 6 compatibility)
+- Bash floor: target 3.2 (macOS system bash — CI-smoked) and 4.1 (CentOS 6); avoid features newer than either (matches CONTRIBUTING.md)
 - All variables double-quoted in command context
 - `command -v` for binary discovery, never hardcoded paths
 - `command cp`/`command mv`/`command rm` in project source (not bare, not `/usr/bin/`)

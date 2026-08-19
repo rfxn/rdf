@@ -5,7 +5,8 @@ nav_order: 2
 
 # Quickstart — RDF on Your Repo in 5 Minutes
 
-No rfxn context required. You need `git`, `bash` 4.1+, `jq`, and an AI
+No rfxn context required. You need `git`, `bash` 3.2+ (macOS system bash
+works — CI-verified), `jq`, and an AI
 coding runtime — Claude Code, Codex, or Antigravity CLI (Gemini CLI is
 supported as a legacy tier). Examples below use Claude Code.
 
@@ -106,9 +107,9 @@ bin/rdf doctor ~/projects/my-app   # convention drift, stale state, sync health
 
 ## Where next
 
-- [README — full command reference](../README.md#4-usage)
+- [README — full command reference](https://github.com/rfxn/rdf#4-usage)
 - [Demo walkthrough — a real production change end-to-end](demo-walkthrough.md)
-- [ROADMAP](../ROADMAP.md)
+- [ROADMAP](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
 
 Something break in the first five minutes? That's a bug —
 [open an issue](https://github.com/rfxn/rdf/issues/new/choose).

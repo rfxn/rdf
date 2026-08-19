@@ -63,6 +63,6 @@ figures, and CI guards the published numbers against drift.
 
 ## See also
 
-- Design spec: [`docs/specs/2026-07-15-memory-context-design.md`](specs/2026-07-15-memory-context-design.md)
+- Design spec: [`docs/specs/2026-07-15-memory-context-design.md`](https://github.com/rfxn/rdf/blob/main/docs/specs/2026-07-15-memory-context-design.md)
 - Context cost breakdown: `state/rdf-overhead.sh` and the Context-cost table
   in the [README](https://github.com/rfxn/rdf#4-usage)
