@@ -361,11 +361,35 @@ _check_content_drift() {
     local drift_count=0
     local missing_sidecar_count=0
     local checked_count=0
+    local skills_tree_missing=0
 
     # _hash_deployed_body <deployed-file> — hash the frontmatter-stripped body
     # (single strip implementation: rdf_strip_frontmatter in rdf_common.sh).
     _hash_deployed_body() {
         rdf_strip_frontmatter "$1" | rdf_hash_stdin
+    }
+
+    # _drift_check_tree dir label — sidecar contract for a flat *.md tree
+    # (reference docs); drift/sidecar/checked counters are the caller's locals.
+    _drift_check_tree() {
+        local dir="$1" label="$2" f b side stored actual
+        for f in "${dir}"/*.md; do
+            [[ -f "$f" ]] || continue
+            b="$(basename "$f")"
+            side="${f}.rdf-hash"
+            if [[ ! -f "$side" ]]; then
+                missing_sidecar_count=$((missing_sidecar_count + 1))
+                continue
+            fi
+            stored="$(< "$side")"
+            actual="$(_hash_deployed_body "$f")"
+            if [[ "$stored" != "$actual" ]]; then
+                _add_result "content-drift" "$_FAIL" \
+                    "deployed file modified since last generate: ${label}/${b}"
+                drift_count=$((drift_count + 1))
+            fi
+            checked_count=$((checked_count + 1))
+        done
     }
 
     # Check agents: hash deployed body (frontmatter stripped) vs sidecar
@@ -418,30 +442,13 @@ _check_content_drift() {
         done
     else
         _add_result "content-drift" "$_WARN" "no skills tree — run 'rdf generate claude-code'"
+        skills_tree_missing=1
     fi
 
-    # Check reference docs: plain files, same sidecar contract as skills
-    for dst_file in "${output_dir}/reference"/*.md; do
-        [[ -f "$dst_file" ]] || continue
-        basename_f="$(basename "$dst_file")"
-        sidecar="${dst_file}.rdf-hash"
-
-        if [[ ! -f "$sidecar" ]]; then
-            missing_sidecar_count=$((missing_sidecar_count + 1))
-            continue
-        fi
-
-        local stored_hash actual_hash
-        stored_hash="$(< "$sidecar")"
-        actual_hash="$(_hash_deployed_body "$dst_file")"
-
-        if [[ "$stored_hash" != "$actual_hash" ]]; then
-            _add_result "content-drift" "$_FAIL" \
-                "deployed file modified since last generate: reference/${basename_f}"
-            drift_count=$((drift_count + 1))
-        fi
-        checked_count=$((checked_count + 1))
-    done
+    # Reference docs: the deployed copy under output/, and the sibling copy the
+    # cc adapter writes into the skills tree (both carry .rdf-hash sidecars).
+    _drift_check_tree "${output_dir}/reference" "reference"
+    _drift_check_tree "${output_dir}/skills/reference" "skills/reference"
 
     if [[ $missing_sidecar_count -gt 0 ]]; then
         _add_result "content-drift" "$_WARN" \
@@ -449,8 +456,13 @@ _check_content_drift() {
     fi
 
     if [[ $drift_count -eq 0 ]] && [[ $checked_count -gt 0 ]]; then
-        _add_result "content-drift" "$_OK" \
-            "all ${checked_count} deployed files match canonical sources"
+        if [[ $skills_tree_missing -eq 1 ]]; then
+            _add_result "content-drift" "$_OK" \
+                "${checked_count} other deployed files match canonical sources"
+        else
+            _add_result "content-drift" "$_OK" \
+                "all ${checked_count} deployed files match canonical sources"
+        fi
     elif [[ $checked_count -eq 0 ]] && [[ $missing_sidecar_count -eq 0 ]]; then
         _add_result "content-drift" "$_WARN" "no files with sidecars found — run 'rdf generate claude-code'"
     fi
@@ -547,22 +559,29 @@ _check_sync() {
         for skill_dir in "${output_dir}/skills"/*/; do
             [[ -d "$skill_dir" ]] || continue
             skill_name="$(basename "$skill_dir")"
-            [[ "$skill_name" == "reference" ]] && continue   # shared reference/ is not a skill
+            [[ "$skill_name" == "reference" ]] && continue   # shared reference/ is checked below, not as a skill
             _sync_check_link "${claude_base}/skills/${skill_name}" "${output_dir}/skills/${skill_name}"
         done
+        # ../reference/*.md inside every SKILL.md resolves only when this entry exists
+        if [[ -d "${output_dir}/skills/reference" ]]; then
+            _sync_check_link "${claude_base}/skills/reference" "${output_dir}/skills/reference"
+        fi
     fi
 
     # A lingering legacy commands symlink (pre-3.6.6 install, not yet re-deployed)
     # into RDF's own output tree — 'rdf deploy claude-code' prunes it on next run.
     if [[ -L "${claude_base}/commands" ]]; then
-        local legacy_target
+        local legacy_target legacy_root
         legacy_target="$(rdf_canonical_path "${claude_base}/commands")"
-        case "$legacy_target" in
-            "$(rdf_canonical_path "$output_dir")"*)
-                _add_result "sync" "$_WARN" \
-                    "${claude_base}/commands still symlinks into RDF output — re-run 'rdf deploy claude-code' to prune it"
-                ;;
-        esac
+        legacy_root="$(rdf_canonical_path "$output_dir")"
+        if [[ -n "$legacy_root" ]]; then   # an unresolvable output root would collapse the match to '*'
+            case "$legacy_target" in
+                "$legacy_root"|"$legacy_root"/*)   # path boundary: output-backup/ is not inside output/
+                    _add_result "sync" "$_WARN" \
+                        "${claude_base}/commands still symlinks into RDF output — re-run 'rdf deploy claude-code' to prune it"
+                    ;;
+            esac
+        fi
     fi
 
     if [[ $link_fail -eq 0 ]] && [[ $link_ok -gt 0 ]]; then

@@ -217,11 +217,12 @@ _deploy_state_helpers() {
     return 0
 }
 
-# Per-skill symlinks under <dest_base>/skills/<n>; also prunes any RDF-owned
-# link whose output/skills/<n> target has vanished (canonical command removed).
+# Per-skill symlinks under <dest_base>/skills/<n> plus the shared skills/reference
+# entry; also prunes any RDF-owned link whose output/skills/<n> target has
+# vanished (canonical command removed).
 # Args: $1=output_dir $2=dest_base $3=dry_run $4=force
 _deploy_skill_links() {
-    local output_dir="$1" dest_base="$2" dry_run="$3" force="$4" d n linked=0 pruned=0 target ok_before
+    local output_dir="$1" dest_base="$2" dry_run="$3" force="$4" d n linked=0 pruned=0 target ok_before ref
     if [[ ! -d "${output_dir}/skills" ]]; then
         rdf_die "output/skills not found — run 'rdf generate claude-code' first"
     fi
@@ -239,10 +240,18 @@ _deploy_skill_links() {
     for d in "${output_dir}/skills"/*/; do
         [[ -d "$d" ]] || continue
         n="$(command basename "$d")"
-        [[ "$n" == "reference" ]] && continue   # shared reference/ is not a skill (no SKILL.md)
+        [[ "$n" == "reference" ]] && continue   # shared reference/ is linked below, never counted as a skill
         _deploy_symlink "${output_dir}/skills/${n}" "${dest_base}/skills/${n}" "$dry_run" "$force" || :   # a source-missing rc is already counted as a skip
     done
     linked=$((_DEPLOY_OK - ok_before))
+    # ../reference/*.md inside every SKILL.md resolves only when the sibling
+    # reference entry exists under <dest_base>/skills (spec 10b: 38 entries).
+    ref="absent"
+    if [[ -d "${output_dir}/skills/reference" ]]; then
+        ok_before=$_DEPLOY_OK
+        _deploy_symlink "${output_dir}/skills/reference" "${dest_base}/skills/reference" "$dry_run" "$force" || :   # skip already counted
+        if [[ $_DEPLOY_OK -gt $ok_before ]]; then ref="linked"; else ref="skipped"; fi
+    fi
     for d in "${dest_base}/skills"/*; do   # prune: RDF-owned link whose target is gone
         [[ -L "$d" ]] || continue
         target="$(command readlink "$d")"
@@ -253,9 +262,9 @@ _deploy_skill_links() {
         esac
     done
     if [[ $dry_run -eq 1 ]]; then
-        rdf_log "[dry-run] skills: would link ${linked}, would prune ${pruned} (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+        rdf_log "[dry-run] skills: would link ${linked}, would prune ${pruned}; reference ${ref} (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
     else
-        rdf_log "skills: ${linked} linked, ${pruned} pruned (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+        rdf_log "skills: ${linked} linked, ${pruned} pruned; reference ${ref} (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
     fi
 }
 
@@ -265,16 +274,19 @@ _deploy_skill_links() {
 _deploy_prune_legacy_commands() {
     local dest_base="$1" output_dir="$2" dry_run="$3" link="${1}/commands"
     if [[ -L "$link" ]]; then
-        local link_target
+        local link_target root
         link_target="$(rdf_canonical_path "$link")"
+        root="$(rdf_canonical_path "$output_dir")"
+        [[ -n "$root" ]] || return 0   # an unresolvable output root would collapse the match to '*'
         case "$link_target" in
-            "$(rdf_canonical_path "$output_dir")"*)
+            "$root"|"$root"/*)          # path boundary: output-backup/ is not inside output/
                 if [[ $dry_run -eq 1 ]]; then
                     rdf_log "[dry-run] would remove legacy commands symlink: ${link} (skills supersede it)"
                 else
                     command rm -f "$link"
                     rdf_log "removed legacy commands symlink: ${link} (skills supersede it)"
                 fi
+                _DEPLOY_OK=$((_DEPLOY_OK + 1))
                 ;;
             *)
                 rdf_log "notice: ${link} points elsewhere — left as-is"

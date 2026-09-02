@@ -100,12 +100,14 @@ _run_doc_stats() {
              "$fix/adapters/claude-code/output/agents" \
              "$fix/adapters/claude-code/output/scripts" \
              "$fix/adapters/claude-code/output/governance" \
-             "$fix/adapters/claude-code/output/reference"
+             "$fix/adapters/claude-code/output/reference" \
+             "$fix/adapters/claude-code/output/skills/reference"
     touch "$fix/canonical/commands/x.md"
     printf -- '---\nname: x\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md"
     fakehome="$(mktemp -d)"
     mkdir -p "$fakehome/.claude/skills"
     ln -s "$fix/adapters/claude-code/output/skills/x"   "$fakehome/.claude/skills/x"
+    ln -s "$fix/adapters/claude-code/output/skills/reference" "$fakehome/.claude/skills/reference"
     ln -s "$fix/adapters/claude-code/output/agents"     "$fakehome/.claude/agents"
     ln -s "$fix/adapters/claude-code/output/scripts"    "$fakehome/.claude/scripts"
     ln -s "$fix/adapters/claude-code/output/governance" "$fakehome/.claude/governance"
@@ -125,7 +127,8 @@ _run_doc_stats() {
     ' -- "$RDF_SRC" "$fix" "$fakehome"
     [ "$status" -eq 0 ]
     [[ "$output" != *"wrong target"* ]]
-    [[ "$output" == *"sync|OK|all 5 symlinks correct"* ]]
+    [[ "$output" != *"skills/reference missing"* ]]
+    [[ "$output" == *"sync|OK|all 6 symlinks correct"* ]]   # 4 dir surfaces + skills/x + skills/reference
     rm -rf "$fix" "$fakehome"
 }
 
@@ -137,7 +140,8 @@ _run_doc_stats() {
              "$fix/adapters/claude-code/output/governance" \
              "$fix/adapters/claude-code/output/reference" \
              "$fix/adapters/claude-code/output/skills/x" \
-             "$fix/adapters/claude-code/output/skills/y"
+             "$fix/adapters/claude-code/output/skills/y" \
+             "$fix/adapters/claude-code/output/skills/reference"
     touch "$fix/canonical/commands/x.md" "$fix/canonical/commands/y.md"
     printf -- '---\nname: x\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md"
     printf -- '---\nname: y\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/y/SKILL.md"
@@ -148,7 +152,7 @@ _run_doc_stats() {
     ln -s "$fix/adapters/claude-code/output/governance" "$fakehome/.claude/governance"
     ln -s "$fix/adapters/claude-code/output/reference"  "$fakehome/.claude/reference"
     ln -s "$fix/adapters/claude-code/output/skills/x"   "$fakehome/.claude/skills/x"
-    # skills/y is intentionally left unlinked → per-skill WARN
+    # skills/y and skills/reference are intentionally left unlinked → WARN each
     run bash -c '
         set -euo pipefail
         rdf_src="$1"; proj="$2"; export HOME="$3"
@@ -165,6 +169,7 @@ _run_doc_stats() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"sync|OK|command count matches (2)"* ]]
     [[ "$output" == *"${fakehome}/.claude/skills/y missing"* ]]
+    [[ "$output" == *"${fakehome}/.claude/skills/reference missing"* ]]
     rm -rf "$fix" "$fakehome"
 }
 
@@ -207,13 +212,39 @@ _run_doc_stats() {
     rm -rf "$fix"
 }
 
-@test "content-drift WARNs when skills/ is absent" {
+@test "content-drift FAILs on a corrupted skills/reference doc" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/adapters/claude-code/output/skills/reference"
+    touch "$fix/canonical/commands/x.md"
+    printf 'tampered\n' > "$fix/adapters/claude-code/output/skills/reference/glossary.md"
+    printf 'deadbeef\n' > "$fix/adapters/claude-code/output/skills/reference/glossary.md.rdf-hash"
+    run _run_path_check _check_content_drift "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"content-drift|FAIL|deployed file modified since last generate: skills/reference/glossary.md"* ]]
+    rm -rf "$fix"
+}
+
+@test "content-drift WARNs when skills/ is absent and drops the aggregate OK row" {
     fix="$(mktemp -d)"
     mkdir -p "$fix/canonical/commands" "$fix/adapters/claude-code/output/agents"
     touch "$fix/canonical/commands/x.md"
-    run _run_path_check _check_content_drift "$fix"
+    printf 'agent body\n' > "$fix/adapters/claude-code/output/agents/a.md"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; fix="$2"
+        RDF_HOME="$(mktemp -d)"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        rdf_strip_frontmatter "${fix}/adapters/claude-code/output/agents/a.md" | rdf_hash_stdin \
+            > "${fix}/adapters/claude-code/output/agents/a.md.rdf-hash"
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_content_drift "$fix"
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$fix"
     [ "$status" -eq 0 ]
     [[ "$output" == *"content-drift|WARN|no skills tree"* ]]
+    [[ "$output" != *"all 1 deployed files match"* ]]        # aggregate claim is untrue with the tree missing
+    [[ "$output" == *"content-drift|OK|1 other deployed files match canonical sources"* ]]
     rm -rf "$fix"
 }
 

@@ -402,7 +402,7 @@ Dependencies: `lib/rdf_common.sh` (`rdf_log`, `rdf_warn`, `rdf_die`,
 | Function | Current behavior | New behavior | Lines affected |
 |----------|-----------------|--------------|----------------|
 | `_deploy_claude_code` | 5 dir symlinks incl. `commands` | loop over `rdf_cc_dir_surfaces` + `_deploy_skill_links` + `_deploy_prune_legacy_commands` | 236-240 |
-| `_deploy_skill_links` | — | per-skill `_deploy_symlink`; prune stale RDF-owned entries; ensure `~/.claude/skills` is a real dir | new |
+| `_deploy_skill_links` | — | per-skill `_deploy_symlink` + the shared `skills/reference` entry (linked, not counted as a skill); prune stale RDF-owned entries; ensure `~/.claude/skills` is a real dir | new |
 | `_deploy_prune_legacy_commands` | — | remove `~/.claude/commands` only when its target is under the RDF output tree; log; count as OK | new |
 | `_deploy_codex` | copies AGENTS.md + config.toml | `_deploy_agent_skills` + `_deploy_agents_md` (copy-skip `output/AGENTS.md` → `P/AGENTS.md`) | 274-298 |
 | `_deploy_agents_md` | — | copy-skip project AGENTS.md; `--project-root` required | new |
@@ -412,8 +412,8 @@ Dependencies: `lib/rdf_common.sh` (`rdf_log`, `rdf_warn`, `rdf_die`,
 
 | Function | Current behavior | New behavior | Lines affected |
 |----------|-----------------|--------------|----------------|
-| `_check_content_drift` | globs `output/commands/*.md` | walks `output/skills/*/SKILL.md` with `SKILL.md.rdf-hash`; WARN "no skills tree" when absent; message key `skills/<n>` | commands loop inside 336-452 |
-| `_check_sync` | count `canonical/commands` vs `output/commands`; symlink loop over 5 names | count vs `output/skills/*/SKILL.md`; loop over `rdf_cc_dir_surfaces`; per-skill symlink check (`~/.claude/skills/<n>` → `output/skills/<n>`); WARN on a lingering `~/.claude/commands` symlink into RDF output | count + loop inside 455-533 |
+| `_check_content_drift` | globs `output/commands/*.md` | walks `output/skills/*/SKILL.md` with `SKILL.md.rdf-hash` plus both sidecar reference trees (`output/reference`, `output/skills/reference`); WARN "no skills tree" when absent (and the aggregate OK row drops its "all" claim); message keys `skills/<n>`, `skills/reference/<f>` | commands loop inside 336-452 |
+| `_check_sync` | count `canonical/commands` vs `output/commands`; symlink loop over 5 names | count vs `output/skills/*/SKILL.md`; loop over `rdf_cc_dir_surfaces`; per-skill symlink check (`~/.claude/skills/<n>` → `output/skills/<n>`) plus the `skills/reference` entry; WARN on a lingering `~/.claude/commands` symlink into RDF output | count + loop inside 455-533 |
 | `_check_install_mode` | probes `-L ~/.claude/commands` | probes `-L ~/.claude/skills/r-start` (or any RDF-owned skill link) and, for the transition, the legacy commands link | 949 |
 | `_check_doc_truth` | — | §13 | new |
 | scope dispatch | 13 scopes | 14 (`doc-truth`), usage text | scope `case` at file tail |
@@ -446,6 +446,7 @@ Generate (checkout):
 $ bin/rdf generate claude-code
 [rdf] generating Claude Code adapter output...
 [rdf] generated 6 agent files
+[rdf] generated 7 reference docs (skills tree)
 [rdf] generated 37 skills
 [rdf] generated 16 script files
 [rdf] generated 7 reference docs
@@ -481,11 +482,11 @@ $ bin/rdf deploy claude-code
 [rdf] replaced symlink: /home/u/.claude/scripts -> .../output/scripts
 [rdf] replaced symlink: /home/u/.claude/governance -> .../output/governance
 [rdf] replaced symlink: /home/u/.claude/reference -> .../output/reference
-[rdf] skills: 37 linked, 0 pruned (/home/u/.claude/skills/<name> -> .../output/skills/<name>)
+[rdf] skills: 37 linked, 0 pruned; reference linked (/home/u/.claude/skills/<name> -> .../output/skills/<name>)
 [rdf] removed legacy commands symlink: /home/u/.claude/commands (skills supersede it)
 [rdf] ... state helpers ...
 [rdf] manual merge required: hooks.json (see 'rdf deploy help'; does not affect exit status)
-[rdf] deploy complete: 42 ok, 0 skipped
+[rdf] deploy complete: 51 items deployed
 ```
 
 Failure case — a user-owned `~/.claude/skills/r-start` real directory:
@@ -494,7 +495,7 @@ Failure case — a user-owned `~/.claude/skills/r-start` real directory:
 $ bin/rdf deploy claude-code
 [rdf] warning: /home/u/.claude/skills/r-start exists (not a symlink). Back it up and re-run, or use --force.
 ...
-[rdf] deploy complete: 41 ok, 1 skipped
+[rdf] warning: deploy complete: 50 deployed, 1 skipped (use --force to override)
 $ echo $?
 1
 ```
@@ -540,7 +541,8 @@ $ bin/rdf doctor --scope doc-truth
   blank line / body. Agent frontmatter is unchanged from 3.6.5.
 - Sidecar name: `<file>.rdf-hash` beside the emitted file (`SKILL.md.rdf-hash`).
 - Deploy log verbs: `symlinked:` / `replaced symlink:` / `removed legacy` /
-  `skills: N linked, M pruned`; every skipped item increments
+  `skills: N linked, M pruned; reference linked|skipped|absent` (the shared
+  reference entry is linked but never counted as a skill); every skipped item increments
   `_DEPLOY_SKIPPED` (exit 1 contract from 3.6.5 stands).
 - Doctor rows: `[scope] [OK|WARN|FAIL] message` through `_add_result`.
 - Shell: `set -euo pipefail`, `command` coreutils prefix, bash 3.2 (no
@@ -559,7 +561,7 @@ $ bin/rdf doctor --scope doc-truth
 | cc output tree | `commands/` | `skills/<n>/SKILL.md` (+ sidecar), `skills/reference/` |
 | plugin output tree | `commands/` | `skills/<n>/SKILL.md`, `skills/reference/` |
 | plugin.json | `commands` | `skills` |
-| `~/.claude` on symlink deploy | `commands` dir symlink | `skills/<n>` symlinks; `commands` removed when RDF-owned |
+| `~/.claude` on symlink deploy | `commands` dir symlink | `skills/<n>` + `skills/reference` symlinks (38 entries); `commands` removed when RDF-owned |
 | canonical/, hooks.json, agent-meta.json, skill-meta.json | — | unchanged |
 | `RDF_TARGET` | honored for `~/.claude` surfaces | honored for skills too |
 

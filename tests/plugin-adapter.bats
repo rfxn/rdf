@@ -87,7 +87,8 @@ META
 
     cp "${RDF_SRC}/adapters/claude-code/hooks/hooks.json" \
         "${TEST_HOME}/adapters/claude-code/hooks/hooks.json"
-    printf '{\n  "name": "rdf",\n  "version": "9.9.9"\n}\n' \
+    # a legacy commands key must be PRESENT for del(.commands) to be exercised
+    printf '{\n  "name": "rdf",\n  "version": "9.9.9",\n  "commands": "./legacy"\n}\n' \
         > "${TEST_HOME}/.claude-plugin/plugin.json"
 
     echo "0.0.0-test" > "${TEST_HOME}/VERSION"

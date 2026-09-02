@@ -22,9 +22,10 @@ _make_deploy_skeleton() {
     local out="${fix_home}/adapters/claude-code/output"
     mkdir -p "${out}/agents" "${out}/scripts" \
              "${out}/governance" "${out}/rules" "${out}/reference" \
-             "${out}/skills/x"
+             "${out}/skills/x" "${out}/skills/reference"
     touch "${out}/governance/core-governance.md" "${out}/rules/core.md"
     printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nbody\n' > "${out}/skills/x/SKILL.md"
+    printf 'shared ref\n' > "${out}/skills/reference/x.md"   # no SKILL.md — not a skill
 }
 
 # Usage: _run_deploy <fix_home> [extra cmd_deploy args...] — default target is
@@ -166,6 +167,16 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     echo "$output" | grep -q 'skills: 2 linked'
 }
 
+@test "deploy links the shared skills/reference tree, uncounted as a skill" {
+    local out="${FIX_HOME}/adapters/claude-code/output"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ -L "${FIX_HOME}/.claude/skills/reference" ]
+    [ "$(readlink "${FIX_HOME}/.claude/skills/reference")" = "${out}/skills/reference" ]
+    [ -f "${FIX_HOME}/.claude/skills/reference/x.md" ]        # ../reference/*.md resolves lexically
+    echo "$output" | grep -q 'skills: 1 linked, 0 pruned; reference linked'
+}
+
 @test "deploy prunes an RDF-owned skill symlink whose target vanished" {
     run _run_deploy "$FIX_HOME"
     [ "$status" -eq 0 ]
@@ -262,6 +273,19 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -L "${FIX_HOME}/.claude/commands" ]
     [ "$(readlink "${FIX_HOME}/.claude/commands")" = "$foreign" ]
     rm -rf "$foreign"
+}
+
+@test "deploy leaves a commands symlink into a sibling of the output root alone" {
+    # output-backup/ shares the output/ prefix but is not inside it — an
+    # unbounded prefix match would delete a user's backup link.
+    local sibling="${FIX_HOME}/adapters/claude-code/output-backup/commands"
+    mkdir -p "$sibling"
+    mkdir -p "${FIX_HOME}/.claude"
+    ln -s "$sibling" "${FIX_HOME}/.claude/commands"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ -L "${FIX_HOME}/.claude/commands" ]
+    echo "$output" | grep -q 'points elsewhere'
 }
 
 @test "deploy dies when output/skills is missing" {

@@ -135,9 +135,10 @@ adp_copy_scripts() {
     rdf_log "generated ${count} script files"
 }
 
-# adp_copy_reference src_dir dst_dir sidecar — copy *.md, optional .rdf-hash sidecars.
+# adp_copy_reference src_dir dst_dir sidecar [label] — copy *.md, optional
+# .rdf-hash sidecars; label distinguishes the log line from a sibling copy.
 adp_copy_reference() {
-    local src_dir="$1" dst_dir="$2" sidecar="$3"
+    local src_dir="$1" dst_dir="$2" sidecar="$3" label="${4:-}"
     local src_file count=0
 
     command mkdir -p "$dst_dir"
@@ -150,7 +151,7 @@ adp_copy_reference() {
         [[ "$sidecar" -eq 1 ]] && adp_write_hash_sidecar "$src_file" "${dst_dir}/${basename_f}"
         count=$((count + 1))
     done
-    rdf_log "generated ${count} reference docs"
+    rdf_log "generated ${count} reference docs${label:+ (${label})}"
 }
 
 # adp_names_all src_dir [meta] — all canonical command basenames, one per line.
@@ -221,7 +222,7 @@ adp_emit_skills() {
         count=$((count + 1))
     done < <("$names_fn" "$src_dir" "$meta")
 
-    [[ "$ref_src" != "-" ]] && adp_copy_reference "$ref_src" "${skills_root}/reference" "$sidecar"
+    [[ "$ref_src" != "-" ]] && adp_copy_reference "$ref_src" "${skills_root}/reference" "$sidecar" "skills tree"
     rdf_log "generated ${count} skills"
 }
 

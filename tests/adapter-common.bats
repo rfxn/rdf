@@ -198,7 +198,7 @@ teardown() {
         source "${rdf_src}/lib/rdf_common.sh"
         source "${rdf_src}/lib/adapter_common.sh"
         adp_copy_reference "$src" "$dst1" 1
-        adp_copy_reference "$src" "$dst2" 0
+        adp_copy_reference "$src" "$dst2" 0 "skills tree"
     ' -- "$RDF_SRC" "$src" "$dst1" "$dst2"
     [ "$status" -eq 0 ]
 
@@ -206,6 +206,9 @@ teardown() {
     [ -f "${dst1}/doc.md.rdf-hash" ]
     [ -f "${dst2}/doc.md" ]
     [ ! -f "${dst2}/doc.md.rdf-hash" ]
+    # the optional label keeps two copies of the same docs distinguishable
+    echo "$output" | grep -qx 'rdf: generated 1 reference docs'
+    echo "$output" | grep -qx 'rdf: generated 1 reference docs (skills tree)'
 }
 
 # ── Test 6: adp_emit_skills filters body and description; ref_src is a param ──
@@ -232,6 +235,7 @@ teardown() {
     [ "$status" -eq 0 ]
 
     [ -f "${skills_root}/reference/doc.md" ]
+    echo "$output" | grep -q 'generated 1 reference docs (skills tree)'   # emit path labels its copy
     [ -f "${noref_root}/r-hello/SKILL.md" ]
     [ ! -e "${noref_root}/reference" ]
 

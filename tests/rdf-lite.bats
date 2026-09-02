@@ -77,17 +77,10 @@ teardown() {
     [ -f "${_TEST_OUT}/skills/r-save/SKILL.md" ]
     [ ! -d "${_TEST_OUT}/skills/r-audit" ]   # utility commands excluded
     [ ! -d "${_TEST_OUT}/skills/r-vpe" ]
+    [ -d "${_TEST_OUT}/skills/reference" ]   # shared reference tree ships in lite too
     local n
     n="$(find "${_TEST_OUT}/skills" -mindepth 1 -maxdepth 1 -type d ! -name reference | wc -l)"
     [ "$n" -eq 6 ]
-}
-
-@test "lite generation emits exactly the six lifecycle skills" {
-    _generate "$_TEST_OUT" 1
-    local n
-    n="$(find "${_TEST_OUT}/skills" -mindepth 1 -maxdepth 1 -type d | wc -l)"
-    [ "$n" -eq 7 ]   # 6 lifecycle skills + reference/
-    [ -d "${_TEST_OUT}/skills/reference" ]
 }
 
 @test "default generation leaves rules/core.md byte-identical to full core governance" {
