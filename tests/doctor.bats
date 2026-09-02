@@ -274,3 +274,133 @@ _run_check() {
     [[ "$output" != *"linked.sh"* ]]                       # symlink to source = clean
     rm -rf "$fix" "$home"
 }
+
+# Usage: _run_path_check <check_fn> <project_path> — prints _RESULTS rows
+_run_path_check() {
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; check_fn="$2"; proj="$3"
+        RDF_HOME="$(mktemp -d)"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        "$check_fn" "$proj"
+        if [ "${#_RESULTS[@]}" -gt 0 ]; then
+            printf "%s\n" "${_RESULTS[@]}"
+        fi
+    ' -- "$RDF_SRC" "$1" "$2"
+}
+
+@test "drift: standalone project with no parent CLAUDE.md is OK, not WARN" {
+    ws="$(mktemp -d)"
+    fix="${ws}/proj"
+    mkdir -p "$fix"
+    printf '# proj\n' > "$fix/CLAUDE.md"
+    run _run_path_check _check_drift "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"drift|OK|standalone project — no parent CLAUDE.md"* ]]
+    [[ "$output" != *"does not reference parent"* ]]
+    # workspace layout: a parent CLAUDE.md exists and is unreferenced → WARN
+    printf '# workspace\n' > "${ws}/CLAUDE.md"
+    run _run_path_check _check_drift "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"drift|WARN|CLAUDE.md does not reference parent CLAUDE.md"* ]]
+    # referencing the parent path clears the WARN
+    printf '# proj\nInherits from %s\n' "${ws}/CLAUDE.md" > "$fix/CLAUDE.md"
+    run _run_path_check _check_drift "$fix"
+    [[ "$output" == *"drift|OK|CLAUDE.md references parent conventions"* ]]
+    rm -rf "$ws"
+}
+
+@test "sync: non-framework project reports 'not the RDF framework checkout'" {
+    fix="$(mktemp -d)"
+    run _run_path_check _check_sync "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"sync|OK|not the RDF framework checkout — sync check N/A"* ]]
+    [[ "$output" != *"not an RDF project"* ]]
+    rm -rf "$fix"
+}
+
+@test "artifacts: framework checkout reports project artifacts N/A, not a .rdf/ WARN" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical" "$fix/bin"
+    printf '# f\n' > "$fix/CLAUDE.md"
+    printf '#!/usr/bin/env bash\n' > "$fix/bin/rdf"
+    run _run_path_check _check_artifacts "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"artifacts|OK|framework checkout — project artifacts N/A"* ]]
+    [[ "$output" != *".rdf/ missing"* ]]
+    # a governed project without .rdf/ still WARNs
+    plain="$(mktemp -d)"
+    printf '# p\n' > "$plain/CLAUDE.md"
+    run _run_path_check _check_artifacts "$plain"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"artifacts|WARN|.rdf/ missing"* ]]
+    rm -rf "$fix" "$plain"
+}
+
+@test "artifacts: exclude completeness covers exactly the entries rdf init writes" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    fix="$(mktemp -d)"
+    home="$(mktemp -d)"
+    git -C "$fix" init -q
+    printf '# p\n' > "$fix/CLAUDE.md"
+    run env HOME="$home" bash "$RDF_SRC/bin/rdf" init "$fix" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    run _run_path_check _check_artifacts "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"artifacts|OK|.git/info/exclude complete"* ]]
+    # dropping any single init-written entry must be detected
+    grep -v '^AUDIT\.md$' "$fix/.git/info/exclude" > "$home/exclude.new"
+    cat "$home/exclude.new" > "$fix/.git/info/exclude"
+    run _run_path_check _check_artifacts "$fix"
+    [[ "$output" == *"artifacts|WARN|.git/info/exclude missing 1 entries"* ]]
+    rm -rf "$fix" "$home"
+}
+
+@test "doctor --all refuses to scan HOME as the inferred workspace root" {
+    h="$(mktemp -d)"
+    mkdir -p "$h/rdf" "$h/someproj/.git"
+    run bash -c '
+        set -uo pipefail
+        rdf_src="$1"; h="$2"
+        export HOME="$h"
+        RDF_HOME="$h/rdf"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        cmd_doctor --all
+    ' -- "$RDF_SRC" "$h"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"workspace root could not be inferred"* ]]
+    [[ "$output" == *"RDF_WORKSPACE"* ]]
+    [[ "$output" != *"someproj"* ]]
+    rm -rf "$h"
+}
+
+@test "doctor --all honors RDF_WORKSPACE when the checkout sits in HOME" {
+    h="$(mktemp -d)"
+    ws="$(mktemp -d)"
+    mkdir -p "$h/rdf" "$ws/someproj/.git"
+    printf '# p\n' > "$ws/someproj/CLAUDE.md"
+    run bash -c '
+        set -uo pipefail
+        rdf_src="$1"; h="$2"; ws="$3"
+        export HOME="$h"
+        export RDF_WORKSPACE="$ws"
+        RDF_HOME="$h/rdf"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        cmd_doctor --all --scope artifacts
+    ' -- "$RDF_SRC" "$h" "$ws"
+    [[ "$output" == *"=== someproj ==="* ]]
+    rm -rf "$h" "$ws"
+}

@@ -1,5 +1,33 @@
 # RDF Changelog
 
+## Unreleased
+
+-- Bug Fixes --
+
+[Fix] rdf deploy help: the hooks.json merge how-to failed on a fresh
+      Claude Code HOME (jq "object and null cannot be multiplied", exit 2);
+      it now seeds an empty settings.json before merging
+[Fix] doctor no longer WARNs on its own output: drift is N/A when the
+      project has no parent CLAUDE.md, artifacts are N/A in the framework
+      checkout itself, and sync says "not the RDF framework checkout"
+      instead of "not an RDF project"
+[Fix] doctor --all scanned $HOME as the workspace when the checkout lives
+      at ~/rdf (the quickstart layout); it now stops with the explicit-path
+      remedy and a new RDF_WORKSPACE env override
+[Fix] doctor's .git/info/exclude completeness check missed AUDIT.md —
+      init's entry list moved to rdf_common.sh as the single source both read
+[Fix] tests/derfxn.bats (13 tests) was in neither tests/Makefile nor CI and
+      had never run; CI now generates claude-code output before the BATS
+      step so the suite stops self-skipping, and a contract test fails when
+      any tests/*.bats file is unwired
+[Fix] context-audit.sh died with "_repo_sizes: unbound variable" off the
+      rfxn workspace layout; rdf-state.sh now resolves by probe order
+      (sibling, ~/.rdf/state, legacy workspace) and _flines/_fsize guard
+      missing files instead of leaking redirect errors to stderr
+[Fix] generated CONTRIBUTING.md claimed bash -n/shellcheck/BATS for every
+      stack; code standards and test command now follow the detected
+      profiles (python, go, rust, node/typescript, perl, php, shell)
+
 ## 3.6.5
 
 -- New Features --

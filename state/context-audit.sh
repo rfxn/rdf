@@ -24,10 +24,17 @@ _project_memory="${_claude_home}/projects/-${_project_slug}/memory"
 _project_settings="${_claude_home}/projects/-${_project_slug}"
 
 # Helper: file size in bytes (0 if missing)
-_fsize() { stat -c %s "$1" 2>/dev/null || stat -f %z "$1" 2>/dev/null || echo 0; }
+_fsize() {
+    [[ -f "$1" ]] || { echo 0; return 0; }
+    stat -c %s "$1" 2>/dev/null || stat -f %z "$1" 2>/dev/null || echo 0  # GNU -c, then BSD -f
+}
 
-# Helper: line count (0 if missing)
-_flines() { wc -l < "$1" 2>/dev/null || echo 0; }
+# Helper: line count (0 if missing) — the [[ -f ]] guard is load-bearing: the
+# `< "$1"` redirect fails in the shell, before any redirect on wc could apply
+_flines() {
+    [[ -f "$1" ]] || { echo 0; return 0; }
+    wc -l < "$1" 2>/dev/null || echo 0  # unreadable file reads as 0, same as absent
+}
 
 # Helper: escape string for JSON
 _json_str() {
@@ -208,15 +215,25 @@ _rdf_md_count="$(_count_md_files "$_rdf_home")"
 
 # --- Section 7: rdf-state.sh output analysis ---
 
-_rdf_state="${_workspace}/rdf/state/rdf-state.sh"
+# rdf-state.sh ships beside this script; fall back to the deployed helper dir,
+# then the legacy <workspace>/rdf/ checkout layout
+_rdf_state=""
+for _cand in "$(command dirname "${BASH_SOURCE[0]}")/rdf-state.sh" \
+             "${_rdf_home}/state/rdf-state.sh" \
+             "${_workspace}/rdf/state/rdf-state.sh"; do
+    if [[ -f "$_cand" ]]; then
+        _rdf_state="$_cand"
+        break
+    fi
+done
 _state_total_bytes=0
 _state_repos_measured=0
 _state_work_output_bytes=0
 _state_insights_bytes=0
 _state_session_bytes=0
-if [[ -x "$_rdf_state" ]] || [[ -f "$_rdf_state" ]]; then
+_repo_sizes=""
+if [[ -n "$_rdf_state" ]]; then
     # Measure top 5 repos by recency
-    _repo_sizes=""
     while IFS= read -r _rd; do
         [[ -z "$_rd" ]] && continue
         _rdir="${_rd%/.git}"

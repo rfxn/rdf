@@ -125,11 +125,16 @@ jobs:
 
       - name: Install test dependencies (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y bats shellcheck
+        run: sudo apt-get install -y bats shellcheck jq
 
       - name: Install test dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install bats-core shellcheck
+        run: brew install bats-core shellcheck jq
+
+      - name: Generate adapter output
+        # derfxn.bats asserts on adapters/claude-code/output (gitignored, so
+        # absent on a fresh checkout) and self-skips without it.
+        run: ./bin/rdf generate claude-code
 
       - name: Run BATS tests
         run: make -C tests test

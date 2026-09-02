@@ -119,3 +119,34 @@ _mkrepo() { command mkdir -p "$1"; git -C "$1" init -q; }
     [ "$status" -eq 0 ]
     [ ! -d "$TEST_TMP/idry/.rdf" ]
 }
+
+@test "init renders CONTRIBUTING.md for the detected stack, not shell boilerplate" {
+    local py="$TEST_TMP/pyproj"
+    _mkrepo "$py"
+    printf 'print(1)\n' > "$py/app.py"
+    printf 'flask\n' > "$py/requirements.txt"
+    git -C "$py" add app.py requirements.txt
+    run bash "$RDF" init "$py" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    grep -q 'pytest' "$py/CONTRIBUTING.md"
+    run grep -e 'shellcheck' -e 'BATS' "$py/CONTRIBUTING.md"
+    [ "$status" -ne 0 ]
+
+    local sh="$TEST_TMP/shproj"
+    _mkrepo "$sh"
+    printf '#!/usr/bin/env bash\necho hi\n' > "$sh/tool.sh"
+    git -C "$sh" add tool.sh            # _has_files uses git ls-files — untracked is invisible
+    run bash "$RDF" init "$sh" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    grep -q 'shellcheck' "$sh/CONTRIBUTING.md"
+    grep -q 'make -C tests test' "$sh/CONTRIBUTING.md"
+
+    local bare="$TEST_TMP/bareproj"
+    _mkrepo "$bare"
+    printf 'notes\n' > "$bare/README.md"
+    run bash "$RDF" init "$bare" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    grep -q "Follow the conventions in CLAUDE.md" "$bare/CONTRIBUTING.md"
+    run grep -e 'shellcheck' -e 'BATS' "$bare/CONTRIBUTING.md"
+    [ "$status" -ne 0 ]
+}

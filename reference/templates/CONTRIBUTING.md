@@ -16,8 +16,8 @@ cd {{PROJECT}}
 
 ## Code Standards
 
-- All shell scripts pass `bash -n` and `shellcheck`
-- Tests use the BATS framework: `make -C tests test`
+- {{CODE_STANDARDS}}
+- Tests: {{TEST_COMMAND}}
 - Commit messages follow project conventions (see CHANGELOG for format)
 
 ## Pull Requests
@@ -25,7 +25,7 @@ cd {{PROJECT}}
 1. Fork the repository
 2. Create a feature branch from the current release branch
 3. Make your changes with tests
-4. Ensure all tests pass: `make -C tests test`
+4. Ensure all tests pass: {{TEST_COMMAND}}
 5. Submit a pull request with a clear description
 
 ## License

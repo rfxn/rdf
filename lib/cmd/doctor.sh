@@ -22,17 +22,23 @@ Options:
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
+Environment:
+  RDF_WORKSPACE         Workspace root for --all. Defaults to the parent of the
+                        RDF checkout; --all errors out when that resolves to
+                        your home directory (checkout cloned into ~).
+
 Examples:
   rdf doctor
   rdf doctor ~/projects/my-project
   rdf doctor --all
+  RDF_WORKSPACE=~/projects rdf doctor --all
   rdf doctor --scope github
   rdf doctor --all --scope memory
 USAGE
 }
 
-# Default workspace root — parent of RDF home
-_WORKSPACE_ROOT="$(command dirname "${RDF_HOME}")"
+# Default workspace root — RDF_WORKSPACE, else the parent of RDF home
+_WORKSPACE_ROOT="${RDF_WORKSPACE:-$(command dirname "${RDF_HOME}")}"
 
 # Check result formatting
 _OK="OK"
@@ -57,6 +63,12 @@ _add_result() {
     esac
 }
 
+# _is_framework_checkout path — true for the RDF checkout itself, which is not
+# a governed project (no .rdf/, no init-written excludes)
+_is_framework_checkout() {
+    [[ -d "${1}/canonical" ]] && [[ -f "${1}/bin/rdf" ]]
+}
+
 # ── Check: artifacts ──
 _check_artifacts() {
     local path="$1"
@@ -78,6 +90,8 @@ _check_artifacts() {
                 _add_result "artifacts" "$_WARN" ".rdf/${subdir}/ missing"
             fi
         done
+    elif _is_framework_checkout "$path"; then
+        _add_result "artifacts" "$_OK" "framework checkout — project artifacts N/A"
     else
         _add_result "artifacts" "$_WARN" ".rdf/ missing — run 'rdf init' or 'rdf migrate'"
     fi
@@ -87,7 +101,7 @@ _check_artifacts() {
         local exclude="${path}/.git/info/exclude"
         if [[ -f "$exclude" ]]; then
             local missing=0
-            for entry in "CLAUDE.md" "PLAN*.md" "MEMORY.md" ".rdf/"; do
+            for entry in "${RDF_GIT_EXCLUDE_ENTRIES[@]}"; do
                 if ! grep -qxF "$entry" "$exclude"; then
                     missing=$((missing + 1))
                 fi
@@ -120,11 +134,14 @@ _check_drift() {
         return 0
     fi
 
-    # Structural checks: does CLAUDE.md reference parent?
+    # Inheriting from a parent CLAUDE.md is only meaningful in a workspace
+    # layout — a standalone project has no parent to reference
     local parent_ref
-    parent_ref="$(command dirname "${RDF_HOME}")/CLAUDE.md"
-    if grep -q "$parent_ref" "${path}/CLAUDE.md" 2>/dev/null || \
-       grep -qi "inherits.*parent" "${path}/CLAUDE.md" 2>/dev/null; then
+    parent_ref="$(command dirname "$path")/CLAUDE.md"
+    if [[ ! -f "$parent_ref" ]]; then
+        _add_result "drift" "$_OK" "standalone project — no parent CLAUDE.md"
+    elif grep -qF "$parent_ref" "${path}/CLAUDE.md" || \
+         grep -qi "inherits.*parent" "${path}/CLAUDE.md"; then
         _add_result "drift" "$_OK" "CLAUDE.md references parent conventions"
     else
         _add_result "drift" "$_WARN" "CLAUDE.md does not reference parent CLAUDE.md"
@@ -444,7 +461,7 @@ _check_sync() {
     local output_dir="${path}/adapters/claude-code/output"
 
     if [[ ! -d "$canonical_dir" ]]; then
-        _add_result "sync" "$_OK" "not an RDF project — sync check N/A"
+        _add_result "sync" "$_OK" "not the RDF framework checkout — sync check N/A"
         return 0
     fi
 
@@ -1100,6 +1117,12 @@ cmd_doctor() {
     # Default path
     if [[ -z "$path" ]]; then
         if [[ "$scan_all" -eq 1 ]]; then
+            # A checkout sitting directly in HOME (or /) makes the parent-of-
+            # RDF_HOME guess the home directory itself — scanning it is wrong
+            if [[ -z "$_WORKSPACE_ROOT" ]] || [[ "$_WORKSPACE_ROOT" == "$HOME" ]] \
+                    || [[ "$_WORKSPACE_ROOT" == "/" ]]; then
+                rdf_die "workspace root could not be inferred from ${RDF_HOME} — pass one: 'rdf doctor --all /path/to/workspace' or set RDF_WORKSPACE"
+            fi
             path="${_WORKSPACE_ROOT}"
         else
             path="$(pwd)"

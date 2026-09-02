@@ -17,14 +17,14 @@ to catch context creep before it impacts session quality.
 Execute the automated measurement script:
 
 ```bash
-bash ~/.rdf/state/context-audit.sh 2>/dev/null
+bash ~/.rdf/state/context-audit.sh
 ```
 
 If a baseline file exists at `~/.rdf/context-audit-baseline.json`,
 run with comparison mode:
 
 ```bash
-bash ~/.rdf/state/context-audit.sh --baseline ~/.rdf/context-audit-baseline.json 2>/dev/null
+bash ~/.rdf/state/context-audit.sh --baseline ~/.rdf/context-audit-baseline.json
 ```
 
 Parse the JSON output. Do NOT make additional file reads or greps —

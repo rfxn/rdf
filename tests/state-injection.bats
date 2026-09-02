@@ -82,3 +82,19 @@ assert "triple" in d["recent_commits"][0]["message"], "message not preserved as 
     # Strict JSON load rejects a raw tab inside a string; passing means it was escaped.
     printf '%s' "$output" | python3 -c 'import sys, json; json.load(sys.stdin)'
 }
+
+@test "context-audit.sh runs off-workspace: no sibling rdf/, fresh HOME (F4 regression)" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+
+    # Clone-shaped layout: a bare project dir with no <workspace>/rdf/ sibling,
+    # and a HOME with none of the ~/.claude or ~/.rdf files the audit measures.
+    _mkrepo "$TEST_TMP/clone" "initial"
+    command mkdir -p "$TEST_TMP/home"
+
+    run bash -c 'HOME="$1" bash "$2" "$3" 2>"$4"' \
+        -- "$TEST_TMP/home" "$RDF_SRC/state/context-audit.sh" "$TEST_TMP/clone" "$TEST_TMP/err"
+    [ "$status" -eq 0 ]
+    [ ! -s "$TEST_TMP/err" ]
+    printf '%s' "$output" | jq -e . >/dev/null
+}

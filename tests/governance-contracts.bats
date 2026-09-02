@@ -154,3 +154,14 @@ _contract() {
         [ "$(head -1 "$f")" != "---" ]
     done
 }
+
+# ── Suite coverage: an unlisted .bats file never runs (derfxn.bats shipped dark)
+
+@test "every tests/*.bats file is wired into the Makefile run list" {
+    local f base missing=""
+    for f in "${RDF_SRC}"/tests/*.bats; do
+        base="$(basename "$f")"
+        grep -qF "$base" "${RDF_SRC}/tests/Makefile" || missing="${missing} ${base}"
+    done
+    [ -z "$missing" ] || { echo "not in tests/Makefile:${missing}"; return 1; }
+}

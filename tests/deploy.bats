@@ -286,3 +286,20 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [[ "$output" == *"jq -s"* ]]
     [[ "$output" == *"Exit status"* ]]
 }
+
+@test "hooks how-to merges into a fresh HOME with no settings.json" {
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+    local h; h="$(mktemp -d)"
+    mkdir -p "$h/.claude"
+    local howto
+    howto="$(bash "$RDF_SRC/bin/rdf" deploy help | grep 'jq -s')"
+    [ -n "$howto" ]
+    run env HOME="$h" bash -c "cd '$RDF_SRC' && $howto"
+    [ "$status" -eq 0 ]
+    run jq -e '.hooks' "$h/.claude/settings.json"
+    [ "$status" -eq 0 ]
+    # second run is idempotent — merges into the settings.json it just wrote
+    run env HOME="$h" bash -c "cd '$RDF_SRC' && $howto"
+    [ "$status" -eq 0 ]
+    rm -rf "$h"
+}

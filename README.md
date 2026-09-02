@@ -86,6 +86,7 @@ path on a plain Flask project, with real output at every step.
 | `RDF_HOME` | resolved from `bin/rdf` | RDF install root (canonical/, lib/, bin/, state/) |
 | `RDF_CANONICAL` | `$RDF_HOME/canonical` | Canonical content source tree |
 | `RDF_TARGET` | `~/.claude` | Deploy target for claude-code adapter |
+| `RDF_WORKSPACE` | parent of `$RDF_HOME` | Workspace root scanned by `rdf doctor --all`. Set this when the checkout lives directly in `$HOME` (e.g. `~/rdf`) — `--all` refuses to scan a home directory |
 
 Most users do not need to override these — `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
 

@@ -112,6 +112,17 @@ rdf_require_agent_meta() {
     [[ -z "$missing" ]] || rdf_die "agents missing from agent-meta.json: ${missing} — add entries before generating"
 }
 
+# Working files kept out of git — single source of truth: init writes these,
+# doctor checks for exactly these. Keep the two in step by editing only here.
+RDF_GIT_EXCLUDE_HEADER="# RDF working files (managed by rdf init)"
+RDF_GIT_EXCLUDE_ENTRIES=(
+    "CLAUDE.md"
+    "PLAN*.md"
+    "AUDIT.md"
+    "MEMORY.md"
+    ".rdf/"
+)
+
 rdf_die() {
     echo "rdf: error: $*" >&2
     exit 1

@@ -230,16 +230,6 @@ _resolve_version() {
     echo "0.1.0"
 }
 
-# Standard .git/info/exclude entries for rfxn projects
-_GIT_EXCLUDE_ENTRIES=(
-    "# RDF working files (managed by rdf init)"
-    "CLAUDE.md"
-    "PLAN*.md"
-    "AUDIT.md"
-    "MEMORY.md"
-    ".rdf/"
-)
-
 # Ensure .git/info/exclude has all required entries
 _setup_git_exclude() {
     local path="$1"
@@ -267,15 +257,10 @@ _setup_git_exclude() {
 
     local added=0
     local to_append=""
-    for entry in "${_GIT_EXCLUDE_ENTRIES[@]}"; do
-        # Skip comment lines for matching purposes
-        if [[ "$entry" == "#"* ]]; then
-            # Add the comment header only if the block hasn't been added before
-            if [[ "$existing" != *"RDF working files"* ]] && [[ $added -eq 0 ]]; then
-                to_append="${to_append}${entry}"$'\n'
-            fi
-            continue
-        fi
+    if [[ "$existing" != *"RDF working files"* ]]; then
+        to_append="${RDF_GIT_EXCLUDE_HEADER}"$'\n'
+    fi
+    for entry in "${RDF_GIT_EXCLUDE_ENTRIES[@]}"; do
         # Check if entry already present (exact line match)
         if ! echo "$existing" | grep -qxF "$entry"; then
             to_append="${to_append}${entry}"$'\n'
@@ -490,11 +475,36 @@ _copy_reference_docs() {
     fi
 }
 
+# _contrib_stack_text profiles — line 1: CONTRIBUTING code-standards clause,
+# line 2: its test command. Shell wins when present; otherwise the first
+# language profile in _detect_profiles order.
+_contrib_stack_text() {
+    local profiles=",${1},"
+    local lang
+    # shellcheck disable=SC2016  # backticks are literal markdown, not substitution
+    for lang in shell python go rust typescript perl php node; do
+        [[ "$profiles" == *",${lang},"* ]] || continue
+        case "$lang" in
+            shell)      printf '%s\n%s\n' 'All shell scripts pass `bash -n` and `shellcheck`; tests use the BATS framework' '`make -C tests test`' ;;
+            python)     printf '%s\n%s\n' "Code passes the project's linter (e.g. ruff/flake8)" '`pytest`' ;;
+            go)         printf '%s\n%s\n' 'Code passes `go vet` and `gofmt -l`' '`go test ./...`' ;;
+            rust)       printf '%s\n%s\n' 'Code passes `cargo clippy`' '`cargo test`' ;;
+            typescript) printf '%s\n%s\n' "Code passes the project's lint script (\`npm run lint\`)" '`npm test`' ;;
+            node)       printf '%s\n%s\n' "Code passes the project's lint script (\`npm run lint\`)" '`npm test`' ;;
+            perl)       printf '%s\n%s\n' 'Code passes `perl -c`' '`prove`' ;;
+            php)        printf '%s\n%s\n' 'Code passes `php -l`' '`composer test`' ;;
+        esac
+        return 0
+    done
+    printf '%s\n%s\n' 'Follow the conventions in CLAUDE.md' "run the project's test suite"
+}
+
 # Generate SECURITY.md and CONTRIBUTING.md from reference/templates/ with
 # {{VARIABLE}} substitution. Skips if files already exist or templates missing.
 _generate_companion_files() {
     local path="$1"
-    local dry_run="$2"
+    local profiles="$2"
+    local dry_run="$3"
 
     local name
     name="$(basename "$path")"
@@ -569,10 +579,16 @@ _generate_companion_files() {
     else
         local repo_url="${remote_url:-}"
         [[ -z "$repo_url" ]] && repo_url="<your-repository-url>"
+        local stack code_standards test_command
+        stack="$(_contrib_stack_text "$profiles")"
+        code_standards="${stack%%$'\n'*}"
+        test_command="${stack##*$'\n'}"
         sed -e "s|{{PROJECT}}|${name}|g" \
             -e "s|{{ORG}}|${org}|g" \
             -e "s|{{LICENSE}}|${license}|g" \
             -e "s|{{REPO_URL}}|${repo_url}|g" \
+            -e "s|{{CODE_STANDARDS}}|${code_standards}|g" \
+            -e "s|{{TEST_COMMAND}}|${test_command}|g" \
             "$con_tmpl" > "$con_dest"
         rdf_log "  created CONTRIBUTING.md"
     fi
@@ -639,7 +655,7 @@ _init_one() {
     _copy_reference_docs "$path" "$profiles" "$dry_run"
 
     # 4b. Companion files: SECURITY.md, CONTRIBUTING.md
-    _generate_companion_files "$path" "$dry_run"
+    _generate_companion_files "$path" "$profiles" "$dry_run"
 
     # 5. MEMORY.md placeholder (unless --no-memory)
     if [[ "$no_memory" -eq 0 ]] && [[ ! -f "${path}/MEMORY.md" ]]; then

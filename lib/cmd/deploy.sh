@@ -26,8 +26,9 @@ Options:
 Hooks merge (claude-code symlink deploy only; plugin installs auto-register):
   hooks.json is never symlinked. From the RDF checkout root, merge it into
   ~/.claude/settings.json (settings.json controls what your agent executes —
-  stage through mktemp, never a predictable /tmp path):
-    t=$(mktemp) && jq -s '.[0] * .[1]' ~/.claude/settings.json adapters/claude-code/hooks/hooks.json > "$t" && cp "$t" ~/.claude/settings.json && rm -f "$t"
+  stage through mktemp, never a predictable /tmp path). Seeds an empty
+  settings.json first so the merge also works on a fresh install:
+    s=~/.claude/settings.json; [ -f "$s" ] || { command mkdir -p ~/.claude && echo '{}' > "$s"; }; t=$(mktemp) && jq -s '.[0] * .[1]' "$s" adapters/claude-code/hooks/hooks.json > "$t" && command cp "$t" "$s" && command rm -f "$t"
   Review the result: '*' merges objects recursively but REPLACES arrays —
   if you already define hooks for the same event, merge those manually.
 
