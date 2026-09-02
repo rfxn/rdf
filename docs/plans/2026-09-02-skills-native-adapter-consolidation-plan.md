@@ -18,7 +18,7 @@
 
 | Caller | Helper | Contract | Evidence |
 |--------|--------|----------|----------|
-| `_deploy_claude_code` | `_deploy_symlink` | returns 1 + `_DEPLOY_SKIPPED++` when source missing or dest is a real non-symlink; replaces existing symlinks with `ln -snf`; `--force` backs up real dests | verified `lib/cmd/deploy.sh:55-117` |
+| `_deploy_claude_code` | `_deploy_symlink` | returns 1 + `_DEPLOY_SKIPPED++` only when the source is missing; a real non-symlink dest warns and `_DEPLOY_SKIPPED++` but still returns **0** (the branch ends in an assignment), so callers must not infer "linked" from rc — count the `_DEPLOY_OK` delta; replaces existing symlinks with `ln -snf`; `--force` backs up real dests | verified `lib/cmd/deploy.sh:58-117` |
 | `cmd_deploy` | summary | exit 1 when `_DEPLOY_SKIPPED>0` (3.6.5) — a missing `output/skills` after Phase 3 therefore fails deploy loudly, which Phase 3 Step 1 relies on | verified `deploy.sh` summary block |
 | `cc_generate_all`/`cpl_generate_all` | `rdf_require_agent_meta` | dies when an agent lacks meta (3.6.4) — `adp_emit_agents` must keep the warn-and-plain-copy branch only for the *library* contract test; adapters still call the preflight first | verified `adapters/claude-code/adapter.sh:305`, `claude-plugin/adapter.sh:265` |
 | `_check_content_drift` | `rdf_strip_frontmatter` + `rdf_hash_stdin` | hash is over the canonical body; deployed file is stripped before hashing — unchanged for SKILL.md (frontmatter is leading `---` block) | verified `doctor.sh` `_hash_deployed_body` |

@@ -985,9 +985,15 @@ _check_install_mode() {
     local symlink_mode=0
     local plugin_mode=0
 
-    local d
-    for d in "${base}/skills"/*; do   # any RDF-owned skill link counts as symlink deploy
-        [[ -L "$d" ]] && { symlink_mode=1; break; }
+    # Only a link into RDF's own output tree counts — a user's own skill symlink
+    # (pdf-reader -> ~/skills/pdf-reader) must not read as an RDF install.
+    local d target rdf_skills="${RDF_ADAPTERS}/claude-code/output/skills/"
+    for d in "${base}/skills"/*; do
+        [[ -L "$d" ]] || continue
+        target="$(command readlink "$d")"
+        case "$target" in
+            "${rdf_skills}"*) symlink_mode=1; break ;;
+        esac
     done
     if [[ -f "$manifest" ]] \
         && jq -e '.plugins | has("rdf@rdf")' "$manifest" >/dev/null 2>&1; then  # absent or malformed manifest = not plugin-installed

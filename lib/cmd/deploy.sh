@@ -218,7 +218,7 @@ _deploy_state_helpers() {
 # link whose output/skills/<n> target has vanished (canonical command removed).
 # Args: $1=output_dir $2=dest_base $3=dry_run $4=force
 _deploy_skill_links() {
-    local output_dir="$1" dest_base="$2" dry_run="$3" force="$4" d n linked=0 pruned=0 target
+    local output_dir="$1" dest_base="$2" dry_run="$3" force="$4" d n linked=0 pruned=0 target ok_before
     if [[ ! -d "${output_dir}/skills" ]]; then
         rdf_die "output/skills not found — run 'rdf generate claude-code' first"
     fi
@@ -227,24 +227,33 @@ _deploy_skill_links() {
         _DEPLOY_SKIPPED=$((_DEPLOY_SKIPPED + 1))
         return 1
     fi
-    [[ $dry_run -eq 1 ]] || command mkdir -p "${dest_base}/skills"
+    if [[ $dry_run -eq 0 ]] && ! command mkdir -p "${dest_base}/skills" 2>/dev/null; then  # the warn below is the actionable message; raw mkdir stderr adds nothing
+        rdf_warn "${dest_base}/skills is not a directory (or is unwritable) — skipping per-skill links"
+        _DEPLOY_SKIPPED=$((_DEPLOY_SKIPPED + 1))
+        return 1
+    fi
+    ok_before=$_DEPLOY_OK   # count links from the OK delta: _deploy_symlink returns 0 on a skip too
     for d in "${output_dir}/skills"/*/; do
         [[ -d "$d" ]] || continue
         n="$(command basename "$d")"
         [[ "$n" == "reference" ]] && continue   # shared reference/ is not a skill (no SKILL.md)
-        _deploy_symlink "${output_dir}/skills/${n}" "${dest_base}/skills/${n}" "$dry_run" "$force" \
-            && linked=$((linked + 1))
+        _deploy_symlink "${output_dir}/skills/${n}" "${dest_base}/skills/${n}" "$dry_run" "$force" || :   # a source-missing rc is already counted as a skip
     done
+    linked=$((_DEPLOY_OK - ok_before))
     for d in "${dest_base}/skills"/*; do   # prune: RDF-owned link whose target is gone
         [[ -L "$d" ]] || continue
-        target="$(readlink "$d")"
+        target="$(command readlink "$d")"
         case "$target" in
             "${output_dir}/skills/"*)
                 [[ -e "$target" ]] || { [[ $dry_run -eq 1 ]] || command rm -f "$d"; pruned=$((pruned + 1)); }
                 ;;
         esac
     done
-    rdf_log "skills: ${linked} linked, ${pruned} pruned (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+    if [[ $dry_run -eq 1 ]]; then
+        rdf_log "[dry-run] skills: would link ${linked}, would prune ${pruned} (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+    else
+        rdf_log "skills: ${linked} linked, ${pruned} pruned (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+    fi
 }
 
 # Remove an RDF-owned <dest_base>/commands symlink (skills supersede it); a
@@ -300,7 +309,7 @@ _deploy_claude_code() {
         _deploy_symlink "${output_dir}/${surface}" "${dest_base}/${surface}" "$dry_run" "$force"
     done < <(rdf_cc_dir_surfaces)
 
-    _deploy_skill_links "$output_dir" "$dest_base" "$dry_run" "$force"
+    _deploy_skill_links "$output_dir" "$dest_base" "$dry_run" "$force" || :   # skip already counted; keep deploying the remaining surfaces
     _deploy_prune_legacy_commands "$dest_base" "$output_dir" "$dry_run"
 
     # Scoped rules/ are opt-in (--rules): default keeps existing symlink users unchanged.

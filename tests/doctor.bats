@@ -187,7 +187,7 @@ _run_doc_stats() {
     ' -- "$RDF_SRC"
     [ "$status" -eq 0 ]
     [[ "$output" != *"FAIL"*"skills/x"* ]]
-    [[ "$output" == *"content-drift|OK|"* ]]
+    [[ "$output" == *"content-drift|OK|all 1 deployed files match canonical sources"* ]]
 }
 
 @test "content-drift FAILs on a corrupted SKILL.md" {
@@ -288,14 +288,14 @@ _run_doc_stats() {
     rm -rf "$fix"
 }
 
-# Usage: _run_install_mode <home> <rdf_target-or-empty> — prints _RESULTS rows
+# Usage: _run_install_mode <home> <rdf_target-or-empty> [rdf_home] — prints _RESULTS rows
 _run_install_mode() {
     bash -c '
         set -euo pipefail
-        rdf_src="$1"; home="$2"; rdf_target="$3"
+        rdf_src="$1"; home="$2"; rdf_target="$3"; rdf_home="$4"
         HOME="$home"
         [ -n "$rdf_target" ] && export RDF_TARGET="$rdf_target"
-        RDF_HOME="$(mktemp -d)"
+        RDF_HOME="${rdf_home:-$(mktemp -d)}"
         RDF_LIBDIR="${rdf_src}/lib"
         RDF_VERSION="0.0.0-test"
         source "${rdf_src}/lib/rdf_common.sh"
@@ -304,33 +304,59 @@ _run_install_mode() {
         _reset_results
         _check_install_mode
         printf "%s\n" "${_RESULTS[@]}"
-    ' -- "$RDF_SRC" "$1" "$2"
+    ' -- "$RDF_SRC" "$1" "$2" "${3:-}"
+}
+
+# Usage: _make_rdf_skill_out <rdf_home> <name> — real output/skills/<name> dir,
+# printing the path a deploy symlink would target.
+_make_rdf_skill_out() {
+    local out="${1}/adapters/claude-code/output/skills/${2}"
+    mkdir -p "$out"
+    printf -- '---\nname: %s\n---\nbody\n' "$2" > "${out}/SKILL.md"
+    printf '%s' "$out"
 }
 
 @test "install-mode symlink probe honors RDF_TARGET override" {
     local home; home="$(mktemp -d)"
     local target; target="$(mktemp -d)"
+    local rdf_home; rdf_home="$(mktemp -d)"
+    local skill_out; skill_out="$(_make_rdf_skill_out "$rdf_home" x)"
     mkdir -p "${target}/skills"
-    ln -s /nonexistent/output "${target}/skills/x"   # symlink lives under RDF_TARGET
+    ln -s "$skill_out" "${target}/skills/x"   # RDF-owned link, lives under RDF_TARGET
     # With RDF_TARGET set → the probe finds the symlink → symlink deploy
-    run _run_install_mode "$home" "$target"
+    run _run_install_mode "$home" "$target" "$rdf_home"
     [ "$status" -eq 0 ]
     [[ "$output" == *"install-mode|OK|symlink deploy"* ]]
     # Without RDF_TARGET → probe defaults to ~/.claude (absent) → no install
-    run _run_install_mode "$home" ""
+    run _run_install_mode "$home" "" "$rdf_home"
     [ "$status" -eq 0 ]
     [[ "$output" == *"no user-level RDF install"* ]]
-    rm -rf "$home" "$target"
+    rm -rf "$home" "$target" "$rdf_home"
 }
 
 @test "install-mode detects symlink deploy via skills" {
     local home; home="$(mktemp -d)"
+    local rdf_home; rdf_home="$(mktemp -d)"
+    local skill_out; skill_out="$(_make_rdf_skill_out "$rdf_home" x)"
     mkdir -p "${home}/.claude/skills"
-    ln -s /nonexistent/output "${home}/.claude/skills/x"   # RDF-owned skill link, no commands symlink
-    run _run_install_mode "$home" ""
+    ln -s "$skill_out" "${home}/.claude/skills/x"   # RDF-owned skill link, no commands symlink
+    run _run_install_mode "$home" "" "$rdf_home"
     [ "$status" -eq 0 ]
     [[ "$output" == *"install-mode|OK|symlink deploy"* ]]
-    rm -rf "$home"
+    rm -rf "$home" "$rdf_home"
+}
+
+@test "install-mode ignores a foreign symlink under skills/" {
+    local home; home="$(mktemp -d)"
+    local rdf_home; rdf_home="$(mktemp -d)"
+    local foreign; foreign="$(mktemp -d)"
+    mkdir -p "${home}/.claude/skills" "${foreign}/pdf-reader"
+    ln -s "${foreign}/pdf-reader" "${home}/.claude/skills/pdf-reader"   # user's own skill link
+    run _run_install_mode "$home" "" "$rdf_home"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"no user-level RDF install"* ]]
+    [[ "$output" != *"symlink deploy"* ]]
+    rm -rf "$home" "$rdf_home" "$foreign"
 }
 
 # Usage: _run_check <check_fn> <fix_rdf_home> <fix_home> — prints _RESULTS rows

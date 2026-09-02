@@ -226,8 +226,10 @@ _run_install_mode_check() {
 
 @test "doctor warns on dual install mode" {
     FIX_HOME="$(mktemp -d)"
-    mkdir -p "${FIX_HOME}/.claude/plugins" "${FIX_HOME}/.claude/skills" "${FIX_HOME}/real-target"
-    ln -s "${FIX_HOME}/real-target" "${FIX_HOME}/.claude/skills/x"
+    mkdir -p "${FIX_HOME}/.claude/plugins" "${FIX_HOME}/.claude/skills"
+    # RDF-owned link target (RDF_HOME is RDF_SRC in the harness); the path need
+    # not exist — the probe matches the output-tree prefix textually.
+    ln -s "${RDF_SRC}/adapters/claude-code/output/skills/x" "${FIX_HOME}/.claude/skills/x"
     printf '{"version":1,"plugins":{"rdf@rdf":[{"scope":"user"}]}}\n' \
         > "${FIX_HOME}/.claude/plugins/installed_plugins.json"
     run _run_install_mode_check "$FIX_HOME"

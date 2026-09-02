@@ -63,7 +63,9 @@ _run_sync() {  # $1 = temp RDF_HOME
     printf 'old body\n' > "${home}/canonical/commands/x.md"
     printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nEDITED body\n---\nrule\n' \
         > "${home}/adapters/claude-code/output/skills/x/SKILL.md"
-    printf 'not a command\n' > "${home}/adapters/claude-code/output/skills/reference/tiers.md"
+    # SKILL.md, not tiers.md: only this shape reaches the */SKILL.md glob the guard filters
+    printf -- '---\nname: reference\n---\n\nnot a command\n' \
+        > "${home}/adapters/claude-code/output/skills/reference/SKILL.md"
     run _run_sync "$home"
     [ "$status" -eq 0 ]
     [ "$(head -1 "${home}/canonical/commands/x.md")" = "EDITED body" ]

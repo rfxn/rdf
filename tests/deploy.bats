@@ -154,6 +154,31 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ ! -L "${FIX_HOME}/.claude/skills/x" ]                     # untouched real dir
     [ -f "${FIX_HOME}/.claude/skills/x/user-file.md" ]
     echo "$output" | grep -q 'not a symlink'
+    echo "$output" | grep -q 'skills: 0 linked, 0 pruned'       # a skip is not a link
+}
+
+@test "deploy keeps going when ~/.claude/skills cannot be a directory" {
+    mkdir -p "${FIX_HOME}/.claude" "${FIX_HOME}/state"
+    printf 'user data\n' > "${FIX_HOME}/.claude/skills"        # regular file blocks the skills dir
+    printf '#!/usr/bin/env bash\n' > "${FIX_HOME}/state/rdf-demo.sh"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 1 ]                                          # the skip is still reported
+    echo "$output" | grep -q 'skipping per-skill links'
+    [ ! -d "${FIX_HOME}/.claude/skills" ]                        # user file untouched
+    [ -L "${FIX_HOME}/.rdf/state/rdf-demo.sh" ]                  # state helpers still deployed
+    echo "$output" | grep -q 'manual merge required: hooks.json' # hooks notice still printed
+    echo "$output" | grep -q 'deploy complete'                   # summary still printed
+}
+
+@test "deploy --dry-run reports skills as would-link/would-prune and changes nothing" {
+    local out="${FIX_HOME}/adapters/claude-code/output"
+    mkdir -p "${FIX_HOME}/.claude/skills"
+    ln -s "${out}/skills/gone" "${FIX_HOME}/.claude/skills/gone"  # RDF-owned link, target absent
+    run _run_deploy "$FIX_HOME" --dry-run
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q '\[dry-run\] skills: would link 1, would prune 1'
+    [ -L "${FIX_HOME}/.claude/skills/gone" ]                      # nothing pruned in dry-run
+    [ ! -L "${FIX_HOME}/.claude/skills/x" ]                       # nothing linked in dry-run
 }
 
 @test "deploy creates ~/.claude/skills as a real directory, never a symlink" {

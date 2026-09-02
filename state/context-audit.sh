@@ -58,10 +58,11 @@ _count_md_files() {
 
 # Helper: count skills/<name>/SKILL.md files (mindepth 2, maxdepth 2)
 # _count_skill_files dir — prints integer count, 0 if dir missing or empty
+# -L is load-bearing: a deployed skill is a symlink to the adapter output tree
 _count_skill_files() {
     local dir="$1"
     local n
-    n="$(command find "$dir" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null | wc -l)"  # caller pre-guards -d; empty-on-race is fine
+    n="$(command find -L "$dir" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null | wc -l)"  # caller pre-guards -d; empty-on-race is fine
     echo "${n##* }"
 }
 
@@ -196,7 +197,7 @@ if [[ -d "$_global_skills" ]]; then
     while IFS= read -r _sf; do
         [[ -z "$_sf" ]] && continue
         _skill_global_bytes=$((_skill_global_bytes + $(_fsize "$_sf")))
-    done < <(command find "$_global_skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null)  # dir pre-guarded above
+    done < <(command find -L "$_global_skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null)  # dir pre-guarded above
 fi
 
 if [[ -d "$_project_skills" ]]; then
@@ -204,7 +205,7 @@ if [[ -d "$_project_skills" ]]; then
     while IFS= read -r _sf; do
         [[ -z "$_sf" ]] && continue
         _skill_project_bytes=$((_skill_project_bytes + $(_fsize "$_sf")))
-    done < <(command find "$_project_skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null)  # dir pre-guarded above
+    done < <(command find -L "$_project_skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null)  # dir pre-guarded above
 fi
 
 _skill_deployed_count=$((_skill_global_count + _skill_project_count))

@@ -100,6 +100,28 @@ assert "triple" in d["recent_commits"][0]["message"], "message not preserved as 
     [ "$legacy" -eq 0 ]
 }
 
+@test "context-audit.sh counts skills deployed as symlinked dirs" {
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+    _mkrepo "$TEST_TMP/proj" "initial"
+    local home="$TEST_TMP/home" out="$TEST_TMP/out/skills"
+    command mkdir -p "$out/r-a" "$out/r-b" "$home/.claude/skills"
+    touch "$out/r-a/SKILL.md" "$out/r-b/SKILL.md"
+    # Production layout: ~/.claude/skills/<n> is a symlink into the adapter output tree
+    ln -s "$out/r-a" "$home/.claude/skills/r-a"
+    ln -s "$out/r-b" "$home/.claude/skills/r-b"
+    ln -s "$TEST_TMP/gone" "$home/.claude/skills/r-dead"
+
+    run bash -c 'HOME="$1" bash "$2" "$3" 2>"$4"' \
+        -- "$home" "$RDF_SRC/state/context-audit.sh" "$TEST_TMP/proj" "$TEST_TMP/err"
+    [ "$status" -eq 0 ]
+    [ ! -s "$TEST_TMP/err" ]                                     # dangling sibling stays silent
+    local count bytes
+    count="$(printf '%s' "$output" | jq -r '.skills.deployed.count')"
+    bytes="$(printf '%s' "$output" | jq -r '.skills.deployed.bytes')"
+    [ "$count" -eq 2 ]
+    [ "$bytes" -ge 0 ]
+}
+
 @test "context-audit.sh counts a lingering legacy commands/ layout separately from skills" {
     command -v jq >/dev/null 2>&1 || skip "jq unavailable"
     _mkrepo "$TEST_TMP/proj" "initial"
