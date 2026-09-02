@@ -646,7 +646,7 @@ bin/rdf doctor --scope content-drift 2>&1 | grep -c 'skills/'
 # expect: ≥ 1 (content-drift reports skills rows; with the tree moved away it reports 'no skills tree' WARN)
 HOME=$(mktemp -d) && mkdir -p "$HOME/.claude" && bin/rdf deploy claude-code >/dev/null; bash state/rdf-overhead.sh 2>&1 | grep -c 'no ~/.claude/agents symlink'
 # expect: 0   (resolver follows the agents symlink; the warning text names agents, not commands)
-bash state/context-audit.sh . | jq '.skills.deployed_count'
+bash state/context-audit.sh . | jq '.skills.deployed.count'
 # expect: 37
 test ! -d adapters/codex && echo codex-gone
 # expect: codex-gone
