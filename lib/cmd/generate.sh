@@ -38,8 +38,7 @@ Examples:
 USAGE
 }
 
-# Source and run a single adapter
-# Args: $1 = adapter script relative to RDF_ADAPTERS, $2 = generation function name
+# _generate_adapter script func — source <RDF_ADAPTERS>/script (after the shared lib) and run func
 _generate_adapter() {
     local script="${RDF_ADAPTERS}/$1"
     local func="$2"
@@ -48,15 +47,8 @@ _generate_adapter() {
         rdf_die "adapter not found: ${script}"
     fi
 
-    # Self-locate lib/ from this file's own path rather than trusting
-    # RDF_LIBDIR — rdf_init() derives it from RDF_HOME, which some test
-    # harnesses point at a throwaway fixture dir with no lib/ of its own.
-    if [[ -z "${_RDF_ADAPTER_COMMON_LOADED:-}" ]]; then
-        local _gen_libdir
-        _gen_libdir="$(cd "$(command dirname "${BASH_SOURCE[0]}")/.." && pwd)" || rdf_die "cannot resolve lib/ from ${BASH_SOURCE[0]}"
-        # shellcheck disable=SC1090,SC1091
-        source "${_gen_libdir}/adapter_common.sh"
-    fi
+    # shellcheck disable=SC1090,SC1091
+    [[ -n "${_RDF_ADAPTER_COMMON_LOADED:-}" ]] || source "${RDF_LIBDIR}/adapter_common.sh"
     # shellcheck disable=SC1090
     source "$script"
     "$func"

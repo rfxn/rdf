@@ -30,7 +30,7 @@ rdf_init() {
         exit 1
     fi
 
-    RDF_LIBDIR="${RDF_HOME}/lib"
+    RDF_LIBDIR="${RDF_LIBDIR:-${RDF_HOME}/lib}"
     RDF_CANONICAL="${RDF_HOME}/canonical"
     RDF_ADAPTERS="${RDF_HOME}/adapters"
     RDF_STATE_DIR="${RDF_HOME}/state"

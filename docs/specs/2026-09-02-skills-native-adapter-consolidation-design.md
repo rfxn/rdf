@@ -163,7 +163,7 @@ output trees and the manifest directly.
 
 | File | Action | Est. lines | Purpose |
 |------|--------|-----------:|---------|
-| `lib/adapter_common.sh` | new | ~230 | shared emitters: `adp_agent_frontmatter`, `adp_emit_agents`, `adp_emit_skills`, `adp_skill_description`, `adp_copy_scripts`, `adp_copy_reference`, `adp_write_hash_sidecar`, `adp_stage_begin`/`adp_stage_commit`, `adp_command_names`, `adp_is_lite_command` |
+| `lib/adapter_common.sh` | new | ~230 | shared emitters: `adp_agent_frontmatter`, `adp_emit_agents`, `adp_emit_skills`, `adp_skill_description`, `adp_copy_scripts`, `adp_copy_reference`, `adp_write_hash_sidecar`, `adp_stage_begin`/`adp_stage_commit`, `adp_names_all`/`adp_names_lite`/`adp_names_from_meta`, `adp_count` |
 | `adapters/claude-code/adapter.sh` | modified | 344 → ~170 | thin: hooks, governance, rules, orchestration on the lib; skills output |
 | `adapters/claude-plugin/adapter.sh` | modified | 299 → ~150 | thin: namespace filter, hooks transform, plugin stamping (adds `skills` key) |
 | `adapters/agent-skills/adapter.sh` | modified | 78 → ~45 | thin: bounded set → `adp_emit_skills` |
@@ -235,7 +235,10 @@ bin/rdf
     │   ├── adp_agent_frontmatter  <meta> <agent>
     │   ├── adp_emit_agents        <src> <dst> <meta> <filter_fn|-> <sidecar 0|1>
     │   ├── adp_skill_description  <name> <src> <meta>
-    │   ├── adp_emit_skills        <src_dir> <skills_root> <meta> <filter_fn|-> <sidecar> <names_fn>
+    │   ├── adp_emit_skills        <src_dir> <skills_root> <meta> <filter_fn|-> <sidecar> <names_fn> <ref_src|->
+    │   ├── adp_names_all          <src_dir> [meta]        (meta accepted-and-ignored)
+    │   ├── adp_names_lite         <src_dir> [meta]        (meta accepted-and-ignored)
+    │   ├── adp_names_from_meta    <src_dir> <meta>        (src_dir accepted-and-ignored)
     │   ├── adp_copy_scripts       <src> <dst>
     │   ├── adp_copy_reference     <src> <dst> <sidecar>
     │   ├── adp_write_hash_sidecar <canonical_src> <dst>
@@ -345,10 +348,10 @@ state/context-audit.sh      (skills/*/SKILL.md inventory)
 | `adp_agent_frontmatter` | `(meta, agent)` → stdout, rc 1 if absent | YAML: name, description, tools, disallowedTools, model | jq |
 | `adp_emit_agents` | `(src_dir, dst_dir, meta, filter_fn, sidecar)` | frontmatter + filtered body per agent; plain copy when meta absent (warn); optional sidecar; logs count | `adp_agent_frontmatter`, `adp_write_hash_sidecar` |
 | `adp_skill_description` | `(name, src, meta)` → stdout | skill-meta trigger → first non-heading line → `RDF command: <name>` | jq, sed |
-| `adp_emit_skills` | `(src_dir, skills_root, meta, filter_fn, sidecar, names_fn)` | `<root>/<name>/SKILL.md` with `name:`/`description:` frontmatter + filtered body; optional sidecar; copies `reference/` into `<root>/reference`; logs count | `adp_skill_description`, `adp_copy_reference` |
-| `adp_names_all` | `(src_dir)` → stdout | all canonical command basenames | — |
-| `adp_names_lite` | `(src_dir)` → stdout | intersection with `rdf_lite_commands` | `rdf_lite_commands` |
-| `adp_names_from_meta` | `(meta)` → stdout | non-`_comment` keys | jq |
+| `adp_emit_skills` | `(src_dir, skills_root, meta, filter_fn, sidecar, names_fn, ref_src)` | `<root>/<name>/SKILL.md` with `name:`/`description:` frontmatter + filtered body; optional sidecar; copies `ref_src` into `<root>/reference` (`-` skips the copy); logs count | `adp_skill_description`, `adp_copy_reference` |
+| `adp_names_all` | `(src_dir, [meta])` → stdout | all canonical command basenames; `meta` accepted-and-ignored so every names_fn takes the same pair | — |
+| `adp_names_lite` | `(src_dir, [meta])` → stdout | intersection with `rdf_lite_commands`; `meta` accepted-and-ignored | `rdf_lite_commands` |
+| `adp_names_from_meta` | `(src_dir, meta)` → stdout | non-`_comment` keys; `src_dir` accepted-and-ignored | jq |
 | `adp_copy_scripts` | `(src_dir, dst_dir)` | copy `*.sh` + chmod +x; logs count | — |
 | `adp_copy_reference` | `(src_dir, dst_dir, sidecar)` | copy `*.md`, optional sidecars | `adp_write_hash_sidecar` |
 | `adp_stage_begin` | `(final_dir)` → echoes `<final>.new` | rm -rf + mkdir staging | — |
@@ -363,7 +366,7 @@ Dependencies: `lib/rdf_common.sh` (`rdf_log`, `rdf_warn`, `rdf_die`,
 | Function | Current behavior | New behavior | Lines affected |
 |----------|-----------------|--------------|----------------|
 | `_cc_resolve_hash_cmd`, `_cc_write_hash_sidecar`, `_cc_agent_frontmatter`, `cc_generate_agents`, `_cc_is_lite_command`, `cc_generate_command_frontmatter`, `cc_generate_commands`, `cc_generate_scripts`, `cc_generate_reference` | local copies | deleted; calls into lib | 19-213 |
-| `cc_generate_skills` | — | `adp_emit_skills canonical/commands output/skills skill-meta - 1 <names_fn>` where names_fn = `adp_names_lite` when `_CC_LITE=1` else `adp_names_all` | new |
+| `cc_generate_skills` | — | `adp_emit_skills canonical/commands output/skills skill-meta - 1 <names_fn> canonical/reference` where names_fn = `adp_names_lite` when `_CC_LITE=1` else `adp_names_all` | new |
 | `cc_generate_hooks`, `cc_generate_governance`, `_cc_paths_frontmatter`, `cc_generate_rules` | unchanged | unchanged | 215-298 |
 | `cc_generate_all` | inline staging + swap; counts `commands` | `adp_stage_begin/commit`; counts `skills/*/SKILL.md`; log "N skills" | 301-344 |
 | `_CC_COMMAND_META` | dead assignment | removed | 12 |
@@ -373,7 +376,7 @@ Dependencies: `lib/rdf_common.sh` (`rdf_log`, `rdf_warn`, `rdf_die`,
 | Function | Current behavior | New behavior | Lines affected |
 |----------|-----------------|--------------|----------------|
 | `_cpl_rewrite_namespace_text`, `_cpl_command_names_longest_first` | sed rewrite | unchanged; exposed as the filter fn | 21-47 |
-| `cpl_generate_command_frontmatter`, `cpl_generate_commands`, `cpl_generate_agents`, `_cpl_agent_frontmatter`, `cpl_generate_scripts`, `cpl_generate_reference` | local copies | deleted; `cpl_generate_skills` = `adp_emit_skills … _cpl_rewrite_namespace_text 0 adp_names_all` with the description also passed through the filter; agents via `adp_emit_agents … _cpl_rewrite_namespace_text 0` | 53-202 |
+| `cpl_generate_command_frontmatter`, `cpl_generate_commands`, `cpl_generate_agents`, `_cpl_agent_frontmatter`, `cpl_generate_scripts`, `cpl_generate_reference` | local copies | deleted; `cpl_generate_skills` = `adp_emit_skills … _cpl_rewrite_namespace_text 0 adp_names_all canonical/reference` with the description also passed through the filter; agents via `adp_emit_agents … _cpl_rewrite_namespace_text 0` | 53-202 |
 | `cpl_generate_hooks` | jq path transform | unchanged | 209-233 |
 | `cpl_stamp_plugin_version` | stamps `.version`, `.agents` | also sets `.skills = "./adapters/claude-plugin/output/skills"` and `del(.commands)` | 240-258 |
 | `cpl_generate_all` | inline swap; counts commands | lib staging; counts skills | 261-299 |
@@ -382,7 +385,7 @@ Dependencies: `lib/rdf_common.sh` (`rdf_log`, `rdf_warn`, `rdf_die`,
 
 | Function | Current behavior | New behavior | Lines affected |
 |----------|-----------------|--------------|----------------|
-| `_sk_skill_description`, `sk_emit_skills` | local | deleted → `adp_emit_skills canonical/commands <root>/.agents/skills skill-meta - 0 adp_names_from_meta` | 15-53 |
+| `_sk_skill_description`, `sk_emit_skills` | local | deleted → `adp_emit_skills canonical/commands <root>/.agents/skills skill-meta - 0 adp_names_from_meta canonical/reference` | 15-53 |
 | `sk_generate_all` | inline swap + reference copy | lib staging; reference handled by `adp_emit_skills` | 56-78 |
 
 ### `adapters/agents-md/adapter.sh` (rewritten)

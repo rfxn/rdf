@@ -6,14 +6,8 @@
 
 # Requires: RDF_CANONICAL, RDF_ADAPTERS, jq
 
-# Self-locate lib/ — RDF_LIBDIR is unreliable here: some test harnesses set
-# RDF_HOME to a throwaway fixture dir, and rdf_init() derives RDF_LIBDIR from
-# RDF_HOME (clobbering a caller override) the first time it runs.
-if [[ -z "${_RDF_ADAPTER_COMMON_LOADED:-}" ]]; then
-    _SK_SELF_DIR="$(cd "$(command dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
-    # shellcheck disable=SC1090,SC1091
-    source "${_SK_SELF_DIR}/../../lib/adapter_common.sh"
-fi
+# shellcheck disable=SC1090,SC1091
+[[ -n "${_RDF_ADAPTER_COMMON_LOADED:-}" ]] || source "${RDF_LIBDIR}/adapter_common.sh"
 
 _SK_ADAPTER_DIR="${RDF_ADAPTERS}/agent-skills"
 _SK_OUTPUT_DIR="${_SK_ADAPTER_DIR}/output"

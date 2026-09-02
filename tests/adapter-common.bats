@@ -21,7 +21,14 @@ teardown() {
     rm -rf "${TEST_WORK}" 2>/dev/null || true  # cleanup, ignore errors
 }
 
-# ── Test 1: byte-identity against the captured 3.6.5 emitter fixture ─────────
+# ── Test 1: emitter contract — fixture guards the frontmatter transform ──────
+#
+# Fixture scope is deliberately narrow: the agents/ + plugin-agents/ frontmatter
+# blocks. Bodies, scripts/ and reference/ are compared against canonical/ (and
+# sidecars re-derived with rdf_hash_stdin), so editing canonical content never
+# fails this test — only a change in the emitted frontmatter does.
+# Regenerate the tar only when the agent frontmatter contract changes on purpose:
+#   bin/rdf generate all >/dev/null && d="$(mktemp -d)" && cp -r adapters/claude-code/output/agents "$d/agents" && cp -r adapters/claude-plugin/output/agents "$d/plugin-agents" && tar -cf tests/fixtures/adapter-common/agents-expected.tar -C "$d" agents plugin-agents
 
 @test "adp_emit_agents output is byte-identical to the 3.6.5 emitter fixture" {
     local expected="${TEST_WORK}/expected"
@@ -31,7 +38,7 @@ teardown() {
 
     run bash -c '
         set -euo pipefail
-        rdf_src="$1"; out="$2"
+        rdf_src="$1"; out="$2"; expected="$3"
         RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
         source "${rdf_src}/lib/rdf_common.sh"; rdf_init
         source "${rdf_src}/lib/adapter_common.sh"
@@ -41,13 +48,35 @@ teardown() {
         adp_copy_scripts "${RDF_CANONICAL}/scripts" "${out}/scripts"
         adp_copy_reference "${RDF_CANONICAL}/reference" "${out}/reference" 1
         adp_emit_agents "${RDF_CANONICAL}/agents" "${out}/plugin-agents" "$agent_meta" _cpl_rewrite_namespace_text 0
-    ' -- "$RDF_SRC" "$work"
-    [ "$status" -eq 0 ]
 
-    diff -rq "${expected}/agents" "${work}/agents"
-    diff -rq "${expected}/scripts" "${work}/scripts"
-    diff -rq "${expected}/reference" "${work}/reference"
-    diff -rq "${expected}/plugin-agents" "${work}/plugin-agents"
+        diff -r "${RDF_CANONICAL}/scripts" "${out}/scripts"
+        for f in "${out}"/scripts/*.sh; do
+            [[ -x "$f" ]] || { echo "script not executable: $f"; exit 1; }
+        done
+
+        for f in "${RDF_CANONICAL}"/reference/*.md; do
+            b="$(basename "$f")"
+            diff "$f" "${out}/reference/${b}"
+            [[ "$(rdf_hash_stdin < "$f")" == "$(cat "${out}/reference/${b}.rdf-hash")" ]] \
+                || { echo "reference sidecar mismatch: $b"; exit 1; }
+        done
+
+        diff <(ls "${out}/agents" | grep -v "\.rdf-hash$") <(ls "${RDF_CANONICAL}/agents")
+        diff <(ls "${out}/plugin-agents") <(ls "${RDF_CANONICAL}/agents")
+
+        for f in "${RDF_CANONICAL}"/agents/*.md; do
+            b="$(basename "$f")"
+            diff <(sed -n "1,/^---$/p" "${out}/agents/${b}") <(sed -n "1,/^---$/p" "${expected}/agents/${b}")
+            diff <(sed -n "1,/^---$/p" "${out}/plugin-agents/${b}") <(sed -n "1,/^---$/p" "${expected}/plugin-agents/${b}")
+            diff <(rdf_strip_frontmatter "${out}/agents/${b}") "$f"
+            diff <(rdf_strip_frontmatter "${out}/plugin-agents/${b}") <(_cpl_rewrite_namespace_text < "$f")
+            [[ "$(rdf_hash_stdin < "$f")" == "$(cat "${out}/agents/${b}.rdf-hash")" ]] \
+                || { echo "agent sidecar mismatch: $b"; exit 1; }
+            [[ ! -e "${out}/plugin-agents/${b}.rdf-hash" ]] \
+                || { echo "unexpected plugin-agent sidecar: $b"; exit 1; }
+        done
+    ' -- "$RDF_SRC" "$work" "$expected"
+    [ "$status" -eq 0 ]
 }
 
 # ── Test 2: missing-meta branch — plain copy + warn ───────────────────────────
@@ -179,24 +208,32 @@ teardown() {
     [ ! -f "${dst2}/doc.md.rdf-hash" ]
 }
 
-# ── Test 6: adp_emit_skills filters body and description ─────────────────────
+# ── Test 6: adp_emit_skills filters body and description; ref_src is a param ──
 
 @test "adp_emit_skills applies the filter to body and description" {
     local src_dir="${TEST_WORK}/src" skills_root="${TEST_WORK}/skills" meta="${TEST_WORK}/meta.json"
-    mkdir -p "$src_dir" "$skills_root"
+    local ref_src="${TEST_WORK}/ref" noref_root="${TEST_WORK}/skills-noref"
+    mkdir -p "$src_dir" "$skills_root" "$ref_src"
     printf 'hello world\n\nBody line two.\n' > "${src_dir}/r-hello.md"
     printf '{"r-hello": "hello trigger"}' > "$meta"
+    printf 'reference body\n' > "${ref_src}/doc.md"
 
+    # No RDF_HOME / rdf_init: the reference source is a parameter, not a global.
     run bash -c '
         set -euo pipefail
-        rdf_src="$1"; src_dir="$2"; skills_root="$3"; meta="$4"
-        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"
-        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        rdf_src="$1"; src_dir="$2"; skills_root="$3"; meta="$4"; ref_src="$5"; noref_root="$6"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
         source "${rdf_src}/lib/adapter_common.sh"
         _test_filter() { sed "s/hello/HELLO/g"; }
-        adp_emit_skills "$src_dir" "$skills_root" "$meta" _test_filter 1 adp_names_all
-    ' -- "$RDF_SRC" "$src_dir" "$skills_root" "$meta"
+        adp_emit_skills "$src_dir" "$skills_root" "$meta" _test_filter 1 adp_names_all "$ref_src"
+        adp_emit_skills "$src_dir" "$noref_root" "$meta" _test_filter 1 adp_names_all -
+    ' -- "$RDF_SRC" "$src_dir" "$skills_root" "$meta" "$ref_src" "$noref_root"
     [ "$status" -eq 0 ]
+
+    [ -f "${skills_root}/reference/doc.md" ]
+    [ -f "${noref_root}/r-hello/SKILL.md" ]
+    [ ! -e "${noref_root}/reference" ]
 
     local skill="${skills_root}/r-hello/SKILL.md"
     [ -f "$skill" ]
@@ -223,4 +260,58 @@ teardown() {
         "${RDF_SRC}/adapters/agent-skills/adapter.sh"
     [ "$status" -ne 0 ]
     [ -z "$output" ]
+}
+
+# ── Test 8: names functions — rc and content ──────────────────────────────────
+
+@test "adp_names_lite, adp_names_from_meta, adp_names_all return rc 0 and the expected names" {
+    local src_dir="${TEST_WORK}/src" meta="${TEST_WORK}/meta.json"
+    mkdir -p "$src_dir"
+    : > "${src_dir}/r-spec.md"
+    : > "${src_dir}/r-plan.md"
+    : > "${src_dir}/r-util-thing.md"
+    printf '{"_comment": "ignored", "r-spec": "t", "r-util-thing": "t"}' > "$meta"
+
+    # Assignment form (not a pipeline) so set -e sees each function's rc.
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; src_dir="$2"; meta="$3"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        source "${rdf_src}/lib/adapter_common.sh"
+        all="$(adp_names_all "$src_dir" "$meta")"
+        lite="$(adp_names_lite "$src_dir" "$meta")"
+        from_meta="$(adp_names_from_meta "$src_dir" "$meta")"
+        printf "all:%s\n" "$(printf "%s" "$all" | tr "\n" " ")"
+        printf "lite:%s\n" "$(printf "%s" "$lite" | tr "\n" " ")"
+        printf "meta:%s\n" "$(printf "%s" "$from_meta" | tr "\n" " ")"
+    ' -- "$RDF_SRC" "$src_dir" "$meta"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"all:r-plan r-spec r-util-thing"* ]]
+    [[ "$output" == *"lite:r-plan r-spec"* ]]
+    [[ "$output" == *"meta:r-spec r-util-thing"* ]]
+}
+
+# ── Test 9: adp_count ─────────────────────────────────────────────────────────
+
+@test "adp_count returns 0 for an absent dir and N otherwise" {
+    local dir="${TEST_WORK}/skills"
+    mkdir -p "${dir}/one" "${dir}/two"
+    : > "${dir}/one/SKILL.md"
+    : > "${dir}/two/SKILL.md"
+    : > "${dir}/two/other.md"
+
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; dir="$2"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        source "${rdf_src}/lib/adapter_common.sh"
+        present="$(adp_count "$dir" SKILL.md)"
+        absent="$(adp_count "${dir}/absent" SKILL.md)"
+        printf "present=%s absent=%s\n" "$((present))" "$((absent))"
+    ' -- "$RDF_SRC" "$dir"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"present=2"* ]]
+    [[ "$output" == *"absent=0"* ]]
 }

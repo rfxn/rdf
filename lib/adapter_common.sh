@@ -170,7 +170,9 @@ adp_names_lite() {
     local src_dir="$1" lite name
     lite="$(rdf_lite_commands)"
     while IFS= read -r name; do
-        printf '%s\n' "$lite" | grep -qx "$name" && printf '%s\n' "$name"
+        if printf '%s\n' "$lite" | grep -qx "$name"; then
+            printf '%s\n' "$name"
+        fi
     done < <(adp_names_all "$src_dir")
 }
 
@@ -181,19 +183,19 @@ adp_names_from_meta() {
     jq -r 'keys[] | select(. != "_comment")' "$meta"
 }
 
-# adp_emit_skills src_dir skills_root meta filter_fn sidecar names_fn —
+# adp_emit_skills src_dir skills_root meta filter_fn sidecar names_fn ref_src —
 # write <skills_root>/<name>/SKILL.md (name/description frontmatter + filtered
 # body) for every name from "$names_fn" src_dir meta; optional .rdf-hash
-# sidecar; copies canonical/reference into <skills_root>/reference.
+# sidecar; copies ref_src into <skills_root>/reference ("-" skips the copy).
 adp_emit_skills() {
-    local src_dir="$1" skills_root="$2" meta="$3" filter_fn="$4" sidecar="$5" names_fn="$6"
+    local src_dir="$1" skills_root="$2" meta="$3" filter_fn="$4" sidecar="$5" names_fn="$6" ref_src="$7"
     local name src desc count=0
 
     while IFS= read -r name; do
         [[ -z "$name" ]] && continue
         src="${src_dir}/${name}.md"
         if [[ ! -f "$src" ]]; then
-            rdf_warn "no canonical command for skill '${name}' — skipped"
+            rdf_warn "no canonical command for skill '${name}' — skipped (${skills_root})"
             continue
         fi
 
@@ -219,7 +221,7 @@ adp_emit_skills() {
         count=$((count + 1))
     done < <("$names_fn" "$src_dir" "$meta")
 
-    adp_copy_reference "${RDF_CANONICAL}/reference" "${skills_root}/reference" "$sidecar"
+    [[ "$ref_src" != "-" ]] && adp_copy_reference "$ref_src" "${skills_root}/reference" "$sidecar"
     rdf_log "generated ${count} skills"
 }
 
@@ -243,8 +245,7 @@ adp_stage_commit() {
     command rm -rf "$old_dir"
 }
 
-# adp_count dir glob — portable find-count; a missing dir counts as 0 (find's
-# empty stdout on a nonexistent path, not a special case).
+# adp_count dir glob — portable find-count; a missing dir counts as 0.
 adp_count() {
-    find "$1" -name "$2" 2>/dev/null | wc -l  # dir may not exist on partial generation
+    { find "$1" -name "$2" 2>/dev/null || true; } | wc -l  # dir may not exist on partial generation; find's rc must not trip the caller's pipefail
 }
