@@ -149,3 +149,68 @@ teardown() { rm -rf "$TEST_OUT" 2>/dev/null || true; }  # cleanup, ignore errors
     _gen_agents_md "$TEST_OUT"
     grep -q '\.agents/skills/' "${TEST_OUT}/AGENTS.md"
 }
+
+# _amd_compose <root> <dst> — run amd_compose directly against a caller-chosen
+# root/dst pair (bypasses the self-defaulting amd_generate_all).
+_amd_compose() {
+    local root="$1" dst="$2"
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; root="$2"; dst="$3"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/agents-md/adapter.sh"
+        amd_compose "$root" "$dst"
+    ' -- "$RDF_SRC" "$root" "$dst"
+}
+
+@test "agents-md composes from a project CLAUDE.md" {
+    local proj; proj="$(mktemp -d)"
+    git -C "$proj" init -q
+    cat > "$proj/CLAUDE.md" <<'EOF'
+# Sample Project CLAUDE.md
+
+Project-specific governance text, unique-marker-xyz.
+EOF
+    _amd_compose "$proj" "$proj/AGENTS.md"
+    [ -f "$proj/AGENTS.md" ]
+    local claude_body agents_body
+    claude_body="$(cat "$proj/CLAUDE.md")"
+    agents_body="$(cat "$proj/AGENTS.md")"
+    [[ "$agents_body" == *"$claude_body"* ]]   # CLAUDE.md is embedded byte-for-byte
+    grep -q '## Agent Skills' "$proj/AGENTS.md"
+    grep -q '## Agent Roster' "$proj/AGENTS.md"
+    grep -q -- "- \*\*dispatcher\*\*:" "$proj/AGENTS.md"
+    rm -rf "$proj"
+}
+
+@test "agents-md falls back to governance index then stub" {
+    local proj; proj="$(mktemp -d)"
+    git -C "$proj" init -q
+    mkdir -p "$proj/.rdf/governance"
+    echo "governance-index-marker-abc" > "$proj/.rdf/governance/index.md"
+    _amd_compose "$proj" "$proj/AGENTS.md"
+    grep -q 'governance-index-marker-abc' "$proj/AGENTS.md"
+
+    rm -f "$proj/.rdf/governance/index.md" "$proj/AGENTS.md"
+    run _amd_compose "$proj" "$proj/AGENTS.md"
+    [ "$status" -eq 0 ]
+    [ -f "$proj/AGENTS.md" ]
+    grep -qi 'no project-specific governance' "$proj/AGENTS.md"
+    echo "$output" | grep -qi 'no CLAUDE.md or .rdf/governance/index.md'
+    rm -rf "$proj"
+}
+
+@test "self AGENTS.md regenerates byte-identical (tracked output)" {
+    local tmp_out; tmp_out="$(mktemp -d)"
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; tmp_out="$2"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/agents-md/adapter.sh"
+        amd_compose "$RDF_HOME" "${tmp_out}/AGENTS.md"
+    ' -- "$RDF_SRC" "$tmp_out"
+    diff -q "${tmp_out}/AGENTS.md" "${RDF_SRC}/adapters/agents-md/output/AGENTS.md"
+    rm -rf "$tmp_out"
+}

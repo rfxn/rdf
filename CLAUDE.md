@@ -1,9 +1,8 @@
 # RDF — Project CLAUDE.md
 
-Inherits conventions from the parent workspace CLAUDE.md at
-`/root/admin/work/proj/CLAUDE.md` (rfxn-wide shell standards, commit protocol,
-testing norms). Project-specific rules below override parent defaults where
-explicit.
+Inherits conventions from the parent workspace CLAUDE.md, one directory up
+(rfxn-wide shell standards, commit protocol, testing norms). Project-specific
+rules below override parent defaults where explicit.
 
 Also read `CLAUDE.md.ref` in this directory — a condensed 6-section operating-
 primitives reference (Trust but Verify, Scope Discipline, Adversarial Review,
@@ -12,7 +11,7 @@ cross-cutting behavioral invariants, not RDF-specific conventions.
 
 ## About
 RDF (rfxn Development Framework) — convention governance, agent pipelines,
-and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
+and project orchestration for any repo. Tool-agnostic by design.
 
 ## Development
 - All content development in `canonical/` — pure markdown, no tool frontmatter
@@ -24,7 +23,7 @@ and project orchestration for the rfxn ecosystem. Tool-agnostic by design.
 ## Shell Standards
 - Shebang: `#!/usr/bin/env bash`
 - `set -euo pipefail` in all scripts
-- Bash floor: target 3.2 (macOS system bash — CI-smoked) and 4.1 (CentOS 6); avoid features newer than either (matches CONTRIBUTING.md)
+- Bash floor: target 3.2 (macOS system bash — CI-smoked) and 4.1 (el6-era enterprise Linux); avoid features newer than either (matches CONTRIBUTING.md)
 - All variables double-quoted in command context
 - `command -v` for binary discovery, never hardcoded paths
 - `command cp`/`command mv`/`command rm` in project source (not bare, not `/usr/bin/`)

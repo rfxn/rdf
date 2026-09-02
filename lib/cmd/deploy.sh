@@ -13,15 +13,17 @@ Deploy generated adapter output to its tool-specific destination.
 Targets:
   claude-code    Deploy to ~/.claude/ (agents, skills, scripts, governance) + ~/.rdf/state helpers
   gemini-cli     Deploy to ~/.gemini/ (agents, commands, GEMINI.md)
-  codex          Deploy to ~/.codex/ + project root (requires --project-root)
+  codex          Composite: .agents/skills/ symlink + AGENTS.md copy-skip (requires --project-root)
+  antigravity    Same composite as codex (requires --project-root)
   agent-skills   Deploy .agents/skills/ into a workspace root (--project-root, default CWD)
+  agents-md      Deploy AGENTS.md (copy-skip) into a project root (requires --project-root)
 
 Options:
   --dry-run        Show what would happen without making changes
   --force          Back up real dirs/files and replace with symlinks
   --rules          Also symlink scoped governance rules/ (claude-code; opt-in)
   --lite           rdf-lite deploy: symlink rules/ as governance, skip hooks
-  --project-root   Project root for Codex AGENTS.md deployment
+  --project-root   Project root for codex/antigravity/agent-skills/agents-md deployment
 
 Hooks merge (claude-code symlink deploy only; plugin installs auto-register):
   hooks.json is never symlinked. From the RDF checkout root, merge it into
@@ -45,6 +47,7 @@ Examples:
   rdf deploy --dry-run gemini-cli
   rdf deploy --force claude-code
   rdf deploy --project-root /path/to/proj codex
+  rdf deploy --project-root /path/to/proj agents-md
 USAGE
 }
 
@@ -343,31 +346,20 @@ _deploy_gemini_cli() {
     _deploy_symlink "${output_dir}/scripts" "${dest_base}/scripts" "$dry_run" "$force"
 }
 
-# Deploy Codex adapter output to ~/.codex/ + project root
+# Deploy the Codex/Antigravity composite: agent-skills symlink + AGENTS.md
+# copy-skip, both into --project-root (required — Codex has no ~/.codex/
+# surface of its own since it reads .agents/skills and AGENTS.md natively).
 _deploy_codex() {
     local dry_run="$1"
     local force="$2"
     local project_root="$3"
-    local output_dir="${RDF_ADAPTERS}/codex/output"
-    local dest_base="${HOME}/.codex"
 
-    # Pre-flight: output must exist and be non-empty
-    if [[ ! -d "$output_dir" ]] || [[ -z "$(ls -A "$output_dir" 2>/dev/null)" ]]; then
-        rdf_die "output not found — run 'rdf generate codex' first"
-    fi
-
-    # Pre-flight: --project-root must be provided and valid
     if [[ -z "$project_root" ]]; then
         rdf_die "codex deploy requires --project-root <path>"
     fi
-    if [[ ! -d "$project_root" ]]; then
-        rdf_die "project root not a directory: ${project_root}"
-    fi
 
-    rdf_log "deploying Codex adapter to ${dest_base} and ${project_root}..."
-
-    _deploy_copy_skip "${output_dir}/AGENTS.md" "${project_root}/AGENTS.md" "$dry_run" "$force"
-    _deploy_copy_skip "${output_dir}/.codex/config.toml" "${dest_base}/config.toml" "$dry_run" "$force"
+    _deploy_agent_skills "$dry_run" "$force" "$project_root"
+    _deploy_agents_md "$dry_run" "$force" "$project_root"
 }
 
 # Deploy agent-skills output (.agents/skills/) into a workspace root
@@ -387,6 +379,27 @@ _deploy_agent_skills() {
 
     rdf_log "deploying agent-skills to ${project_root}/.agents/skills..."
     _deploy_symlink "${output_dir}/.agents/skills" "${project_root}/.agents/skills" "$dry_run" "$force"
+}
+
+# Deploy agents-md output (AGENTS.md) into a project root, copy-skip semantics
+_deploy_agents_md() {
+    local dry_run="$1"
+    local force="$2"
+    local project_root="$3"
+    local output_dir="${RDF_ADAPTERS}/agents-md/output"
+
+    if [[ ! -f "${output_dir}/AGENTS.md" ]]; then
+        rdf_die "output not found — run 'rdf generate agents-md' first"
+    fi
+    if [[ -z "$project_root" ]]; then
+        rdf_die "agents-md deploy requires --project-root <path>"
+    fi
+    if [[ ! -d "$project_root" ]]; then
+        rdf_die "project root not a directory: ${project_root}"
+    fi
+
+    rdf_log "deploying agents-md to ${project_root}/AGENTS.md..."
+    _deploy_copy_skip "${output_dir}/AGENTS.md" "${project_root}/AGENTS.md" "$dry_run" "$force"
 }
 
 cmd_deploy() {
@@ -435,11 +448,13 @@ cmd_deploy() {
     fi
 
     case "$target" in
-        claude-code) _deploy_claude_code "$dry_run" "$force" "$deploy_rules" ;;
-        gemini-cli)  _deploy_gemini_cli "$dry_run" "$force" ;;
-        codex)       _deploy_codex "$dry_run" "$force" "$project_root" ;;
+        claude-code)  _deploy_claude_code "$dry_run" "$force" "$deploy_rules" ;;
+        gemini-cli)   _deploy_gemini_cli "$dry_run" "$force" ;;
+        codex)        _deploy_codex "$dry_run" "$force" "$project_root" ;;
+        antigravity)  _deploy_codex "$dry_run" "$force" "$project_root" ;;
         agent-skills) _deploy_agent_skills "$dry_run" "$force" "$project_root" ;;
-        *)           rdf_die "unknown target: ${target} — run 'rdf deploy help' for usage" ;;
+        agents-md)    _deploy_agents_md "$dry_run" "$force" "$project_root" ;;
+        *)            rdf_die "unknown target: ${target} — run 'rdf deploy help' for usage" ;;
     esac
 
     # Summary with skip reporting

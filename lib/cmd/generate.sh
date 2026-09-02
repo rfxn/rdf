@@ -14,10 +14,10 @@ Targets:
   claude-code    Generate Claude Code adapter output
   claude-plugin  Generate Claude Code plugin output (marketplace install)
   gemini-cli     Generate Gemini CLI adapter output
-  codex          Generate Codex adapter output (AGENTS.md + config)
-  agents-md      Generate cross-tool AGENTS.md
+  codex          Composite: agent-skills (.agents/skills/) + agents-md (AGENTS.md)
+  agents-md      Generate a project's AGENTS.md (composed from its own CLAUDE.md)
   agent-skills   Generate .agents/skills/ (Codex + Antigravity shared surface)
-  antigravity    Generate the Antigravity surface (.agents/skills/ + AGENTS.md)
+  antigravity    Same composite as codex
   all            Generate all available adapters
 
 Options:
@@ -25,6 +25,7 @@ Options:
   --rules        With --deploy claude-code, also symlink scoped rules/ (opt-in)
   --lite         Minimal claude-code deploy: condensed core governance,
                  lifecycle commands only, no hooks (rdf-lite; implies --rules)
+  --project-root Project root for 'agents-md' (defaults to this RDF checkout)
 
 The generated output is written to adapters/<target>/output/.
 
@@ -33,15 +34,17 @@ Examples:
   rdf generate --deploy claude-code
   rdf generate gemini-cli
   rdf generate codex
-  rdf generate agents-md
+  rdf generate agents-md --project-root /path/to/proj
   rdf generate all
 USAGE
 }
 
-# _generate_adapter script func — source <RDF_ADAPTERS>/script (after the shared lib) and run func
+# _generate_adapter script func [args...] — source <RDF_ADAPTERS>/script
+# (after the shared lib) and run func, forwarding any extra args to it.
 _generate_adapter() {
     local script="${RDF_ADAPTERS}/$1"
     local func="$2"
+    shift 2
 
     if [[ ! -f "$script" ]]; then
         rdf_die "adapter not found: ${script}"
@@ -51,7 +54,7 @@ _generate_adapter() {
     [[ -n "${_RDF_ADAPTER_COMMON_LOADED:-}" ]] || source "${RDF_LIBDIR}/adapter_common.sh"
     # shellcheck disable=SC1090
     source "$script"
-    "$func"
+    "$func" "$@"
 }
 
 cmd_generate() {
@@ -59,13 +62,20 @@ cmd_generate() {
     local deploy_after=0
     local deploy_rules=0
     local lite=0
+    local project_root=""
 
-    # Parse leading flags (--deploy, --rules, --lite) in any order before the target.
+    # Parse leading flags (--deploy, --rules, --lite, --project-root) in any order before the target.
     while [[ "${1:-}" == --* ]]; do
         case "$1" in
             --deploy) deploy_after=1; shift ;;
             --rules)  deploy_rules=1; shift ;;
             --lite)   lite=1; shift ;;
+            --project-root)
+                if [[ $# -lt 2 ]]; then
+                    rdf_die "--project-root requires a value"
+                fi
+                project_root="$2"; shift 2
+                ;;
             *)        break ;;   # e.g. --help — let the target case handle it
         esac
     done
@@ -107,13 +117,15 @@ cmd_generate() {
             fi
             ;;
         codex)
-            _generate_adapter "codex/adapter.sh" "cdx_generate_all"
+            # Composite: shared skills + AGENTS.md context (no bespoke Codex adapter)
+            _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
+            _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
             if [[ $deploy_after -eq 1 ]]; then
                 rdf_warn "--deploy for codex requires manual 'rdf deploy --project-root <path> codex'"
             fi
             ;;
         agents-md)
-            _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
+            _generate_adapter "agents-md/adapter.sh" "amd_generate_all" "$project_root"
             if [[ $deploy_after -eq 1 ]]; then
                 rdf_warn "--deploy not applicable to agents-md target"
             fi
@@ -125,11 +137,11 @@ cmd_generate() {
             fi
             ;;
         antigravity)
-            # First-class composite: shared skills + AGENTS.md context (spec §13.4)
+            # Same composite as codex (spec §13.4)
             _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
             _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
             if [[ $deploy_after -eq 1 ]]; then
-                rdf_warn "--deploy for antigravity: copy .agents/skills/ + AGENTS.md into the workspace root (skills via 'rdf deploy --project-root <path> agent-skills')"
+                rdf_warn "--deploy for antigravity requires manual 'rdf deploy --project-root <path> antigravity'"
             fi
             ;;
         all)
@@ -149,11 +161,6 @@ cmd_generate() {
             # Gemini CLI
             if [[ -f "${RDF_ADAPTERS}/gemini-cli/adapter.sh" ]]; then
                 _generate_adapter "gemini-cli/adapter.sh" "gem_generate_all" || failed=$((failed + 1))
-            fi
-
-            # Codex
-            if [[ -f "${RDF_ADAPTERS}/codex/adapter.sh" ]]; then
-                _generate_adapter "codex/adapter.sh" "cdx_generate_all" || failed=$((failed + 1))
             fi
 
             # AGENTS.md

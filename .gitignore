@@ -29,5 +29,4 @@ PLAN-*.md
 # agents-md/ and claude-plugin/ output ARE tracked (release + plugin artifacts).
 adapters/claude-code/output/
 adapters/gemini-cli/output/
-adapters/codex/output/
 adapters/agent-skills/output/

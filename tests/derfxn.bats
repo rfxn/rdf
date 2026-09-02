@@ -175,3 +175,35 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     ' -- "$RDF_SRC"
     [ "$status" -ne 0 ]
 }
+
+@test "consumer AGENTS.md contains no rfxn identifiers" {
+    # A project's own plain CLAUDE.md carries no org text; the composer must
+    # not inject any (same allowlist as the canonical org-identifier test).
+    local proj; proj="$(mktemp -d)"
+    git -C "$proj" init -q
+    cat > "$proj/CLAUDE.md" <<'EOF'
+# Sample Project
+
+Plain project instructions with no organization-specific text.
+EOF
+    run bash -c '
+        rdf_src="$1"; proj="$2"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/adapters/agents-md/adapter.sh"
+        amd_compose "$proj" "$proj/AGENTS.md"
+    ' -- "$RDF_SRC" "$proj"
+    [ "$status" -eq 0 ]
+    [ -f "$proj/AGENTS.md" ]
+    run bash -c '
+        grep -in "rfxn" "$1" \
+            | grep -vi "rfxn-workspace" \
+            | grep -v "github.com/rfxn" \
+            | grep -v "proj@rfxn.com" \
+            | grep -v "rfxn Development Framework" \
+            | grep -v "R-fx Networks"
+    ' -- "$proj/AGENTS.md"
+    [ "$status" -ne 0 ]
+    rm -rf "$proj"
+}

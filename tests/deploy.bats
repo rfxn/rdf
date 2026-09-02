@@ -34,7 +34,7 @@ _run_deploy() {
     local has_target=0 a
     for a in "$@"; do
         case "$a" in
-            claude-code|gemini-cli|codex|agent-skills) has_target=1 ;;
+            claude-code|gemini-cli|codex|antigravity|agent-skills|agents-md) has_target=1 ;;
         esac
     done
     bash -c '
@@ -120,6 +120,37 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -L "${proj}/.agents/skills" ]
     [ -f "${proj}/.agents/skills/r-spec/SKILL.md" ]
     rm -rf "$proj"
+}
+
+@test "deploy codex symlinks skills and copy-skips AGENTS.md" {
+    local sk_out="${FIX_HOME}/adapters/agent-skills/output"
+    mkdir -p "${sk_out}/.agents/skills/r-spec"
+    printf -- '---\nname: r-spec\n---\nbody\n' > "${sk_out}/.agents/skills/r-spec/SKILL.md"
+    local amd_out="${FIX_HOME}/adapters/agents-md/output"
+    mkdir -p "$amd_out"
+    printf '# AGENTS.md\n\nbody\n' > "${amd_out}/AGENTS.md"
+    local proj; proj="$(mktemp -d)"
+
+    run _run_deploy "$FIX_HOME" --project-root "$proj" codex
+    [ "$status" -eq 0 ]
+    [ -L "${proj}/.agents/skills" ]
+    [ -f "${proj}/AGENTS.md" ]
+    diff -q "${amd_out}/AGENTS.md" "${proj}/AGENTS.md"
+
+    # second run: an unchanged AGENTS.md is copy-skipped (not re-copied as a conflict)
+    run _run_deploy "$FIX_HOME" --project-root "$proj" codex
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'unchanged:'
+    rm -rf "$proj"
+}
+
+@test "deploy agents-md requires --project-root" {
+    local amd_out="${FIX_HOME}/adapters/agents-md/output"
+    mkdir -p "$amd_out"
+    printf '# AGENTS.md\n\nbody\n' > "${amd_out}/AGENTS.md"
+    run _run_deploy "$FIX_HOME" agents-md
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q 'requires --project-root'
 }
 
 @test "deploy links each skill as its own symlink" {
