@@ -212,6 +212,36 @@ _deploy_state_helpers() {
     return 0
 }
 
+# Per-skill symlinks under <dest_base>/skills/<n>; also prunes any RDF-owned
+# link whose output/skills/<n> target has vanished (canonical command removed).
+# Args: $1=output_dir $2=dest_base $3=dry_run $4=force
+_deploy_skill_links() {
+    local output_dir="$1" dest_base="$2" dry_run="$3" force="$4" d n linked=0 pruned=0 target
+    [[ -d "${output_dir}/skills" ]] || return 0   # Phase 2: skills tree optional — Phase 3 requires it
+    if [[ -L "${dest_base}/skills" ]]; then
+        rdf_warn "${dest_base}/skills is a symlink — refusing to manage per-skill links inside it"
+        _DEPLOY_SKIPPED=$((_DEPLOY_SKIPPED + 1))
+        return 1
+    fi
+    [[ $dry_run -eq 1 ]] || command mkdir -p "${dest_base}/skills"
+    for d in "${output_dir}/skills"/*/; do
+        [[ -d "$d" ]] || continue
+        n="$(command basename "$d")"
+        _deploy_symlink "${output_dir}/skills/${n}" "${dest_base}/skills/${n}" "$dry_run" "$force" \
+            && linked=$((linked + 1))
+    done
+    for d in "${dest_base}/skills"/*; do   # prune: RDF-owned link whose target is gone
+        [[ -L "$d" ]] || continue
+        target="$(readlink "$d")"
+        case "$target" in
+            "${output_dir}/skills/"*)
+                [[ -e "$target" ]] || { [[ $dry_run -eq 1 ]] || command rm -f "$d"; pruned=$((pruned + 1)); }
+                ;;
+        esac
+    done
+    rdf_log "skills: ${linked} linked, ${pruned} pruned (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+}
+
 # Deploy Claude Code adapter output to ~/.claude/
 _deploy_claude_code() {
     local dry_run="$1"
@@ -234,11 +264,17 @@ _deploy_claude_code() {
 
     rdf_log "deploying Claude Code adapter to ${dest_base}..."
 
-    _deploy_symlink "${output_dir}/agents" "${dest_base}/agents" "$dry_run" "$force"
-    _deploy_symlink "${output_dir}/commands" "${dest_base}/commands" "$dry_run" "$force"
-    _deploy_symlink "${output_dir}/scripts" "${dest_base}/scripts" "$dry_run" "$force"
-    _deploy_symlink "${output_dir}/governance" "${dest_base}/governance" "$dry_run" "$force"
-    _deploy_symlink "${output_dir}/reference" "${dest_base}/reference" "$dry_run" "$force"
+    local surface
+    while IFS= read -r surface; do
+        _deploy_symlink "${output_dir}/${surface}" "${dest_base}/${surface}" "$dry_run" "$force"
+    done < <(rdf_cc_dir_surfaces)
+
+    # Phase 2: commands/ still deployed alongside skills/ — Phase 3 retires this branch.
+    if [[ -d "${output_dir}/commands" ]]; then
+        _deploy_symlink "${output_dir}/commands" "${dest_base}/commands" "$dry_run" "$force"
+    fi
+
+    _deploy_skill_links "$output_dir" "$dest_base" "$dry_run" "$force"
 
     # Scoped rules/ are opt-in (--rules): default keeps existing symlink users unchanged.
     if [[ "$deploy_rules" -eq 1 && -d "${output_dir}/rules" ]]; then

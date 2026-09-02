@@ -228,7 +228,7 @@ Deploy, doctor, sync, the overhead resolver, and context-audit gain skills suppo
 - **Edge cases**: 11b "user-owned real skill dir" (skip + exit 1), "RDF_TARGET set", "two symlink levels" (`rdf_canonical_path` compare), "canonical command removed after deploy" (prune).
 - **Regression-case**: `tests/deploy.bats::@test "deploy links each skill as its own symlink"` (created this phase)
 
-- [ ] **Step 1: deploy.sh — `_deploy_skill_links` + wire-in**
+- [x] **Step 1: deploy.sh — `_deploy_skill_links` + wire-in**
 
   ```bash
   # _deploy_skill_links output_dir dest_base dry_run force — per-skill symlinks + prune of RDF-owned stale links
@@ -250,27 +250,27 @@ Deploy, doctor, sync, the overhead resolver, and context-audit gain skills suppo
   ```
   `_deploy_claude_code`: replace the five explicit `_deploy_symlink` lines with a loop over `rdf_cc_dir_surfaces` **plus** (this phase only) `[[ -d "${output_dir}/commands" ]] && _deploy_symlink "${output_dir}/commands" "${dest_base}/commands" …`, then `_deploy_skill_links "$output_dir" "$dest_base" "$dry_run" "$force"`. Note: `_deploy_symlink`'s return value already counts OK/skipped — do not double count.
 
-- [ ] **Step 2: doctor.sh — content-drift, sync, install-mode**
+- [x] **Step 2: doctor.sh — content-drift, sync, install-mode**
 
   `_check_content_drift`: after the agents loop, add a skills loop: `for skill_file in "${output_dir}/skills"/*/SKILL.md` with sidecar `${skill_file}.rdf-hash`, message key `skills/<dir>`; keep the commands loop this phase (guard both loops with `[[ -d … ]]`). `_check_sync`: count `canonical/commands/*.md` against `skills/*/SKILL.md` when `output/skills` exists, else against `commands/*.md`; symlink-health loop iterates `rdf_cc_dir_surfaces` (+ `commands` when the output has it), then per-skill: every `output/skills/<n>` must have `~/.claude/skills/<n>` resolving to it (WARN per missing/wrong). `_check_install_mode`: `symlink_mode=1` if `-L "${base}/commands"` OR `-L "${base}/skills/r-start"` (any RDF-owned skill link).
 
-- [ ] **Step 3: sync.sh — skills loop**
+- [x] **Step 3: sync.sh — skills loop**
 
   Add before the scripts loop: `if [[ -d "${output_dir}/skills" ]]; then for out_file in "${output_dir}/skills"/*/SKILL.md; do … n="$(command basename "$(command dirname "$out_file")")"; [[ "$n" == "reference" ]] && continue; canon_file="${RDF_CANONICAL}/commands/${n}.md"; (same strip / empty-body guard / compare / write as the commands loop) …; done; fi`. Extract the shared body-derivation into `_sync_body <file>` so the three loops call one helper (removes the duplicated strip block at `sync.sh:47-116`).
 
-- [ ] **Step 4: rdf-overhead.sh — resolver**
+- [x] **Step 4: rdf-overhead.sh — resolver**
 
   Replace `readlink "${RDF_TARGET:-${HOME}/.claude}/commands"` with `…/agents`; keep `${_link%/adapters/*}`; the existing warning `rdf-overhead: deploy symlink absent — rules/lite figures may be inaccurate` becomes `rdf-overhead: no ~/.claude/agents deploy symlink — rules/lite figures may be inaccurate` (the overhead test greps for `agents`). (`agents` is a directory symlink today and after Phase 3.)
 
-- [ ] **Step 5: context-audit.sh — inventory**
+- [x] **Step 5: context-audit.sh — inventory**
 
   In the skills inventory section: count `find "$dir/skills" -mindepth 2 -maxdepth 2 -name SKILL.md` for the global and project dirs and add it to the existing `commands/*.md` count (both layouts). Keep the canonical count as is.
 
-- [ ] **Step 6: Tests**
+- [x] **Step 6: Tests**
 
   Extend `_make_deploy_skeleton` in `tests/deploy.bats` to also create `skills/x/SKILL.md` (keep `commands/x.md` this phase). Add the deploy/doctor/sync/overhead/state-injection tests listed above.
 
-- [ ] **Step 7: Verify**
+- [x] **Step 7: Verify**
 
   ```bash
   bash -n lib/cmd/deploy.sh lib/cmd/doctor.sh lib/cmd/sync.sh state/rdf-overhead.sh state/context-audit.sh && shellcheck -S error --exclude=SC1090,SC1091 lib/cmd/deploy.sh lib/cmd/doctor.sh lib/cmd/sync.sh state/rdf-overhead.sh state/context-audit.sh && echo LINT-OK
@@ -281,7 +281,7 @@ Deploy, doctor, sync, the overhead resolver, and context-audit gain skills suppo
   # expect: ... 0 FAIL
   ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
   `git add lib/cmd/deploy.sh lib/cmd/doctor.sh lib/cmd/sync.sh state/rdf-overhead.sh state/context-audit.sh tests/deploy.bats tests/doctor.bats tests/sync.bats tests/overhead.bats tests/state-injection.bats`
   Message: `Consumers learn the skills layout: per-skill deploy links, doctor, sync, overhead, context-audit` / `[New] rdf deploy owns ~/.claude/skills/<name> symlinks with stale-link pruning` / `[Change] doctor content-drift/sync/install-mode and rdf sync handle skills/*/SKILL.md alongside commands/` / `[Change] overhead resolver follows the agents symlink; context-audit counts skills`

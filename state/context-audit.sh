@@ -56,6 +56,15 @@ _count_md_files() {
     echo "${n##* }"
 }
 
+# Helper: count skills/<name>/SKILL.md files (mindepth 2, maxdepth 2)
+# _count_skill_files dir — prints integer count, 0 if dir missing or empty
+_count_skill_files() {
+    local dir="$1"
+    local n
+    n="$(command find "$dir" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null | wc -l)"  # caller pre-guards -d; empty-on-race is fine
+    echo "${n##* }"
+}
+
 # --- Section 1: CLAUDE.md files (always-loaded) ---
 
 _global_claude="${_claude_home}/CLAUDE.md"
@@ -181,6 +190,28 @@ if [[ -d "$_canonical_commands" ]]; then
         [[ -z "$_sf" ]] && continue
         _skill_canonical_bytes=$((_skill_canonical_bytes + $(_fsize "$_sf")))
     done < <(command find "$_canonical_commands" -maxdepth 1 -name "*.md" ! -type d 2>/dev/null)
+fi
+
+# Skills-layout deploys (skills/<name>/SKILL.md) — counted alongside the
+# legacy commands/*.md layout above so .skills.deployed.count reflects
+# whichever layout (or both, mid-transition) is actually on disk.
+_global_skills="${_claude_home}/skills"
+_project_skills="${_project_settings}/skills"
+
+if [[ -d "$_global_skills" ]]; then
+    _skill_global_count=$((_skill_global_count + $(_count_skill_files "$_global_skills")))
+    while IFS= read -r _sf; do
+        [[ -z "$_sf" ]] && continue
+        _skill_global_bytes=$((_skill_global_bytes + $(_fsize "$_sf")))
+    done < <(command find "$_global_skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null)  # dir pre-guarded above
+fi
+
+if [[ -d "$_project_skills" ]]; then
+    _skill_project_count=$((_skill_project_count + $(_count_skill_files "$_project_skills")))
+    while IFS= read -r _sf; do
+        [[ -z "$_sf" ]] && continue
+        _skill_project_bytes=$((_skill_project_bytes + $(_fsize "$_sf")))
+    done < <(command find "$_project_skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" 2>/dev/null)  # dir pre-guarded above
 fi
 
 _skill_deployed_count=$((_skill_global_count + _skill_project_count))

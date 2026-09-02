@@ -83,6 +83,22 @@ assert "triple" in d["recent_commits"][0]["message"], "message not preserved as 
     printf '%s' "$output" | python3 -c 'import sys, json; json.load(sys.stdin)'
 }
 
+@test "context-audit.sh counts skills alongside commands (both layouts)" {
+    command -v jq >/dev/null 2>&1 || skip "jq unavailable"
+    _mkrepo "$TEST_TMP/proj" "initial"
+    local home="$TEST_TMP/home"
+    command mkdir -p "$home/.claude/commands" "$home/.claude/skills/r-a" "$home/.claude/skills/r-b"
+    touch "$home/.claude/commands/x.md" "$home/.claude/commands/y.md"
+    touch "$home/.claude/skills/r-a/SKILL.md" "$home/.claude/skills/r-b/SKILL.md"
+
+    run bash -c 'HOME="$1" bash "$2" "$3"' \
+        -- "$home" "$RDF_SRC/state/context-audit.sh" "$TEST_TMP/proj"
+    [ "$status" -eq 0 ]
+    local count
+    count="$(printf '%s' "$output" | jq -r '.skills.deployed.count')"
+    [ "$count" -eq 4 ]
+}
+
 @test "context-audit.sh runs off-workspace: no sibling rdf/, fresh HOME (F4 regression)" {
     command -v git >/dev/null 2>&1 || skip "git unavailable"
     command -v jq >/dev/null 2>&1 || skip "jq unavailable"

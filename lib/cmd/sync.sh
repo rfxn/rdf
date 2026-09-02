@@ -23,6 +23,20 @@ Examples:
 USAGE
 }
 
+# _sync_body FILE — print the frontmatter-stripped canonical body; returns 1
+# on unclosed frontmatter (stripped to empty) so callers skip, not truncate.
+_sync_body() {
+    local file="$1" body
+    if [[ "$(head -1 "$file")" == "---" ]]; then
+        body="$(rdf_strip_frontmatter "$file")"
+        body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
+        [[ -z "$body" ]] && return 1
+    else
+        body="$(< "$file")"
+    fi
+    printf '%s' "$body"
+}
+
 cmd_sync() {
     local dry_run=0
     local target="claude-code"
@@ -51,15 +65,9 @@ cmd_sync() {
             basename_f="$(basename "$out_file")"
             local canon_file="${RDF_CANONICAL}/agents/${basename_f}"
             local body
-            if [[ "$(head -1 "$out_file")" == "---" ]]; then
-                body="$(rdf_strip_frontmatter "$out_file")"
-                body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
-                if [[ -z "$body" ]]; then
-                    rdf_warn "skipping agents/${basename_f}: unclosed frontmatter (empty body after strip)"
-                    continue
-                fi
-            else
-                body="$(< "$out_file")"
+            if ! body="$(_sync_body "$out_file")"; then
+                rdf_warn "skipping agents/${basename_f}: unclosed frontmatter (empty body after strip)"
+                continue
             fi
 
             if [[ -f "$canon_file" ]]; then
@@ -87,15 +95,9 @@ cmd_sync() {
             basename_f="$(basename "$out_file")"
             local canon_file="${RDF_CANONICAL}/commands/${basename_f}"
             local body
-            if [[ "$(head -1 "$out_file")" == "---" ]]; then
-                body="$(rdf_strip_frontmatter "$out_file")"
-                body="$(echo "$body" | sed '/./,$!d')"   # trim leading blank lines
-                if [[ -z "$body" ]]; then
-                    rdf_warn "skipping commands/${basename_f}: unclosed frontmatter (empty body after strip)"
-                    continue
-                fi
-            else
-                body="$(< "$out_file")"
+            if ! body="$(_sync_body "$out_file")"; then
+                rdf_warn "skipping commands/${basename_f}: unclosed frontmatter (empty body after strip)"
+                continue
             fi
 
             if [[ -f "$canon_file" ]]; then
@@ -110,6 +112,38 @@ cmd_sync() {
             else
                 printf '%s\n' "$body" > "$canon_file"
                 rdf_log "updated: canonical/commands/${basename_f}"
+            fi
+            changed=$((changed + 1))
+        done
+    fi
+
+    # Sync skills — reverse-mapped to canonical/commands/<name>.md; the
+    # skills/reference/ mirror of canonical reference/ is not itself a command.
+    if [[ -d "${output_dir}/skills" ]]; then
+        for out_file in "${output_dir}/skills"/*/SKILL.md; do
+            [[ -f "$out_file" ]] || continue
+            local skill_name
+            skill_name="$(basename "$(dirname "$out_file")")"
+            [[ "$skill_name" == "reference" ]] && continue
+            local canon_file="${RDF_CANONICAL}/commands/${skill_name}.md"
+            local body
+            if ! body="$(_sync_body "$out_file")"; then
+                rdf_warn "skipping skills/${skill_name}: unclosed frontmatter (empty body after strip)"
+                continue
+            fi
+
+            if [[ -f "$canon_file" ]]; then
+                local current; current="$(< "$canon_file")"
+                if [[ "$body" == "$current" ]]; then
+                    unchanged=$((unchanged + 1)); continue
+                fi
+            fi
+
+            if [[ $dry_run -eq 1 ]]; then
+                rdf_log "WOULD UPDATE: canonical/commands/${skill_name}.md"
+            else
+                printf '%s\n' "$body" > "$canon_file"
+                rdf_log "updated: canonical/commands/${skill_name}.md"
             fi
             changed=$((changed + 1))
         done

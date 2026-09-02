@@ -132,7 +132,7 @@ _nbytes() {
     fi
 }
 
-@test "deployed copy resolves the real checkout via the deploy symlink (not ~/.rdf)" {
+@test "deployed copy resolves the real checkout via the agents symlink" {
     local checkout="$TEST_TMP/checkout"
     local out="$checkout/adapters/claude-code/output"
     mkdir -p "$out/commands" "$out/rules" "$checkout/profiles/lite"
@@ -140,7 +140,7 @@ _nbytes() {
     _nbytes "$checkout/profiles/lite/governance-lite.md" 400 y    # 100 tokens
     mkdir -p "$HOME/.rdf/state" "$HOME/.claude"
     cp "$OVERHEAD" "$HOME/.rdf/state/rdf-overhead.sh"
-    ln -s "$out/commands" "$HOME/.claude/commands"                # mirrors `rdf deploy` symlink
+    ln -s "$out/agents" "$HOME/.claude/agents"                    # mirrors `rdf deploy` symlink
 
     local errfile="$TEST_TMP/err"
     run bash -c "env -u RDF_HOME bash '$HOME/.rdf/state/rdf-overhead.sh' 2>'$errfile'"
@@ -154,12 +154,12 @@ _nbytes() {
 
 @test "deployed copy without a deploy symlink warns to stderr and degrades gracefully" {
     mkdir -p "$HOME/.rdf/state" "$HOME/.claude"
-    cp "$OVERHEAD" "$HOME/.rdf/state/rdf-overhead.sh"             # no ~/.claude/commands symlink
+    cp "$OVERHEAD" "$HOME/.rdf/state/rdf-overhead.sh"             # no ~/.claude/agents symlink
     local errfile="$TEST_TMP/err"
     run bash -c "env -u RDF_HOME bash '$HOME/.rdf/state/rdf-overhead.sh' 2>'$errfile'"
     [ "$status" -eq 0 ]                                           # still succeeds (degraded)
     echo "$output" | jq -e . >/dev/null                          # stdout is still valid JSON
-    grep -q 'deploy symlink absent' "$errfile"                   # warning surfaced on stderr
+    grep -q 'no ~/.claude/agents deploy symlink' "$errfile"      # warning surfaced on stderr
 }
 
 @test "deployed copy resolves a checkout-shaped root via the .rdf-source stamp" {
@@ -187,7 +187,7 @@ _nbytes() {
     local errfile="$TEST_TMP/err"
     run bash -c "env -u RDF_HOME bash '$HOME/.rdf/state/rdf-overhead.sh' 2>'$errfile'"
     [ "$status" -eq 0 ]
-    grep -q 'deploy symlink absent' "$errfile"                    # disclosed degradation, not silent zeros
+    grep -q 'no ~/.claude/agents deploy symlink' "$errfile"       # disclosed degradation, not silent zeros
 }
 
 @test "published README default figure is within tolerance of measurement (drift guard)" {

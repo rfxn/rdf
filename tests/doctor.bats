@@ -122,6 +122,45 @@ _run_doc_stats() {
     rm -rf "$fix" "$fakehome"
 }
 
+@test "sync-health checks per-skill links" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" \
+             "$fix/adapters/claude-code/output/agents" \
+             "$fix/adapters/claude-code/output/scripts" \
+             "$fix/adapters/claude-code/output/governance" \
+             "$fix/adapters/claude-code/output/reference" \
+             "$fix/adapters/claude-code/output/skills/x" \
+             "$fix/adapters/claude-code/output/skills/y"
+    touch "$fix/canonical/commands/x.md" "$fix/canonical/commands/y.md"
+    printf -- '---\nname: x\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md"
+    printf -- '---\nname: y\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/y/SKILL.md"
+    fakehome="$(mktemp -d)"
+    mkdir -p "$fakehome/.claude/skills"
+    ln -s "$fix/adapters/claude-code/output/agents"     "$fakehome/.claude/agents"
+    ln -s "$fix/adapters/claude-code/output/scripts"    "$fakehome/.claude/scripts"
+    ln -s "$fix/adapters/claude-code/output/governance" "$fakehome/.claude/governance"
+    ln -s "$fix/adapters/claude-code/output/reference"  "$fakehome/.claude/reference"
+    ln -s "$fix/adapters/claude-code/output/skills/x"   "$fakehome/.claude/skills/x"
+    # skills/y is intentionally left unlinked → per-skill WARN
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; proj="$2"; export HOME="$3"
+        RDF_HOME="$(mktemp -d)"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_sync "$proj"
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$fix" "$fakehome"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"sync|OK|command count matches (2)"* ]]
+    [[ "$output" == *"${fakehome}/.claude/skills/y missing"* ]]
+    rm -rf "$fix" "$fakehome"
+}
+
 @test "content-drift OK for a deployed command with frontmatter + body --- rules" {
     # A canonical command body with --- horizontal rules; CC generate prepends
     # frontmatter and writes the canonical-body sidecar. doctor must strip the
@@ -147,6 +186,18 @@ _run_doc_stats() {
     [ "$status" -eq 0 ]
     [[ "$output" != *"FAIL"*"commands/x.md"* ]]
     [[ "$output" == *"content-drift|OK|"* ]]
+}
+
+@test "content-drift FAILs on a corrupted SKILL.md" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/adapters/claude-code/output/skills/x"
+    printf 'canonical body\n' > "$fix/canonical/commands/x.md"
+    printf -- '---\nname: x\n---\n\ncanonical body\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md"
+    printf 'deadbeef\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md.rdf-hash"
+    run _run_path_check _check_content_drift "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"content-drift|FAIL|deployed file modified since last generate: skills/x"* ]]
+    rm -rf "$fix"
 }
 
 @test "deps check reports jq: OK when present, WARN when masked" {
@@ -221,6 +272,16 @@ _run_install_mode() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"no user-level RDF install"* ]]
     rm -rf "$home" "$target"
+}
+
+@test "install-mode detects symlink deploy via skills" {
+    local home; home="$(mktemp -d)"
+    mkdir -p "${home}/.claude/skills"
+    ln -s /nonexistent/output "${home}/.claude/skills/x"   # RDF-owned skill link, no commands symlink
+    run _run_install_mode "$home" ""
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"install-mode|OK|symlink deploy"* ]]
+    rm -rf "$home"
 }
 
 # Usage: _run_check <check_fn> <fix_rdf_home> <fix_home> — prints _RESULTS rows

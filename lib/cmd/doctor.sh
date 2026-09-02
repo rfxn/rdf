@@ -392,28 +392,57 @@ _check_content_drift() {
         checked_count=$((checked_count + 1))
     done
 
-    # Check commands: hash deployed file vs sidecar
-    for dst_file in "${output_dir}/commands"/*.md; do
-        [[ -f "$dst_file" ]] || continue
-        basename_f="$(basename "$dst_file")"
-        sidecar="${dst_file}.rdf-hash"
+    # Check skills: hash deployed body (frontmatter stripped) vs sidecar
+    if [[ -d "${output_dir}/skills" ]]; then
+        local skill_file skill_dir
+        for skill_file in "${output_dir}/skills"/*/SKILL.md; do
+            [[ -f "$skill_file" ]] || continue
+            skill_dir="$(basename "$(dirname "$skill_file")")"
+            sidecar="${skill_file}.rdf-hash"
 
-        if [[ ! -f "$sidecar" ]]; then
-            missing_sidecar_count=$((missing_sidecar_count + 1))
-            continue
-        fi
+            if [[ ! -f "$sidecar" ]]; then
+                missing_sidecar_count=$((missing_sidecar_count + 1))
+                continue
+            fi
 
-        local stored_hash actual_hash
-        stored_hash="$(< "$sidecar")"
-        actual_hash="$(_hash_deployed_body "$dst_file")"
+            local stored_hash actual_hash
+            stored_hash="$(< "$sidecar")"
+            actual_hash="$(_hash_deployed_body "$skill_file")"
 
-        if [[ "$stored_hash" != "$actual_hash" ]]; then
-            _add_result "content-drift" "$_FAIL" \
-                "deployed file modified since last generate: commands/${basename_f}"
-            drift_count=$((drift_count + 1))
-        fi
-        checked_count=$((checked_count + 1))
-    done
+            if [[ "$stored_hash" != "$actual_hash" ]]; then
+                _add_result "content-drift" "$_FAIL" \
+                    "deployed file modified since last generate: skills/${skill_dir}"
+                drift_count=$((drift_count + 1))
+            fi
+            checked_count=$((checked_count + 1))
+        done
+    fi
+
+    # Check commands: hash deployed file vs sidecar (Phase 2: commands/ still
+    # checked alongside skills/ — Phase 3 retires this loop)
+    if [[ -d "${output_dir}/commands" ]]; then
+        for dst_file in "${output_dir}/commands"/*.md; do
+            [[ -f "$dst_file" ]] || continue
+            basename_f="$(basename "$dst_file")"
+            sidecar="${dst_file}.rdf-hash"
+
+            if [[ ! -f "$sidecar" ]]; then
+                missing_sidecar_count=$((missing_sidecar_count + 1))
+                continue
+            fi
+
+            local stored_hash actual_hash
+            stored_hash="$(< "$sidecar")"
+            actual_hash="$(_hash_deployed_body "$dst_file")"
+
+            if [[ "$stored_hash" != "$actual_hash" ]]; then
+                _add_result "content-drift" "$_FAIL" \
+                    "deployed file modified since last generate: commands/${basename_f}"
+                drift_count=$((drift_count + 1))
+            fi
+            checked_count=$((checked_count + 1))
+        done
+    fi
 
     # Check reference docs: plain files, same sidecar contract as commands
     for dst_file in "${output_dir}/reference"/*.md; do
@@ -486,15 +515,22 @@ _check_sync() {
         _add_result "sync" "$_OK" "agent count matches (${canon_agents})"
     fi
 
-    # Compare command count
+    # Compare command count (against skills/*/SKILL.md when the skills tree
+    # exists — Phase 3 retires the commands/*.md fallback)
     local canon_cmds=0
     local output_cmds=0
     for f in "${canonical_dir}/commands"/*.md; do
         [[ -f "$f" ]] && canon_cmds=$((canon_cmds + 1))
     done
-    for f in "${output_dir}/commands"/*.md; do
-        [[ -f "$f" ]] && output_cmds=$((output_cmds + 1))
-    done
+    if [[ -d "${output_dir}/skills" ]]; then
+        for f in "${output_dir}/skills"/*/SKILL.md; do
+            [[ -f "$f" ]] && output_cmds=$((output_cmds + 1))
+        done
+    else
+        for f in "${output_dir}/commands"/*.md; do
+            [[ -f "$f" ]] && output_cmds=$((output_cmds + 1))
+        done
+    fi
 
     if [[ $canon_cmds -ne $output_cmds ]]; then
         _add_result "sync" "$_WARN" "command count mismatch: canonical=${canon_cmds}, output=${output_cmds}"
@@ -506,13 +542,15 @@ _check_sync() {
     local link_ok=0
     local link_fail=0
     local claude_base="${RDF_TARGET:-${HOME}/.claude}"
-    # governance was a pre-existing gap — folded in while editing
-    for target in commands agents scripts governance reference; do
-        local link="${claude_base}/${target}"
+
+    # _sync_check_link link expected_target — shared OK/WARN bookkeeping for
+    # the dir-surface, commands, and per-skill symlink checks below (dynamic
+    # scoping: link_ok/link_fail are the caller's locals).
+    _sync_check_link() {
+        local link="$1" expected="$2" link_dest
         if [[ -L "$link" ]]; then
-            local link_dest
             link_dest="$(rdf_canonical_path "$link")"
-            if [[ "$link_dest" == "${output_dir}/${target}" ]]; then
+            if [[ "$link_dest" == "$expected" ]]; then
                 link_ok=$((link_ok + 1))
             else
                 _add_result "sync" "$_WARN" "${link} points to wrong target: ${link_dest}"
@@ -525,7 +563,26 @@ _check_sync() {
             _add_result "sync" "$_WARN" "${link} missing"
             link_fail=$((link_fail + 1))
         fi
-    done
+    }
+
+    local target
+    while IFS= read -r target; do
+        _sync_check_link "${claude_base}/${target}" "${output_dir}/${target}"
+    done < <(rdf_cc_dir_surfaces)
+
+    # Phase 2: commands/ still checked alongside skills/ — Phase 3 retires this.
+    if [[ -d "${output_dir}/commands" ]]; then
+        _sync_check_link "${claude_base}/commands" "${output_dir}/commands"
+    fi
+
+    if [[ -d "${output_dir}/skills" ]]; then
+        local skill_dir skill_name
+        for skill_dir in "${output_dir}/skills"/*/; do
+            [[ -d "$skill_dir" ]] || continue
+            skill_name="$(basename "$skill_dir")"
+            _sync_check_link "${claude_base}/skills/${skill_name}" "${output_dir}/skills/${skill_name}"
+        done
+    fi
 
     if [[ $link_fail -eq 0 ]] && [[ $link_ok -gt 0 ]]; then
         _add_result "sync" "$_OK" "all ${link_ok} symlinks correct"
@@ -943,10 +1000,18 @@ _check_doc_stats() {
 # manifest), both (WARN — duplicate commands), or neither.
 _check_install_mode() {
     local manifest="${HOME}/.claude/plugins/installed_plugins.json"
+    local base="${RDF_TARGET:-${HOME}/.claude}"
     local symlink_mode=0
     local plugin_mode=0
 
-    [[ -L "${RDF_TARGET:-${HOME}/.claude}/commands" ]] && symlink_mode=1
+    if [[ -L "${base}/commands" ]]; then
+        symlink_mode=1
+    else
+        local d
+        for d in "${base}/skills"/*; do   # any RDF-owned skill link also counts as symlink deploy
+            [[ -L "$d" ]] && { symlink_mode=1; break; }
+        done
+    fi
     if [[ -f "$manifest" ]] \
         && jq -e '.plugins | has("rdf@rdf")' "$manifest" >/dev/null 2>&1; then  # absent or malformed manifest = not plugin-installed
         plugin_mode=1

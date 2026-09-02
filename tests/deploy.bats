@@ -16,14 +16,17 @@ export RDF_SRC
 
 # Usage: _make_deploy_skeleton <fix_home> — minimal claude-code output tree so
 # a real deploy proceeds past the pre-flight (cc output is local-only, absent on
-# a CI checkout).
+# a CI checkout). Phase 2: carries both layouts (commands/ + skills/<n>/SKILL.md)
+# — Phase 3 drops commands/.
 _make_deploy_skeleton() {
     local fix_home="$1"
     local out="${fix_home}/adapters/claude-code/output"
     mkdir -p "${out}/agents" "${out}/commands" "${out}/scripts" \
-             "${out}/governance" "${out}/rules" "${out}/reference"
+             "${out}/governance" "${out}/rules" "${out}/reference" \
+             "${out}/skills/x"
     touch "${out}/commands/x.md" "${out}/governance/core-governance.md" \
           "${out}/rules/core.md"
+    printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nbody\n' > "${out}/skills/x/SKILL.md"
 }
 
 # Usage: _run_deploy <fix_home> [extra cmd_deploy args...] — default target is
@@ -119,6 +122,71 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -L "${proj}/.agents/skills" ]
     [ -f "${proj}/.agents/skills/r-spec/SKILL.md" ]
     rm -rf "$proj"
+}
+
+@test "deploy links each skill as its own symlink" {
+    local out="${FIX_HOME}/adapters/claude-code/output"
+    mkdir -p "${out}/skills/y"
+    printf -- '---\nname: y\n---\nbody\n' > "${out}/skills/y/SKILL.md"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ -L "${FIX_HOME}/.claude/skills/x" ]
+    [ "$(readlink "${FIX_HOME}/.claude/skills/x")" = "${out}/skills/x" ]
+    [ -L "${FIX_HOME}/.claude/skills/y" ]
+    [ "$(readlink "${FIX_HOME}/.claude/skills/y")" = "${out}/skills/y" ]
+    echo "$output" | grep -q 'skills: 2 linked'
+}
+
+@test "deploy prunes an RDF-owned skill symlink whose target vanished" {
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ -L "${FIX_HOME}/.claude/skills/x" ]
+    rm -rf "${FIX_HOME}/adapters/claude-code/output/skills/x"   # canonical command removed
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ ! -e "${FIX_HOME}/.claude/skills/x" ]                     # dangling link pruned
+    echo "$output" | grep -q 'skills: 0 linked, 1 pruned'
+}
+
+@test "deploy skips a user-owned real skill dir and exits 1" {
+    mkdir -p "${FIX_HOME}/.claude/skills/x"
+    touch "${FIX_HOME}/.claude/skills/x/user-file.md"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 1 ]
+    [ ! -L "${FIX_HOME}/.claude/skills/x" ]                     # untouched real dir
+    [ -f "${FIX_HOME}/.claude/skills/x/user-file.md" ]
+    echo "$output" | grep -q 'not a symlink'
+}
+
+@test "deploy creates ~/.claude/skills as a real directory, never a symlink" {
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ -d "${FIX_HOME}/.claude/skills" ]
+    [ ! -L "${FIX_HOME}/.claude/skills" ]
+}
+
+@test "RDF_TARGET applies to skills" {
+    local out="${FIX_HOME}/adapters/claude-code/output"
+    local target; target="$(mktemp -d)"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; fix_home="$2"; target="$3"
+        HOME="$fix_home"
+        RDF_HOME="$fix_home"
+        RDF_TARGET="$target"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/deploy.sh"
+        cmd_deploy claude-code
+    ' -- "$RDF_SRC" "$FIX_HOME" "$target"
+    [ "$status" -eq 0 ]
+    [ -d "${target}/skills" ]
+    [ ! -L "${target}/skills" ]
+    [ -L "${target}/skills/x" ]
+    [ "$(readlink "${target}/skills/x")" = "${out}/skills/x" ]
+    [ ! -e "${FIX_HOME}/.claude/skills" ]
+    rm -rf "$target"
 }
 
 @test "sync strips frontmatter from a COMMAND on the reverse flow (BLOCKER 2)" {

@@ -54,3 +54,22 @@ _run_sync() {  # $1 = temp RDF_HOME
     grep -q '^---$' "${home}/canonical/agents/a.md"
     rm -rf "$home"
 }
+
+@test "sync pulls an edited SKILL.md back to canonical/commands" {
+    home="$(mktemp -d)"
+    mkdir -p "${home}/canonical/commands" \
+             "${home}/adapters/claude-code/output/skills/x" \
+             "${home}/adapters/claude-code/output/skills/reference"
+    printf 'old body\n' > "${home}/canonical/commands/x.md"
+    printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nEDITED body\n---\nrule\n' \
+        > "${home}/adapters/claude-code/output/skills/x/SKILL.md"
+    printf 'not a command\n' > "${home}/adapters/claude-code/output/skills/reference/tiers.md"
+    run _run_sync "$home"
+    [ "$status" -eq 0 ]
+    [ "$(head -1 "${home}/canonical/commands/x.md")" = "EDITED body" ]
+    grep -q '^---$' "${home}/canonical/commands/x.md"
+    run grep -q 'description: >' "${home}/canonical/commands/x.md"
+    [ "$status" -ne 0 ]                                             # trigger stripped (absent)
+    [ ! -e "${home}/canonical/commands/reference.md" ]               # skills/reference/ is not a command
+    rm -rf "$home"
+}

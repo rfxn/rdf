@@ -23,7 +23,7 @@ else
     # Deployed copy at ~/.rdf/state/ resolves to ~/.rdf (no adapters/ tree) — recover
     # the checkout from the deploy symlink. Plain readlink, not -f: macOS has no -f.
     if [[ ! -d "${_rdf_home}/adapters/claude-code" ]]; then
-        _link="$(readlink "${RDF_TARGET:-${HOME}/.claude}/commands" 2>/dev/null)" || _link=""   # no deploy symlink → warn below
+        _link="$(readlink "${RDF_TARGET:-${HOME}/.claude}/agents" 2>/dev/null)" || _link=""   # no deploy symlink → warn below
         if [[ -n "$_link" && -d "${_link%/adapters/*}/adapters/claude-code/output" ]]; then
             _rdf_home="${_link%/adapters/*}"
         elif [[ -f "${HOME}/.rdf/state/.rdf-source" ]] \
@@ -31,7 +31,7 @@ else
             && [[ -d "${_src}/adapters/claude-code/output" ]]; then
             _rdf_home="$_src"   # plugin install: bootstrap stamps the source root
         else
-            echo "rdf-overhead: deploy symlink absent — rules/lite figures may be inaccurate" >&2
+            echo "rdf-overhead: no ~/.claude/agents deploy symlink — rules/lite figures may be inaccurate" >&2
         fi
     fi
 fi
