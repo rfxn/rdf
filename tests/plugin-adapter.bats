@@ -34,7 +34,7 @@ _generate_plugin() {
         rdf_require_bin jq
         cpl_generate_commands
         cpl_generate_agents
-        cpl_generate_scripts
+        adp_copy_scripts "${RDF_CANONICAL}/scripts" "${_CPL_OUTPUT_DIR}/scripts"
         cpl_generate_hooks
         cpl_stamp_plugin_version
     ' -- "$RDF_SRC" "$test_home" "$output_dir"

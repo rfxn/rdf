@@ -6,6 +6,15 @@
 
 # Requires: RDF_HOME, RDF_CANONICAL, RDF_ADAPTERS, RDF_VERSION, jq
 
+# Self-locate lib/ — RDF_LIBDIR is unreliable here: some test harnesses set
+# RDF_HOME to a throwaway fixture dir, and rdf_init() derives RDF_LIBDIR from
+# RDF_HOME (clobbering a caller override) the first time it runs.
+if [[ -z "${_RDF_ADAPTER_COMMON_LOADED:-}" ]]; then
+    _CPL_SELF_DIR="$(cd "$(command dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
+    # shellcheck disable=SC1090,SC1091
+    source "${_CPL_SELF_DIR}/../../lib/adapter_common.sh"
+fi
+
 _CPL_ADAPTER_DIR="${RDF_ADAPTERS}/claude-plugin"
 _CPL_OUTPUT_DIR="${_CPL_ADAPTER_DIR}/output"
 _CPL_SKILL_META="${RDF_ADAPTERS}/agent-skills/skill-meta.json"   # shared intent-trigger source (mirrors cc adapter)
@@ -52,11 +61,7 @@ _cpl_command_names_longest_first() {
 # canonical body's first non-heading line.
 cpl_generate_command_frontmatter() {
     local name="$1" desc
-    desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_CPL_SKILL_META" 2>/dev/null || true)"  # missing key/file → empty (falls back to body)
-    if [[ -z "$desc" ]]; then
-        desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "${RDF_CANONICAL}/commands/${name}.md")"
-        [[ -z "$desc" ]] && desc="RDF command: ${name}"
-    fi
+    desc="$(adp_skill_description "$name" "${RDF_CANONICAL}/commands/${name}.md" "$_CPL_SKILL_META")"
     # Plugin commands are namespaced by the loader; the description text must
     # use /rdf:r-* too or it points at commands that do not exist here.
     desc="$(printf '%s\n' "$desc" | _cpl_rewrite_namespace_text)"
@@ -94,111 +99,12 @@ cpl_generate_commands() {
 }
 
 # Generate plugin agent files with CC YAML frontmatter, no hash sidecars.
-# Reuses the cc adapter's agent-meta.json as the single metadata source.
+# Reuses the cc adapter's agent-meta.json as the single metadata source. Body
+# gets the same /r-X -> /rdf:r-X rewrite as commands via the shared emitter.
 cpl_generate_agents() {
-    local src_dir="${RDF_CANONICAL}/agents"
-    local dst_dir="${_CPL_OUTPUT_DIR}/agents"
     local meta="${RDF_ADAPTERS}/claude-code/agent-meta.json"
-    local count=0
-
     rdf_require_file "$meta" "agent-meta.json"
-    command mkdir -p "$dst_dir"
-
-    for src_file in "${src_dir}"/*.md; do
-        [[ -f "$src_file" ]] || continue
-        local basename_f
-        basename_f="$(basename "$src_file" .md)"
-        local dst_file="${dst_dir}/${basename_f}.md"
-
-        # Body gets the same /r-X -> /rdf:r-X rewrite as commands —
-        # agent personas reference pipeline commands 14 times today.
-        if _cpl_agent_frontmatter "$basename_f" "$meta" > "${dst_file}.tmp" 2>/dev/null; then  # agents without metadata fall through to plain copy
-            echo "" >> "${dst_file}.tmp"
-            _cpl_rewrite_namespace "$src_file" "${dst_file}.body"
-            command cat "${dst_file}.body" >> "${dst_file}.tmp"
-            command rm -f "${dst_file}.body"
-            command mv "${dst_file}.tmp" "$dst_file"
-        else
-            _cpl_rewrite_namespace "$src_file" "$dst_file"
-            command rm -f "${dst_file}.tmp"
-        fi
-        count=$((count + 1))
-    done
-    rdf_log "generated ${count} agent files"
-}
-
-# YAML frontmatter from agent-meta.json (cc-compatible schema).
-# Args: $1 = agent basename, $2 = agent-meta.json path
-_cpl_agent_frontmatter() {
-    local agent="$1"
-    local meta="$2"
-    local name desc model tools_json disallowed_json
-
-    if ! jq -e --arg a "$agent" '.[$a]' "$meta" >/dev/null 2>&1; then  # missing entry = signal caller to plain-copy
-        rdf_warn "no metadata for agent: $agent — copying without frontmatter"
-        return 1
-    fi
-
-    name="$(jq -r --arg a "$agent" '.[$a].name' "$meta")"
-    desc="$(jq -r --arg a "$agent" '.[$a].description' "$meta")"
-    model="$(jq -r --arg a "$agent" '.[$a].model' "$meta")"
-    tools_json="$(jq -c --arg a "$agent" '.[$a].tools // []' "$meta")"
-    disallowed_json="$(jq -c --arg a "$agent" '.[$a].disallowedTools // []' "$meta")"
-
-    echo "---"
-    echo "name: ${name}"
-    echo "description: >"
-    echo "  ${desc}"
-    if [[ "$tools_json" != "[]" ]]; then
-        echo "tools:"
-        jq -r '.[]' <<< "$tools_json" | while IFS= read -r tool; do
-            echo "  - ${tool}"
-        done
-    fi
-    if [[ "$disallowed_json" != "[]" ]]; then
-        echo "disallowedTools:"
-        jq -r '.[]' <<< "$disallowed_json" | while IFS= read -r tool; do
-            echo "  - ${tool}"
-        done
-    fi
-    echo "model: ${model}"
-    echo "---"
-}
-
-# Copy canonical scripts (hook targets) — executable, unconditional.
-cpl_generate_scripts() {
-    local src_dir="${RDF_CANONICAL}/scripts"
-    local dst_dir="${_CPL_OUTPUT_DIR}/scripts"
-    local count=0
-
-    command mkdir -p "$dst_dir"
-
-    for src_file in "${src_dir}"/*.sh; do
-        [[ -f "$src_file" ]] || continue
-        local basename_f
-        basename_f="$(basename "$src_file")"
-        command cp "$src_file" "${dst_dir}/${basename_f}"
-        command chmod +x "${dst_dir}/${basename_f}"
-        count=$((count + 1))
-    done
-    rdf_log "generated ${count} script files"
-}
-
-# Copy reference docs — plugin commands link ../reference/*.md relative
-# to the plugin output root.
-cpl_generate_reference() {
-    local src_dir="${RDF_CANONICAL}/reference"
-    local dst_dir="${_CPL_OUTPUT_DIR}/reference"
-    local count=0
-
-    command mkdir -p "$dst_dir"
-
-    for src_file in "${src_dir}"/*.md; do
-        [[ -f "$src_file" ]] || continue
-        command cp "$src_file" "${dst_dir}/$(basename "$src_file")"
-        count=$((count + 1))
-    done
-    rdf_log "generated ${count} reference docs"
+    adp_emit_agents "${RDF_CANONICAL}/agents" "${_CPL_OUTPUT_DIR}/agents" "$meta" _cpl_rewrite_namespace_text 0
 }
 
 # Transform hooks.json: every "command" value under ~/.claude/scripts/
@@ -265,35 +171,25 @@ cpl_generate_all() {
     rdf_require_agent_meta "${RDF_ADAPTERS}/claude-code/agent-meta.json" "${RDF_CANONICAL}/agents"
 
     local _output_final="$_CPL_OUTPUT_DIR"
-    local _output_new="${_CPL_OUTPUT_DIR}.new"
-    local _output_old="${_CPL_OUTPUT_DIR}.old"
-
-    # Build into staging directory, then atomic swap (cc adapter pattern)
-    command rm -rf "$_output_new"
-    command mkdir -p "$_output_new"
+    local _output_new
+    _output_new="$(adp_stage_begin "$_output_final")"
     _CPL_OUTPUT_DIR="$_output_new"
 
     cpl_generate_commands
     cpl_generate_agents
-    cpl_generate_scripts
-    cpl_generate_reference
+    adp_copy_scripts "${RDF_CANONICAL}/scripts" "${_CPL_OUTPUT_DIR}/scripts"
+    adp_copy_reference "${RDF_CANONICAL}/reference" "${_CPL_OUTPUT_DIR}/reference" 0
     cpl_generate_hooks
     cpl_stamp_plugin_version
 
     _CPL_OUTPUT_DIR="$_output_final"
-    command rm -rf "$_output_old"
-    if [[ -d "$_output_final" ]]; then
-        command mv "$_output_final" "$_output_old"
-    fi
-    command mv "$_output_new" "$_output_final"
-    command rm -rf "$_output_old"
+    adp_stage_commit "$_output_final" "$_output_new"
 
-    local command_count agent_count script_count
-    command_count="$(find "${_CPL_OUTPUT_DIR}/commands" -name '*.md' 2>/dev/null | wc -l)"  # dir may not exist on partial generation
-    agent_count="$(find "${_CPL_OUTPUT_DIR}/agents" -name '*.md' 2>/dev/null | wc -l)"      # dir may not exist on partial generation
-    script_count="$(find "${_CPL_OUTPUT_DIR}/scripts" -name '*.sh' 2>/dev/null | wc -l)"    # dir may not exist on partial generation
+    local command_count agent_count script_count reference_count
+    command_count="$(adp_count "${_CPL_OUTPUT_DIR}/commands" '*.md')"    # dir may not exist on partial generation
+    agent_count="$(adp_count "${_CPL_OUTPUT_DIR}/agents" '*.md')"        # dir may not exist on partial generation
+    script_count="$(adp_count "${_CPL_OUTPUT_DIR}/scripts" '*.sh')"      # dir may not exist on partial generation
+    reference_count="$(adp_count "${_CPL_OUTPUT_DIR}/reference" '*.md')" # dir may not exist on partial generation
 
-    local reference_count
-    reference_count="$(find "${_CPL_OUTPUT_DIR}/reference" -name '*.md' 2>/dev/null | wc -l)"  # dir may not exist on partial generation
     rdf_log "plugin generation complete: ${command_count} commands, ${agent_count} agents, ${script_count} scripts, ${reference_count} reference docs"
 }

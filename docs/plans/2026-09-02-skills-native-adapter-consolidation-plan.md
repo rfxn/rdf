@@ -158,11 +158,11 @@ Create `lib/adapter_common.sh` and move the agent-frontmatter, agents loop, scri
 - **Edge cases**: spec 11b "skill-meta key without canonical file" (description helper returns fallback; caller decides) — covered by the description test.
 - **Regression-case**: `tests/adapter-common.bats::@test "adp_emit_agents output is byte-identical to the 3.6.5 emitter fixture"` (created this phase)
 
-- [ ] **Step 1: Capture the baseline**
+- [x] **Step 1: Capture the baseline**
 
   Before any edit: `bin/rdf generate claude-code && bin/rdf generate claude-plugin && bin/rdf generate agent-skills`, then `tar -cf tests/fixtures/adapter-common/agents-expected.tar -C adapters/claude-code/output agents scripts reference -C ../../claude-plugin/output agents` (one archive, four dirs; keep it small — ~60 KB). This fixture is what the byte-identity test unpacks and diffs against.
 
-- [ ] **Step 2: Add the two lists to `lib/rdf_common.sh`**
+- [x] **Step 2: Add the two lists to `lib/rdf_common.sh`**
 
   ```bash
   # rdf_lite_commands — lifecycle command basenames shipped by rdf-lite
@@ -171,23 +171,23 @@ Create `lib/adapter_common.sh` and move the agent-frontmatter, agents loop, scri
   rdf_cc_dir_surfaces() { printf '%s\n' agents scripts governance reference; }
   ```
 
-- [ ] **Step 3: Write `lib/adapter_common.sh`**
+- [x] **Step 3: Write `lib/adapter_common.sh`**
 
   Functions per spec §5 (signatures verbatim): `adp_require_hash_tool`, `adp_write_hash_sidecar canonical_src dst`, `adp_agent_frontmatter meta agent` (rc 1 + warn when absent — same text as today), `adp_emit_agents src_dir dst_dir meta filter_fn sidecar`, `adp_skill_description name src meta`, `adp_emit_skills src_dir skills_root meta filter_fn sidecar names_fn` (written now, used by Phase 3; unit-tested here), `adp_names_all src_dir`, `adp_names_lite src_dir`, `adp_names_from_meta meta`, `adp_copy_scripts src dst`, `adp_copy_reference src dst sidecar`, `adp_stage_begin final_dir` (echoes `<final>.new`), `adp_stage_commit final_dir staging_dir`, `adp_count dir glob`. The plugin filter is applied to the *description* too: `adp_emit_skills` pipes the description through `filter_fn` when it is not `-`. Reference copy inside `adp_emit_skills` targets `<skills_root>/reference/`.
 
-- [ ] **Step 4: Source the lib from `_generate_adapter`**
+- [x] **Step 4: Source the lib from `_generate_adapter`**
 
   In `lib/cmd/generate.sh` `_generate_adapter`, before sourcing the adapter: `# shellcheck disable=SC1090,SC1091` / `source "${RDF_LIBDIR}/adapter_common.sh"`.
 
-- [ ] **Step 5: Refactor the three adapters onto the lib (agents/scripts/reference/staging only)**
+- [x] **Step 5: Refactor the three adapters onto the lib (agents/scripts/reference/staging only)**
 
   claude-code: `cc_generate_agents` → `adp_emit_agents "${RDF_CANONICAL}/agents" "${_CC_OUTPUT_DIR}/agents" "$_CC_AGENT_META" - 1`; scripts/reference → `adp_copy_scripts` / `adp_copy_reference … 1`; `_cc_resolve_hash_cmd` → `adp_require_hash_tool`; `_cc_write_hash_sidecar` callers → `adp_write_hash_sidecar`; `cc_generate_all` uses `adp_stage_begin`/`adp_stage_commit`. Keep `cc_generate_commands` + `cc_generate_command_frontmatter` local for now but make the frontmatter call `adp_skill_description`. Delete `_CC_COMMAND_META`. claude-plugin: agents via `adp_emit_agents … "$meta" _cpl_rewrite_namespace_text 0`; scripts/reference via lib (sidecar 0); staging via lib; `cpl_generate_command_frontmatter` calls `adp_skill_description` then filters. agent-skills: `_sk_skill_description` → `adp_skill_description`; keep `sk_emit_skills` local this phase; staging via lib.
 
-- [ ] **Step 6: Tests + Makefile**
+- [x] **Step 6: Tests + Makefile**
 
   Write `tests/adapter-common.bats` (seven tests above; the byte-identity test regenerates into a temp `RDF_ADAPTERS` copy, untars the fixture, `diff -r`). Register in `tests/Makefile`.
 
-- [ ] **Step 7: Verify**
+- [x] **Step 7: Verify**
 
   ```bash
   bash -n lib/adapter_common.sh adapters/claude-code/adapter.sh adapters/claude-plugin/adapter.sh adapters/agent-skills/adapter.sh lib/cmd/generate.sh lib/rdf_common.sh && shellcheck -S error --exclude=SC1090,SC1091 lib/adapter_common.sh adapters/*/adapter.sh lib/cmd/generate.sh lib/rdf_common.sh && echo LINT-OK
@@ -198,7 +198,7 @@ Create `lib/adapter_common.sh` and move the agent-frontmatter, agents loop, scri
   # expect: not ok: 0
   ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
   `git add lib/adapter_common.sh lib/rdf_common.sh lib/cmd/generate.sh adapters/claude-code/adapter.sh adapters/claude-plugin/adapter.sh adapters/agent-skills/adapter.sh tests/adapter-common.bats tests/fixtures/adapter-common/agents-expected.tar tests/Makefile`
   Message: `Shared adapter library: one emitter for agents, scripts, reference, staging` / `[New] lib/adapter_common.sh — adp_* emitters; byte-identical to 3.6.5 output (fixture-tested)` / `[Change] claude-code, claude-plugin, agent-skills adapters call the library; dead _CC_COMMAND_META removed` / `[New] tests/adapter-common.bats (7 tests)`

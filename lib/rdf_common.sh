@@ -190,3 +190,9 @@ rdf_get_active_profiles() {
         done < "$RDF_PROFILES_STATE"
     fi
 }
+
+# rdf_lite_commands — lifecycle command basenames shipped by rdf-lite
+rdf_lite_commands() { printf '%s\n' r-spec r-plan r-build r-ship r-start r-save; }
+
+# rdf_cc_dir_surfaces — ~/.claude directory symlinks owned by rdf deploy (skills are per-entry)
+rdf_cc_dir_surfaces() { printf '%s\n' agents scripts governance reference; }

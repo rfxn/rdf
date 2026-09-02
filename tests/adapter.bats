@@ -46,7 +46,7 @@ _generate() {
         rdf_require_dir "$RDF_CANONICAL" "canonical directory"
         rdf_require_file "$_CC_AGENT_META" "agent-meta.json"
         rdf_require_bin jq
-        _cc_resolve_hash_cmd
+        adp_require_hash_tool
         cc_generate_agents
         cc_generate_commands
     ' -- "$RDF_SRC" "$test_home" "$output_dir"

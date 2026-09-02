@@ -6,21 +6,18 @@
 
 # Requires: RDF_CANONICAL, RDF_ADAPTERS, jq
 
+# Self-locate lib/ — RDF_LIBDIR is unreliable here: some test harnesses set
+# RDF_HOME to a throwaway fixture dir, and rdf_init() derives RDF_LIBDIR from
+# RDF_HOME (clobbering a caller override) the first time it runs.
+if [[ -z "${_RDF_ADAPTER_COMMON_LOADED:-}" ]]; then
+    _SK_SELF_DIR="$(cd "$(command dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
+    # shellcheck disable=SC1090,SC1091
+    source "${_SK_SELF_DIR}/../../lib/adapter_common.sh"
+fi
+
 _SK_ADAPTER_DIR="${RDF_ADAPTERS}/agent-skills"
 _SK_OUTPUT_DIR="${_SK_ADAPTER_DIR}/output"
 _SK_META="${_SK_ADAPTER_DIR}/skill-meta.json"
-
-# _sk_skill_description <basename> <src_file> — echo the trigger from
-# skill-meta.json; fall back to the canonical body's first non-heading line.
-_sk_skill_description() {
-    local name="$1" src="$2" desc
-    desc="$(jq -r --arg c "$name" '.[$c] // empty' "$_SK_META" 2>/dev/null || true)"  # missing meta file/key → empty, body fallback (parity with CC twin)
-    if [[ -z "$desc" ]]; then
-        desc="$(sed -n '/^[^#[:space:]]/{ s/[[:space:]]*$//; p; q; }' "$src")"
-        [[ -z "$desc" ]] && desc="RDF command: ${name}"
-    fi
-    printf '%s' "$desc"
-}
 
 # sk_emit_skills <skills_root> — write <skills_root>/<name>/SKILL.md for every
 # skill-meta.json key (excluding _comment). name == dir name (AAIF rule).
@@ -33,7 +30,7 @@ sk_emit_skills() {
             rdf_warn "agent-skills: no canonical command for skill '${name}' — skipped"
             continue
         fi
-        desc="$(_sk_skill_description "$name" "$src")"
+        desc="$(adp_skill_description "$name" "$src" "$_SK_META")"
         command mkdir -p "${skills_root}/${name}"
         {
             echo "---"
@@ -57,22 +54,16 @@ sk_generate_all() {
     rdf_require_bin jq
 
     local _output_final="$_SK_OUTPUT_DIR"
-    local _output_new="${_SK_OUTPUT_DIR}.new"
-    local _output_old="${_SK_OUTPUT_DIR}.old"
+    local _output_new
+    _output_new="$(adp_stage_begin "$_output_final")"
 
-    command rm -rf "$_output_new"
-    command mkdir -p "$_output_new/.agents/skills"
+    command mkdir -p "${_output_new}/.agents/skills"
     sk_emit_skills "${_output_new}/.agents/skills"
 
     # SKILL.md bodies link ../reference/*.md — resolve from skills root
     command mkdir -p "${_output_new}/.agents/skills/reference"
     command cp "${RDF_CANONICAL}/reference/"*.md "${_output_new}/.agents/skills/reference/"
 
-    command rm -rf "$_output_old"
-    if [[ -d "$_output_final" ]]; then
-        command mv "$_output_final" "$_output_old"
-    fi
-    command mv "$_output_new" "$_output_final"
-    command rm -rf "$_output_old"
+    adp_stage_commit "$_output_final" "$_output_new"
     rdf_log "Agent Skills generation complete"
 }

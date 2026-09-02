@@ -136,7 +136,7 @@ _run_doc_stats() {
         source "${rdf_src}/lib/rdf_common.sh"; rdf_init
         source "${rdf_src}/adapters/claude-code/adapter.sh"
         _CC_OUTPUT_DIR="${proj}/adapters/claude-code/output"
-        _cc_resolve_hash_cmd
+        adp_require_hash_tool
         cc_generate_commands
         source "${rdf_src}/lib/cmd/doctor.sh"
         _reset_results

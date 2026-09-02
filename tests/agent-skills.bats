@@ -31,7 +31,7 @@ _gen_cc_commands() {
         source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
         source "${rdf_src}/adapters/claude-code/adapter.sh"
         _CC_OUTPUT_DIR="$output_dir"
-        _cc_resolve_hash_cmd
+        adp_require_hash_tool
         cc_generate_commands
     ' -- "$RDF_SRC" "$output_dir"
 }
