@@ -24,7 +24,7 @@ $ARGUMENTS — optional flags:
 
 ### Step 1: Locate Sources
 - **RDF canonical root**: the `canonical/` directory in the rdf project
-- **Deployed target**: `~/.claude/` (agents, commands, scripts)
+- **Deployed target**: `~/.claude/` (agents, skills, scripts)
 - **Adapter**: identify which adapter was used (default: `claude-code`)
 
 ### Step 2: Scan for Changes
@@ -37,10 +37,11 @@ Compare deployed files against canonical sources:
   comparison. Frontmatter is added by the adapter during generate
   and must be removed during sync.
 
-#### Commands
-- **Source**: `~/.claude/commands/r-*.md` (`r:` prefixed commands)
+#### Skills
+- **Source**: `~/.claude/skills/r-*/SKILL.md`
 - **Target**: `canonical/commands/*.md`
-- **Processing**: direct comparison (commands have no frontmatter)
+- **Processing**: strip YAML frontmatter — canonical stays frontmatter-free;
+  SKILL.md carries `name`/`description`
 
 #### Scripts
 - **Source**: `~/.claude/scripts/*.sh`
@@ -99,7 +100,7 @@ use a blockquote warning:
 > **New Files Detected** — {N} files in `~/.claude/` have no canonical source
 >
 > - `~/.claude/agents/{name}.md` — import to `canonical/agents/`?
-> - `~/.claude/commands/{name}.md` — import to `canonical/commands/`?
+> - `~/.claude/skills/{name}/SKILL.md` — import to `canonical/commands/`?
 ```
 
 If `--dry-run` was used, add a blockquote callout:

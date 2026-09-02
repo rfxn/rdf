@@ -21,8 +21,8 @@ _gen_skills() {
     ' -- "$RDF_SRC" "$output_dir"
 }
 
-# _gen_cc_commands <output_dir> — run cc_generate_commands into a temp tree.
-_gen_cc_commands() {
+# _gen_cc_skills <output_dir> — run cc_generate_skills into a temp tree.
+_gen_cc_skills() {
     local output_dir="$1"
     bash -c '
         set -euo pipefail
@@ -32,7 +32,7 @@ _gen_cc_commands() {
         source "${rdf_src}/adapters/claude-code/adapter.sh"
         _CC_OUTPUT_DIR="$output_dir"
         adp_require_hash_tool
-        cc_generate_commands
+        cc_generate_skills
     ' -- "$RDF_SRC" "$output_dir"
 }
 
@@ -92,11 +92,24 @@ teardown() { rm -rf "$TEST_OUT" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -n "$(sed -n '/^description: >/{n;p;}' "$s")" ]   # description line non-empty
 }
 
-@test "CC command output gains description frontmatter; canonical stays frontmatter-free" {
-    _gen_cc_commands "$TEST_OUT"
-    head -1 "${TEST_OUT}/commands/r-spec.md" | grep -q '^---$'
-    grep -q '^description: >' "${TEST_OUT}/commands/r-spec.md"
+@test "CC skill output gains name/description frontmatter; canonical stays frontmatter-free" {
+    _gen_cc_skills "$TEST_OUT"
+    head -1 "${TEST_OUT}/skills/r-spec/SKILL.md" | grep -q '^---$'
+    grep -q '^name: r-spec$' "${TEST_OUT}/skills/r-spec/SKILL.md"
+    grep -q '^description: >' "${TEST_OUT}/skills/r-spec/SKILL.md"
     [ "$(head -1 "${RDF_SRC}/canonical/commands/r-spec.md")" != "---" ]
+}
+
+@test "agent-skills still emits only skill-meta keys" {
+    _gen_skills "$TEST_OUT"
+    local meta="${RDF_SRC}/adapters/agent-skills/skill-meta.json"
+    local canon_count emitted_count
+    canon_count="$(find "${RDF_SRC}/canonical/commands" -maxdepth 1 -name '*.md' | wc -l)"
+    emitted_count="$(find "${TEST_OUT}/.agents/skills" -maxdepth 1 -mindepth 1 -type d ! -name reference | wc -l)"
+    # skill-meta.json is a bounded subset — never the full canonical command set.
+    [ "$emitted_count" -lt "$canon_count" ]
+    local n; n="$(jq -r 'keys[] | select(. != "_comment")' "$meta" | wc -l)"
+    [ "$emitted_count" -eq "$n" ]
 }
 
 @test "gemini command TOML parses as strict TOML (literal-string fix)" {

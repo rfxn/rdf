@@ -323,27 +323,27 @@ Emit `skills/<name>/SKILL.md` from all three Claude-family adapters, stamp the p
 - **Edge cases**: 11b "commands is a real directory of user commands" (untouched + notice), "commands symlink points to a foreign tree" (untouched), "output/skills absent" (deploy dies; sync/doctor WARN), "--lite", "plugin install + symlink deploy on one machine" (advisory text updated to say skills), "macOS bash 3.2" (CI leg).
 - **Regression-case**: `tests/adapter.bats::@test "generator writes skills/<n>/SKILL.md for every canonical command and no commands/"` (created this phase)
 
-- [ ] **Step 1: Emitters**
+- [x] **Step 1: Emitters**
 
   claude-code: delete `cc_generate_commands`/`cc_generate_command_frontmatter`/`_cc_is_lite_command`; add `cc_generate_skills() { local names_fn=adp_names_all; [[ "$_CC_LITE" -eq 1 ]] && names_fn=adp_names_lite; adp_emit_skills "${RDF_CANONICAL}/commands" "${_CC_OUTPUT_DIR}/skills" "$_CC_SKILL_META" - 1 "$names_fn" "${RDF_CANONICAL}/reference"; }`; summary counts `skills` via `adp_count "${_CC_OUTPUT_DIR}/skills" SKILL.md` and logs "N skills". claude-plugin: delete `cpl_generate_commands`/`cpl_generate_command_frontmatter`; `cpl_generate_skills` = `adp_emit_skills … "$_CPL_SKILL_META" _cpl_rewrite_namespace_text 0 adp_names_all "${RDF_CANONICAL}/reference"`; `cpl_stamp_plugin_version` jq becomes `.version = $v | .agents = $agents | .skills = "./adapters/claude-plugin/output/skills" | del(.commands)`. agent-skills: delete `sk_emit_skills`; `sk_generate_all` calls `adp_emit_skills "${RDF_CANONICAL}/commands" "${stage}/.agents/skills" "$_SK_META" - 0 adp_names_from_meta "${RDF_CANONICAL}/reference"` (reference copy now inside the lib). Delete `command-meta-v3.json` and `command-map-v3.md` (`git rm`).
 
-- [ ] **Step 2: Consumers drop the commands branches (fail-closed)**
+- [x] **Step 2: Consumers drop the commands branches (fail-closed)**
 
   deploy: remove the `commands` symlink line; `_deploy_skill_links` now dies `rdf_die "output/skills not found — run 'rdf generate claude-code' first"` when the tree is absent; add `_deploy_prune_legacy_commands dest_base output_dir dry_run` — if `-L "${dest_base}/commands"` and `"$(rdf_canonical_path "${dest_base}/commands")"` starts with `"$(rdf_canonical_path "${RDF_HOME}/adapters/claude-code/output")"` → `command rm -f` + `rdf_log "removed legacy commands symlink: … (skills supersede it)"`; real dir or foreign symlink → one `rdf_log` notice, no change. Update the plugin-install advisory to "duplicate skills as /r-* and /rdf:r-*". Usage: add "remove skills: `rm ~/.claude/skills/r-*`" line. doctor: remove commands loops; `content-drift` WARNs `no skills tree — run 'rdf generate claude-code'` when absent; `sync` count uses skills only, health loop = `rdf_cc_dir_surfaces` + per-skill, plus WARN when a `~/.claude/commands` symlink still resolves into RDF output; `install-mode` probes skills only. sync: remove the commands loop; WARN `no skills tree in <output_dir> — nothing to sync for commands` when absent. context-audit: skills only (keep the legacy count as a separate `legacy_commands` field so the number stays honest during transition).
 
-- [ ] **Step 3: CI + manifest + regen**
+- [x] **Step 3: CI + manifest + regen**
 
   `.github/workflows/ci.yml` plugin job: after `claude plugin validate . --strict` add `claude plugin validate adapters/claude-plugin/output/skills --strict`. Run `bin/rdf generate all`; `git rm -r adapters/claude-plugin/output/commands`; stage the new `adapters/claude-plugin/output/skills/**` and the stamped `.claude-plugin/plugin.json`.
 
-- [ ] **Step 4: Canonical doc**
+- [x] **Step 4: Canonical doc**
 
   `canonical/commands/r-sync.md`: `~/.claude/commands/r-*.md` → `~/.claude/skills/r-*/SKILL.md`; "commands have no frontmatter" → "canonical stays frontmatter-free; SKILL.md carries name/description". (README/RDF.md/docs/CONTRIBUTING skills wording moves to Phase 6 with the other doc-truth edits — reviewer-suggested split.)
 
-- [ ] **Step 5: Tests**
+- [x] **Step 5: Tests**
 
   Rewrite the assertions listed in the seam map from `commands/x.md` to `skills/x/SKILL.md` across `adapter.bats`, `plugin-adapter.bats` (incl. the `for key in commands hooks` loop → `skills hooks` and a path-exists check), `agent-skills.bats:95-99` (CC frontmatter test now targets `skills/r-spec/SKILL.md`), `rdf-lite.bats`, `deploy.bats` (skeleton drops `commands/x.md`), `doctor.bats:93-105` fixture, `derfxn.bats` output-dir enumerations, and `state-injection.bats::"context-audit counts skills"` (Phase 2 asserted the combined count; now assert `.skills.deployed.count` = skills only and `.skills.legacy_commands` = 0 for a skills-only tree). Add the new tests listed in **Test**.
 
-- [ ] **Step 6: Verify**
+- [x] **Step 6: Verify**
 
   ```bash
   bin/rdf generate claude-code >/dev/null && ls adapters/claude-code/output/skills | wc -l && test ! -d adapters/claude-code/output/commands && echo no-commands
@@ -367,7 +367,7 @@ Emit `skills/<name>/SKILL.md` from all three Claude-family adapters, stamp the p
   # expect: 1 (r-start listed; `reference` must not appear) — or SKIP-unauthenticated
   ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   `git add adapters/claude-code/adapter.sh adapters/claude-plugin/adapter.sh adapters/agent-skills/adapter.sh lib/cmd/deploy.sh lib/cmd/doctor.sh lib/cmd/sync.sh state/context-audit.sh .github/workflows/ci.yml .claude-plugin/plugin.json adapters/claude-plugin/output canonical/commands/r-sync.md tests/adapter.bats tests/plugin-adapter.bats tests/agent-skills.bats tests/rdf-lite.bats tests/deploy.bats tests/doctor.bats tests/sync.bats tests/state-injection.bats tests/derfxn.bats` (+ the two `git rm`s)
   Message: `Skills-native output: claude-code and plugin emit skills/<name>/SKILL.md` / `[Change] commands/ output retired; one shared skills emitter for cc, plugin, agent-skills` / `[Change] plugin.json declares skills; deploy removes the legacy ~/.claude/commands symlink it owns` / `[Change] doctor, sync, context-audit fail closed when the skills tree is absent` / `[Remove] command-meta-v3.json, command-map-v3.md (never read)`

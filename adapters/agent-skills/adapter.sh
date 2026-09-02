@@ -13,33 +13,6 @@ _SK_ADAPTER_DIR="${RDF_ADAPTERS}/agent-skills"
 _SK_OUTPUT_DIR="${_SK_ADAPTER_DIR}/output"
 _SK_META="${_SK_ADAPTER_DIR}/skill-meta.json"
 
-# sk_emit_skills <skills_root> — write <skills_root>/<name>/SKILL.md for every
-# skill-meta.json key (excluding _comment). name == dir name (AAIF rule).
-sk_emit_skills() {
-    local skills_root="$1" name src desc count=0
-    while IFS= read -r name; do
-        [[ -z "$name" || "$name" == "_comment" ]] && continue
-        src="${RDF_CANONICAL}/commands/${name}.md"
-        if [[ ! -f "$src" ]]; then
-            rdf_warn "agent-skills: no canonical command for skill '${name}' — skipped"
-            continue
-        fi
-        desc="$(adp_skill_description "$name" "$src" "$_SK_META")"
-        command mkdir -p "${skills_root}/${name}"
-        {
-            echo "---"
-            echo "name: ${name}"
-            echo "description: >"
-            echo "  ${desc}"
-            echo "---"
-            echo ""
-            command cat "$src"
-        } > "${skills_root}/${name}/SKILL.md"
-        count=$((count + 1))
-    done < <(jq -r 'keys[]' "$_SK_META")
-    rdf_log "agent-skills: generated ${count} SKILL.md files"
-}
-
 # sk_generate_all — full pipeline with atomic staging swap (codex pattern).
 sk_generate_all() {
     rdf_log "generating Agent Skills adapter output..."
@@ -51,12 +24,8 @@ sk_generate_all() {
     local _output_new
     _output_new="$(adp_stage_begin "$_output_final")"
 
-    command mkdir -p "${_output_new}/.agents/skills"
-    sk_emit_skills "${_output_new}/.agents/skills"
-
-    # SKILL.md bodies link ../reference/*.md — resolve from skills root
-    command mkdir -p "${_output_new}/.agents/skills/reference"
-    command cp "${RDF_CANONICAL}/reference/"*.md "${_output_new}/.agents/skills/reference/"
+    adp_emit_skills "${RDF_CANONICAL}/commands" "${_output_new}/.agents/skills" \
+        "$_SK_META" - 0 adp_names_from_meta "${RDF_CANONICAL}/reference"
 
     adp_stage_commit "$_output_final" "$_output_new"
     rdf_log "Agent Skills generation complete"

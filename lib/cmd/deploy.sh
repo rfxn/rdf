@@ -11,7 +11,7 @@ Usage: rdf deploy [options] <target>
 Deploy generated adapter output to its tool-specific destination.
 
 Targets:
-  claude-code    Deploy to ~/.claude/ (agents, commands, scripts, governance) + ~/.rdf/state helpers
+  claude-code    Deploy to ~/.claude/ (agents, skills, scripts, governance) + ~/.rdf/state helpers
   gemini-cli     Deploy to ~/.gemini/ (agents, commands, GEMINI.md)
   codex          Deploy to ~/.codex/ + project root (requires --project-root)
   agent-skills   Deploy .agents/skills/ into a workspace root (--project-root, default CWD)
@@ -37,6 +37,8 @@ Exit status: 0 all items deployed; 1 if any item was skipped.
 Symlinked directories allow 'rdf generate' to update deployed files in place.
 Files that require manual merge (e.g., hooks.json) are reported with a
 notice and do not affect the exit status.
+
+Remove skills: rm ~/.claude/skills/r-*
 
 Examples:
   rdf deploy claude-code
@@ -217,7 +219,9 @@ _deploy_state_helpers() {
 # Args: $1=output_dir $2=dest_base $3=dry_run $4=force
 _deploy_skill_links() {
     local output_dir="$1" dest_base="$2" dry_run="$3" force="$4" d n linked=0 pruned=0 target
-    [[ -d "${output_dir}/skills" ]] || return 0   # Phase 2: skills tree optional — Phase 3 requires it
+    if [[ ! -d "${output_dir}/skills" ]]; then
+        rdf_die "output/skills not found — run 'rdf generate claude-code' first"
+    fi
     if [[ -L "${dest_base}/skills" ]]; then
         rdf_warn "${dest_base}/skills is a symlink — refusing to manage per-skill links inside it"
         _DEPLOY_SKIPPED=$((_DEPLOY_SKIPPED + 1))
@@ -227,6 +231,7 @@ _deploy_skill_links() {
     for d in "${output_dir}/skills"/*/; do
         [[ -d "$d" ]] || continue
         n="$(command basename "$d")"
+        [[ "$n" == "reference" ]] && continue   # shared reference/ is not a skill (no SKILL.md)
         _deploy_symlink "${output_dir}/skills/${n}" "${dest_base}/skills/${n}" "$dry_run" "$force" \
             && linked=$((linked + 1))
     done
@@ -240,6 +245,32 @@ _deploy_skill_links() {
         esac
     done
     rdf_log "skills: ${linked} linked, ${pruned} pruned (${dest_base}/skills/<name> -> ${output_dir}/skills/<name>)"
+}
+
+# Remove an RDF-owned <dest_base>/commands symlink (skills supersede it); a
+# real directory or a symlink pointing outside output_dir is left alone with
+# a one-line notice. Args: $1=dest_base $2=output_dir $3=dry_run
+_deploy_prune_legacy_commands() {
+    local dest_base="$1" output_dir="$2" dry_run="$3" link="${1}/commands"
+    if [[ -L "$link" ]]; then
+        local link_target
+        link_target="$(rdf_canonical_path "$link")"
+        case "$link_target" in
+            "$(rdf_canonical_path "$output_dir")"*)
+                if [[ $dry_run -eq 1 ]]; then
+                    rdf_log "[dry-run] would remove legacy commands symlink: ${link} (skills supersede it)"
+                else
+                    command rm -f "$link"
+                    rdf_log "removed legacy commands symlink: ${link} (skills supersede it)"
+                fi
+                ;;
+            *)
+                rdf_log "notice: ${link} points elsewhere — left as-is"
+                ;;
+        esac
+    elif [[ -d "$link" ]]; then
+        rdf_log "notice: ${link} is a real directory — left as-is"
+    fi
 }
 
 # Deploy Claude Code adapter output to ~/.claude/
@@ -259,7 +290,7 @@ _deploy_claude_code() {
     if command -v jq >/dev/null 2>&1 \
         && [[ -f "$plugin_manifest" ]] \
         && jq -e '.plugins | has("rdf@rdf")' "$plugin_manifest" >/dev/null 2>&1; then  # no jq / no manifest = skip advisory silently
-        rdf_warn "plugin install detected (rdf@rdf) — symlink deploy will duplicate commands as /r-* and /rdf:r-*"
+        rdf_warn "plugin install detected (rdf@rdf) — symlink deploy will duplicate skills as /r-* and /rdf:r-*"
     fi
 
     rdf_log "deploying Claude Code adapter to ${dest_base}..."
@@ -269,12 +300,8 @@ _deploy_claude_code() {
         _deploy_symlink "${output_dir}/${surface}" "${dest_base}/${surface}" "$dry_run" "$force"
     done < <(rdf_cc_dir_surfaces)
 
-    # Phase 2: commands/ still deployed alongside skills/ — Phase 3 retires this branch.
-    if [[ -d "${output_dir}/commands" ]]; then
-        _deploy_symlink "${output_dir}/commands" "${dest_base}/commands" "$dry_run" "$force"
-    fi
-
     _deploy_skill_links "$output_dir" "$dest_base" "$dry_run" "$force"
+    _deploy_prune_legacy_commands "$dest_base" "$output_dir" "$dry_run"
 
     # Scoped rules/ are opt-in (--rules): default keeps existing symlink users unchanged.
     if [[ "$deploy_rules" -eq 1 && -d "${output_dir}/rules" ]]; then

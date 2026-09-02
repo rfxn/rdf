@@ -16,7 +16,7 @@
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 export RDF_SRC
 
-# Helper: run the adapter cc_generate_agents + cc_generate_commands in a
+# Helper: run the adapter cc_generate_agents + cc_generate_skills in a
 # subprocess with test-controlled env vars.
 # Usage: _generate <test_home> <output_dir>
 _generate() {
@@ -38,7 +38,6 @@ _generate() {
         _CC_ADAPTER_DIR="${RDF_ADAPTERS}/claude-code"
         _CC_OUTPUT_DIR="$output_dir"
         _CC_AGENT_META="${_CC_ADAPTER_DIR}/agent-meta.json"
-        _CC_COMMAND_META="${_CC_ADAPTER_DIR}/command-meta-v3.json"
         # Source adapter to get helper functions; adapter.sh sets _CC_OUTPUT_DIR
         # to ${RDF_ADAPTERS}/claude-code/output — override it after sourcing
         source "${rdf_src}/adapters/claude-code/adapter.sh"
@@ -48,7 +47,7 @@ _generate() {
         rdf_require_bin jq
         adp_require_hash_tool
         cc_generate_agents
-        cc_generate_commands
+        cc_generate_skills
     ' -- "$RDF_SRC" "$test_home" "$output_dir"
 }
 
@@ -63,6 +62,7 @@ setup() {
         "${TEST_HOME}/canonical/commands" \
         "${TEST_HOME}/canonical/agents" \
         "${TEST_HOME}/canonical/scripts" \
+        "${TEST_HOME}/canonical/reference" \
         "${TEST_HOME}/adapters/claude-code" \
         "${TEST_HOME}/profiles/core" \
         "${TEST_HOME}/state"
@@ -86,9 +86,6 @@ setup() {
 }
 META
 
-    # Minimal command-meta-v3.json
-    echo '{}' > "${TEST_HOME}/adapters/claude-code/command-meta-v3.json"
-
     # VERSION and empty profile state
     echo "0.0.0-test" > "${TEST_HOME}/VERSION"
     touch "${TEST_HOME}/.rdf-profiles"
@@ -103,21 +100,26 @@ teardown() {
 
 # ── Test 1: Generator writes expected file tree ───────────────────────────────
 
-@test "generator writes commands/ and agents/ under output dir" {
+@test "generator writes skills/<n>/SKILL.md for every canonical command and no commands/" {
     _generate "${_TEST_HOME}" "${_TEST_OUT}"
 
-    [ -d "${_TEST_OUT}/commands" ]
+    [ -d "${_TEST_OUT}/skills" ]
     [ -d "${_TEST_OUT}/agents" ]
-    [ -f "${_TEST_OUT}/commands/r-example.md" ]
+    [ -f "${_TEST_OUT}/skills/r-example/SKILL.md" ]
     [ -f "${_TEST_OUT}/agents/example.md" ]
+    [ ! -d "${_TEST_OUT}/commands" ]
 }
 
-# ── Test 2: Canonical body content preserved in deployed output ───────────────
-
-@test "deployed command contains canonical body text" {
+@test "SKILL.md body equals canonical body after frontmatter strip" {
     _generate "${_TEST_HOME}" "${_TEST_OUT}"
 
-    grep -q "RDF_TEST_MARKER_r_example" "${_TEST_OUT}/commands/r-example.md"
+    grep -q "RDF_TEST_MARKER_r_example" "${_TEST_OUT}/skills/r-example/SKILL.md"
+    run bash -c '
+        source "$1/lib/rdf_common.sh"
+        diff <(rdf_strip_frontmatter "$2") "$3"
+    ' -- "$RDF_SRC" "${_TEST_OUT}/skills/r-example/SKILL.md" \
+        "${_TEST_HOME}/canonical/commands/r-example.md"
+    [ "$status" -eq 0 ]
 }
 
 @test "deployed agent contains canonical body text" {
@@ -128,14 +130,20 @@ teardown() {
 
 # ── Test 3: .rdf-hash sidecar emitted next to each deployed file ─────────────
 
-@test ".rdf-hash sidecar exists for deployed command" {
+@test "sidecar hash matches canonical for a skill" {
     _generate "${_TEST_HOME}" "${_TEST_OUT}"
 
-    local sidecar="${_TEST_OUT}/commands/r-example.md.rdf-hash"
+    local sidecar="${_TEST_OUT}/skills/r-example/SKILL.md.rdf-hash"
     [ -f "$sidecar" ]
     local hash
     hash="$(cat "$sidecar")"
     [ -n "$hash" ]
+    run bash -c '
+        source "$1/lib/rdf_common.sh"
+        rdf_hash_stdin < "$2"
+    ' -- "$RDF_SRC" "${_TEST_HOME}/canonical/commands/r-example.md"
+    [ "$status" -eq 0 ]
+    [ "$output" = "$hash" ]
 }
 
 @test ".rdf-hash sidecar exists for deployed agent" {
@@ -154,13 +162,13 @@ teardown() {
     _generate "${_TEST_HOME}" "${_TEST_OUT}"
 
     local body1 sidecar1 body2 sidecar2
-    body1="$(cat "${_TEST_OUT}/commands/r-example.md")"
-    sidecar1="$(cat "${_TEST_OUT}/commands/r-example.md.rdf-hash")"
+    body1="$(cat "${_TEST_OUT}/skills/r-example/SKILL.md")"
+    sidecar1="$(cat "${_TEST_OUT}/skills/r-example/SKILL.md.rdf-hash")"
 
     _generate "${_TEST_HOME}" "${_TEST_OUT}"
 
-    body2="$(cat "${_TEST_OUT}/commands/r-example.md")"
-    sidecar2="$(cat "${_TEST_OUT}/commands/r-example.md.rdf-hash")"
+    body2="$(cat "${_TEST_OUT}/skills/r-example/SKILL.md")"
+    sidecar2="$(cat "${_TEST_OUT}/skills/r-example/SKILL.md.rdf-hash")"
 
     [ "$body1" = "$body2" ]
     [ "$sidecar1" = "$sidecar2" ]
@@ -172,14 +180,14 @@ teardown() {
     # Set up output dir inside TEST_HOME at the expected adapter path so that
     # doctor --scope content-drift can find it via its hardcoded output path logic.
     local adapter_out="${_TEST_HOME}/adapters/claude-code/output"
-    mkdir -p "${adapter_out}/commands" "${adapter_out}/agents"
+    mkdir -p "${adapter_out}/skills" "${adapter_out}/agents"
     _generate "${_TEST_HOME}" "${adapter_out}"
 
     # Verify generation succeeded before corruption
-    [ -f "${adapter_out}/commands/r-example.md" ]
+    [ -f "${adapter_out}/skills/r-example/SKILL.md" ]
 
-    # Corrupt the deployed command by appending noise
-    echo "CORRUPTED_CONTENT" >> "${adapter_out}/commands/r-example.md"
+    # Corrupt the deployed skill by appending noise
+    echo "CORRUPTED_CONTENT" >> "${adapter_out}/skills/r-example/SKILL.md"
 
     # Run doctor --scope content-drift against the test home.
     # set +e temporarily because `run` captures exit code via BATS machinery
@@ -187,8 +195,8 @@ teardown() {
 
     # Exit code must be non-zero (FAIL present)
     [ "$status" -ne 0 ]
-    # Output must cite the corrupted file
-    [[ "$output" == *"r-example.md"* ]]
+    # Output must cite the corrupted skill
+    [[ "$output" == *"skills/r-example"* ]]
 }
 
 # ── Test 6: /r-verify-claim command file exists in canonical ──────────────────
@@ -322,11 +330,11 @@ teardown() {
     # Use RDF_SRC as home so rdf_init finds the real canonical directory.
     output_dir="$(mktemp -d)"
     _generate "$RDF_SRC" "$output_dir"
-    grep -q 'RDF_SESSION_ID' "$output_dir/commands/r-build.md"
-    grep -q 'state/git-hooks/pre-commit' "$output_dir/commands/r-build.md"
-    grep -q 'cd \.worktrees\|cd into the worktree' "$output_dir/commands/r-build.md"
-    grep -q 'build-progress-\${RDF_SESSION_ID}' "$output_dir/commands/r-build.md"
-    ! grep -q '8-char random hex' "$output_dir/commands/r-build.md"
+    grep -q 'RDF_SESSION_ID' "$output_dir/skills/r-build/SKILL.md"
+    grep -q 'state/git-hooks/pre-commit' "$output_dir/skills/r-build/SKILL.md"
+    grep -q 'cd \.worktrees\|cd into the worktree' "$output_dir/skills/r-build/SKILL.md"
+    grep -q 'build-progress-\${RDF_SESSION_ID}' "$output_dir/skills/r-build/SKILL.md"
+    ! grep -q '8-char random hex' "$output_dir/skills/r-build/SKILL.md"
     command rm -rf "$output_dir"
 }
 
@@ -334,9 +342,9 @@ teardown() {
     # Use RDF_SRC as home so rdf_init finds the real canonical directory.
     output_dir="$(mktemp -d)"
     _generate "$RDF_SRC" "$output_dir"
-    grep -q 'rdf_session_init\|RDF_SESSION_ID' "$output_dir/commands/r-start.md"
-    grep -q 'rdf_session_init\|RDF_SESSION_ID' "$output_dir/commands/r-status.md"
-    grep -q 'phase-<N>-status-<SESSION_ID>' "$output_dir/commands/r-status.md"
+    grep -q 'rdf_session_init\|RDF_SESSION_ID' "$output_dir/skills/r-start/SKILL.md"
+    grep -q 'rdf_session_init\|RDF_SESSION_ID' "$output_dir/skills/r-status/SKILL.md"
+    grep -q 'phase-<N>-status-<SESSION_ID>' "$output_dir/skills/r-status/SKILL.md"
     command rm -rf "$output_dir"
 }
 

@@ -16,16 +16,14 @@ export RDF_SRC
 
 # Usage: _make_deploy_skeleton <fix_home> — minimal claude-code output tree so
 # a real deploy proceeds past the pre-flight (cc output is local-only, absent on
-# a CI checkout). Phase 2: carries both layouts (commands/ + skills/<n>/SKILL.md)
-# — Phase 3 drops commands/.
+# a CI checkout).
 _make_deploy_skeleton() {
     local fix_home="$1"
     local out="${fix_home}/adapters/claude-code/output"
-    mkdir -p "${out}/agents" "${out}/commands" "${out}/scripts" \
+    mkdir -p "${out}/agents" "${out}/scripts" \
              "${out}/governance" "${out}/rules" "${out}/reference" \
              "${out}/skills/x"
-    touch "${out}/commands/x.md" "${out}/governance/core-governance.md" \
-          "${out}/rules/core.md"
+    touch "${out}/governance/core-governance.md" "${out}/rules/core.md"
     printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nbody\n' > "${out}/skills/x/SKILL.md"
 }
 
@@ -61,14 +59,14 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
 
 @test "deploy claude-code symlink create/replace/skip/force" {
     local out="${FIX_HOME}/adapters/claude-code/output"
-    # 1) fresh create → commands is a symlink to the output
+    # 1) fresh create → agents is a symlink to the output
     run _run_deploy "$FIX_HOME"
     [ "$status" -eq 0 ]
-    [ -L "${FIX_HOME}/.claude/commands" ]
-    [ "$(readlink "${FIX_HOME}/.claude/commands")" = "${out}/commands" ]
+    [ -L "${FIX_HOME}/.claude/agents" ]
+    [ "$(readlink "${FIX_HOME}/.claude/agents")" = "${out}/agents" ]
     # 2) second run → still a symlink (replaced, not skipped)
     run _run_deploy "$FIX_HOME"
-    [ -L "${FIX_HOME}/.claude/commands" ]
+    [ -L "${FIX_HOME}/.claude/agents" ]
     # 3) a REAL dir where the symlink would go, no --force → skipped, dir intact
     rm -f "${FIX_HOME}/.claude/governance"; mkdir -p "${FIX_HOME}/.claude/governance"
     touch "${FIX_HOME}/.claude/governance/keep.md"
@@ -99,9 +97,9 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     ' -- "$RDF_SRC" "$FIX_HOME" "$target"
     [ "$status" -eq 0 ]
     # Symlinks land under RDF_TARGET, not ~/.claude
-    [ -L "${target}/commands" ]
-    [ "$(readlink "${target}/commands")" = "${out}/commands" ]
-    [ ! -e "${FIX_HOME}/.claude/commands" ]
+    [ -L "${target}/agents" ]
+    [ "$(readlink "${target}/agents")" = "${out}/agents" ]
+    [ ! -e "${FIX_HOME}/.claude/agents" ]
     rm -rf "$target"
 }
 
@@ -189,14 +187,42 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     rm -rf "$target"
 }
 
-@test "sync strips frontmatter from a COMMAND on the reverse flow (BLOCKER 2)" {
-    # A deployed command carries frontmatter + a body --- rule; sync must write
+@test "deploy removes a legacy commands symlink into RDF output" {
+    local out="${FIX_HOME}/adapters/claude-code/output"
+    mkdir -p "${FIX_HOME}/.claude"
+    ln -s "${out}/commands" "${FIX_HOME}/.claude/commands"   # target need not exist — RDF-owned prefix is what matters
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ ! -e "${FIX_HOME}/.claude/commands" ]
+    echo "$output" | grep -q 'removed legacy commands symlink'
+}
+
+@test "deploy leaves a foreign ~/.claude/commands symlink alone" {
+    local foreign; foreign="$(mktemp -d)"
+    mkdir -p "${FIX_HOME}/.claude"
+    ln -s "$foreign" "${FIX_HOME}/.claude/commands"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 0 ]
+    [ -L "${FIX_HOME}/.claude/commands" ]
+    [ "$(readlink "${FIX_HOME}/.claude/commands")" = "$foreign" ]
+    rm -rf "$foreign"
+}
+
+@test "deploy dies when output/skills is missing" {
+    rm -rf "${FIX_HOME}/adapters/claude-code/output/skills"
+    run _run_deploy "$FIX_HOME"
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q "output/skills not found"
+}
+
+@test "sync strips frontmatter from a SKILL on the reverse flow (BLOCKER 2)" {
+    # A deployed skill carries frontmatter + a body --- rule; sync must write
     # back the STRIPPED body to canonical, never the frontmatter.
     local home; home="$(mktemp -d)"
-    mkdir -p "${home}/canonical/commands" "${home}/adapters/claude-code/output/commands"
+    mkdir -p "${home}/canonical/commands" "${home}/adapters/claude-code/output/skills/x"
     printf 'orig body\n---\nrule\n' > "${home}/canonical/commands/x.md"
-    printf -- '---\ndescription: >\n  trigger\n---\n\nEDITED body\n---\nrule\n' \
-        > "${home}/adapters/claude-code/output/commands/x.md"
+    printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nEDITED body\n---\nrule\n' \
+        > "${home}/adapters/claude-code/output/skills/x/SKILL.md"
     run bash -c '
         set -euo pipefail
         RDF_HOME="$1"; RDF_LIBDIR="$2/lib"; RDF_VERSION="0.0.0-test"
@@ -286,7 +312,6 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
              "${home}/adapters/agent-skills" "${home}/profiles"
     printf 'body\n' > "${home}/canonical/agents/ghost.md"
     printf '{}\n' > "${home}/adapters/claude-code/agent-meta.json"
-    printf '{}\n' > "${home}/adapters/claude-code/command-meta-v3.json"
     printf '{}\n' > "${home}/adapters/agent-skills/skill-meta.json"
     printf '{"hooks":{}}\n' > "${home}/adapters/claude-code/hooks/hooks.json"
     run bash -c '
@@ -328,7 +353,7 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     run _run_deploy "$FIX_HOME" claude-code
     [ "$status" -eq 0 ]
     rm -rf "${FIX_HOME}/.claude"
-    mkdir -p "${FIX_HOME}/.claude/commands"     # real dir → skip
+    mkdir -p "${FIX_HOME}/.claude/governance"     # real dir → skip
     run _run_deploy "$FIX_HOME" claude-code
     [ "$status" -eq 1 ]
     [[ "$output" == *"skipped"* ]]
@@ -339,7 +364,7 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     mkdir -p "${FIX_HOME}/.claude/reference"
     run _run_deploy "$FIX_HOME" claude-code
     [ "$status" -eq 1 ]
-    [ -L "${FIX_HOME}/.claude/commands" ]
+    [ -L "${FIX_HOME}/.claude/governance" ]
 }
 
 @test "deploy claude-code symlinks reference into target" {

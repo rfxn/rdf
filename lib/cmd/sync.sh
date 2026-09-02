@@ -87,36 +87,6 @@ cmd_sync() {
         done
     fi
 
-    # Sync commands — strip frontmatter if present (canonical stays frontmatter-free)
-    if [[ -d "${output_dir}/commands" ]]; then
-        for out_file in "${output_dir}/commands"/*.md; do
-            [[ -f "$out_file" ]] || continue
-            local basename_f
-            basename_f="$(basename "$out_file")"
-            local canon_file="${RDF_CANONICAL}/commands/${basename_f}"
-            local body
-            if ! body="$(_sync_body "$out_file")"; then
-                rdf_warn "skipping commands/${basename_f}: unclosed frontmatter (empty body after strip)"
-                continue
-            fi
-
-            if [[ -f "$canon_file" ]]; then
-                local current; current="$(< "$canon_file")"
-                if [[ "$body" == "$current" ]]; then
-                    unchanged=$((unchanged + 1)); continue
-                fi
-            fi
-
-            if [[ $dry_run -eq 1 ]]; then
-                rdf_log "WOULD UPDATE: canonical/commands/${basename_f}"
-            else
-                printf '%s\n' "$body" > "$canon_file"
-                rdf_log "updated: canonical/commands/${basename_f}"
-            fi
-            changed=$((changed + 1))
-        done
-    fi
-
     # Sync skills — reverse-mapped to canonical/commands/<name>.md; the
     # skills/reference/ mirror of canonical reference/ is not itself a command.
     if [[ -d "${output_dir}/skills" ]]; then
@@ -147,6 +117,8 @@ cmd_sync() {
             fi
             changed=$((changed + 1))
         done
+    else
+        rdf_warn "no skills tree in ${output_dir} — nothing to sync for commands"
     fi
 
     # Sync scripts — direct copy

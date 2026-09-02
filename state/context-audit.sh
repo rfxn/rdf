@@ -167,21 +167,16 @@ _skill_project_count=0
 _skill_project_bytes=0
 _skill_canonical_count=0
 _skill_canonical_bytes=0
+_legacy_commands_count=0
 
+# Legacy commands/*.md deploy layout (pre-3.6.6) — counted separately from
+# skills so .skills.deployed.count reflects the current layout only.
 if [[ -d "$_global_commands" ]]; then
-    _skill_global_count="$(_count_md_files "$_global_commands")"
-    while IFS= read -r _sf; do
-        [[ -z "$_sf" ]] && continue
-        _skill_global_bytes=$((_skill_global_bytes + $(_fsize "$_sf")))
-    done < <(command find "$_global_commands" -maxdepth 1 -name "*.md" ! -type d 2>/dev/null)
+    _legacy_commands_count=$((_legacy_commands_count + $(_count_md_files "$_global_commands")))
 fi
 
 if [[ -d "$_project_commands" ]]; then
-    _skill_project_count="$(_count_md_files "$_project_commands")"
-    while IFS= read -r _sf; do
-        [[ -z "$_sf" ]] && continue
-        _skill_project_bytes=$((_skill_project_bytes + $(_fsize "$_sf")))
-    done < <(command find "$_project_commands" -maxdepth 1 -name "*.md" ! -type d 2>/dev/null)
+    _legacy_commands_count=$((_legacy_commands_count + $(_count_md_files "$_project_commands")))
 fi
 
 if [[ -d "$_canonical_commands" ]]; then
@@ -192,14 +187,12 @@ if [[ -d "$_canonical_commands" ]]; then
     done < <(command find "$_canonical_commands" -maxdepth 1 -name "*.md" ! -type d 2>/dev/null)
 fi
 
-# Skills-layout deploys (skills/<name>/SKILL.md) — counted alongside the
-# legacy commands/*.md layout above so .skills.deployed.count reflects
-# whichever layout (or both, mid-transition) is actually on disk.
+# Skills-layout deploys (skills/<name>/SKILL.md) — the current layout.
 _global_skills="${_claude_home}/skills"
 _project_skills="${_project_settings}/skills"
 
 if [[ -d "$_global_skills" ]]; then
-    _skill_global_count=$((_skill_global_count + $(_count_skill_files "$_global_skills")))
+    _skill_global_count="$(_count_skill_files "$_global_skills")"
     while IFS= read -r _sf; do
         [[ -z "$_sf" ]] && continue
         _skill_global_bytes=$((_skill_global_bytes + $(_fsize "$_sf")))
@@ -207,7 +200,7 @@ if [[ -d "$_global_skills" ]]; then
 fi
 
 if [[ -d "$_project_skills" ]]; then
-    _skill_project_count=$((_skill_project_count + $(_count_skill_files "$_project_skills")))
+    _skill_project_count="$(_count_skill_files "$_project_skills")"
     while IFS= read -r _sf; do
         [[ -z "$_sf" ]] && continue
         _skill_project_bytes=$((_skill_project_bytes + $(_fsize "$_sf")))
@@ -444,6 +437,7 @@ cat <<JSONEOF
     "global": {"count": ${_skill_global_count}, "bytes": ${_skill_global_bytes}},
     "project": {"count": ${_skill_project_count}, "bytes": ${_skill_project_bytes}},
     "canonical": {"count": ${_skill_canonical_count}, "bytes": ${_skill_canonical_bytes}},
+    "legacy_commands": ${_legacy_commands_count},
     "listing_overhead_est": ${_skill_listing_est_bytes}
   },
   "agents": {

@@ -416,35 +416,11 @@ _check_content_drift() {
             fi
             checked_count=$((checked_count + 1))
         done
+    else
+        _add_result "content-drift" "$_WARN" "no skills tree — run 'rdf generate claude-code'"
     fi
 
-    # Check commands: hash deployed file vs sidecar (Phase 2: commands/ still
-    # checked alongside skills/ — Phase 3 retires this loop)
-    if [[ -d "${output_dir}/commands" ]]; then
-        for dst_file in "${output_dir}/commands"/*.md; do
-            [[ -f "$dst_file" ]] || continue
-            basename_f="$(basename "$dst_file")"
-            sidecar="${dst_file}.rdf-hash"
-
-            if [[ ! -f "$sidecar" ]]; then
-                missing_sidecar_count=$((missing_sidecar_count + 1))
-                continue
-            fi
-
-            local stored_hash actual_hash
-            stored_hash="$(< "$sidecar")"
-            actual_hash="$(_hash_deployed_body "$dst_file")"
-
-            if [[ "$stored_hash" != "$actual_hash" ]]; then
-                _add_result "content-drift" "$_FAIL" \
-                    "deployed file modified since last generate: commands/${basename_f}"
-                drift_count=$((drift_count + 1))
-            fi
-            checked_count=$((checked_count + 1))
-        done
-    fi
-
-    # Check reference docs: plain files, same sidecar contract as commands
+    # Check reference docs: plain files, same sidecar contract as skills
     for dst_file in "${output_dir}/reference"/*.md; do
         [[ -f "$dst_file" ]] || continue
         basename_f="$(basename "$dst_file")"
@@ -515,8 +491,7 @@ _check_sync() {
         _add_result "sync" "$_OK" "agent count matches (${canon_agents})"
     fi
 
-    # Compare command count (against skills/*/SKILL.md when the skills tree
-    # exists — Phase 3 retires the commands/*.md fallback)
+    # Compare command count against skills/*/SKILL.md
     local canon_cmds=0
     local output_cmds=0
     for f in "${canonical_dir}/commands"/*.md; do
@@ -526,16 +501,13 @@ _check_sync() {
         for f in "${output_dir}/skills"/*/SKILL.md; do
             [[ -f "$f" ]] && output_cmds=$((output_cmds + 1))
         done
+        if [[ $canon_cmds -ne $output_cmds ]]; then
+            _add_result "sync" "$_WARN" "command count mismatch: canonical=${canon_cmds}, output=${output_cmds}"
+        else
+            _add_result "sync" "$_OK" "command count matches (${canon_cmds})"
+        fi
     else
-        for f in "${output_dir}/commands"/*.md; do
-            [[ -f "$f" ]] && output_cmds=$((output_cmds + 1))
-        done
-    fi
-
-    if [[ $canon_cmds -ne $output_cmds ]]; then
-        _add_result "sync" "$_WARN" "command count mismatch: canonical=${canon_cmds}, output=${output_cmds}"
-    else
-        _add_result "sync" "$_OK" "command count matches (${canon_cmds})"
+        _add_result "sync" "$_WARN" "no skills tree — run 'rdf generate claude-code'"
     fi
 
     # Check symlink health: <target>/* -> output/ (honors RDF_TARGET override)
@@ -570,18 +542,27 @@ _check_sync() {
         _sync_check_link "${claude_base}/${target}" "${output_dir}/${target}"
     done < <(rdf_cc_dir_surfaces)
 
-    # Phase 2: commands/ still checked alongside skills/ — Phase 3 retires this.
-    if [[ -d "${output_dir}/commands" ]]; then
-        _sync_check_link "${claude_base}/commands" "${output_dir}/commands"
-    fi
-
     if [[ -d "${output_dir}/skills" ]]; then
         local skill_dir skill_name
         for skill_dir in "${output_dir}/skills"/*/; do
             [[ -d "$skill_dir" ]] || continue
             skill_name="$(basename "$skill_dir")"
+            [[ "$skill_name" == "reference" ]] && continue   # shared reference/ is not a skill
             _sync_check_link "${claude_base}/skills/${skill_name}" "${output_dir}/skills/${skill_name}"
         done
+    fi
+
+    # A lingering legacy commands symlink (pre-3.6.6 install, not yet re-deployed)
+    # into RDF's own output tree — 'rdf deploy claude-code' prunes it on next run.
+    if [[ -L "${claude_base}/commands" ]]; then
+        local legacy_target
+        legacy_target="$(rdf_canonical_path "${claude_base}/commands")"
+        case "$legacy_target" in
+            "$(rdf_canonical_path "$output_dir")"*)
+                _add_result "sync" "$_WARN" \
+                    "${claude_base}/commands still symlinks into RDF output — re-run 'rdf deploy claude-code' to prune it"
+                ;;
+        esac
     fi
 
     if [[ $link_fail -eq 0 ]] && [[ $link_ok -gt 0 ]]; then
@@ -996,22 +977,18 @@ _check_doc_stats() {
 # Version resolver for doctor (avoids sourcing init.sh dependency)
 # ── Check: install-mode ──
 # Detects how RDF is installed for this user: symlink deploy (~/.claude/
-# commands -> adapter output), plugin install (rdf@rdf in the plugin
-# manifest), both (WARN — duplicate commands), or neither.
+# skills/<n> -> adapter output), plugin install (rdf@rdf in the plugin
+# manifest), both (WARN — duplicate skills), or neither.
 _check_install_mode() {
     local manifest="${HOME}/.claude/plugins/installed_plugins.json"
     local base="${RDF_TARGET:-${HOME}/.claude}"
     local symlink_mode=0
     local plugin_mode=0
 
-    if [[ -L "${base}/commands" ]]; then
-        symlink_mode=1
-    else
-        local d
-        for d in "${base}/skills"/*; do   # any RDF-owned skill link also counts as symlink deploy
-            [[ -L "$d" ]] && { symlink_mode=1; break; }
-        done
-    fi
+    local d
+    for d in "${base}/skills"/*; do   # any RDF-owned skill link counts as symlink deploy
+        [[ -L "$d" ]] && { symlink_mode=1; break; }
+    done
     if [[ -f "$manifest" ]] \
         && jq -e '.plugins | has("rdf@rdf")' "$manifest" >/dev/null 2>&1; then  # absent or malformed manifest = not plugin-installed
         plugin_mode=1

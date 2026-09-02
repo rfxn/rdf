@@ -69,17 +69,25 @@ teardown() {
 
 @test "lite generation ships only the lifecycle command set" {
     _generate "$_TEST_OUT" 1
-    [ -f "${_TEST_OUT}/commands/r-spec.md" ]
-    [ -f "${_TEST_OUT}/commands/r-plan.md" ]
-    [ -f "${_TEST_OUT}/commands/r-build.md" ]
-    [ -f "${_TEST_OUT}/commands/r-ship.md" ]
-    [ -f "${_TEST_OUT}/commands/r-start.md" ]
-    [ -f "${_TEST_OUT}/commands/r-save.md" ]
-    [ ! -f "${_TEST_OUT}/commands/r-audit.md" ]   # utility commands excluded
-    [ ! -f "${_TEST_OUT}/commands/r-vpe.md" ]
+    [ -f "${_TEST_OUT}/skills/r-spec/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-plan/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-build/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-ship/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-start/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-save/SKILL.md" ]
+    [ ! -d "${_TEST_OUT}/skills/r-audit" ]   # utility commands excluded
+    [ ! -d "${_TEST_OUT}/skills/r-vpe" ]
     local n
-    n="$(find "${_TEST_OUT}/commands" -maxdepth 1 -name '*.md' | wc -l)"
+    n="$(find "${_TEST_OUT}/skills" -mindepth 1 -maxdepth 1 -type d ! -name reference | wc -l)"
     [ "$n" -eq 6 ]
+}
+
+@test "lite generation emits exactly the six lifecycle skills" {
+    _generate "$_TEST_OUT" 1
+    local n
+    n="$(find "${_TEST_OUT}/skills" -mindepth 1 -maxdepth 1 -type d | wc -l)"
+    [ "$n" -eq 7 ]   # 6 lifecycle skills + reference/
+    [ -d "${_TEST_OUT}/skills/reference" ]
 }
 
 @test "default generation leaves rules/core.md byte-identical to full core governance" {
@@ -92,9 +100,9 @@ teardown() {
 @test "default generation still emits hooks.json and the full command set" {
     _generate "$_TEST_OUT" 0
     [ -f "${_TEST_OUT}/hooks.json" ]
-    [ -f "${_TEST_OUT}/commands/r-audit.md" ]
+    [ -f "${_TEST_OUT}/skills/r-audit/SKILL.md" ]
     local n
-    n="$(find "${_TEST_OUT}/commands" -maxdepth 1 -name '*.md' | wc -l)"
+    n="$(find "${_TEST_OUT}/skills" -mindepth 1 -maxdepth 1 -type d ! -name reference | wc -l)"
     [ "$n" -gt 6 ]   # full deploy ships every command, not just lifecycle
 }
 

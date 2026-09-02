@@ -32,7 +32,7 @@ _generate_plugin() {
         _CPL_OUTPUT_DIR="$output_dir"
         rdf_require_dir "$RDF_CANONICAL" "canonical directory"
         rdf_require_bin jq
-        cpl_generate_commands
+        cpl_generate_skills
         cpl_generate_agents
         adp_copy_scripts "${RDF_CANONICAL}/scripts" "${_CPL_OUTPUT_DIR}/scripts"
         cpl_generate_hooks
@@ -101,45 +101,50 @@ teardown() {
     rm -rf "${_TEST_HOME}" "${_TEST_OUT}" 2>/dev/null || true # ignore errors on cleanup
 }
 
-@test "plugin generator writes commands under output dir" {
+@test "plugin generator writes skills under output dir" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
-    [ -d "${_TEST_OUT}/commands" ]
-    [ -f "${_TEST_OUT}/commands/r-caller.md" ]
-    [ -f "${_TEST_OUT}/commands/r-example.md" ]
-    [ -f "${_TEST_OUT}/commands/r-example-extra.md" ]
+    [ -d "${_TEST_OUT}/skills" ]
+    [ ! -d "${_TEST_OUT}/commands" ]
+    [ -f "${_TEST_OUT}/skills/r-caller/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-example/SKILL.md" ]
+    [ -f "${_TEST_OUT}/skills/r-example-extra/SKILL.md" ]
 }
 
-@test "plugin commands rewrite /r-X cross-refs to /rdf:r-X" {
+@test "plugin skills rewrite /r-X cross-refs to /rdf:r-X" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
-    grep -q '`/rdf:r-example`' "${_TEST_OUT}/commands/r-caller.md"
-    grep -q '^/rdf:r-example at line start' "${_TEST_OUT}/commands/r-caller.md"
-    grep -q '(/rdf:r-example)' "${_TEST_OUT}/commands/r-caller.md"
-    grep -q '|/rdf:r-example|' "${_TEST_OUT}/commands/r-caller.md"
+    grep -q '`/rdf:r-example`' "${_TEST_OUT}/skills/r-caller/SKILL.md"
+    grep -q '^/rdf:r-example at line start' "${_TEST_OUT}/skills/r-caller/SKILL.md"
+    grep -q '(/rdf:r-example)' "${_TEST_OUT}/skills/r-caller/SKILL.md"
+    grep -q '|/rdf:r-example|' "${_TEST_OUT}/skills/r-caller/SKILL.md"
 }
 
 @test "rewrite does not touch path-like r- strings" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
-    grep -q 'canonical/commands/r-example\.md' "${_TEST_OUT}/commands/r-caller.md"
-    run grep 'canonical/commands/rdf:' "${_TEST_OUT}/commands/r-caller.md"
+    grep -q 'canonical/commands/r-example\.md' "${_TEST_OUT}/skills/r-caller/SKILL.md"
+    run grep 'canonical/commands/rdf:' "${_TEST_OUT}/skills/r-caller/SKILL.md"
     [ "$status" -ne 0 ]
 }
 
 @test "rewrite handles prefix-colliding command names" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     # longer name rewritten atomically
-    grep -q 'run /rdf:r-example-extra for' "${_TEST_OUT}/commands/r-caller.md"
+    grep -q 'run /rdf:r-example-extra for' "${_TEST_OUT}/skills/r-caller/SKILL.md"
     # no leftover un-namespaced occurrence of the longer name
-    run grep ' /r-example-extra' "${_TEST_OUT}/commands/r-caller.md"
+    run grep ' /r-example-extra' "${_TEST_OUT}/skills/r-caller/SKILL.md"
     [ "$status" -ne 0 ]
 }
 
-@test "plugin commands carry intent-trigger frontmatter" {
+@test "plugin skills carry /rdf: rewrite in body and description" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
-    # First line is the frontmatter opener, second is the description key.
-    [ "$(head -1 "${_TEST_OUT}/commands/r-example.md")" = "---" ]
-    [ "$(sed -n '2p' "${_TEST_OUT}/commands/r-example.md")" = "description: >" ]
+    # First line is the frontmatter opener, second is the name, third the description key.
+    [ "$(head -1 "${_TEST_OUT}/skills/r-example/SKILL.md")" = "---" ]
+    [ "$(sed -n '2p' "${_TEST_OUT}/skills/r-example/SKILL.md")" = "name: r-example" ]
+    [ "$(sed -n '3p' "${_TEST_OUT}/skills/r-example/SKILL.md")" = "description: >" ]
     # Canonical body is preserved below the frontmatter (not replaced by it).
-    grep -q 'RDF_TEST_MARKER_r_example' "${_TEST_OUT}/commands/r-example.md"
+    grep -q 'RDF_TEST_MARKER_r_example' "${_TEST_OUT}/skills/r-example/SKILL.md"
+    # Description trigger (fallback: body's own first line, self-referencing
+    # /r-example) goes through the same namespace rewrite as the body.
+    [ "$(sed -n '4p' "${_TEST_OUT}/skills/r-example/SKILL.md")" = "  You are running the /rdf:r-example command. This is a test fixture." ]
 }
 
 @test "plugin agents carry frontmatter" {
@@ -154,7 +159,7 @@ teardown() {
     grep -q 'canonical/commands/r-example\.md' "${_TEST_OUT}/agents/caller.md"
 }
 
-@test "plugin output contains no .rdf-hash sidecars" {
+@test "plugin tree has no .rdf-hash" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     run find "${_TEST_OUT}" -name '*.rdf-hash'
     [ -z "$output" ]
@@ -187,6 +192,15 @@ teardown() {
     [ "$output" = "0.0.0-test" ]
 }
 
+@test "plugin.json has skills path, no commands key, and the path exists" {
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    run jq -r '.skills' "${_TEST_HOME}/.claude-plugin/plugin.json"
+    [ "$output" = "./adapters/claude-plugin/output/skills" ]
+    run jq -e '.commands' "${_TEST_HOME}/.claude-plugin/plugin.json"
+    [ "$status" -ne 0 ]
+    [ -d "${_TEST_OUT}/skills" ]
+}
+
 @test "generate claude-plugin target is wired into cmd_generate" {
     grep -q 'claude-plugin)' "${RDF_SRC}/lib/cmd/generate.sh"
     grep -q 'cpl_generate_all' "${RDF_SRC}/lib/cmd/generate.sh"
@@ -212,8 +226,8 @@ _run_install_mode_check() {
 
 @test "doctor warns on dual install mode" {
     FIX_HOME="$(mktemp -d)"
-    mkdir -p "${FIX_HOME}/.claude/plugins" "${FIX_HOME}/real-target"
-    ln -s "${FIX_HOME}/real-target" "${FIX_HOME}/.claude/commands"
+    mkdir -p "${FIX_HOME}/.claude/plugins" "${FIX_HOME}/.claude/skills" "${FIX_HOME}/real-target"
+    ln -s "${FIX_HOME}/real-target" "${FIX_HOME}/.claude/skills/x"
     printf '{"version":1,"plugins":{"rdf@rdf":[{"scope":"user"}]}}\n' \
         > "${FIX_HOME}/.claude/plugins/installed_plugins.json"
     run _run_install_mode_check "$FIX_HOME"
@@ -243,11 +257,11 @@ _run_install_mode_check() {
     # pre-flight would die before reaching the warning. Build a
     # minimal skeleton so dry-run deploy proceeds.
     mkdir -p "${FIX_HOME}/adapters/claude-code/output/agents" \
-             "${FIX_HOME}/adapters/claude-code/output/commands" \
+             "${FIX_HOME}/adapters/claude-code/output/skills/x" \
              "${FIX_HOME}/adapters/claude-code/output/scripts" \
              "${FIX_HOME}/adapters/claude-code/output/governance" \
              "${FIX_HOME}/canonical" "${FIX_HOME}/state"
-    touch "${FIX_HOME}/adapters/claude-code/output/commands/x.md"
+    printf -- '---\nname: x\n---\nbody\n' > "${FIX_HOME}/adapters/claude-code/output/skills/x/SKILL.md"
     echo "0.0.0-test" > "${FIX_HOME}/VERSION"
     run bash -c '
         set -euo pipefail
@@ -277,7 +291,7 @@ _run_install_mode_check() {
 
 @test "repo plugin.json component paths exist" {
     local p
-    for key in commands hooks; do
+    for key in skills hooks; do
         p="$(jq -r ".${key}" "${RDF_SRC}/.claude-plugin/plugin.json")"
         [ "${p#./}" != "$p" ]           # must be ./-relative
         [ -e "${RDF_SRC}/${p#./}" ]     # must exist in repo

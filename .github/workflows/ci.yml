@@ -109,6 +109,9 @@ jobs:
       - name: Validate plugin + marketplace (strict)
         run: claude plugin validate . --strict
 
+      - name: Validate plugin skills tree (strict)
+        run: claude plugin validate adapters/claude-plugin/output/skills --strict
+
   tests:
     name: Tests (BATS)
     # Runs on ubuntu + macOS so BSD coreutils and system bash 3.2 are exercised.

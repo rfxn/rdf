@@ -23,57 +23,13 @@ cc_generate_agents() {
     adp_emit_agents "${RDF_CANONICAL}/agents" "${_CC_OUTPUT_DIR}/agents" "$_CC_AGENT_META" - 1
 }
 
-# _cc_is_lite_command file — true when $1 (e.g. r-plan.md) is a lifecycle command.
-_cc_is_lite_command() {
-    case "$1" in
-        r-spec.md|r-plan.md|r-build.md|r-ship.md|r-start.md|r-save.md) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-
-# cc_generate_command_frontmatter <basename-no-ext> — emit a CC command
-# frontmatter block with an intent-trigger description. Trigger comes from the
-# shared agent-skills skill-meta.json; falls back to the canonical body's first
-# non-heading line. Never sets disable-model-invocation (CC bug #43875).
-cc_generate_command_frontmatter() {
-    local name="$1" desc
-    desc="$(adp_skill_description "$name" "${RDF_CANONICAL}/commands/${name}.md" "$_CC_SKILL_META")"
-    echo "---"
-    echo "description: >"
-    echo "  ${desc}"
-    echo "---"
-}
-
-# Generate all CC command files
-# Reads canonical/commands/*.md + skill-meta.json -> output/commands/*.md
-# Each command gains an intent-trigger description: frontmatter (canonical stays
-# frontmatter-free; the hash sidecar is over the canonical body).
-cc_generate_commands() {
-    local src_dir="${RDF_CANONICAL}/commands"
-    local dst_dir="${_CC_OUTPUT_DIR}/commands"
-    local count=0
-
-    command mkdir -p "$dst_dir"
-
-    for src_file in "${src_dir}"/*.md; do
-        [[ -f "$src_file" ]] || continue
-        local basename_f
-        basename_f="$(basename "$src_file")"
-        if [[ "$_CC_LITE" -eq 1 ]] && ! _cc_is_lite_command "$basename_f"; then
-            continue   # lite ships only the lifecycle command set
-        fi
-        local dst_file="${dst_dir}/${basename_f}"
-        local name_noext="${basename_f%.md}"
-        {
-            cc_generate_command_frontmatter "$name_noext"
-            echo ""
-            command cat "$src_file"
-        } > "$dst_file"
-        # Hash the CANONICAL source (pre-frontmatter) so doctor still matches
-        adp_write_hash_sidecar "$src_file" "$dst_file"
-        count=$((count + 1))
-    done
-    rdf_log "generated ${count} command files"
+# Generate all CC skill files: canonical/commands/*.md + skill-meta.json ->
+# output/skills/<name>/SKILL.md. --lite ships only the lifecycle command set.
+cc_generate_skills() {
+    local names_fn=adp_names_all
+    [[ "$_CC_LITE" -eq 1 ]] && names_fn=adp_names_lite
+    adp_emit_skills "${RDF_CANONICAL}/commands" "${_CC_OUTPUT_DIR}/skills" \
+        "$_CC_SKILL_META" - 1 "$names_fn" "${RDF_CANONICAL}/reference"
 }
 
 # Copy hooks.json to output
@@ -176,7 +132,7 @@ cc_generate_all() {
     _CC_OUTPUT_DIR="$_output_new"
 
     cc_generate_agents
-    cc_generate_commands
+    cc_generate_skills
     adp_copy_scripts "${RDF_CANONICAL}/scripts" "${_CC_OUTPUT_DIR}/scripts"
     adp_copy_reference "${RDF_CANONICAL}/reference" "${_CC_OUTPUT_DIR}/reference" 1
     cc_generate_hooks
@@ -186,12 +142,12 @@ cc_generate_all() {
     _CC_OUTPUT_DIR="$_output_final"
     adp_stage_commit "$_output_final" "$_output_new"
 
-    local agent_count command_count script_count rule_count reference_count
+    local agent_count skill_count script_count rule_count reference_count
     agent_count="$(adp_count "${_CC_OUTPUT_DIR}/agents" '*.md')"
-    command_count="$(adp_count "${_CC_OUTPUT_DIR}/commands" '*.md')"
+    skill_count="$(adp_count "${_CC_OUTPUT_DIR}/skills" 'SKILL.md')"
     script_count="$(adp_count "${_CC_OUTPUT_DIR}/scripts" '*.sh')"
     rule_count="$(adp_count "${_CC_OUTPUT_DIR}/rules" '*.md')"  # rules/ absent → 0, not an error
     reference_count="$(adp_count "${_CC_OUTPUT_DIR}/reference" '*.md')"  # reference/ absent → 0, not an error
 
-    rdf_log "CC generation complete: ${agent_count} agents, ${command_count} commands, ${script_count} scripts, ${rule_count} rules, ${reference_count} reference docs"
+    rdf_log "CC generation complete: ${agent_count} agents, ${skill_count} skills, ${script_count} scripts, ${rule_count} rules, ${reference_count} reference docs"
 }

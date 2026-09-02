@@ -41,10 +41,11 @@ _generate_rules() {
 _make_deploy_skeleton() {
     local fix_home="$1"
     local out="${fix_home}/adapters/claude-code/output"
-    mkdir -p "${out}/agents" "${out}/commands" "${out}/scripts" \
-             "${out}/governance" "${out}/rules" "${out}/reference"
-    touch "${out}/commands/x.md" "${out}/governance/core-governance.md" \
-          "${out}/rules/core.md"
+    mkdir -p "${out}/agents" "${out}/scripts" \
+             "${out}/governance" "${out}/rules" "${out}/reference" \
+             "${out}/skills/x"
+    touch "${out}/governance/core-governance.md" "${out}/rules/core.md"
+    printf -- '---\nname: x\ndescription: >\n  trigger\n---\n\nbody\n' > "${out}/skills/x/SKILL.md"
 }
 
 # Usage: _run_deploy <fix_home> [extra cmd_deploy args...]

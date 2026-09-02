@@ -91,14 +91,16 @@ _run_doc_stats() {
 @test "sync check tolerates a trailing-slash project path (--all regression)" {
     fix="$(mktemp -d)"
     mkdir -p "$fix/canonical/agents" "$fix/canonical/commands" \
-             "$fix/adapters/claude-code/output/commands" \
+             "$fix/adapters/claude-code/output/skills/x" \
              "$fix/adapters/claude-code/output/agents" \
              "$fix/adapters/claude-code/output/scripts" \
              "$fix/adapters/claude-code/output/governance" \
              "$fix/adapters/claude-code/output/reference"
+    touch "$fix/canonical/commands/x.md"
+    printf -- '---\nname: x\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md"
     fakehome="$(mktemp -d)"
-    mkdir -p "$fakehome/.claude"
-    ln -s "$fix/adapters/claude-code/output/commands"   "$fakehome/.claude/commands"
+    mkdir -p "$fakehome/.claude/skills"
+    ln -s "$fix/adapters/claude-code/output/skills/x"   "$fakehome/.claude/skills/x"
     ln -s "$fix/adapters/claude-code/output/agents"     "$fakehome/.claude/agents"
     ln -s "$fix/adapters/claude-code/output/scripts"    "$fakehome/.claude/scripts"
     ln -s "$fix/adapters/claude-code/output/governance" "$fakehome/.claude/governance"
@@ -161,7 +163,7 @@ _run_doc_stats() {
     rm -rf "$fix" "$fakehome"
 }
 
-@test "content-drift OK for a deployed command with frontmatter + body --- rules" {
+@test "content-drift OK for a deployed skill with frontmatter + body --- rules" {
     # A canonical command body with --- horizontal rules; CC generate prepends
     # frontmatter and writes the canonical-body sidecar. doctor must strip the
     # LEADING frontmatter only (body --- rules preserved) → no drift FAIL.
@@ -176,7 +178,7 @@ _run_doc_stats() {
         source "${rdf_src}/adapters/claude-code/adapter.sh"
         _CC_OUTPUT_DIR="${proj}/adapters/claude-code/output"
         adp_require_hash_tool
-        cc_generate_commands
+        cc_generate_skills
         source "${rdf_src}/lib/cmd/doctor.sh"
         _reset_results
         _check_content_drift "$proj"
@@ -184,7 +186,7 @@ _run_doc_stats() {
         rm -rf "$proj"
     ' -- "$RDF_SRC"
     [ "$status" -eq 0 ]
-    [[ "$output" != *"FAIL"*"commands/x.md"* ]]
+    [[ "$output" != *"FAIL"*"skills/x"* ]]
     [[ "$output" == *"content-drift|OK|"* ]]
 }
 
@@ -198,6 +200,52 @@ _run_doc_stats() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"content-drift|FAIL|deployed file modified since last generate: skills/x"* ]]
     rm -rf "$fix"
+}
+
+@test "content-drift WARNs when skills/ is absent" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/adapters/claude-code/output/agents"
+    touch "$fix/canonical/commands/x.md"
+    run _run_path_check _check_content_drift "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"content-drift|WARN|no skills tree"* ]]
+    rm -rf "$fix"
+}
+
+@test "sync-health WARNs on a lingering commands symlink into RDF output" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" \
+             "$fix/adapters/claude-code/output/agents" \
+             "$fix/adapters/claude-code/output/scripts" \
+             "$fix/adapters/claude-code/output/governance" \
+             "$fix/adapters/claude-code/output/reference" \
+             "$fix/adapters/claude-code/output/skills/x"
+    touch "$fix/canonical/commands/x.md"
+    printf -- '---\nname: x\n---\nbody\n' > "$fix/adapters/claude-code/output/skills/x/SKILL.md"
+    fakehome="$(mktemp -d)"
+    mkdir -p "$fakehome/.claude/skills"
+    ln -s "$fix/adapters/claude-code/output/agents"     "$fakehome/.claude/agents"
+    ln -s "$fix/adapters/claude-code/output/scripts"    "$fakehome/.claude/scripts"
+    ln -s "$fix/adapters/claude-code/output/governance" "$fakehome/.claude/governance"
+    ln -s "$fix/adapters/claude-code/output/reference"  "$fakehome/.claude/reference"
+    ln -s "$fix/adapters/claude-code/output/skills/x"   "$fakehome/.claude/skills/x"
+    ln -s "$fix/adapters/claude-code/output/commands"   "$fakehome/.claude/commands"   # lingering, target absent
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; proj="$2"; export HOME="$3"
+        RDF_HOME="$(mktemp -d)"
+        RDF_LIBDIR="${rdf_src}/lib"
+        RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"
+        rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_sync "$proj"
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$fix" "$fakehome"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"sync|WARN|${fakehome}/.claude/commands still symlinks into RDF output"* ]]
+    rm -rf "$fix" "$fakehome"
 }
 
 @test "deps check reports jq: OK when present, WARN when masked" {
@@ -262,7 +310,8 @@ _run_install_mode() {
 @test "install-mode symlink probe honors RDF_TARGET override" {
     local home; home="$(mktemp -d)"
     local target; target="$(mktemp -d)"
-    ln -s /nonexistent/output "${target}/commands"   # symlink lives under RDF_TARGET
+    mkdir -p "${target}/skills"
+    ln -s /nonexistent/output "${target}/skills/x"   # symlink lives under RDF_TARGET
     # With RDF_TARGET set → the probe finds the symlink → symlink deploy
     run _run_install_mode "$home" "$target"
     [ "$status" -eq 0 ]

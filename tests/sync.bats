@@ -73,3 +73,12 @@ _run_sync() {  # $1 = temp RDF_HOME
     [ ! -e "${home}/canonical/commands/reference.md" ]               # skills/reference/ is not a command
     rm -rf "$home"
 }
+
+@test "sync warns when output/skills is missing" {
+    home="$(mktemp -d)"
+    mkdir -p "${home}/canonical/commands" "${home}/adapters/claude-code/output/agents"
+    run _run_sync "$home"
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'no skills tree'
+    rm -rf "$home"
+}

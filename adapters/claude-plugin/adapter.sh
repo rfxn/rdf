@@ -34,11 +34,6 @@ _cpl_rewrite_namespace_text() {
     sed "${sed_args[@]}"
 }
 
-# Args: $1 = src file, $2 = dst file
-_cpl_rewrite_namespace() {
-    _cpl_rewrite_namespace_text < "$1" > "$2"
-}
-
 # Emit canonical command basenames (no .md), longest name first.
 _cpl_command_names_longest_first() {
     local f b
@@ -49,47 +44,14 @@ _cpl_command_names_longest_first() {
     done | sort -rn | cut -d' ' -f2-
 }
 
-# cpl_generate_command_frontmatter <basename-no-ext> — emit an intent-trigger
-# description: frontmatter block, mirroring cc_generate_command_frontmatter.
-# Trigger comes from the shared agent-skills skill-meta.json; falls back to the
-# canonical body's first non-heading line.
-cpl_generate_command_frontmatter() {
-    local name="$1" desc
-    desc="$(adp_skill_description "$name" "${RDF_CANONICAL}/commands/${name}.md" "$_CPL_SKILL_META")"
-    # Plugin commands are namespaced by the loader; the description text must
-    # use /rdf:r-* too or it points at commands that do not exist here.
-    desc="$(printf '%s\n' "$desc" | _cpl_rewrite_namespace_text)"
-    echo "---"
-    echo "description: >"
-    echo "  ${desc}"
-    echo "---"
-}
-
-# Generate plugin command files: canonical/commands/*.md -> output/commands/
-# with intent-trigger frontmatter + namespace rewrite of the body. No .rdf-hash
-# sidecars — strict plugin validation rejects non-component files in the dir.
-cpl_generate_commands() {
-    local src_dir="${RDF_CANONICAL}/commands"
-    local dst_dir="${_CPL_OUTPUT_DIR}/commands"
-    local count=0
-
-    command mkdir -p "$dst_dir"
-
-    for src_file in "${src_dir}"/*.md; do
-        [[ -f "$src_file" ]] || continue
-        local basename_f
-        basename_f="$(basename "$src_file")"
-        local dst_file="${dst_dir}/${basename_f}"
-        _cpl_rewrite_namespace "$src_file" "${dst_file}.body"
-        {
-            cpl_generate_command_frontmatter "${basename_f%.md}"
-            echo ""
-            command cat "${dst_file}.body"
-        } > "$dst_file"
-        command rm -f "${dst_file}.body"
-        count=$((count + 1))
-    done
-    rdf_log "generated ${count} command files (intent-trigger frontmatter, namespace-rewritten)"
+# Generate plugin skill files: canonical/commands/*.md -> output/skills/<name>/
+# SKILL.md, description + body both passed through the namespace rewrite (a
+# plugin skill body/description referencing /r-X must say /rdf:r-X instead —
+# that command does not exist un-namespaced in a plugin install). No
+# .rdf-hash sidecars — strict plugin validation rejects non-component files.
+cpl_generate_skills() {
+    adp_emit_skills "${RDF_CANONICAL}/commands" "${_CPL_OUTPUT_DIR}/skills" \
+        "$_CPL_SKILL_META" _cpl_rewrite_namespace_text 0 adp_names_all "${RDF_CANONICAL}/reference"
 }
 
 # Generate plugin agent files with CC YAML frontmatter, no hash sidecars.
@@ -152,7 +114,8 @@ cpl_stamp_plugin_version() {
 
     tmp="$(command mktemp)"
     jq --arg v "$RDF_VERSION" --argjson agents "$agents_json" \
-        '.version = $v | .agents = $agents' "$manifest" > "$tmp"
+        '.version = $v | .agents = $agents | .skills = "./adapters/claude-plugin/output/skills" | del(.commands)' \
+        "$manifest" > "$tmp"
     command mv "$tmp" "$manifest"
     rdf_log "stamped plugin.json version: ${RDF_VERSION} (${#agent_files[@]} agents)"
 }
@@ -169,7 +132,7 @@ cpl_generate_all() {
     _output_new="$(adp_stage_begin "$_output_final")"
     _CPL_OUTPUT_DIR="$_output_new"
 
-    cpl_generate_commands
+    cpl_generate_skills
     cpl_generate_agents
     adp_copy_scripts "${RDF_CANONICAL}/scripts" "${_CPL_OUTPUT_DIR}/scripts"
     adp_copy_reference "${RDF_CANONICAL}/reference" "${_CPL_OUTPUT_DIR}/reference" 0
@@ -179,11 +142,11 @@ cpl_generate_all() {
     _CPL_OUTPUT_DIR="$_output_final"
     adp_stage_commit "$_output_final" "$_output_new"
 
-    local command_count agent_count script_count reference_count
-    command_count="$(adp_count "${_CPL_OUTPUT_DIR}/commands" '*.md')"    # dir may not exist on partial generation
+    local skill_count agent_count script_count reference_count
+    skill_count="$(adp_count "${_CPL_OUTPUT_DIR}/skills" 'SKILL.md')"    # dir may not exist on partial generation
     agent_count="$(adp_count "${_CPL_OUTPUT_DIR}/agents" '*.md')"        # dir may not exist on partial generation
     script_count="$(adp_count "${_CPL_OUTPUT_DIR}/scripts" '*.sh')"      # dir may not exist on partial generation
     reference_count="$(adp_count "${_CPL_OUTPUT_DIR}/reference" '*.md')" # dir may not exist on partial generation
 
-    rdf_log "plugin generation complete: ${command_count} commands, ${agent_count} agents, ${script_count} scripts, ${reference_count} reference docs"
+    rdf_log "plugin generation complete: ${skill_count} skills, ${agent_count} agents, ${script_count} scripts, ${reference_count} reference docs"
 }
