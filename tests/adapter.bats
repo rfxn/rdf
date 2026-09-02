@@ -565,11 +565,79 @@ teardown() {
 
 # ── Test 36: Codex is served by the agent-skills + agents-md composite ───────
 
+# _fake_rdf_home — echo a disposable RDF_HOME: canonical/profiles symlinked,
+# adapters copied so generated output lands outside the live checkout (a
+# composite run against RDF_SRC would rewrite the tracked AGENTS.md mid-suite).
+_fake_rdf_home() {
+    local home; home="$(mktemp -d)"
+    mkdir -p "${home}/adapters/agent-skills" "${home}/adapters/agents-md"
+    ln -s "${RDF_SRC}/canonical" "${home}/canonical"
+    ln -s "${RDF_SRC}/profiles" "${home}/profiles"
+    cp "${RDF_SRC}/adapters/agent-skills/adapter.sh" \
+       "${RDF_SRC}/adapters/agent-skills/skill-meta.json" "${home}/adapters/agent-skills/"
+    cp "${RDF_SRC}/adapters/agents-md/adapter.sh" "${home}/adapters/agents-md/"
+    printf '# Fake Home CLAUDE.md\n\nfake-home-marker\n' > "${home}/CLAUDE.md"
+    printf '%s\n' "$home"
+}
+
+# _cmd_generate <home> <args...> — run cmd_generate against that RDF_HOME
+_cmd_generate() {
+    local home="$1"; shift
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; home="$2"; shift 2
+        RDF_HOME="$home"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        source "${rdf_src}/lib/cmd/generate.sh"
+        cmd_generate "$@"
+    ' -- "$RDF_SRC" "$home" "$@"
+}
+
 @test "generate codex emits .agents/skills and AGENTS.md via the composite" {
-    run "${RDF_SRC}/bin/rdf" generate codex
+    local home; home="$(_fake_rdf_home)"
+    run _cmd_generate "$home" codex
     [ "$status" -eq 0 ]
-    [ -d "${RDF_SRC}/adapters/agent-skills/output/.agents/skills" ]
-    [ -f "${RDF_SRC}/adapters/agents-md/output/AGENTS.md" ]
+    [ "$(find "${home}/adapters/agent-skills/output/.agents/skills" -name SKILL.md | wc -l)" -ge 1 ]
+    head -1 "${home}/adapters/agents-md/output/AGENTS.md" | grep -q '^# AGENTS.md — '
+    grep -q 'fake-home-marker' "${home}/adapters/agents-md/output/AGENTS.md"
+    rm -rf "$home"
+}
+
+@test "generate --project-root is honoured in any position and spares the tracked output" {
+    local home; home="$(_fake_rdf_home)"
+    local proj; proj="$(mktemp -d)"
+    git -C "$proj" init -q
+    printf '# Consumer Project\n\nconsumer-marker\n' > "${proj}/CLAUDE.md"
+
+    # trailing form (documented) — the regression: it used to be parsed as a
+    # positional and silently composed RDF's own CLAUDE.md into the tracked slot
+    run _cmd_generate "$home" agents-md --project-root "$proj"
+    [ "$status" -eq 0 ]
+    grep -q 'consumer-marker' "${proj}/AGENTS.md"
+    head -1 "${proj}/AGENTS.md" | grep -q "^# AGENTS.md — $(basename "$proj")\$"
+    [ ! -e "${home}/adapters/agents-md/output/AGENTS.md" ]
+
+    # an existing AGENTS.md is left alone (copy-skip at generate time)
+    printf 'hand-edited\n' > "${proj}/AGENTS.md"
+    run _cmd_generate "$home" --project-root "$proj" agents-md
+    [ "$status" -eq 0 ]
+    [ "$(cat "${proj}/AGENTS.md")" = "hand-edited" ]
+
+    # leading form, composite target: the codex/antigravity pair honours it too
+    rm -f "${proj}/AGENTS.md"
+    run _cmd_generate "$home" --project-root "$proj" antigravity
+    [ "$status" -eq 0 ]
+    grep -q 'consumer-marker' "${proj}/AGENTS.md"
+    [ ! -e "${home}/adapters/agents-md/output/AGENTS.md" ]
+
+    # arg-parse guards
+    run _cmd_generate "$home" agents-md extra
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q 'unexpected argument: extra'
+    run _cmd_generate "$home" agents-md --project-root
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q -- '--project-root requires a value'
+    rm -rf "$home" "$proj"
 }
 
 @test "adapters/codex does not exist" {

@@ -6,7 +6,7 @@
 
 _generate_usage() {
     cat <<'USAGE'
-Usage: rdf generate [--deploy] <target>
+Usage: rdf generate [options] <target>
 
 Build tool-specific output from canonical sources.
 
@@ -25,7 +25,9 @@ Options:
   --rules        With --deploy claude-code, also symlink scoped rules/ (opt-in)
   --lite         Minimal claude-code deploy: condensed core governance,
                  lifecycle commands only, no hooks (rdf-lite; implies --rules)
-  --project-root Project root for 'agents-md' (defaults to this RDF checkout)
+  --project-root Project root for 'agents-md' / 'codex' / 'antigravity':
+                 composes <root>/AGENTS.md and leaves an existing one alone.
+                 Without it, the tracked self output is refreshed instead.
 
 The generated output is written to adapters/<target>/output/.
 
@@ -35,6 +37,7 @@ Examples:
   rdf generate gemini-cli
   rdf generate codex
   rdf generate agents-md --project-root /path/to/proj
+  rdf generate --project-root /path/to/proj codex
   rdf generate all
 USAGE
 }
@@ -63,9 +66,10 @@ cmd_generate() {
     local deploy_rules=0
     local lite=0
     local project_root=""
+    local target=""
 
-    # Parse leading flags (--deploy, --rules, --lite, --project-root) in any order before the target.
-    while [[ "${1:-}" == --* ]]; do
+    # Flags and the single target may appear in any order (mirrors cmd_deploy).
+    while [[ $# -gt 0 ]]; do
         case "$1" in
             --deploy) deploy_after=1; shift ;;
             --rules)  deploy_rules=1; shift ;;
@@ -76,7 +80,16 @@ cmd_generate() {
                 fi
                 project_root="$2"; shift 2
                 ;;
-            *)        break ;;   # e.g. --help — let the target case handle it
+            help|--help|-h) _generate_usage; return 0 ;;
+            -*)       rdf_die "unknown option: $1 — run 'rdf generate help' for usage" ;;
+            *)
+                if [[ -z "$target" ]]; then
+                    target="$1"
+                    shift
+                else
+                    rdf_die "unexpected argument: $1 — run 'rdf generate help' for usage"
+                fi
+                ;;
         esac
     done
 
@@ -87,7 +100,7 @@ cmd_generate() {
         rdf_warn "--rules has no effect without --deploy — 'rules/' is generated regardless; deploy it with 'rdf deploy --rules claude-code'"
     fi
 
-    case "${1:-}" in
+    case "$target" in
         claude-code)
             _generate_adapter "claude-code/adapter.sh" "cc_generate_all"
             if [[ $deploy_after -eq 1 ]]; then
@@ -119,7 +132,7 @@ cmd_generate() {
         codex)
             # Composite: shared skills + AGENTS.md context (no bespoke Codex adapter)
             _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
-            _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
+            _generate_adapter "agents-md/adapter.sh" "amd_generate_all" "$project_root"
             if [[ $deploy_after -eq 1 ]]; then
                 rdf_warn "--deploy for codex requires manual 'rdf deploy --project-root <path> codex'"
             fi
@@ -139,7 +152,7 @@ cmd_generate() {
         antigravity)
             # Same composite as codex (spec §13.4)
             _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
-            _generate_adapter "agents-md/adapter.sh" "amd_generate_all"
+            _generate_adapter "agents-md/adapter.sh" "amd_generate_all" "$project_root"
             if [[ $deploy_after -eq 1 ]]; then
                 rdf_warn "--deploy for antigravity requires manual 'rdf deploy --project-root <path> antigravity'"
             fi
@@ -183,14 +196,11 @@ cmd_generate() {
                 rdf_warn "--deploy with 'all' is not supported — deploy each target individually"
             fi
             ;;
-        help|--help|-h)
-            _generate_usage
-            ;;
         "")
             rdf_die "missing target — run 'rdf generate help' for usage"
             ;;
         *)
-            rdf_die "unknown target: $1 — run 'rdf generate help' for usage"
+            rdf_die "unknown target: ${target} — run 'rdf generate help' for usage"
             ;;
     esac
 }

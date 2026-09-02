@@ -1,8 +1,8 @@
 # RDF — Project CLAUDE.md
 
-Inherits conventions from the parent workspace CLAUDE.md, one directory up
-(rfxn-wide shell standards, commit protocol, testing norms). Project-specific
-rules below override parent defaults where explicit.
+Inherits conventions from the parent workspace CLAUDE.md when one exists one
+directory up (workspace shell standards, commit protocol, testing norms).
+Project-specific rules below override parent defaults where explicit.
 
 Also read `CLAUDE.md.ref` in this directory — a condensed 6-section operating-
 primitives reference (Trust but Verify, Scope Discipline, Adversarial Review,

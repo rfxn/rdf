@@ -394,8 +394,9 @@ Dependencies: `lib/rdf_common.sh` (`rdf_log`, `rdf_warn`, `rdf_die`,
 |----------|-----------|---------|--------------|
 | `_amd_agent_roster` | `()` | unchanged bullet list | — |
 | `_amd_context_source` | `(root)` → path or empty | `CLAUDE.md` → `.rdf/governance/index.md` → empty | — |
-| `amd_compose` | `(root, dst)` | header + context body + skills pointer + roster; 32 KiB warn; refuses `root` without `.git` unless it is `RDF_HOME` | `_amd_context_source`, `_amd_agent_roster` |
-| `amd_generate_all` | `([root])` | `amd_compose "${root:-$RDF_HOME}" output/AGENTS.md` | `amd_compose` |
+| `_amd_repo_name` | `(root)` → name | origin remote basename -> MAIN repo dir (worktrees) -> `root` basename; keeps the header independent of the clone/worktree dir | — |
+| `amd_compose` | `(root, dst)` | header + context body + skills pointer + roster; 32 KiB warn; staged as `dst.new` then moved; refuses a `root` outside a git repo (`rev-parse`, so worktree/submodule roots pass) unless it is `RDF_HOME` | `_amd_context_source`, `_amd_agent_roster`, `_amd_repo_name` |
+| `amd_generate_all` | `([root])` | requires `canonical/`; with `root`: `amd_compose root root/AGENTS.md`, skipped when that file exists; without: the tracked `output/AGENTS.md` | `amd_compose` |
 
 ### `lib/cmd/deploy.sh` (modified)
 
@@ -553,7 +554,7 @@ $ bin/rdf doctor --scope doc-truth
 
 | Surface | Before | After |
 |---------|--------|-------|
-| `rdf generate <target>` | claude-code, claude-plugin, gemini-cli, codex, agents-md, agent-skills, antigravity, all | same names; `codex` = composite; `agents-md [--project-root P]`; `all` runs cc, plugin, gemini, agents-md, agent-skills |
+| `rdf generate <target>` | claude-code, claude-plugin, gemini-cli, codex, agents-md, agent-skills, antigravity, all | same names; `codex`/`antigravity` = composite; `--project-root P` (accepted in any position, honoured by `agents-md`/`codex`/`antigravity`) composes `P/AGENTS.md` and leaves an existing one alone — without it the tracked self output is refreshed; `all` runs cc, plugin, gemini, agents-md, agent-skills |
 | `rdf deploy <target>` | claude-code, gemini-cli, codex, agent-skills | + `agents-md`, `antigravity`; `codex`/`antigravity` = skills symlink + AGENTS.md copy-skip; require `--project-root` |
 | `rdf init --tools` | phantom | `claude-code|agent-skills|agents-md|codex|antigravity`, comma list; unknown → exit 1 |
 | `rdf sync` | reads `output/commands` | reads `output/skills/*/SKILL.md` |

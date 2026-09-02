@@ -37,9 +37,45 @@ _amd_context_source() {
     fi
 }
 
+# _amd_repo_name root — echo a repository name that does not vary with the
+# directory the repo happens to sit in: the origin remote's basename, else the
+# MAIN repo's directory (a linked worktree shares it), else root's basename.
+# Keeps the tracked self output reproducible from any clone or worktree.
+_amd_repo_name() {
+    local root="$1" url name local_url common_dir
+    url="$(git -C "$root" config --get remote.origin.url 2>/dev/null)" || url=""   # no remote (or no git): fall through to the directory-derived names
+    if [[ -n "$url" ]]; then
+        local_url="$url"
+        [[ "$local_url" == /* ]] || local_url="${root}/${url}"
+        if [[ -e "$local_url" ]]; then
+            # A path origin ('git clone .') carries '/.' and '..' segments — resolve first.
+            name="$(rdf_canonical_path "$local_url")"; name="${name##*/}"; name="${name%.git}"
+        else
+            name="${url%/}"; name="${name##*/}"; name="${name##*:}"; name="${name%.git}"
+        fi
+        case "$name" in
+            ""|.|..) name="" ;;
+        esac
+        if [[ -n "$name" ]]; then
+            printf '%s\n' "$name"
+            return 0
+        fi
+    fi
+    common_dir="$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)" || common_dir=""   # not a repo: basename fallback below
+    if [[ -n "$common_dir" ]]; then
+        [[ "$common_dir" == /* ]] || common_dir="${root}/${common_dir}"
+        name="$(rdf_canonical_path "$common_dir")"
+        if [[ -n "$name" ]]; then
+            basename "$(dirname "$name")"
+            return 0
+        fi
+    fi
+    basename "$(rdf_canonical_path "$root")"
+}
+
 # amd_compose root dst — write dst: header, root's own context (CLAUDE.md ->
 # governance index -> stub), an Agent Skills pointer, and the agent roster.
-# Refuses a root without .git unless root is RDF_HOME (the self-output case).
+# Refuses a root outside a git repository unless it is RDF_HOME (self output).
 amd_compose() {
     local root="$1" dst="$2"
     rdf_require_dir "$root" "project root"
@@ -47,18 +83,25 @@ amd_compose() {
     local root_canon rdf_home_canon
     root_canon="$(rdf_canonical_path "$root")"
     rdf_home_canon="$(rdf_canonical_path "$RDF_HOME")"
-    if [[ "$root_canon" != "$rdf_home_canon" ]] && [[ ! -d "${root}/.git" ]]; then
+    # rev-parse, not [[ -d .git ]] — a worktree's or submodule's .git is a file.
+    if [[ "$root_canon" != "$rdf_home_canon" ]] \
+        && ! git -C "$root" rev-parse --show-toplevel >/dev/null 2>&1; then   # 2>/dev/null: the failure IS the condition, reported below
         rdf_die "agents-md: project root is not a git repository: ${root}"
     fi
 
-    local repo_name
-    repo_name="$(basename "$root_canon")"
+    local repo_name roster
+    repo_name="$(_amd_repo_name "$root")"
+    roster="$(_amd_agent_roster)"
+    if [[ -z "$roster" ]]; then
+        rdf_warn "agents-md: no agents found under ${RDF_CANONICAL}/agents — roster section is empty"
+    fi
 
     command mkdir -p "$(dirname "$dst")"
 
     local ctx_src
     ctx_src="$(_amd_context_source "$root")"
 
+    local staging="${dst}.new"
     {
         echo "# AGENTS.md — ${repo_name}"
         echo ""
@@ -80,21 +123,37 @@ amd_compose() {
         echo ""
         echo "## Agent Roster"
         echo ""
-        _amd_agent_roster
-    } > "$dst"
+        if [[ -n "$roster" ]]; then
+            printf '%s\n' "$roster"
+        fi
+    } > "$staging"
 
     local size
-    size="$(wc -c < "$dst")"
+    size="$(wc -c < "$staging")"
     if [[ "$size" -gt "$_AMD_MAX_BYTES" ]]; then
         rdf_warn "agents-md: AGENTS.md is ${size} bytes (over ${_AMD_MAX_BYTES} limit)"
     fi
+    command mv "$staging" "$dst"
     rdf_log "agents-md: wrote AGENTS.md (${size} bytes)"
 }
 
-# amd_generate_all [root] — compose the tracked AGENTS.md; root defaults to
-# RDF_HOME, so a bare 'rdf generate agents-md' regenerates the self output.
+# amd_generate_all [root] — with a root, compose <root>/AGENTS.md in place and
+# skip an existing file; without one, refresh this checkout's tracked output.
 amd_generate_all() {
-    local root="${1:-$RDF_HOME}"
-    rdf_log "generating AGENTS.md (cross-tool)..."
-    amd_compose "$root" "${_AMD_OUTPUT_DIR}/AGENTS.md"
+    local root="${1:-}"
+    rdf_require_dir "$RDF_CANONICAL" "canonical directory"
+
+    if [[ -z "$root" ]]; then
+        rdf_log "generating AGENTS.md (cross-tool)..."
+        amd_compose "$RDF_HOME" "${_AMD_OUTPUT_DIR}/AGENTS.md"
+        return 0
+    fi
+
+    rdf_require_dir "$root" "project root"
+    if [[ -e "${root}/AGENTS.md" ]]; then
+        rdf_log "agents-md: ${root}/AGENTS.md exists — left as-is (remove it and re-run, or 'rdf deploy --force --project-root ${root} agents-md')"
+        return 0
+    fi
+    rdf_log "generating AGENTS.md for ${root}..."
+    amd_compose "$root" "${root}/AGENTS.md"
 }

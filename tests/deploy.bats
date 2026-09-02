@@ -154,6 +154,29 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     echo "$output" | grep -q 'requires --project-root'
 }
 
+@test "deploy agents-md skips a differing AGENTS.md, overwrites with --force" {
+    local amd_out="${FIX_HOME}/adapters/agents-md/output"
+    mkdir -p "$amd_out"
+    printf '# AGENTS.md\n\nfresh\n' > "${amd_out}/AGENTS.md"
+    local proj; proj="$(mktemp -d)"
+    printf '# AGENTS.md\n\nhand-written\n' > "${proj}/AGENTS.md"
+
+    # conflict: a differing file is never clobbered without --force
+    run _run_deploy "$FIX_HOME" --project-root "$proj" agents-md
+    [ "$status" -eq 1 ]
+    echo "$output" | grep -q 'already exists and differs'
+    echo "$output" | grep -q '1 skipped'
+    grep -q 'hand-written' "${proj}/AGENTS.md"
+
+    # --force: back up the original, then overwrite
+    run _run_deploy "$FIX_HOME" --force --project-root "$proj" agents-md
+    [ "$status" -eq 0 ]
+    grep -q 'fresh' "${proj}/AGENTS.md"
+    [ "$(find "$proj" -maxdepth 1 -name 'AGENTS.md.bak-*' | wc -l)" -eq 1 ]
+    grep -q 'hand-written' "${proj}"/AGENTS.md.bak-*
+    rm -rf "$proj"
+}
+
 @test "deploy links each skill as its own symlink" {
     local out="${FIX_HOME}/adapters/claude-code/output"
     mkdir -p "${out}/skills/y"

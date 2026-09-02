@@ -201,6 +201,38 @@ EOF
     rm -rf "$proj"
 }
 
+@test "agents-md requires canonical/ and warns on an empty roster" {
+    local home; home="$(mktemp -d)"
+    # no canonical/ at all → hard failure before anything is written
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; home="$2"
+        RDF_HOME="$home"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/agents-md/adapter.sh"
+        amd_generate_all
+    ' -- "$RDF_SRC" "$home"
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q 'canonical directory not found'
+    [ ! -e "${home}/adapters/agents-md/output/AGENTS.md" ]
+
+    # canonical/agents present but empty → composed anyway, with a warning
+    mkdir -p "${home}/canonical/agents"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; home="$2"
+        RDF_HOME="$home"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init; rdf_profile_init
+        source "${rdf_src}/adapters/agents-md/adapter.sh"
+        amd_generate_all
+    ' -- "$RDF_SRC" "$home"
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'roster section is empty'
+    grep -q '^## Agent Roster$' "${home}/adapters/agents-md/output/AGENTS.md"
+    [ ! -e "${home}/adapters/agents-md/output/AGENTS.md.new" ]   # staged write moved into place
+    rm -rf "$home"
+}
+
 @test "self AGENTS.md regenerates byte-identical (tracked output)" {
     local tmp_out; tmp_out="$(mktemp -d)"
     bash -c '

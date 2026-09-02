@@ -367,7 +367,7 @@ _deploy_codex() {
     local project_root="$3"
 
     if [[ -z "$project_root" ]]; then
-        rdf_die "codex deploy requires --project-root <path>"
+        rdf_die "deploy requires --project-root <path>"
     fi
 
     _deploy_agent_skills "$dry_run" "$force" "$project_root"

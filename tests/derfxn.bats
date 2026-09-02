@@ -21,6 +21,25 @@ _rdf_call() {
     ' -- "$RDF_SRC" "$@"
 }
 
+# _no_rfxn_beyond_allowlist <file-or-dir> — rc 0 when the target carries no rfxn
+# org identifier outside the allowlist: product name, org copyright/contact
+# headers, repo URLs, the opt-in org profile's own name, vendored upstream
+# scripts. Prints the offending lines on failure.
+_no_rfxn_beyond_allowlist() {
+    local hits
+    hits="$(grep -rin "rfxn" "$1" \
+        | grep -vi "rfxn-workspace" \
+        | grep -v "github.com/rfxn" \
+        | grep -v "proj@rfxn.com" \
+        | grep -v "rfxn Development Framework" \
+        | grep -v "R-fx Networks" \
+        | grep -vE "canonical/scripts/(context-bar|setup|clone-conversation|half-clone-conversation|test-half-clone|color-preview|check-context)\.sh")"  # every grep -v exits 1 once it filters the last line — an empty result is the pass condition
+    if [ -n "$hits" ]; then
+        printf 'unallowlisted rfxn identifiers in %s:\n%s\n' "$1" "$hits"
+        return 1
+    fi
+}
+
 setup() { FIX="$(mktemp -d)"; export FIX; }
 teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
 
@@ -162,18 +181,14 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
 
 @test "canonical carries no rfxn org identifiers beyond the allowlist" {
     # Enforces spec §4 Dependency Rules ("no rfxn org identifier in core").
-    # Allowlist: product name, org copyright/contact headers, repo URLs,
-    # the opt-in org profile's own name, and the vendored upstream scripts.
-    run bash -c '
-        grep -rin "rfxn" "$1/canonical" \
-            | grep -vi "rfxn-workspace" \
-            | grep -v "github.com/rfxn" \
-            | grep -v "proj@rfxn.com" \
-            | grep -v "rfxn Development Framework" \
-            | grep -v "R-fx Networks" \
-            | grep -vE "canonical/scripts/(context-bar|setup|clone-conversation|half-clone-conversation|test-half-clone|color-preview|check-context)\.sh"
-    ' -- "$RDF_SRC"
-    [ "$status" -ne 0 ]
+    run _no_rfxn_beyond_allowlist "$RDF_SRC/canonical"
+    [ "$status" -eq 0 ]
+}
+
+@test "tracked self AGENTS.md carries no rfxn org identifiers beyond the allowlist" {
+    # The self output embeds this repo's CLAUDE.md verbatim — same allowlist.
+    run _no_rfxn_beyond_allowlist "$RDF_SRC/adapters/agents-md/output/AGENTS.md"
+    [ "$status" -eq 0 ]
 }
 
 @test "consumer AGENTS.md contains no rfxn identifiers" {
@@ -196,14 +211,7 @@ EOF
     ' -- "$RDF_SRC" "$proj"
     [ "$status" -eq 0 ]
     [ -f "$proj/AGENTS.md" ]
-    run bash -c '
-        grep -in "rfxn" "$1" \
-            | grep -vi "rfxn-workspace" \
-            | grep -v "github.com/rfxn" \
-            | grep -v "proj@rfxn.com" \
-            | grep -v "rfxn Development Framework" \
-            | grep -v "R-fx Networks"
-    ' -- "$proj/AGENTS.md"
-    [ "$status" -ne 0 ]
+    run _no_rfxn_beyond_allowlist "$proj/AGENTS.md"
+    [ "$status" -eq 0 ]
     rm -rf "$proj"
 }
