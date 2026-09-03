@@ -398,19 +398,19 @@ Delete the bespoke Codex adapter, route `codex` to agent-skills + agents-md, and
 - **Edge cases**: 11b "project has no CLAUDE.md and no governance index" (stub + WARN), "rdf generate all" (codex removed, exit 0), "AGENTS.md exists" (copy-skip on deploy).
 - **Regression-case**: `tests/agent-skills.bats::@test "agents-md composes from a project CLAUDE.md"` (created this phase)
 
-- [ ] **Step 1: Composer**
+- [x] **Step 1: Composer**
 
   Rewrite `adapters/agents-md/adapter.sh` per spec §5: `_amd_context_source root` (CLAUDE.md → `.rdf/governance/index.md` → empty), `amd_compose root dst` (header `# AGENTS.md — <basename root>` + generated-by line + context body + `## Agent Skills` paragraph + `## Agent Roster` via the retained `_amd_agent_roster` + 32 KiB warn), `amd_generate_all [root]` defaulting to `RDF_HOME` and writing `output/AGENTS.md` through `adp_stage_begin/commit`. `git rm adapters/agents-md/sections.json`.
 
-- [ ] **Step 2: generate.sh / deploy.sh / .gitignore**
+- [x] **Step 2: generate.sh / deploy.sh / .gitignore**
 
   generate: `codex)` and `antigravity)` both run `sk_generate_all` then `amd_generate_all`; `agents-md)` accepts `--project-root P` (parse before the target like `--deploy`) and passes it; `all)` drops the codex block; usage text lists `codex` as "composite (agent-skills + AGENTS.md)". deploy: `_deploy_codex` → `_deploy_agent_skills … "$project_root"` + `_deploy_agents_md` (copy-skip `adapters/agents-md/output/AGENTS.md` → `P/AGENTS.md`, die without `--project-root`); add `agents-md)` and `antigravity)` targets; usage updated. `.gitignore`: drop the `adapters/codex/output` line. `git rm adapters/codex/adapter.sh`; `command rm -rf adapters/codex`.
 
-- [ ] **Step 3: Regenerate + tests**
+- [x] **Step 3: Regenerate + tests**
 
   `bin/rdf generate all` and stage `adapters/agents-md/output/AGENTS.md`. Remove `tests/adapter.bats:558-609` (section comment, the `_generate_codex` helper that sources the deleted adapter, and the codex catalog test — single use, verified by grep) and add the tests listed above; `tests/derfxn.bats` gets the consumer-AGENTS.md no-rfxn test using a temp repo with a plain CLAUDE.md.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
   ```bash
   test ! -e adapters/codex && echo codex-gone; bin/rdf generate all 2>&1 | tail -1
@@ -421,7 +421,7 @@ Delete the bespoke Codex adapter, route `codex` to agent-skills + agents-md, and
   # expect: not ok: 0
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   `git add adapters/agents-md/adapter.sh adapters/agents-md/output/AGENTS.md lib/cmd/generate.sh lib/cmd/deploy.sh .gitignore tests/adapter.bats tests/agent-skills.bats tests/deploy.bats tests/derfxn.bats` (+ `git rm` of the two deleted files)
   Message: `Codex served by the composite; AGENTS.md composed from the project's own CLAUDE.md` / `[Remove] adapters/codex (empty governance section since 2026-03; stale o4-mini config)` / `[Change] rdf generate|deploy codex = agent-skills + agents-md; new agents-md/antigravity deploy targets` / `[New] agents-md composer (--project-root); sections.json retired; self AGENTS.md carries no rfxn/CentOS text`
@@ -445,15 +445,15 @@ Implement the `--tools` value set on top of the Phase 4 targets and fix the firs
 - **Edge cases**: 11b "rdf init --tools agents-md on a repo with AGENTS.md" (copy-skip + log), "rdf init --tools ''" (error).
 - **Regression-case**: `tests/cmd-migrate-init.bats::@test "init --tools unknown exits 1 with the allowed list"` (created this phase)
 
-- [ ] **Step 1: init.sh**
+- [x] **Step 1: init.sh**
 
   `_init_validate_tools list` → splits on `,`, dies on empty token or token ∉ set, echoes the expanded newline list (codex/antigravity → agent-skills + agents-md, deduped). `_init_apply_tools path tools dry_run` runs after `_generate_companion_files`: for `agent-skills` source `lib/cmd/deploy.sh` and call `_deploy_agent_skills "$dry_run" 0 "$path"` (generate `agent-skills` first if `adapters/agent-skills/output` is missing); for `agents-md` source `lib/adapter_common.sh` + `adapters/agents-md/adapter.sh` and call `amd_compose "$path" "$path/AGENTS.md"` unless it exists (log skip). Usage line: `--tools LIST  claude-code (default), agent-skills, agents-md, codex, antigravity (comma-separated)`. `_has_files`: `git -C "$path" ls-files --cached --others --exclude-standard -- "$pattern"`.
 
-- [ ] **Step 2: README + tests**
+- [x] **Step 2: README + tests**
 
   README "rdf init" section documents `--tools`. Tests as listed; flip the derfxn assertion.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
   ```bash
   t=$(mktemp -d) && git -C "$t" init -q && bin/rdf init --tools cursor "$t" 2>&1 | tail -1; echo "rc=$?"
@@ -462,7 +462,7 @@ Implement the `--tools` value set on top of the Phase 4 targets and fix the firs
   # expect: not ok: 0
   ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
   `git add lib/cmd/init.sh README.md tests/cmd-migrate-init.bats tests/derfxn.bats`
   Message: `rdf init --tools is real; profile detection sees untracked sources` / `[New] --tools claude-code|agent-skills|agents-md|codex|antigravity (comma list); unknown values exit 1` / `[Fix] _has_files includes untracked, non-ignored files — a repo initialised before its first commit no longer detects as minimal`
@@ -497,15 +497,15 @@ Add the 14th doctor scope that mechanically checks profile/adapter counts, test 
 - **Edge cases**: none (doc checks).
 - **Regression-case**: `tests/doc-truth.bats::@test "passes on the live repo"` (created this phase)
 
-- [ ] **Step 1: `_check_doc_truth`**
+- [x] **Step 1: `_check_doc_truth`**
 
   Implement per spec §13 table: WORKFORCE rows are read only between `^### Lifecycle Commands` and the next `^###`, must match the 4-column shape `^\| (r-[a-z-]+) \| /r-[a-z-]+ \| ([^|]*) \| [^|]+\|$`; a third cell of `--`, `—`, `none`, or empty claims nothing; token match `\brdf-${a}\b|\b${a}[[:space:]]+agent\b`; profile count from `jq '.profiles | length' profiles/registry.json` vs README `profiles-([0-9]+)` badge, `RDF.md` tree entries, `docs/index.md` `([0-9]+) profiles`; adapter count = `ls adapters/*/adapter.sh | wc -l` vs README `adapters-([0-9]+)` badge; test wiring = every `tests/*.bats` basename in `tests/Makefile`; CI claims = every backticked token in CONTRIBUTING's "CI runs" bullets present in `ci.yml`. Register the scope in the dispatch table and usage (14 scopes).
 
-- [ ] **Step 2: Fix the live drift (and the skills wording deferred from Phase 3)**
+- [x] **Step 2: Fix the live drift (and the skills wording deferred from Phase 3)**
 
   Skills wording: `README.md` data-flow diagram (`skills/<name>/SKILL.md`; the canonical `commands/ # 37 commands` note stays), adapter tree (5 adapters), plugin note; `RDF.md` adapter tree + `~/.claude/` wording; `docs/index.md`, `docs/quickstart.md`: "symlink deploy (skills)"; `docs/multi-tool-parity.md:18` Claude Code row → `.claude/skills/<name>/SKILL.md` (shared emitter with `.agents/skills/`); `CONTRIBUTING.md:20` wording. Then: README badges (`profiles-13`, `adapters-5`); `RDF.md` profile tree (+node, +rfxn-workspace, lite noted), adapter tree (5), model table (planner: inline in /r-spec and /r-plan, direct dispatch available); `WORKFORCE.md` dispatch table + prose (`/r-start` dispatches nothing; planner not dispatched by any command); `CONTRIBUTING.md` CI paragraph; `ROADMAP.md` "built-in 11" → "built-in profiles (see `profiles/registry.json`)"; `tiers.md:41`; `git mv context-bar.md docs/context-bar.md` + README docs-table row; `docs/index.md` counts. Regenerate outputs (canonical touched) and stage the tracked plugin tree.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
   ```bash
   bin/rdf doctor --scope doc-truth | grep -c FAIL
@@ -518,7 +518,7 @@ Add the 14th doctor scope that mechanically checks profile/adapter counts, test 
   # expect: not ok: 0
   ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
   `git add lib/cmd/doctor.sh tests/doc-truth.bats tests/Makefile README.md RDF.md WORKFORCE.md CONTRIBUTING.md ROADMAP.md docs/index.md docs/quickstart.md docs/multi-tool-parity.md canonical/reference/tiers.md docs/context-bar.md adapters/claude-plugin/output` (+ `git mv` already staged)
   Message: `doctor doc-truth scope: counts, test wiring, dispatch and CI claims checked from source` / `[New] rdf doctor --scope doc-truth (14th scope) + tests/doc-truth.bats` / `[Fix] README badges, RDF.md profile/adapter trees, WORKFORCE planner and r-start claims, CONTRIBUTING CI paragraph, tiers.md gate formula` / `[Change] docs describe the skills layout; context-bar.md relocated to docs/ and linked`
@@ -544,9 +544,9 @@ Land the spike's two Go-now items: negation guards + structural assertions in th
 - **Edge cases**: none.
 - **Regression-case**: `tests/governance-contracts.bats::@test "tier cap never drops the security pass on scope:sensitive"` (created this phase)
 
-- [ ] **Step 1: Contracts** — rewrite per spike §5 (copy the two tests verbatim; the indicator-list equality across reviewer/tiers/dispatcher; negation guards on the presence contracts for: NEEDS_CONTEXT gate, TDD_EVIDENCE, security floor, end-of-plan sentinel, consistency gate, r-review-answer advisory, canonical frontmatter-free, plan status writes, Clarify gate, tier caps).
-- [ ] **Step 2: Ledger + preflight** — write `docs/platform-triage.md` (format per spike §6 option b; top block version `3.7`); add `### 1d. Platform Triage` to `r-ship.md` after 1c with the display rule; regenerate (canonical touched) and stage the plugin tree; README docs table + ROADMAP edits.
-- [ ] **Step 3: Verify**
+- [x] **Step 1: Contracts** — rewrite per spike §5 (copy the two tests verbatim; the indicator-list equality across reviewer/tiers/dispatcher; negation guards on the presence contracts for: NEEDS_CONTEXT gate, TDD_EVIDENCE, security floor, end-of-plan sentinel, consistency gate, r-review-answer advisory, canonical frontmatter-free, plan status writes, Clarify gate, tier caps).
+- [x] **Step 2: Ledger + preflight** — write `docs/platform-triage.md` (format per spike §6 option b; top block version `3.7`); add `### 1d. Platform Triage` to `r-ship.md` after 1c with the display rule; regenerate (canonical touched) and stage the plugin tree; README docs table + ROADMAP edits.
+- [x] **Step 3: Verify**
 
   ```bash
   cp canonical/agents/dispatcher.md /tmp/d.bak && printf '\nSecurity floor no longer applies.\n' >> canonical/agents/dispatcher.md && bats tests/governance-contracts.bats 2>&1 | grep -c '^not ok'; cp /tmp/d.bak canonical/agents/dispatcher.md
@@ -554,7 +554,7 @@ Land the spike's two Go-now items: negation guards + structural assertions in th
   make -C tests test 2>&1 | tee /tmp/test-rdf-P7.log | tail -3
   # expect: not ok: 0
   ```
-- [ ] **Step 4: Commit** — `git add tests/governance-contracts.bats docs/platform-triage.md canonical/commands/r-ship.md README.md ROADMAP.md adapters/claude-plugin/output`; message `Contract harness hardening and per-minor platform-triage gate` / `[Change] governance contracts gain negation guards and structural assertions (formula, order, cross-file list equality)` / `[New] docs/platform-triage.md ledger; /r-ship preflight 1d blocks a minor without a current triage block` / `[Change] ROADMAP: item 4 built, item 5 first case ruled (keep dispatcher), D1/D2 queued`
+- [x] **Step 4: Commit** — `git add tests/governance-contracts.bats docs/platform-triage.md canonical/commands/r-ship.md README.md ROADMAP.md adapters/claude-plugin/output`; message `Contract harness hardening and per-minor platform-triage gate` / `[Change] governance contracts gain negation guards and structural assertions (formula, order, cross-file list equality)` / `[New] docs/platform-triage.md ledger; /r-ship preflight 1d blocks a minor without a current triage block` / `[Change] ROADMAP: item 4 built, item 5 first case ruled (keep dispatcher), D1/D2 queued`
 
 ---
 
