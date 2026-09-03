@@ -160,9 +160,16 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     fi
 }
 
+@test "README documents the --tools value set" {
+    run grep -- '--tools LIST' "$RDF_SRC/README.md"
+    [ "$status" -eq 0 ]
+    for value in claude-code agent-skills agents-md codex antigravity; do
+        run grep -F -- "\`${value}\`" "$RDF_SRC/README.md"
+        [ "$status" -eq 0 ]
+    done
+}
+
 @test "README and quickstart claims are truthful" {
-    run grep -- '--tools' "$RDF_SRC/README.md"
-    [ "$status" -ne 0 ]
     run grep '4\.1' "$RDF_SRC/docs/quickstart.md"
     [ "$status" -ne 0 ]
     run bash -c 'awk "/^\`\`\`bash/,/^\`\`\`$/" "$1/README.md" | grep "/r-init"' -- "$RDF_SRC"

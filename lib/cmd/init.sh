@@ -19,7 +19,8 @@ Options:
   --type PROFILES       Force profile(s): comma-separated list of profile names
                         (e.g., shell, rust,infrastructure, python,database)
                         (default: auto-detect from project signals)
-  --tools TOOLS         Tool targets (reserved — not yet implemented; claude-code only)
+  --tools LIST          claude-code (default), agent-skills, agents-md, codex,
+                        antigravity (comma-separated)
   --version X.Y.Z       Initial version string (default: from VERSION file or 0.1.0)
   --no-memory           Skip MEMORY.md placeholder creation
   --github              Create labels + repo project board via gh CLI
@@ -38,17 +39,15 @@ USAGE
 # Known profile names for validation (excludes 'core' — always implicit)
 _KNOWN_PROFILES="shell python go rust typescript perl php node frontend database infrastructure minimal rfxn-workspace"
 
-# Check if a project directory has files matching a glob pattern.
-# Uses git ls-files in git repos, find(1) otherwise.
-# Returns 0 (found) or 1 (not found).
+# _has_files path pattern — git ls-files (tracked+untracked) in git repos, find(1) otherwise; rc 0 if any match
 _has_files() {
     local path="$1"
     local pattern="$2"
 
     if [[ -d "${path}/.git" ]]; then
-        # git ls-files is fast and respects .gitignore
-        # grep -q exits 0 on first match; git ls-files exits 0 even with no output
-        git -C "$path" ls-files "$pattern" 2>/dev/null | grep -q . && return 0  # stderr: not a git repo is safe
+        # --cached --others --exclude-standard: tracked + untracked-but-not-ignored —
+        # a repo initialised before its first commit still detects its sources
+        git -C "$path" ls-files --cached --others --exclude-standard -- "$pattern" 2>/dev/null | grep -q . && return 0  # stderr: not a git repo is safe
     else
         # Non-git fallback: find with maxdepth for top-level patterns,
         # recursive for deeper searches. Use -quit for early exit.
@@ -602,6 +601,7 @@ _init_one() {
     local no_memory="$4"
     local do_github="$5"
     local dry_run="$6"
+    local tools="$7"
 
     local name
     name="$(basename "$path")"
@@ -656,6 +656,9 @@ _init_one() {
 
     # 4b. Companion files: SECURITY.md, CONTRIBUTING.md
     _generate_companion_files "$path" "$profiles" "$dry_run"
+
+    # 4c. Tool targets beyond the implicit claude-code default
+    _init_apply_tools "$path" "$tools" "$dry_run"
 
     # 5. MEMORY.md placeholder (unless --no-memory)
     if [[ "$no_memory" -eq 0 ]] && [[ ! -f "${path}/MEMORY.md" ]]; then
@@ -726,10 +729,87 @@ _validate_profiles() {
     done
 }
 
+# _init_validate_tools list — split/expand/dedupe --tools; dies on an empty or unknown token; echoes newline list
+_init_validate_tools() {
+    local list="$1"
+    local -a raw=()
+    local -a expanded=()
+    local -a deduped=()
+    local token d seen
+
+    if [[ -z "$list" ]]; then
+        rdf_die "unknown --tools value:  (allowed: claude-code, agent-skills, agents-md, codex, antigravity)"
+    fi
+
+    IFS=',' read -ra raw <<< "$list"
+    for token in "${raw[@]}"; do
+        case "$token" in
+            claude-code)       expanded+=(claude-code) ;;
+            agent-skills)      expanded+=(agent-skills) ;;
+            agents-md)         expanded+=(agents-md) ;;
+            codex|antigravity) expanded+=(agent-skills agents-md) ;;
+            *) rdf_die "unknown --tools value: ${token} (allowed: claude-code, agent-skills, agents-md, codex, antigravity)" ;;
+        esac
+    done
+
+    for token in "${expanded[@]}"; do
+        seen=0
+        for d in "${deduped[@]}"; do
+            [[ "$d" == "$token" ]] && { seen=1; break; }
+        done
+        [[ $seen -eq 0 ]] && deduped+=("$token")
+    done
+
+    printf '%s\n' "${deduped[@]}"
+}
+
+# _init_apply_tools path tools dry_run — deploy agent-skills/agents-md targets after governance write
+_init_apply_tools() {
+    local path="$1"
+    local tools="$2"
+    local dry_run="$3"
+    local t sk_output
+
+    while IFS= read -r t; do
+        [[ -z "$t" ]] && continue
+        case "$t" in
+            claude-code) : ;;
+            agent-skills)
+                if [[ "$dry_run" -eq 1 ]]; then
+                    rdf_log "  would symlink .agents/skills"
+                    continue
+                fi
+                sk_output="${RDF_ADAPTERS}/agent-skills/output"
+                if [[ ! -d "$sk_output" ]] || [[ -z "$(ls -A "$sk_output" 2>/dev/null)" ]]; then  # 2>/dev/null: empty-on-missing is the intended regen trigger
+                    # shellcheck disable=SC1090,SC1091
+                    source "${RDF_LIBDIR}/cmd/generate.sh"
+                    _generate_adapter "agent-skills/adapter.sh" "sk_generate_all"
+                fi
+                # shellcheck disable=SC1090,SC1091
+                source "${RDF_LIBDIR}/cmd/deploy.sh"
+                _deploy_agent_skills "$dry_run" 0 "$path"
+                ;;
+            agents-md)
+                if [[ -e "${path}/AGENTS.md" ]]; then
+                    rdf_log "  AGENTS.md already exists — skipping"
+                elif [[ "$dry_run" -eq 1 ]]; then
+                    rdf_log "  would write AGENTS.md"
+                else
+                    # shellcheck disable=SC1090,SC1091
+                    [[ -n "${_RDF_ADAPTER_COMMON_LOADED:-}" ]] || source "${RDF_LIBDIR}/adapter_common.sh"
+                    # shellcheck disable=SC1090,SC1091
+                    source "${RDF_ADAPTERS}/agents-md/adapter.sh"
+                    amd_compose "$path" "${path}/AGENTS.md"
+                fi
+                ;;
+        esac
+    done <<< "$tools"
+}
+
 cmd_init() {
     local path=""
     local type=""
-    local tools="claude-code"  # multi-tool targeting not yet implemented
+    local tools="claude-code"
     local version=""
     local no_memory=0
     local do_github=0
@@ -760,10 +840,8 @@ cmd_init() {
 
     [[ -z "$path" ]] && rdf_die "missing path — run 'rdf init help'"
 
-    # --tools is parsed for forward-compatibility but multi-tool init is unbuilt.
-    if [[ "$tools" != "claude-code" ]]; then
-        rdf_warn "--tools is not yet implemented (claude-code only)"
-    fi
+    local tools_expanded
+    tools_expanded="$(_init_validate_tools "$tools")"
 
     # Resolve to absolute path
     if [[ ! -d "$path" ]]; then
@@ -816,7 +894,7 @@ cmd_init() {
             local proj_version
             proj_version="$(_resolve_version "$subdir" "$version")"
 
-            _init_one "$subdir" "$proj_profiles" "$proj_version" "$no_memory" "$do_github" "$dry_run"
+            _init_one "$subdir" "$proj_profiles" "$proj_version" "$no_memory" "$do_github" "$dry_run" "$tools_expanded"
             count=$((count + 1))
         done
 
@@ -831,6 +909,6 @@ cmd_init() {
         local resolved_version
         resolved_version="$(_resolve_version "$path" "$version")"
 
-        _init_one "$path" "$type" "$resolved_version" "$no_memory" "$do_github" "$dry_run"
+        _init_one "$path" "$type" "$resolved_version" "$no_memory" "$do_github" "$dry_run" "$tools_expanded"
     fi
 }

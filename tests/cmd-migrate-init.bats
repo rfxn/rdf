@@ -135,7 +135,7 @@ _mkrepo() { command mkdir -p "$1"; git -C "$1" init -q; }
     local sh="$TEST_TMP/shproj"
     _mkrepo "$sh"
     printf '#!/usr/bin/env bash\necho hi\n' > "$sh/tool.sh"
-    git -C "$sh" add tool.sh            # _has_files uses git ls-files — untracked is invisible
+    git -C "$sh" add tool.sh
     run bash "$RDF" init "$sh" --no-memory </dev/null
     [ "$status" -eq 0 ]
     grep -q 'shellcheck' "$sh/CONTRIBUTING.md"
@@ -149,4 +149,80 @@ _mkrepo() { command mkdir -p "$1"; git -C "$1" init -q; }
     grep -q "Follow the conventions in CLAUDE.md" "$bare/CONTRIBUTING.md"
     run grep -e 'shellcheck' -e 'BATS' "$bare/CONTRIBUTING.md"
     [ "$status" -ne 0 ]
+}
+
+@test "init detects profiles from untracked sources in a fresh git repo" {
+    local proj="$TEST_TMP/untracked"
+    _mkrepo "$proj"
+    printf 'print(1)\n' > "$proj/app.py"
+    printf 'flask\n' > "$proj/requirements.txt"
+    # deliberately not `git add` — untracked sources must still be detected
+    run bash "$RDF" init "$proj" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "auto-detected profiles: python" ]]
+}
+
+# ---- rdf init --tools -----------------------------------------------------
+
+@test "init --tools unknown exits 1 with the allowed list" {
+    _mkrepo "$TEST_TMP/toolsbad"
+    run bash "$RDF" init --tools cursor "$TEST_TMP/toolsbad" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "unknown --tools value: cursor (allowed: claude-code, agent-skills, agents-md, codex, antigravity)" ]]
+}
+
+@test "init --tools '' exits 1 (empty token)" {
+    _mkrepo "$TEST_TMP/toolsempty"
+    run bash "$RDF" init --tools '' "$TEST_TMP/toolsempty" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "unknown --tools value:" ]]
+}
+
+@test "init --tools agent-skills,agents-md writes both artifacts" {
+    local proj="$TEST_TMP/toolsboth"
+    _mkrepo "$proj"
+    printf '# Proj\n' > "$proj/CLAUDE.md"
+    run bash "$RDF" init --tools agent-skills,agents-md --no-memory "$proj" </dev/null
+    [ "$status" -eq 0 ]
+    [ -L "$proj/.agents/skills" ]
+    [ -f "$proj/AGENTS.md" ]
+}
+
+@test "init --tools codex expands to the composite" {
+    local proj="$TEST_TMP/toolscodex"
+    _mkrepo "$proj"
+    run bash "$RDF" init --tools codex --no-memory "$proj" </dev/null
+    [ "$status" -eq 0 ]
+    [ -L "$proj/.agents/skills" ]
+    [ -f "$proj/AGENTS.md" ]
+}
+
+@test "init --tools claude-code is a no-op for extra surfaces" {
+    local proj="$TEST_TMP/toolscc"
+    _mkrepo "$proj"
+    run bash "$RDF" init --tools claude-code --no-memory "$proj" </dev/null
+    [ "$status" -eq 0 ]
+    [ ! -e "$proj/.agents" ]
+    [ ! -e "$proj/AGENTS.md" ]
+}
+
+@test "init --dry-run --tools prints would-write lines and writes nothing" {
+    local proj="$TEST_TMP/toolsdry"
+    _mkrepo "$proj"
+    run bash "$RDF" init --dry-run --tools agent-skills,agents-md --no-memory "$proj" </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "would symlink .agents/skills" ]]
+    [[ "$output" =~ "would write AGENTS.md" ]]
+    [ ! -e "$proj/.agents" ]
+    [ ! -e "$proj/AGENTS.md" ]
+}
+
+@test "init --tools agents-md on a repo with AGENTS.md skips with a log" {
+    local proj="$TEST_TMP/toolsskip"
+    _mkrepo "$proj"
+    printf 'pre-existing\n' > "$proj/AGENTS.md"
+    run bash "$RDF" init --tools agents-md --no-memory "$proj" </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "AGENTS.md already exists" ]]
+    grep -q 'pre-existing' "$proj/AGENTS.md"
 }
