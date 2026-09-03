@@ -179,10 +179,10 @@ _no_contract() {
     fi
     # the indicator list is one list: reviewer.md (source), tiers.md and dispatcher.md (restatements)
     local want got
-    want="$(grep -A3 'filename contains' "${RDF_SRC}/canonical/agents/reviewer.md" | grep -oE '`[a-z]+`' | tr -d '`' | sort -u | paste -sd,)"
+    want="$(grep -A3 'filename contains' "${RDF_SRC}/canonical/agents/reviewer.md" | grep -oE '`[a-z]+`' | tr -d '`' | sort -u | paste -s -d, -)"
     [ -n "$want" ] || { echo "indicator list anchor missing in reviewer.md"; return 1; }
     for f in "$d" "$t"; do
-        got="$(grep -A3 'filename contains' "$f" | grep -oE '`[a-z]+`' | tr -d '`' | sort -u | paste -sd,)"
+        got="$(grep -A3 'filename contains' "$f" | grep -oE '`[a-z]+`' | tr -d '`' | sort -u | paste -s -d, -)"
         [ "$got" = "$want" ] || { echo "indicator list drift in $f: $got != $want"; return 1; }
     done
 }

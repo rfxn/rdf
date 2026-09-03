@@ -61,7 +61,8 @@ rdf_canonical_path() {
     if [[ -L "$_p" ]]; then
         _t="$(command readlink "$_p" 2>/dev/null)"
         case "$_t" in
-            /*) printf '%s\n' "$_t" ;;
+            /*) _d="$(cd -P "$(command dirname "$_t")" 2>/dev/null && pwd)" \
+                    && printf '%s/%s\n' "$_d" "$(command basename "$_t")" || printf '%s\n' "$_t" ;;   # dangling target: canonicalize its parent (macOS /var -> /private/var)
             *)  _d="$(cd -P "$(command dirname "$_p")" 2>/dev/null && pwd)" \
                     && printf '%s/%s\n' "$_d" "$_t" || printf '\n' ;;
         esac
