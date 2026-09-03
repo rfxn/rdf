@@ -19,9 +19,12 @@ Make "drop it on any repo" true for someone with zero rfxn context:
 - [x] Quickstart: clone → generate → deploy → `/r-init` on your own repo,
       with a worked example on a generic project
 - [x] Recorded demo (real session, not mockups) at the top of the README
-- [ ] First-run hardening: everything works from a fresh clone under any
-      user account — no rfxn workspace assumptions (folded into the
-      2026-08 top-5, item 2 below)
+- [x] First-run hardening: everything works from a fresh clone under any
+      user account — no rfxn workspace assumptions (3.6.5 extracted the
+      rfxn content; 3.7.0 fixed the fresh-clone failures found 2026-09-02:
+      hooks how-to on an empty HOME, doctor self-warnings, derfxn suite
+      wired into CI, context-audit off-workspace, stack-aware CONTRIBUTING,
+      bash 3.2 floor restored for rdf init/doctor)
 
 ## Soon — first-class Claude Code plugin
 
@@ -55,7 +58,7 @@ it earned a slot):
        bookkeeping into hooks, retire unwired commands, fix the
        security-floor substring matching, deduplicate the phase/plan/ship
        triple review; target ~20 commands
-4. [x] **Consolidate adapters on evidence** — built (this release, pending
+4. [x] **Consolidate adapters on evidence** — shipped in 3.7.0 —
        tag): shared adapter library, skills-native cc/plugin output, codex
        via composite, project-scoped AGENTS.md, `--tools` real, dead
        catalogs removed

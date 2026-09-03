@@ -15,6 +15,39 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.7.0 — 2026-09-02
+
+ADDED: `lib/adapter_common.sh` — shared `adp_*` emitters (agents, skills,
+scripts, reference, hash sidecars, atomic staging) used by the claude-code,
+claude-plugin, and agent-skills adapters; byte-identity fixture-tested.
+ADDED: skills-native Claude Code output — `adapters/claude-code/output/skills/
+<name>/SKILL.md` (+ `SKILL.md.rdf-hash`) and the plugin `skills/` tree; plugin.json
+declares `skills` (no `commands`); `rdf deploy claude-code` owns per-skill
+`~/.claude/skills/<name>` symlinks plus `skills/reference`, prunes stale
+RDF-owned links, and removes the legacy `~/.claude/commands` symlink it created.
+ADDED: AGENTS.md composer (`adapters/agents-md/adapter.sh` `amd_compose`) —
+project-scoped AGENTS.md from the target repo's CLAUDE.md; `rdf generate|deploy
+codex|antigravity` = agent-skills + agents-md composite; `--project-root`
+accepted in any position.
+ADDED: `rdf init --tools claude-code|agent-skills|agents-md|codex|antigravity`.
+ADDED: `rdf doctor --scope doc-truth` (14th scope) — counts, test wiring,
+WORKFORCE dispatch claims, CONTRIBUTING CI claims, README/RDF.md tree paths.
+ADDED: `docs/platform-triage.md` ledger + `/r-ship` Setup target version
+(`--version`) and preflight 1d (minor-only platform-triage gate); governance
+contracts gain negation guards and structural assertions; `tests/adapter-common.bats`,
+`tests/doc-truth.bats`; CI lints `tests/*.bats` and smokes `rdf init` on
+macOS bash 3.2; `RDF_WORKSPACE` override for `doctor --all`.
+MODIFIED: `lib/cmd/{deploy,doctor,sync,init,generate}.sh`, `state/{rdf-overhead,
+context-audit}.sh` — skills layout, fail-closed consumers, bash-3.2 floor
+restored (empty-array expansions), pipefail-safe detection, untracked-source
+profile detection, `.agents/` in the managed exclude list.
+MODIFIED: docs describe the skills layout; `CLAUDE.md` inheritance line generic;
+`context-bar.md` → `docs/context-bar.md`; WORKFORCE/RDF.md/README counts and
+trees corrected and now doctor-checked.
+REMOVED: `adapters/codex/` (bespoke adapter; empty governance section since
+2026-03), `adapters/agents-md/sections.json`, `adapters/claude-code/
+command-meta-v3.json`, `command-map-v3.md`; flat `commands/` output.
+
 ## 3.6.5 — 2026-08-18
 
 ADDED: `profiles/rfxn-workspace/` — opt-in org overlay (`detect: []`, never
