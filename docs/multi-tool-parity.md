@@ -49,28 +49,48 @@ It is NOT duplicated into per-tool output trees. Each emitted `SKILL.md` carries
 the parent directory name, per the AAIF constraint); optional AAIF fields
 (`license`, `metadata`, `allowed-tools`) are deliberately not emitted (§13.4).
 
-Deploy is per-artifact, into a workspace root:
+Deploy targets a workspace root:
 
 ```
 rdf deploy --project-root /path/to/workspace agent-skills
 ```
 
 This symlinks `.agents/skills/` into the target workspace so `rdf generate
-agent-skills` updates deployed skills in place (mirrors the Codex
-`--project-root` pattern). There is deliberately **no `rdf deploy
-antigravity`** target: `rdf generate antigravity` is a composite (skills +
-`AGENTS.md`), but a composite deploy would only duplicate the `agent-skills`
-`--project-root` path for no gain, and `AGENTS.md`/`GEMINI.md` are workspace
-files the user places directly. Generate is a composite; deploy stays
-per-artifact (§13.4).
+agent-skills` updates deployed skills in place. `agent-skills` is the one
+project-scoped deploy target whose `--project-root` defaults to the current
+directory; `agents-md`, `codex`, and `antigravity` require it.
+
+## 2b. Composites and `AGENTS.md`
+
+`codex` and `antigravity` are the **same composite on both verbs** — the
+`.agents/skills/` symlink plus `AGENTS.md` (copy-skip: an existing file is
+left alone unless `--force`):
+
+```
+rdf generate --project-root /path/to/proj antigravity   # optional here
+rdf deploy   --project-root /path/to/proj antigravity   # required here
+```
+
+`agents-md` is also a standalone generate/deploy target. Generating it with a
+`--project-root` composes `<root>/AGENTS.md` from that repo's **own**
+`CLAUDE.md` — falling back to its `.rdf/governance/index.md`, then a stub —
+and refuses a root that is not a git repository. Without `--project-root`,
+generate refreshes this checkout's tracked
+`adapters/agents-md/output/AGENTS.md`: RDF's self case, and the file that
+`rdf deploy agents-md` copies into a project root. `rdf generate` accepts its
+flags and target in any order.
+
+`rdf init --tools codex|antigravity|agent-skills|agents-md` does both steps at
+init time — the composites expand to `agent-skills agents-md`, so skills are
+symlinked into the new project and its `AGENTS.md` is composed from the
+`CLAUDE.md` that `init` just wrote (spec
+`docs/specs/2026-09-02-skills-native-adapter-consolidation-design.md` §5).
 
 **Bounded surface.** The shared skills tree covers the **10 lifecycle
 commands** — `/r-spec`, `/r-plan`, `/r-build`, `/r-ship`, `/r-start`,
 `/r-save`, `/r-status`, `/r-audit`, `/r-refresh`, `/r-init` — not all 37 RDF
 commands (source of truth: `adapters/agent-skills/skill-meta.json`). Utility
-commands stay Claude-Code-only for now. Separately, the generated `AGENTS.md`
-documents the RDF *workspace* surface itself; per-project `AGENTS.md`
-generation is not yet implemented.
+commands stay Claude-Code-only for now.
 
 ## 3. Gemini `{{args}}` lossy edge
 

@@ -116,6 +116,32 @@ _run_doc_truth() {
     rm -rf "$fix"
 }
 
+@test "doc-truth CI scan keeps reading past a wrapped CONTRIBUTING bullet" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/.github/workflows"
+    cat > "$fix/CONTRIBUTING.md" <<'CONTRIB'
+CI (`.github/workflows/ci.yml`) runs:
+- Lint (ubuntu): `bash -n`,
+  and `shellcheck -S error`
+- Tests: `make -C tests test`
+
+Prose after the section mentions `not-a-ci-claim` and is not scanned.
+CONTRIB
+    printf 'jobs:\n  ci:\n    steps:\n      - run: bash -n lib/*.sh\n      - run: shellcheck -S error lib/*.sh\n      - run: make -C tests test\n' > "$fix/.github/workflows/ci.yml"
+    run _run_doc_truth _doc_truth_ci "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"|FAIL|"* ]]
+    [[ "$output" == *"doc-truth|OK|CONTRIBUTING.md: 3 CI claims match .github/workflows/ci.yml"* ]]
+    [[ "$output" != *"not-a-ci-claim"* ]]
+
+    # the continuation line's claim is verified, not merely counted
+    printf 'jobs:\n  ci:\n    steps:\n      - run: bash -n lib/*.sh\n      - run: make -C tests test\n' > "$fix/.github/workflows/ci.yml"
+    run _run_doc_truth _doc_truth_ci "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|CONTRIBUTING.md: CI claim 'shellcheck -S error' not found in .github/workflows/ci.yml"* ]]
+    rm -rf "$fix"
+}
+
 @test "doc-truth FAILs when RDF.md cites a path that does not exist on disk" {
     fix="$(mktemp -d)"
     mkdir -p "$fix/adapters/claude-code"

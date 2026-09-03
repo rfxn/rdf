@@ -171,7 +171,7 @@ adp_names_lite() {
     local src_dir="$1" lite name
     lite="$(rdf_lite_commands)"
     while IFS= read -r name; do
-        if printf '%s\n' "$lite" | grep -qx "$name"; then
+        if printf '%s\n' "$lite" | grep -qxF "$name"; then
             printf '%s\n' "$name"
         fi
     done < <(adp_names_all "$src_dir")

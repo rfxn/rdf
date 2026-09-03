@@ -568,7 +568,7 @@ _check_sync() {
         fi
     fi
 
-    # A lingering legacy commands symlink (pre-3.6.6 install, not yet re-deployed)
+    # A lingering legacy commands symlink (pre-skills-layout install, not yet re-deployed)
     # into RDF's own output tree — 'rdf deploy claude-code' prunes it on next run.
     if [[ -L "${claude_base}/commands" ]]; then
         local legacy_target legacy_root
@@ -1305,7 +1305,9 @@ _doc_truth_ci() {
             [[ "$line" =~ CI.*runs: ]] && in_section=1
             continue
         fi
-        if [[ ! "$line" =~ ^[[:space:]]*- ]]; then
+        # Blank line or non-indented prose ends the section; an indented line is
+        # a soft-wrapped continuation of the current bullet, not the end of it.
+        if [[ -z "$line" ]] || [[ "$line" =~ ^[^[:space:]] && ! "$line" =~ ^[-*] ]]; then
             in_section=0
             continue
         fi

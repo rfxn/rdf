@@ -170,7 +170,7 @@ _skill_canonical_count=0
 _skill_canonical_bytes=0
 _legacy_commands_count=0
 
-# Legacy commands/*.md deploy layout (pre-3.6.6) — counted separately from
+# Legacy commands/*.md deploy layout (pre-skills-layout) — counted separately from
 # skills so .skills.deployed.count reflects the current layout only.
 if [[ -d "$_global_commands" ]]; then
     _legacy_commands_count=$((_legacy_commands_count + $(_count_md_files "$_global_commands")))

@@ -93,6 +93,12 @@
       (negated commands are exempt) and order-anchor && chains were inert
       mid-body — rewritten as explicit branches; GNU-only \b replaced with
       portable ERE boundaries
+[Fix] docs/multi-tool-parity.md no longer claims there is no rdf deploy
+      antigravity target or that per-project AGENTS.md is unimplemented;
+      quickstart exclude-entry count; published self AGENTS.md no longer
+      carries a /root/.claude path
+[Fix] doc-truth CI-claims check verified only up to the first wrapped bullet;
+      indented continuation lines now stay in the section
 
 -- Changes --
 

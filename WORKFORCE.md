@@ -13,11 +13,10 @@ USER
  ├─► /r-start    (self-contained)     Session Init — loads context,
  │                                     scans state; dispatches nothing
  │
- ├─► /r-plan     (planner runs inline,  Research & Planning
- │                opus; direct dispatch   Specs, plans; mandatory challenge
- │                also available)         review before presenting for approval
- │                └─► reviewer (sonnet)
- │                     challenge mode
+ ├─► /r-plan     (planner inline,     Research & Planning
+ │                opus; direct         Specs, plans; mandatory challenge
+ │                dispatch available)  review before presenting for approval
+ │                └─► reviewer         Challenge Mode — pre-impl (sonnet)
  │
  ├─► /r-build ─► dispatcher  (sonnet) Plan Execution
  │                │                    Phase orchestration, quality gates

@@ -445,17 +445,21 @@ Generate (checkout):
 
 ```
 $ bin/rdf generate claude-code
-[rdf] generating Claude Code adapter output...
-[rdf] generated 6 agent files
-[rdf] generated 7 reference docs (skills tree)
-[rdf] generated 37 skills
-[rdf] generated 16 script files
-[rdf] generated 7 reference docs
-[rdf] generated hooks.json
-[rdf] generated 3 governance files
-[rdf] generated 3 rule files
-[rdf] CC generation complete: 6 agents, 37 skills, 16 scripts, 3 rules, 7 reference docs
+rdf: generating Claude Code adapter output...
+rdf: generated 6 agent files
+rdf: generated 7 reference docs (skills tree)
+rdf: generated 37 skills
+rdf: generated 16 script files
+rdf: generated 7 reference docs
+rdf: generated hooks.json
+rdf: generated N governance files
+rdf: generated N rule files
+rdf: CC generation complete: 6 agents, 37 skills, 16 scripts, N rules, 7 reference docs
 ```
+
+Governance and rule files are emitted one per *active* profile
+(`rdf_get_active_profiles`), so `N` tracks the profiles installed for the
+repo being generated.
 
 Output tree (before → after):
 
@@ -478,25 +482,25 @@ Deploy on an existing 3.6.5 install:
 
 ```
 $ bin/rdf deploy claude-code
-[rdf] deploying Claude Code adapter to /home/u/.claude...
-[rdf] replaced symlink: /home/u/.claude/agents -> .../output/agents
-[rdf] replaced symlink: /home/u/.claude/scripts -> .../output/scripts
-[rdf] replaced symlink: /home/u/.claude/governance -> .../output/governance
-[rdf] replaced symlink: /home/u/.claude/reference -> .../output/reference
-[rdf] skills: 37 linked, 0 pruned; reference linked (/home/u/.claude/skills/<name> -> .../output/skills/<name>)
-[rdf] removed legacy commands symlink: /home/u/.claude/commands (skills supersede it)
-[rdf] ... state helpers ...
-[rdf] manual merge required: hooks.json (see 'rdf deploy help'; does not affect exit status)
-[rdf] deploy complete: 51 items deployed
+rdf: deploying Claude Code adapter to /home/u/.claude...
+rdf: replaced symlink: /home/u/.claude/agents -> .../output/agents
+rdf: replaced symlink: /home/u/.claude/scripts -> .../output/scripts
+rdf: replaced symlink: /home/u/.claude/governance -> .../output/governance
+rdf: replaced symlink: /home/u/.claude/reference -> .../output/reference
+rdf: skills: 37 linked, 0 pruned; reference linked (/home/u/.claude/skills/<name> -> .../output/skills/<name>)
+rdf: removed legacy commands symlink: /home/u/.claude/commands (skills supersede it)
+rdf: ... state helpers ...
+rdf: manual merge required: hooks.json (see 'rdf deploy help'; does not affect exit status)
+rdf: deploy complete: 51 items deployed   # 50 on a fresh HOME: no legacy commands link to remove
 ```
 
 Failure case — a user-owned `~/.claude/skills/r-start` real directory:
 
 ```
 $ bin/rdf deploy claude-code
-[rdf] warning: /home/u/.claude/skills/r-start exists (not a symlink). Back it up and re-run, or use --force.
+rdf: warning: /home/u/.claude/skills/r-start exists (not a symlink). Back it up and re-run, or use --force.
 ...
-[rdf] warning: deploy complete: 50 deployed, 1 skipped (use --force to override)
+rdf: warning: deploy complete: 50 deployed, 1 skipped (use --force to override)
 $ echo $?
 1
 ```
@@ -505,10 +509,10 @@ Consumer init with tools:
 
 ```
 $ cd ~/src/flaskapp && rdf init --tools agent-skills,agents-md
-[rdf] detected profiles: core, python
-[rdf] ... governance written ...
-[rdf] symlinked: /home/u/src/flaskapp/.agents/skills -> .../agent-skills/output/.agents/skills
-[rdf] wrote AGENTS.md (composed from CLAUDE.md, 2,140 bytes)
+rdf: detected profiles: core, python
+rdf: ... governance written ...
+rdf: symlinked: /home/u/src/flaskapp/.agents/skills -> .../agent-skills/output/.agents/skills
+rdf: wrote AGENTS.md (composed from CLAUDE.md, 2,140 bytes)
 $ rdf init --tools cursor
 rdf: error: unknown --tools value: cursor (allowed: claude-code, agent-skills, agents-md, codex, antigravity)
 $ echo $?
@@ -655,8 +659,8 @@ ls -la "$HOME/.claude/skills" | grep -c ' -> '
 # expect: 38
 mv adapters/claude-code/output/skills /tmp/skills.bak && bin/rdf sync --dry-run 2>&1 | grep -c 'no skills tree'; mv /tmp/skills.bak adapters/claude-code/output/skills
 # expect: 1   (Goal 4 fail-closed: sync warns instead of iterating an empty glob)
-bin/rdf doctor --scope content-drift 2>&1 | grep -c 'skills/'
-# expect: ≥ 1 (content-drift reports skills rows; with the tree moved away it reports 'no skills tree' WARN)
+bin/rdf doctor --scope content-drift 2>&1 | grep -c 'deployed files match'
+# expect: 1
 HOME=$(mktemp -d) && mkdir -p "$HOME/.claude" && bin/rdf deploy claude-code >/dev/null; bash state/rdf-overhead.sh 2>&1 | grep -c 'no ~/.claude/agents symlink'
 # expect: 0   (resolver follows the agents symlink; the warning text names agents, not commands)
 bash state/context-audit.sh . | jq '.skills.deployed.count'

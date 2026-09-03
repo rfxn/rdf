@@ -15,7 +15,7 @@ supported as a legacy tier). Examples below use Claude Code.
 ```bash
 git clone https://github.com/rfxn/rdf.git ~/rdf && cd ~/rdf
 bin/rdf generate claude-code    # build adapter output from canonical sources
-bin/rdf deploy claude-code      # symlink deploy (skills/<n>/SKILL.md -> ~/.claude/skills/<n>; regeneration auto-updates)
+bin/rdf deploy claude-code      # symlink deploy (~/.claude/skills/<n> -> output/skills/<n>; regeneration auto-updates)
 ```
 
 Verify:
@@ -55,7 +55,7 @@ Real output from a plain Flask project:
 rdf: auto-detected profiles: python
 rdf: initializing: my-app (profiles=python, version=0.1.0)
 rdf:   created CLAUDE.md (profiles=python, sections=18)
-rdf:   added 5 entries to .git/info/exclude
+rdf:   added 6 entries to .git/info/exclude
 rdf:   created .rdf/{governance,work-output,memory,scopes}
 rdf:   created .rdf/docs-level (floor)
 rdf:   copied reference docs from 2 profile(s)

@@ -66,8 +66,9 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     [ ! -f "$FIX/.rdf/governance/reference/cross-project.md" ]
 }
 
-@test "no rfxn workspace path in canonical, lib, state, bin" {
-    run grep -rn '/root/admin/work/proj' "$RDF_SRC/canonical" "$RDF_SRC/lib" "$RDF_SRC/state" "$RDF_SRC/bin"
+@test "no operator home path in canonical, lib, state, bin" {
+    # Widened past the rfxn workspace root: any /root/ path is a leak.
+    run grep -rn '/root/' "$RDF_SRC/canonical" "$RDF_SRC/lib" "$RDF_SRC/state" "$RDF_SRC/bin"
     [ "$status" -ne 0 ]
 }
 
@@ -180,13 +181,13 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -ne 0 ]
 }
 
-@test "generated CC-family outputs contain no rfxn workspace path" {
+@test "generated CC-family outputs contain no operator home path" {
     # plugin + agents-md outputs are always present (committed); the
     # others only when generated locally — grep whichever exist
     local dirs=("$RDF_SRC/adapters/claude-plugin/output" "$RDF_SRC/adapters/agents-md/output")
     [ -d "$RDF_SRC/adapters/claude-code/output" ] && dirs+=("$RDF_SRC/adapters/claude-code/output")
     [ -d "$RDF_SRC/adapters/agent-skills/output" ] && dirs+=("$RDF_SRC/adapters/agent-skills/output")
-    run grep -rn '/root/admin/work/proj' "${dirs[@]}"
+    run grep -rn '/root/' "${dirs[@]}"
     [ "$status" -ne 0 ]
 }
 

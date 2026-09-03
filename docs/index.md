@@ -55,7 +55,7 @@ bin/rdf generate claude-code && bin/rdf deploy claude-code
 bin/rdf init ~/projects/my-app     # auto-detects your stack
 ```
 
-Each command deploys as its own `~/.claude/skills/<name>/SKILL.md` symlink
+Each command deploys as its own `~/.claude/skills/<name>` directory symlink
 (`output/skills/<name>/SKILL.md` per adapter). Hooks auto-register on the
 plugin install; the symlink deploy requires a manual merge of
 `adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json` (see

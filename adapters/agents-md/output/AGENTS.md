@@ -20,7 +20,7 @@ and project orchestration for any repo. Tool-agnostic by design.
 ## Development
 - All content development in `canonical/` — pure markdown, no tool frontmatter
 - `~/.rdf/` is the global state directory (lessons-learned, session logs, insights) — never committed
-- Run `rdf generate claude-code` to deploy to /root/.claude/ — **mandatory before any commit touching `canonical/`**
+- Run `rdf generate claude-code` to deploy to `~/.claude/` — **mandatory before any commit touching `canonical/`**
 - Run `rdf sync` to pull emergency edits back to canonical
 - Run `rdf doctor` before push to verify zero drift
 
