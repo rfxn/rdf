@@ -295,10 +295,10 @@ indicators — **reuse the reviewer Early-Exit Rubric list verbatim**
 `cert`, `session`, or `permission`; or flagged security-sensitive in
 `governance/anti-patterns.md` — then the tier cap MUST NOT reduce Gate 3 below
 sentinel-full (3-pass, Security included) and MUST NOT skip Gate 2, regardless
-of tier. Effective selection is `max(security_floor, min(scope_gate,
-tier_cap))`. Rationale: the 3.3.0 C1 RCE fix was a single-file change matching
-the `bugfix` heuristic exactly — a tier must never let a security patch skip
-the Security pass.
+of tier. Effective selection is
+`max(security_floor, min(scope_gate, tier_cap))`. Rationale: the 3.3.0 C1 RCE
+fix was a single-file change matching the `bugfix` heuristic exactly — a tier
+must never let a security patch skip the Security pass.
 
 - `full`   — no cap. Use the scope→gate mapping as-is.
 - `quick-plan` — cap Gate 3 at sentinel-lite (2-pass) and skip the End-of-Plan

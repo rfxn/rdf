@@ -641,6 +641,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
 | **[docs/multi-tool-parity.md](docs/multi-tool-parity.md)** | First-class trio + legacy gemini feature matrix |
 | **[docs/context-bar.md](docs/context-bar.md)** | Status line script reference (layout, segments, install) |
+| **[docs/platform-triage.md](docs/platform-triage.md)** | Per-minor native-capability re-triage ledger (`/r-ship` gate) |
 | **[CHANGELOG](CHANGELOG)** | Development history |
 | **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (latest release) |
 

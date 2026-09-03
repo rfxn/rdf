@@ -55,15 +55,32 @@ it earned a slot):
        bookkeeping into hooks, retire unwired commands, fix the
        security-floor substring matching, deduplicate the phase/plan/ship
        triple review; target ~20 commands
-4. [ ] **Consolidate adapters on evidence** — shared frontmatter core for the
-       two Claude surfaces, freeze the bespoke Codex adapter at the legacy
-       tier, promote consumer-project `AGENTS.md` generation (AAIF-governed
-       standard), prune dead catalogs/scripts
-5. [ ] **Platform-alignment gate + eval hardening** — per-minor
-       native-capability re-triage at `/r-ship` (first case: Agent Teams vs
-       the dispatcher), trigger/activation evals and model-absorption
-       retirement checks on the contract harness, OWASP Agentic Skills
-       Top 10 posture
+4. [x] **Consolidate adapters on evidence** — built (this release, pending
+       tag): shared adapter library, skills-native cc/plugin output, codex
+       via composite, project-scoped AGENTS.md, `--tools` real, dead
+       catalogs removed
+5. [~] **Platform-alignment gate + eval hardening** — first case ruled
+       (Agent Teams → keep dispatcher; `docs/platform-triage.md` ledger +
+       `/r-ship` 1d gate); contract hardening landed (negation guards +
+       structural assertions, D3). Trigger/activation evals and OWASP
+       posture remain — see *Next minor* below
+
+## Next minor — platform alignment follow-ons
+
+From the platform-alignment spike's Go/No-Go summary
+([design](docs/specs/2026-09-02-platform-alignment-spike-design.md) §8), not
+carried in this release:
+
+- [ ] **D1 — Workflow-backed `/r-build` behind a flag.** Gated spike: fix the
+      `tiers.md` bugfix/`min()` contradiction, define a plan `Status:` form,
+      add a `deploy.sh` workflows dir, a `/r-build --workflow` arg (BATS
+      covered), an A/B run on one real plan, and an indicator-list contract.
+      The prototype (`docs/specs/support/rdf-build-workflow.prototype.js`)
+      stays unwired until this lands.
+- [ ] **D2 — local trigger-eval harness.** `state/rdf-trigger-eval.sh`
+      reading `evals/*/case.yaml` (37 positive + ~10 negative cases), a
+      `/r-ship` 1e line, and an optional CI job; switch to `claude plugin
+      eval` once it exits early access (see `docs/platform-triage.md`).
 
 ## Later — ecosystem
 

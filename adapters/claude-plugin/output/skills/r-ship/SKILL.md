@@ -49,7 +49,7 @@ VERSION: {version string}
 
 ## Stage 1: Preflight
 
-Run all three checks and display results as a task list. Each check
+Run all four checks and display results as a task list. Each check
 is pass/fail — a checked box means the gate passed.
 
 ### 1a. Plan Completion Check
@@ -72,6 +72,26 @@ is pass/fail — a checked box means the gate passed.
 - Run `git log --oneline $(git merge-base HEAD origin/{base})..HEAD`
   to summarize branch changes
 
+### 1d. Platform Triage
+
+Per-minor gate (D4, `docs/specs/2026-09-02-platform-alignment-spike-design.md`
+§6) — a minor release must not ship without a current platform re-triage
+verdict; patch releases are unaffected.
+
+- Read the `VERSION` file at the repo root; split into `MAJOR.MINOR.PATCH`.
+  If no root `VERSION` file exists (project uses a different versioning
+  convention — e.g. an in-file `VERSION=` variable), mark `[x]` with
+  *(skipped — no root VERSION file)* and skip the remaining steps below.
+- If `PATCH` is non-zero, mark `[x]` with *(skipped — patch release)* and
+  skip the remaining steps below.
+- Otherwise grep `docs/platform-triage.md` for a top block matching
+  `^## <MAJOR.MINOR> — `:
+  - Present: `[x] **Platform triage**: \`<MAJOR.MINOR>\` ledger current`.
+  - Absent: `[ ] **Platform triage**: no \`## <MAJOR.MINOR> — <date>\` block
+    in \`docs/platform-triage.md\`` and
+    `> **Blocked** — preflight failed: platform triage missing for
+    <MAJOR.MINOR>`.
+
 ### Preflight Display
 
 Present results as a task list with inline code for values:
@@ -81,6 +101,7 @@ Present results as a task list with inline code for values:
 - [x] **Plan**: all phases complete (`12`/`12`)
 - [x] **Working tree**: clean
 - [ ] **Branch**: on `main` — *expected a feature/release branch*
+- [x] **Platform triage**: `3.7` ledger current
 ```
 
 If a check fails, use an unchecked box and add an italic reason.

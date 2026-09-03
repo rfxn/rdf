@@ -24,10 +24,22 @@ _contract() {
     grep -qE "$2" "$file" || { echo "contract absent in $1: /$2/"; return 1; }
 }
 
+# _no_contract <canonical-relpath> <extended-regex> — negation guard: assert
+# the clause is ABSENT (catches an inversion sentence a paraphrase-only edit
+# could introduce, e.g. "NEEDS_CONTEXT is no longer required").
+_no_contract() {
+    local file="${RDF_SRC}/canonical/$1"
+    [ -f "$file" ] || { echo "missing canonical file: $1"; return 1; }
+    grep -qE "$2" "$file" && { echo "negation violated in $1: /$2/ matched"; return 1; }
+    return 0
+}
+
 # ── Engineer: evidence production ─────────────────────────────────────────────
 
 @test "engineer result declares a TDD_EVIDENCE section" {
     _contract agents/engineer.md 'TDD_EVIDENCE'
+    # negation guard: no sentence says the section is now optional
+    _no_contract agents/engineer.md 'TDD_EVIDENCE[^.]*\b(no longer|not required|optional|removed)\b'
 }
 
 # ── Dispatcher: gates that enforce evidence + regression contracts ────────────
@@ -38,6 +50,8 @@ _contract() {
 
 @test "dispatcher emits NEEDS_CONTEXT when a DONE result lacks EVIDENCE" {
     _contract agents/dispatcher.md 'NEEDS_CONTEXT'
+    # negation guard: no sentence disapplies the gate
+    _no_contract agents/dispatcher.md 'NEEDS_CONTEXT[^.]*\b(no longer|is not|never|does not)\b'
 }
 
 @test "dispatcher defaults to least machinery (serial over parallel)" {
@@ -75,7 +89,14 @@ _contract() {
 }
 
 @test "r-review-answer is advisory — does not block build/ship/merge" {
+    local f="${RDF_SRC}/canonical/commands/r-review-answer.md"
     _contract commands/r-review-answer.md 'does not block'
+    # negation guard: no sentence promotes it to a gate (explicit if/return —
+    # see the security-floor test above for why bare `! grep` is unsafe)
+    if grep -qiE '(now|becomes|is) (a )?(blocking|hard) gate|must pass before|blocks? (/r-build|/r-ship|merge)' "$f"; then
+        echo "negation violated: a sentence promotes r-review-answer to a gate"
+        return 1
+    fi
 }
 
 @test "r-review-answer flags unanswered MUST-FIX findings" {
@@ -115,6 +136,8 @@ _contract() {
     _contract agents/dispatcher.md 'Tier Cap'
     _contract agents/dispatcher.md 'only removes ceremony'
     _contract agents/dispatcher.md 'regression-only sentinel-lite'
+    # negation guard: no sentence says the cap can raise/upgrade gates
+    _no_contract agents/dispatcher.md 'tier cap[^.]*\b(can|may|will|does)[^.]*upgrade\b'
 }
 
 @test "tier cap never drops the security pass on scope:sensitive" {
@@ -123,6 +146,33 @@ _contract() {
     _contract agents/dispatcher.md 'Security floor'
     _contract agents/dispatcher.md 'sentinel-full'
     _contract agents/dispatcher.md 'scope:sensitive'
+
+    local d="${RDF_SRC}/canonical/agents/dispatcher.md" t="${RDF_SRC}/canonical/reference/tiers.md" f
+    # formula is stated verbatim in both restating files (tiers.md, dispatcher.md)
+    for f in "$d" "$t"; do grep -qF 'max(security_floor, min(scope_gate, tier_cap))' "$f"; done
+    # negation guard: no sentence disapplies the floor. NOTE: intentionally
+    # `if grep ...; then return 1; fi` rather than bare `! grep ...` — this
+    # check is not the function's last statement, and bash's `set -e` (which
+    # bats runs test bodies under) explicitly exempts `!`-negated commands
+    # from triggering early exit, so a bare `!` here would silently never
+    # fail the test regardless of what it matches.
+    if grep -qE 'Security floor[^.]*\b(no longer|not|never|does not)\b[^.]*appl' "$d" "$t"; then
+        echo "negation violated: a disclaimer sentence disapplies the security floor"
+        return 1
+    fi
+    # order: the floor paragraph precedes the first tier bullet inside the Tier Cap section
+    local cap floor bullet
+    cap="$(grep -n '^### Tier Cap' "$d" | head -1 | cut -d: -f1)"
+    floor="$(grep -n '^\*\*Security floor' "$d" | head -1 | cut -d: -f1)"
+    bullet="$(grep -n '^- `full`' "$d" | head -1 | cut -d: -f1)"
+    [ -n "$cap" ] && [ -n "$floor" ] && [ -n "$bullet" ] && [ "$cap" -lt "$floor" ] && [ "$floor" -lt "$bullet" ]
+    # the indicator list is one list: reviewer.md (source), tiers.md and dispatcher.md (restatements)
+    local want got
+    want="$(grep -A3 'filename contains' "${RDF_SRC}/canonical/agents/reviewer.md" | grep -oE '`[a-z]+`' | tr -d '`' | sort -u | paste -sd,)"
+    for f in "$d" "$t"; do
+        got="$(grep -A3 'filename contains' "$f" | grep -oE '`[a-z]+`' | tr -d '`' | sort -u | paste -sd,)"
+        [ "$got" = "$want" ] || { echo "indicator list drift in $f: $got != $want"; return 1; }
+    done
 }
 
 # ── /r-ship: living-spec fold into docs/specs/CURRENT.md (3.5 Scale) ──────────
@@ -134,6 +184,29 @@ _contract() {
     _contract commands/r-ship.md 'rdf_clear_active_tier'
 }
 
+# ── /r-ship: per-minor platform-triage gate (D4, platform-alignment spike) ────
+
+@test "r-ship preflight carries the platform-triage line (1d)" {
+    _contract commands/r-ship.md '^### 1d\. Platform Triage'
+    _contract commands/r-ship.md 'docs/platform-triage\.md'
+    _contract commands/r-ship.md 'skipped — patch release'
+    _contract commands/r-ship.md 'platform triage missing for'
+}
+
+@test "platform-triage ledger top block names the current MAJOR.MINOR or the next minor" {
+    local ledger="${RDF_SRC}/docs/platform-triage.md"
+    [ -f "$ledger" ] || { echo "missing ${ledger}"; return 1; }
+    local ver major minor next want1 want2 top
+    ver="$(command cat "${RDF_SRC}/VERSION")"
+    major="${ver%%.*}"
+    minor="${ver#*.}"; minor="${minor%%.*}"
+    next=$((minor + 1))
+    want1="${major}.${minor}"
+    want2="${major}.${next}"
+    top="$(grep -m1 -E '^## [0-9]+\.[0-9]+ — ' "$ledger" | sed -E 's/^## ([0-9]+\.[0-9]+) — .*/\1/')"
+    [ "$top" = "$want1" ] || [ "$top" = "$want2" ]
+}
+
 # ── /r-spec: Clarify micro-gate precedes Brainstorm (3.5 Scale) ───────────────
 
 @test "r-spec Clarify precedes Brainstorm" {
@@ -143,6 +216,12 @@ _contract() {
     clarify="$(grep -n '^## Phase 1.5: Clarify' "$f" | head -1 | cut -d: -f1)"
     brainstorm="$(grep -n '^## Phase 2: Brainstorm' "$f" | head -1 | cut -d: -f1)"
     [ -n "$clarify" ] && [ -n "$brainstorm" ] && [ "$clarify" -lt "$brainstorm" ]
+    # negation guard: no sentence removes the gate or reorders it after
+    # Brainstorm (explicit if/return — see the security-floor test above)
+    if grep -qE 'Clarify[^.]*\b(removed|eliminated|no longer exists|folded into Brainstorm)\b' "$f"; then
+        echo "negation violated: Clarify gate removed or reordered"
+        return 1
+    fi
 }
 
 # ── Canonical stays frontmatter-free (Reach — CC frontmatter is adapter-side) ──
@@ -153,6 +232,38 @@ _contract() {
     for f in "${root}"/canonical/commands/*.md; do
         [ "$(head -1 "$f")" != "---" ]
     done
+}
+
+@test "canonical stays frontmatter-free per the sync rule (no exception clause)" {
+    _contract commands/r-sync.md 'canonical stays frontmatter-free'
+    # negation guard: no sentence grants canonical an exception
+    _no_contract commands/r-sync.md 'canonical (may|can|will|now) (carry|include|have)[^.]*frontmatter'
+}
+
+# ── Dispatcher: mandatory end-of-plan sentinel for 3+ phase plans (3.0.3) ──────
+
+@test "dispatcher runs a mandatory end-of-plan sentinel for 3+ phase plans" {
+    _contract agents/dispatcher.md '^### End-of-Plan Sentinel'
+    _contract agents/dispatcher.md 'run a mandatory full 3-pass'
+    # negation guard: no sentence makes the end-of-plan sentinel optional
+    _no_contract agents/dispatcher.md 'End-of-Plan Sentinel[^.]*\b(optional|no longer mandatory|removed|not required)\b'
+}
+
+# ── /r-build: consistency micro-gate runs before any phase dispatch (3.5 Scale) ─
+
+@test "r-build runs the consistency micro-gate before dispatch" {
+    _contract commands/r-build.md 'Consistency micro-gate'
+    _contract commands/r-build.md 'rdf-consistency\.sh check'
+    # negation guard: no sentence makes the gate optional or disabled
+    _no_contract commands/r-build.md '[Cc]onsistency micro-gate[^.]*\b(optional|skip(ped)?|not required|disabled)\b'
+}
+
+# ── Dispatcher: structured status writes to work-output after each phase ──────
+
+@test "dispatcher writes structured status to work-output after each phase" {
+    _contract agents/dispatcher.md 'Write structured status to \.rdf/work-output/'
+    # negation guard: no sentence retires the status write
+    _no_contract agents/dispatcher.md 'status (writes?|files?)[^.]*\b(no longer|optional|not required|removed)\b'
 }
 
 # ── Suite coverage: an unlisted .bats file never runs (derfxn.bats shipped dark)
