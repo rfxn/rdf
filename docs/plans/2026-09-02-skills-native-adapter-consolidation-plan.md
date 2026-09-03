@@ -573,8 +573,8 @@ Consolidate the release notes for Phases 1-7 under `## Unreleased`, regenerate a
 - **Edge cases**: none.
 - **Regression-case**: N/A — docs — changelog-only commit; behavior pinned by Phases 1-7 named tests.
 
-- [ ] **Step 1: Write entries** under `## Unreleased` in `CHANGELOG` (`-- New Features --`, `-- Bug Fixes --`, `-- Changes --`, `-- Removed --` as the file uses) and mirror into `CHANGELOG.RELEASE` under a matching heading (the ship stage renames `Unreleased` to the version).
-- [ ] **Step 2: Run the spec §10b block verbatim** and record output.
-- [ ] **Step 3: Commit** — `git add CHANGELOG CHANGELOG.RELEASE`; message `Changelog: skills-native adapters, doc-truth scope, platform-triage gate` / `[Change] CHANGELOG + CHANGELOG.RELEASE consolidated for the pending release`.
+- [x] **Step 1: Write entries** under `## Unreleased` in `CHANGELOG` (`-- New Features --`, `-- Bug Fixes --`, `-- Changes --`, `-- Removed --` as the file uses) and mirror into `CHANGELOG.RELEASE` under a matching heading (the ship stage renames `Unreleased` to the version).
+- [x] **Step 2: Run the spec §10b block verbatim** and record output.
+- [x] **Step 3: Commit** — `git add CHANGELOG CHANGELOG.RELEASE`; message `Changelog: skills-native adapters, doc-truth scope, platform-triage gate` / `[Change] CHANGELOG + CHANGELOG.RELEASE consolidated for the pending release`.
 
 ---
