@@ -13,9 +13,11 @@ USER
  ├─► /r-start    (self-contained)     Session Init — loads context,
  │                                     scans state; dispatches nothing
  │
- ├─► /r-plan ──► planner  (opus)      Research & Planning
- │               reviewer (sonnet)     Specs, plans; mandatory challenge
- │                challenge mode       review before presenting for approval
+ ├─► /r-plan     (planner runs inline,  Research & Planning
+ │                opus; direct dispatch   Specs, plans; mandatory challenge
+ │                also available)         review before presenting for approval
+ │                └─► reviewer (sonnet)
+ │                     challenge mode
  │
  ├─► /r-build ─► dispatcher  (sonnet) Plan Execution
  │                │                    Phase orchestration, quality gates
@@ -77,13 +79,14 @@ Hook source: `state/git-hooks/pre-commit`.
 
 Research-driven collaborative planner. Brainstorms ideas, researches best
 practices, challenges assumptions, writes specs and implementation plans.
-Invoked via `/r-plan`.
+Runs inline in `/r-spec` and `/r-plan` (the command bodies are the
+planner protocol); direct dispatch via the Agent tool is also available.
 
 ### dispatcher (sonnet)
 
 Plan execution orchestrator. Reads PLAN.md, executes phases via TDD,
 dispatches engineer/qa/uat/reviewer subagents, enforces quality gates.
-Invoked via `/r-start` or `/r-build`.
+Invoked via `/r-build`.
 
 ### engineer (opus)
 
@@ -126,9 +129,9 @@ dispatcher, or invoked via `/r-review`.
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
 | r-init | /r-init | -- | Governance initialization |
-| r-start | /r-start | dispatcher | Session initialization |
+| r-start | /r-start | -- | Session initialization |
 | r-save | /r-save | -- | Session state sync |
-| r-plan | /r-plan | planner | Planning workflow |
+| r-plan | /r-plan | -- | Planning workflow (planner runs inline) |
 | r-spec | /r-spec | -- | Specification authoring |
 | r-mode | /r-mode | -- | Switch operational mode |
 | r-status | /r-status | -- | Project health dashboard |
@@ -137,7 +140,7 @@ dispatcher, or invoked via `/r-review`.
 | r-sync | /r-sync | -- | Canonical source sync |
 | r-context-audit | /r-context-audit | -- | Context-window overhead audit |
 | r-audit | /r-audit | reviewer, qa | Full codebase audit |
-| r-audit-slop | /r-audit-slop | 3x engineer + sentinel | Discovery-first AI slop audit |
+| r-audit-slop | /r-audit-slop | engineer, reviewer | Discovery-first AI slop audit (engineer x3, reviewer sentinel) |
 | r-ship | /r-ship | qa, reviewer | Release workflow |
 | r-build | /r-build | dispatcher | Execute plan phase |
 | r-vpe | /r-vpe | -- | Pipeline orchestrator |

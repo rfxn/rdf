@@ -71,19 +71,10 @@ _run_doc_stats() {
     rm -rf "$fix"
 }
 
-@test "doc-stats passes on the live repo (no unexpected FAIL rows)" {
+@test "doc-stats passes on the live repo (no FAIL rows)" {
     run _run_doc_stats "$RDF_SRC"
     [ "$status" -eq 0 ]
-    # Phase 4->6 bridge; delete when Phase 6 lands. Deleting adapters/codex/
-    # dropped the live adapter count 6->5; README.md/docs/index.md badge/table
-    # truth is Phase 6 (doc-truth) scope. The two expected rows are anchored
-    # exactly AND asserted present, so this fails loudly once the docs are fixed.
-    local tolerated='^doc-stats[|]FAIL[|](README\.md|docs/index\.md): adapters claims 6, actual 5$'
-    local unexpected
-    unexpected="$(printf '%s\n' "$output" | grep '|FAIL|' | grep -vE "$tolerated" || true)"  # grep -v exits 1 when it filters every line — empty result is the intended "no unexpected FAILs" value
-    [ -z "$unexpected" ]
-    [[ "$output" == *"doc-stats|FAIL|README.md: adapters claims 6, actual 5"* ]]
-    [[ "$output" == *"doc-stats|FAIL|docs/index.md: adapters claims 6, actual 5"* ]]
+    [[ "$output" != *"|FAIL|"* ]]
     [[ "$output" == *"doc-stats|OK|WORKFORCE.md: lifecycle"* ]]
     [[ "$output" == *"doc-stats|OK|docs/index.md: commands"* ]]
 }

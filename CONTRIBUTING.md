@@ -9,7 +9,9 @@ a **canonical → generated** architecture, so *where* you edit matters.
 
 RDF is tool-agnostic. Agent and command content is authored once as pure
 markdown and deployed to each harness (Claude Code, Codex, Antigravity CLI, …) by a
-generator. There are two kinds of source:
+generator. Each canonical command becomes one `skills/<name>/SKILL.md` file
+per adapter (Claude Code, Claude plugin, Agent Skills). There are two kinds
+of source:
 
 | You want to change… | Edit here | Then run |
 |---------------------|-----------|----------|
@@ -17,11 +19,11 @@ generator. There are two kinds of source:
 | Framework tooling (CLI, libs, state helpers) | `bin/`, `lib/`, `state/` directly | — |
 | Tests | `tests/*.bats` | `make -C tests test` |
 
-**Never edit generated output** (`~/.claude/…`, `adapters/*/output/`). It is
-overwritten on every `rdf generate`. If you change anything under `canonical/`,
-run `bin/rdf generate claude-code` in the same change so the deployed tree and
-your source stay in sync — `bin/rdf doctor` must report zero FAIL before you
-open a PR.
+**Never edit generated output** (`~/.claude/skills/`, `~/.claude/agents/`,
+`adapters/*/output/`). It is overwritten on every `rdf generate`. If you
+change anything under `canonical/`, run `bin/rdf generate claude-code` in
+the same change so the deployed tree and your source stay in sync —
+`bin/rdf doctor` must report zero FAIL before you open a PR.
 
 ## Shell standards
 
@@ -56,8 +58,11 @@ case that exercises the non-GNU / older-bash path (see `tests/portability.bats`)
 2. Commit style: free-form descriptive subject, body lines tagged `[New]`,
    `[Change]`, `[Fix]`, `[Remove]`. No AI-assistant attribution lines.
 3. Update `CHANGELOG` and `CHANGELOG.RELEASE` for any code-changing commit.
-4. Open a PR against `rfxn/rdf:main`. CI runs `bash -n`, `shellcheck`,
-   `rdf doctor`, and the BATS suite on Ubuntu and macOS.
+4. Open a PR against `rfxn/rdf:main`. CI (`.github/workflows/ci.yml`) runs:
+   - Lint (ubuntu): `bash -n`, `shellcheck -S error --exclude=SC1090,SC1091`
+   - Doctor (ubuntu): `rdf generate claude-code`, `rdf doctor --scope content-drift`
+   - Plugin (ubuntu): `rdf generate claude-plugin`, `claude plugin validate . --strict`
+   - Tests (ubuntu + macOS, incl. a bash 3.2 smoke on macOS): `make -C tests test`
 
 Questions or larger proposals: open an issue first so we can align on approach.
 

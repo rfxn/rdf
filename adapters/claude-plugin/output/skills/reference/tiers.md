@@ -37,9 +37,11 @@ auto-selects. On a bare Enter the prompt defaults to `[1] full`.
 ## Gate caps
 
 The tier acts as a **Tier Cap**: a ceiling applied *after* the dispatcher's
-existing scope→gate selection. Effective gate set is
-`min(scope_gate, tier_cap)` — the cap only *removes* ceremony, never adds it.
-It can never raise a `scope:docs` phase's gates.
+existing scope→gate selection, but the Security floor below always wins.
+Effective gate set is `max(security_floor, min(scope_gate, tier_cap))` — the
+cap only *removes* ceremony (security floor aside), never adds it. It can
+never raise a `scope:docs` phase's gates, and it can never lower gates below
+the security floor.
 
 - **`full`** — no cap. The scope→gate mapping applies as-is.
 - **`quick-plan`** — cap Gate 3 at sentinel-lite (2-pass), skip the End-of-Plan

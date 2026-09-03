@@ -15,7 +15,7 @@ supported as a legacy tier). Examples below use Claude Code.
 ```bash
 git clone https://github.com/rfxn/rdf.git ~/rdf && cd ~/rdf
 bin/rdf generate claude-code    # build adapter output from canonical sources
-bin/rdf deploy claude-code      # symlink into ~/.claude/ (regeneration auto-updates)
+bin/rdf deploy claude-code      # symlink deploy (skills/<n>/SKILL.md -> ~/.claude/skills/<n>; regeneration auto-updates)
 ```
 
 Verify:

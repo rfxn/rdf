@@ -3,8 +3,8 @@
 [![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
-![Adapters](https://img.shields.io/badge/adapters-6-purple.svg)
-![Profiles](https://img.shields.io/badge/profiles-11-orange.svg)
+![Adapters](https://img.shields.io/badge/adapters-5-purple.svg)
+![Profiles](https://img.shields.io/badge/profiles-13-orange.svg)
 
 **Governance-driven AI development for teams that ship to production.**
 
@@ -276,15 +276,18 @@ Write content once in tool-agnostic markdown. Generate for any runtime:
 
 | Adapter | Output | Deploy Target |
 |---------|--------|---------------|
-| **Claude Code** | YAML-frontmattered agents + intent-triggered commands | `~/.claude/` |
-| **Codex** | Consolidated AGENTS.md + config.toml + shared skills | Project root |
-| **Antigravity CLI** | Shared `.agents/skills/` SKILL.md + AGENTS.md | Workspace root |
-| **Agent Skills** | `.agents/skills/<cmd>/SKILL.md` (open convention) | Workspace root |
-| **AGENTS.md** | Cross-tool documentation | Project root |
+| **Claude Code** | YAML-frontmattered agents + `skills/<cmd>/SKILL.md` (intent `description:` frontmatter) | `~/.claude/` |
+| **Claude Plugin** | Same skills layout, `/r-X` -> `/rdf:r-X` namespaced, committed output | plugin install (clones repo) |
+| **Agent Skills** | `.agents/skills/<cmd>/SKILL.md` (open convention; shared by Codex + Antigravity) | Workspace root |
+| **AGENTS.md** | Cross-tool documentation (project-scoped composer) | Project root |
 | **Gemini CLI** (legacy) | TOML commands + YAML agents + GEMINI.md | `~/.gemini/` |
 
+Codex and Antigravity CLI are served by the Agent Skills + AGENTS.md
+composite (`rdf generate codex` / `antigravity`) rather than a bespoke
+adapter directory.
+
 ```bash
-bin/rdf generate all                  # builds all six adapters in one pass
+bin/rdf generate all                  # builds all five adapters in one pass
 ```
 
 #### First-class multi-tool
@@ -307,9 +310,9 @@ Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
   <img src="assets/profiles-modes.svg" alt="Profiles (what you work with) x Modes (what you work on)" width="100%"/>
 </p>
 
-**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Eleven full profiles provide governance templates and reference docs. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
+**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Thirteen full profiles (`profiles/registry.json`) provide governance templates and reference docs; `rdf-lite` is a condensed deploy variant, not a registered profile. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
 
-**Full profiles** (governance template + 3-4 reference docs):
+**Full profiles** (13 in `profiles/registry.json`; most ship 3-4 reference docs):
 
 | Profile | Depth | Security Coverage | Refs |
 |---------|-------|-------------------|------|
@@ -324,6 +327,11 @@ Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
 | **perl** | strict/warnings, three-arg open, regex security, taint mode | Regex DoS, taint bypass, injection via open() | 3 |
 | **php** | strict_types, PSR, parameterized queries, Laravel/Symfony | SQL injection, deserialization, SSRF, CSRF | 3 |
 | **infrastructure** | Terraform, Kubernetes, Ansible, secrets, CI/CD | State file exposure, secret sprawl, RBAC drift | 3 |
+| **node** | Module-system discipline, async patterns, npm hygiene | -- (governance-template only) | 0 |
+| **rfxn-workspace** | R-fx Networks org overlay -- opt-in only, never auto-detected | Shared-library release workflow, consumer verification | 1 |
+
+`rdf-lite` (`profiles/lite/`) is a condensed deploy source for the six
+lifecycle commands, not a registered profile.
 
 **Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Seven modes cover different workflows: `development` (default), `security`, `performance`, `migration`, `refactoring`, `debugging`, `documentation`.
 
@@ -439,9 +447,10 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 ```
 canonical/          Adapter            Tool Deployment
-  agents/*.md  -->  adapter.sh  -->  output/agents/*.md  -->  ~/.claude/agents/
-  commands/*.md     (frontmatter      output/commands/*       ~/.claude/commands/
-  scripts/*.sh       injection)       output/scripts/*.sh     ~/.claude/scripts/
+  agents/*.md  -->  adapter.sh  -->  output/agents/*.md      -->  ~/.claude/agents/
+  commands/*.md     (frontmatter      output/skills/<n>/       ~/.claude/skills/<n>/
+                      injection)         SKILL.md               (per-skill symlinks)
+  scripts/*.sh                        output/scripts/*.sh     ~/.claude/scripts/
                                                             (symlinks)
 ```
 
@@ -464,7 +473,7 @@ rdf/
 |   |-- scripts/                       # 16 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
-|   |-- registry.json                  # Machine-readable profile catalog
+|   |-- registry.json                  # Machine-readable profile catalog (13 profiles)
 |   |-- registry.md                    # Human-readable profile catalog
 |   |-- detection-rules.md            # Auto-detection signals per profile
 |   |-- core/                          # Always active -- commit protocol, security hygiene
@@ -477,7 +486,10 @@ rdf/
 |   |-- typescript/                    # TypeScript -- strict, Node.js, async
 |   |-- perl/                          # Perl -- strict/warnings, taint mode
 |   |-- php/                           # PHP -- strict_types, PSR
-|   +-- infrastructure/                # Terraform, K8s, Ansible
+|   |-- infrastructure/                # Terraform, K8s, Ansible
+|   |-- node/                          # Node.js -- module discipline, async, npm hygiene
+|   |-- rfxn-workspace/                # R-fx Networks org overlay (opt-in only)
+|   +-- lite/                          # rdf-lite deploy source -- not a registered profile
 |-- modes/
 |   |-- development/                   # Default TDD workflow
 |   |-- security-assessment/           # Threat-model-first assessment
@@ -486,13 +498,12 @@ rdf/
 |   |-- refactoring/                   # Behavior preservation
 |   |-- debugging/                     # Hypothesis-driven troubleshooting
 |   +-- documentation/                 # Read-then-write accuracy review
-|-- adapters/
-|   |-- claude-code/                   # CC adapter + metadata + hooks
+|-- adapters/                          # 5 adapters (Codex/Antigravity = composite of the two below)
+|   |-- claude-code/                   # CC adapter + metadata + hooks -> output/skills/<n>/SKILL.md
 |   |-- claude-plugin/                 # CC plugin adapter (namespaced /rdf:r-*, committed output)
-|   |-- agent-skills/                  # Shared .agents/skills/ (Codex + Antigravity)
-|   |-- codex/                         # Codex adapter (AGENTS.md)
+|   |-- agent-skills/                  # Shared .agents/skills/<n>/SKILL.md (Codex + Antigravity)
 |   |-- gemini-cli/                    # Gemini CLI adapter (TOML, legacy tier)
-|   +-- agents-md/                     # Cross-tool AGENTS.md
+|   +-- agents-md/                     # Cross-tool AGENTS.md composer
 |-- state/
 |   |-- rdf-state.sh                   # Project state -> JSON (<1s, timeout-guarded)
 |   |-- context-audit.sh               # Context weight audit -> JSON
@@ -628,6 +639,7 @@ Creates CLAUDE.md (from governance template), MEMORY.md, `.git/info/exclude`, an
 | **[WORKFORCE.md](WORKFORCE.md)** | Agent workforce, pipeline diagrams, gate details |
 | **[reference/diagrams.md](reference/diagrams.md)** | Mermaid diagrams: pipeline, architecture, ecosystem |
 | **[docs/multi-tool-parity.md](docs/multi-tool-parity.md)** | First-class trio + legacy gemini feature matrix |
+| **[docs/context-bar.md](docs/context-bar.md)** | Status line script reference (layout, segments, install) |
 | **[CHANGELOG](CHANGELOG)** | Development history |
 | **[CHANGELOG.RELEASE](CHANGELOG.RELEASE)** | Release notes (latest release) |
 
@@ -643,6 +655,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 37 commands -- 16 scripts -- 13 profiles -- 6 adapters -- 7 modes**
+**6 agents -- 37 commands -- 16 scripts -- 13 profiles -- 5 adapters -- 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

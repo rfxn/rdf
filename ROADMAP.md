@@ -70,7 +70,7 @@ it earned a slot):
 - [ ] Deep-dive writeups from the spec archive (`docs/specs/` — design
       documents from real releases)
 - [ ] Community profile packs (language/domain governance beyond the
-      built-in 11)
+      built-in profiles — see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
 ## Delivered — 3.4 "Memory & Context"

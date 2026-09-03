@@ -18,7 +18,7 @@ Options:
   --scope SCOPE         Check specific category only:
                         artifacts, drift, memory, plan, github, sync,
                         install-mode, deps, catalogs, state-helpers,
-                        content-drift, doc-stats, readme
+                        content-drift, doc-stats, readme, doc-truth
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
@@ -993,6 +993,321 @@ _check_doc_stats() {
     fi
 }
 
+# ── Check: doc-truth (RDF-specific) ──
+# Cross-checks structural claims doc-stats does not: registry membership,
+# WORKFORCE.md dispatch claims against canonical command bodies, CI claims
+# against .github/workflows/ci.yml, and RDF.md tree paths against the
+# filesystem. Additive to doc-stats (raw inventory counts).
+
+# Compare one claimed count against the live actual, emitting a result row.
+_doc_truth_cmp() {
+    local file="$1" what="$2" claimed="$3" actual="$4"
+    if [[ -z "$claimed" ]]; then
+        _add_result "doc-truth" "$_WARN" "${file}: ${what} count not found (actual ${actual})"
+    elif [[ "$claimed" != "$actual" ]]; then
+        _add_result "doc-truth" "$_FAIL" "${file}: ${what} claims ${claimed}, actual ${actual}"
+    else
+        _add_result "doc-truth" "$_OK" "${file}: ${what} = ${actual}"
+    fi
+}
+
+# Single-pass scan of RDF.md's fenced tree diagram: counts depth-1 profile/
+# adapter directory entries (sets _DT_PROFILE_TREE_N / _DT_ADAPTER_TREE_N)
+# and FAILs on any cited path under adapters/lib/state/canonical/profiles/
+# tests/ that does not exist on disk (catches a deleted file like the old
+# command-meta-v3.json).
+_doc_truth_scan_rdf_tree() {
+    local path="$1"
+    local rdf="${path}/RDF.md"
+    _DT_PROFILE_TREE_N=0
+    _DT_ADAPTER_TREE_N=0
+    [[ -f "$rdf" ]] || return 0
+
+    local top="" line token stripped base in_fence=0
+    while IFS= read -r line; do
+        if [[ "$line" == '```'* ]]; then
+            in_fence=$((1 - in_fence))
+            [[ "$in_fence" -eq 0 ]] && top=""
+            continue
+        fi
+        [[ "$in_fence" -eq 1 ]] || continue
+
+        if [[ "$line" =~ ^[\|+]--\ ([A-Za-z0-9_.-]+)(/?) ]]; then
+            if [[ -n "${BASH_REMATCH[2]}" ]]; then
+                top="${BASH_REMATCH[1]}"
+            else
+                top=""   # depth-0 file entry — no children to track
+            fi
+            continue
+        fi
+        [[ -n "$top" ]] || continue
+        case "$top" in
+            adapters|lib|state|canonical|profiles|tests) ;;
+            *) continue ;;
+        esac
+
+        stripped="$(printf '%s' "$line" | sed -E 's/^[ +|-]+//')"
+        token="${stripped%%[[:space:]]*}"
+        [[ -n "$token" ]] || continue
+        [[ "$token" == \#* ]] && continue
+
+        if [[ "$token" == */ ]] && [[ "$line" =~ ^\|[\ ][\ ][\ ][\|+]--\  ]]; then
+            case "$top" in
+                profiles) [[ "$token" == "lite/" ]] || _DT_PROFILE_TREE_N=$((_DT_PROFILE_TREE_N + 1)) ;;
+                adapters) _DT_ADAPTER_TREE_N=$((_DT_ADAPTER_TREE_N + 1)) ;;
+            esac
+        fi
+
+        base="${token%/}"
+        if [[ "$token" == */ ]]; then
+            if ! find "${path}/${top}" -type d -name "$base" 2>/dev/null | grep -q .; then  # missing/unreadable top dir also reads as "no match"
+                _add_result "doc-truth" "$_FAIL" "RDF.md: ${top}/ tree cites '${token}' — no matching directory under ${top}/"
+            fi
+        else
+            if ! find "${path}/${top}" -type f -name "$base" 2>/dev/null | grep -q .; then  # missing/unreadable top dir also reads as "no match"
+                _add_result "doc-truth" "$_FAIL" "RDF.md: ${top}/ tree cites '${token}' — no matching file under ${top}/"
+            fi
+        fi
+    done < "$rdf"
+}
+
+# ── doc-truth: profile count ──
+# Registry membership (every governance-template.md dir except lite) plus
+# README badge / RDF.md tree / docs/index.md agreement with registry.json.
+_doc_truth_profiles() {
+    local path="$1"
+    local registry="${path}/profiles/registry.json"
+    [[ -f "$registry" ]] || return 0
+
+    local reg_count
+    reg_count="$(jq '.profiles | length' "$registry" 2>/dev/null)" || reg_count=""  # malformed JSON -> empty, treated as "count not found" below
+    if [[ -z "$reg_count" ]]; then
+        _add_result "doc-truth" "$_WARN" "profiles/registry.json: could not read .profiles length"
+        return 0
+    fi
+
+    local d base
+    for d in "${path}/profiles"/*/; do
+        [[ -f "${d}governance-template.md" ]] || continue
+        base="$(command basename "${d%/}")"
+        [[ "$base" == "lite" ]] && continue
+        if ! jq -e --arg n "$base" '.profiles | has($n)' "$registry" >/dev/null 2>&1; then
+            _add_result "doc-truth" "$_FAIL" "profiles/${base}/: has governance-template.md but is not registered in registry.json"
+        fi
+    done
+
+    local readme="${path}/README.md" badge=""
+    if [[ -f "$readme" ]]; then
+        badge="$(grep -m1 -oE 'profiles-[0-9]+' "$readme")" || badge=""
+        badge="${badge#profiles-}"
+        _doc_truth_cmp "README.md" "profiles badge" "$badge" "$reg_count"
+    fi
+
+    [[ -n "${_DT_PROFILE_TREE_N:-}" ]] && _doc_truth_cmp "RDF.md" "profile tree entries" "$_DT_PROFILE_TREE_N" "$reg_count"
+
+    local idx="${path}/docs/index.md"
+    if [[ -f "$idx" ]]; then
+        local iline iclaim=""
+        iline="$(grep -m1 -E '[0-9]+ profiles' "$idx")" || iline=""
+        [[ "$iline" =~ ([0-9]+)\ profiles ]] && iclaim="${BASH_REMATCH[1]}"
+        _doc_truth_cmp "docs/index.md" "profiles" "$iclaim" "$reg_count"
+    fi
+}
+
+# ── doc-truth: adapter count ──
+_doc_truth_adapters() {
+    local path="$1"
+    local adapters_dir="${path}/adapters"
+    [[ -d "$adapters_dir" ]] || return 0
+
+    local actual=0 f
+    for f in "$adapters_dir"/*/adapter.sh; do
+        [[ -f "$f" ]] && actual=$((actual + 1))
+    done
+
+    local readme="${path}/README.md" badge=""
+    if [[ -f "$readme" ]]; then
+        badge="$(grep -m1 -oE 'adapters-[0-9]+' "$readme")" || badge=""
+        badge="${badge#adapters-}"
+        _doc_truth_cmp "README.md" "adapters badge" "$badge" "$actual"
+    fi
+
+    [[ -n "${_DT_ADAPTER_TREE_N:-}" ]] && _doc_truth_cmp "RDF.md" "adapter tree entries" "$_DT_ADAPTER_TREE_N" "$actual"
+
+    local idx="${path}/docs/index.md"
+    if [[ -f "$idx" ]]; then
+        local iline iclaim=""
+        iline="$(grep -m1 -E '[0-9]+ adapters' "$idx")" || iline=""
+        [[ "$iline" =~ ([0-9]+)\ adapters ]] && iclaim="${BASH_REMATCH[1]}"
+        _doc_truth_cmp "docs/index.md" "adapters" "$iclaim" "$actual"
+    fi
+}
+
+# ── doc-truth: test wiring ──
+# Every tests/*.bats basename must appear in tests/Makefile (test + lint
+# targets) — an unwired file silently never runs in CI.
+_doc_truth_tests() {
+    local path="$1"
+    local tdir="${path}/tests"
+    local mk="${tdir}/Makefile"
+    [[ -d "$tdir" ]] && [[ -f "$mk" ]] || return 0
+
+    local total=0 missing=0 f base
+    for f in "$tdir"/*.bats; do
+        [[ -f "$f" ]] || continue
+        base="$(command basename "$f")"
+        total=$((total + 1))
+        if ! grep -qF "$base" "$mk"; then
+            _add_result "doc-truth" "$_FAIL" "tests/Makefile: ${base} not wired into the test/lint targets"
+            missing=$((missing + 1))
+        fi
+    done
+
+    if [[ "$total" -gt 0 ]] && [[ "$missing" -eq 0 ]]; then
+        _add_result "doc-truth" "$_OK" "tests: ${total}/${total} tests/*.bats registered in tests/Makefile"
+    fi
+}
+
+# ── doc-truth: WORKFORCE.md dispatch claims ──
+# Reads rows in the "### Lifecycle Commands" section only. A third-cell
+# token of "--"/"—"/"none"/empty claims nothing. For every other token,
+# either a literal `rdf-<agent>` mention or an "<agent> agent"/"<agent>
+# subagent" phrase must appear in the command's canonical body — else FAIL
+# (over-claim). A command body that mentions rdf-<agent> for an agent the
+# row omits is a WARN (under-claim) — advisory, does not block.
+_doc_truth_dispatch() {
+    local path="$1"
+    local wf="${path}/WORKFORCE.md"
+    local canonical_dir="${path}/canonical"
+    [[ -f "$wf" ]] || return 0
+
+    local row_re='^\| (r-[a-z-]+) \| /r-[a-z-]+ \| ([^|]*) \| [^|]+\|$'
+    local in_section=0 line cmd claim_raw claim_trim checked=0
+
+    while IFS= read -r line; do
+        if [[ $in_section -eq 0 ]]; then
+            [[ "$line" =~ ^###\ Lifecycle\ Commands ]] && in_section=1
+            continue
+        fi
+        if [[ "$line" =~ ^### ]]; then
+            break
+        fi
+        [[ "$line" =~ $row_re ]] || continue
+
+        cmd="${BASH_REMATCH[1]}"
+        claim_raw="${BASH_REMATCH[2]}"
+        local cmdfile="${canonical_dir}/commands/${cmd}.md"
+        [[ -f "$cmdfile" ]] || continue
+        checked=$((checked + 1))
+
+        claim_trim="$(printf '%s' "$claim_raw" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+
+        local claimed_tokens=()
+        case "$claim_trim" in
+            ""|--|—|none|None) ;;
+            *)
+                local tok tok_clean save_ifs="$IFS"
+                IFS=','
+                for tok in $claim_trim; do
+                    tok_clean="$(printf '%s' "$tok" | sed -E 's/\([^)]*\)//g; s/\*//g; s/^[[:space:]]+//; s/[[:space:]]+$//')"
+                    [[ -n "$tok_clean" ]] && claimed_tokens+=("$tok_clean")
+                done
+                IFS="$save_ifs"
+                ;;
+        esac
+
+        local a
+        for a in "${claimed_tokens[@]}"; do
+            if ! grep -qE "\\brdf-${a}\\b|\\b${a}[[:space:]]+(sub)?agent\\b" "$cmdfile" 2>/dev/null; then  # unreadable file (loop already checked -f) reads as "no match"
+                _add_result "doc-truth" "$_FAIL" "WORKFORCE.md: ${cmd} claims dispatch of '${a}' but canonical/commands/${cmd}.md never dispatches it"
+            fi
+        done
+
+        local af agent_name is_claimed t
+        for af in "${canonical_dir}/agents"/*.md; do
+            [[ -f "$af" ]] || continue
+            agent_name="$(command basename "$af" .md)"
+            grep -qE "\\brdf-${agent_name}\\b" "$cmdfile" 2>/dev/null || continue  # unreadable file (loop already checked -f) reads as "no match"
+            is_claimed=0
+            for t in "${claimed_tokens[@]}"; do
+                [[ "$t" == "$agent_name" ]] && { is_claimed=1; break; }
+            done
+            if [[ $is_claimed -eq 0 ]]; then
+                _add_result "doc-truth" "$_WARN" "canonical/commands/${cmd}.md: dispatches rdf-${agent_name} but WORKFORCE.md row for ${cmd} omits it"
+            fi
+        done
+    done < "$wf"
+
+    [[ "$checked" -gt 0 ]] && _add_result "doc-truth" "$_OK" "WORKFORCE.md: ${checked} lifecycle dispatch claims checked"
+}
+
+# ── doc-truth: CI claims ──
+# Every backticked token in CONTRIBUTING.md's "CI runs" bullet list must
+# appear (literal substring) in .github/workflows/ci.yml.
+_doc_truth_ci() {
+    local path="$1"
+    local contrib="${path}/CONTRIBUTING.md"
+    local ci="${path}/.github/workflows/ci.yml"
+    [[ -f "$contrib" ]] && [[ -f "$ci" ]] || return 0
+
+    local in_section=0 line tok checked=0 missing=0
+    while IFS= read -r line; do
+        if [[ $in_section -eq 0 ]]; then
+            [[ "$line" =~ CI.*runs: ]] && in_section=1
+            continue
+        fi
+        if [[ ! "$line" =~ ^[[:space:]]*- ]]; then
+            in_section=0
+            continue
+        fi
+        while IFS= read -r tok; do
+            tok="${tok#\`}"; tok="${tok%\`}"
+            [[ -n "$tok" ]] || continue
+            checked=$((checked + 1))
+            if ! grep -qF -- "$tok" "$ci"; then
+                _add_result "doc-truth" "$_FAIL" "CONTRIBUTING.md: CI claim '${tok}' not found in .github/workflows/ci.yml"
+                missing=$((missing + 1))
+            fi
+        done < <(grep -oE '`[^`]+`' <<< "$line")
+    done < "$contrib"
+
+    if [[ "$checked" -gt 0 ]] && [[ "$missing" -eq 0 ]]; then
+        _add_result "doc-truth" "$_OK" "CONTRIBUTING.md: ${checked} CI claims match .github/workflows/ci.yml"
+    fi
+}
+
+# ── doc-truth: context-bar.md relocation ──
+_doc_truth_context_bar() {
+    local path="$1"
+    if [[ -f "${path}/context-bar.md" ]]; then
+        _add_result "doc-truth" "$_FAIL" "context-bar.md still present at repo root — relocate to docs/context-bar.md"
+    fi
+    if [[ -f "${path}/docs/context-bar.md" ]]; then
+        if grep -qF 'docs/context-bar.md' "${path}/README.md" 2>/dev/null; then  # missing/unreadable README.md reads as "not linked"
+            _add_result "doc-truth" "$_OK" "docs/context-bar.md present and linked from README.md"
+        else
+            _add_result "doc-truth" "$_FAIL" "docs/context-bar.md exists but is not linked from README.md"
+        fi
+    fi
+}
+
+_check_doc_truth() {
+    local path="$1"
+    local canonical_dir="${path}/canonical"
+    if [[ ! -d "$canonical_dir" ]]; then
+        # Not the RDF project — doc-truth check N/A
+        return 0
+    fi
+
+    _doc_truth_scan_rdf_tree "$path"
+    _doc_truth_profiles "$path"
+    _doc_truth_adapters "$path"
+    _doc_truth_tests "$path"
+    _doc_truth_dispatch "$path"
+    _doc_truth_ci "$path"
+    _doc_truth_context_bar "$path"
+}
+
 # Version resolver for doctor (avoids sourcing init.sh dependency)
 # ── Check: install-mode ──
 # Detects how RDF is installed for this user: symlink deploy (~/.claude/
@@ -1137,6 +1452,7 @@ _doctor_one() {
             _check_content_drift "$path"
             _check_doc_stats "$path"
             _check_readme "$path"
+            _check_doc_truth "$path"
             ;;
         artifacts)      _check_artifacts "$path" ;;
         drift)          _check_drift "$path" ;;
@@ -1151,7 +1467,8 @@ _doctor_one() {
         content-drift)  _check_content_drift "$path" ;;
         doc-stats)      _check_doc_stats "$path" ;;
         readme)         _check_readme "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme" ;;
+        doc-truth)      _check_doc_truth "$path" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth" ;;
     esac
 }
 

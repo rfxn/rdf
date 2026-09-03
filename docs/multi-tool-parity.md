@@ -15,8 +15,8 @@ legacy tier**, Gemini CLI (enterprise). Design rationale lives in
 
 | Tool | Command surface | Skill surface (`.agents/skills/`) | Context file | Hooks | Generate target |
 |------|-----------------|-----------------------------------|--------------|-------|-----------------|
-| Claude Code | `.claude/commands/*.md` + intent `description:` frontmatter | commands ARE skills natively | `CLAUDE.md` (NOT AGENTS.md) | `hooks.json` (manual merge) | `claude-code` |
-| Codex CLI | `.agents/skills/<cmd>/SKILL.md` (native scan) | shared `.agents/skills/` | own `AGENTS.md` (codex adapter) | deferred (`openai.yaml`, §13.7) | `codex` |
+| Claude Code | `.claude/skills/<cmd>/SKILL.md` + intent `description:` frontmatter (same `adp_emit_skills` library emitter as `.agents/skills/`, own output tree) | own `skills/` tree, not the shared one | `CLAUDE.md` (NOT AGENTS.md) | `hooks.json` (manual merge) | `claude-code` |
+| Codex CLI | `.agents/skills/<cmd>/SKILL.md` (native scan) | shared `.agents/skills/` | `AGENTS.md` (Agent Skills + AGENTS.md composite) | deferred (`openai.yaml`, §13.7) | `codex` |
 | Antigravity CLI | skills (fuzzy-matched slash) | shared `.agents/skills/` | `AGENTS.md` + `GEMINI.md` | deferred (`.agents/hooks.json`, §13.7) | `antigravity` (composite) |
 | Gemini CLI (enterprise) | `.gemini/commands/*.toml` | via `agy plugin import gemini` | `GEMINI.md` | — | `gemini-cli` |
 

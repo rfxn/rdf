@@ -20,7 +20,7 @@ rules.
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](https://github.com/rfxn/rdf/blob/main/LICENSE)
 
-**6 agents · 37 commands · 13 profiles · 6 adapters · 7 modes**
+**6 agents · 37 commands · 13 profiles · 5 adapters · 7 modes**
 
 [Quickstart — 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
 [View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }
@@ -55,10 +55,11 @@ bin/rdf generate claude-code && bin/rdf deploy claude-code
 bin/rdf init ~/projects/my-app     # auto-detects your stack
 ```
 
-Hooks auto-register on the plugin install; the symlink deploy requires a
-manual merge of `adapters/claude-code/hooks/hooks.json` into
-`~/.claude/settings.json` (see `rdf deploy help`). Hooks and the status
-line require `jq` on your PATH.
+Each command deploys as its own `~/.claude/skills/<name>/SKILL.md` symlink
+(`output/skills/<name>/SKILL.md` per adapter). Hooks auto-register on the
+plugin install; the symlink deploy requires a manual merge of
+`adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json` (see
+`rdf deploy help`). Hooks and the status line require `jq` on your PATH.
 Context cost is published and CI-guarded: the default deploy adds ~0.1K
 always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
 `rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).

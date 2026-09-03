@@ -1,3 +1,9 @@
+---
+title: Context Bar
+nav_exclude: true
+permalink: /context-bar
+---
+
 # context-bar.sh
 
 Status line script for Claude Code. Renders a two-line display showing model,
