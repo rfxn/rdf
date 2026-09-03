@@ -1011,64 +1011,86 @@ _doc_truth_cmp() {
     fi
 }
 
-# Single-pass scan of RDF.md's fenced tree diagram: counts depth-1 profile/
-# adapter directory entries (sets _DT_PROFILE_TREE_N / _DT_ADAPTER_TREE_N)
-# and FAILs on any cited path under adapters/lib/state/canonical/profiles/
-# tests/ that does not exist on disk (catches a deleted file like the old
-# command-meta-v3.json).
-_doc_truth_scan_rdf_tree() {
-    local path="$1"
-    local rdf="${path}/RDF.md"
-    _DT_PROFILE_TREE_N=0
-    _DT_ADAPTER_TREE_N=0
-    [[ -f "$rdf" ]] || return 0
+# Scan a doc's fenced tree diagram: every path cited under adapters/lib/
+# state/canonical/profiles/tests/ must exist where the tree claims it
+# (indentation reconstructs the parent dir). Glob tokens are rejected — a
+# citation like 'r-util-*.md' can never be falsified. With count_entries=1
+# the depth-1 profile/adapter directories are counted into
+# _DT_PROFILE_TREE_N / _DT_ADAPTER_TREE_N for the count checks below.
+_doc_truth_scan_tree() {
+    local path="$1" rel="$2" count_entries="$3"
+    local doc="${path}/${rel}"
+    [[ -f "$doc" ]] || return 0
+    if [[ "$count_entries" -eq 1 ]]; then
+        _DT_PROFILE_TREE_N=0
+        _DT_ADAPTER_TREE_N=0
+    fi
 
-    local top="" line token stripped base in_fence=0
+    local tree_re='^([| ]*)[|+]-- (.*)$'
+    local line rest token base top parent target depth i
+    local in_fence=0 checked=0 missing=0
+    local -a comps=()
+
     while IFS= read -r line; do
         if [[ "$line" == '```'* ]]; then
             in_fence=$((1 - in_fence))
-            [[ "$in_fence" -eq 0 ]] && top=""
+            comps=()
             continue
         fi
         [[ "$in_fence" -eq 1 ]] || continue
+        [[ "$line" =~ $tree_re ]] || continue
 
-        if [[ "$line" =~ ^[\|+]--\ ([A-Za-z0-9_.-]+)(/?) ]]; then
-            if [[ -n "${BASH_REMATCH[2]}" ]]; then
-                top="${BASH_REMATCH[1]}"
-            else
-                top=""   # depth-0 file entry — no children to track
-            fi
-            continue
-        fi
-        [[ -n "$top" ]] || continue
+        depth=$(( ${#BASH_REMATCH[1]} / 4 ))
+        rest="${BASH_REMATCH[2]}"
+        token="${rest%%[[:space:]]*}"
+        [[ -n "$token" ]] || continue
+        [[ "$token" == \#* ]] && continue
+        base="${token%/}"
+        comps[$depth]="$base"
+
+        [[ "$depth" -ge 1 ]] || continue
+        top="${comps[0]:-}"
         case "$top" in
             adapters|lib|state|canonical|profiles|tests) ;;
             *) continue ;;
         esac
 
-        stripped="$(printf '%s' "$line" | sed -E 's/^[ +|-]+//')"
-        token="${stripped%%[[:space:]]*}"
-        [[ -n "$token" ]] || continue
-        [[ "$token" == \#* ]] && continue
+        if [[ "$token" == *[*?]* ]]; then
+            _add_result "doc-truth" "$_FAIL" "${rel}: ${top}/ tree cites glob '${token}' — cite a concrete path"
+            continue
+        fi
 
-        if [[ "$token" == */ ]] && [[ "$line" =~ ^\|[\ ][\ ][\ ][\|+]--\  ]]; then
+        if [[ "$count_entries" -eq 1 ]] && [[ "$depth" -eq 1 ]] && [[ "$token" == */ ]]; then
             case "$top" in
-                profiles) [[ "$token" == "lite/" ]] || _DT_PROFILE_TREE_N=$((_DT_PROFILE_TREE_N + 1)) ;;
+                profiles) [[ "$base" == "lite" ]] || _DT_PROFILE_TREE_N=$((_DT_PROFILE_TREE_N + 1)) ;;
                 adapters) _DT_ADAPTER_TREE_N=$((_DT_ADAPTER_TREE_N + 1)) ;;
             esac
         fi
 
-        base="${token%/}"
+        parent=""
+        i=0
+        while [[ "$i" -lt "$depth" ]]; do
+            [[ -n "${comps[$i]:-}" ]] || { parent=""; break; }
+            parent="${parent}${comps[$i]}/"
+            i=$((i + 1))
+        done
+        [[ -n "$parent" ]] || continue
+
+        target="${path}/${parent}${base}"
+        checked=$((checked + 1))
         if [[ "$token" == */ ]]; then
-            if ! find "${path}/${top}" -type d -name "$base" 2>/dev/null | grep -q .; then  # missing/unreadable top dir also reads as "no match"
-                _add_result "doc-truth" "$_FAIL" "RDF.md: ${top}/ tree cites '${token}' — no matching directory under ${top}/"
-            fi
+            [[ -d "$target" ]] && continue
+            _add_result "doc-truth" "$_FAIL" "${rel}: tree cites '${parent}${token}' — no such directory"
         else
-            if ! find "${path}/${top}" -type f -name "$base" 2>/dev/null | grep -q .; then  # missing/unreadable top dir also reads as "no match"
-                _add_result "doc-truth" "$_FAIL" "RDF.md: ${top}/ tree cites '${token}' — no matching file under ${top}/"
-            fi
+            [[ -f "$target" ]] && continue
+            _add_result "doc-truth" "$_FAIL" "${rel}: tree cites '${parent}${token}' — no such file"
         fi
-    done < "$rdf"
+        missing=$((missing + 1))
+    done < "$doc"
+
+    if [[ "$checked" -gt 0 ]] && [[ "$missing" -eq 0 ]]; then
+        _add_result "doc-truth" "$_OK" "${rel}: ${checked} tree-cited paths exist on disk"
+    fi
 }
 
 # ── doc-truth: profile count ──
@@ -1168,13 +1190,36 @@ _doc_truth_tests() {
     fi
 }
 
+# Dispatch-claim match for one agent: a literal `rdf-<agent>` mention, or a
+# dispatch verb within three words of "<agent> (sub)agent". The verb anchor
+# keeps incidental prose ("the reviewer agent's findings") from satisfying a
+# claim.
+_doc_truth_dispatch_re() {
+    printf '\\brdf-%s\\b|[Dd]ispatch[a-z]*([[:space:]]+[a-z]+){0,3}[[:space:]]+%s[[:space:]]+(sub)?agent\\b' "$1" "$1"
+}
+
+# Command body with fenced and 4-space-indented code blocks removed —
+# illustrative `name: rdf-<agent>` frontmatter samples are not dispatches.
+_doc_truth_prose() {
+    local line in_fence=0
+    while IFS= read -r line; do
+        if [[ "$line" == '```'* ]]; then
+            in_fence=$((1 - in_fence))
+            continue
+        fi
+        [[ "$in_fence" -eq 1 ]] && continue
+        [[ "$line" == '    '* ]] && continue
+        printf '%s\n' "$line"
+    done < "$1"
+}
+
 # ── doc-truth: WORKFORCE.md dispatch claims ──
 # Reads rows in the "### Lifecycle Commands" section only. A third-cell
-# token of "--"/"—"/"none"/empty claims nothing. For every other token,
-# either a literal `rdf-<agent>` mention or an "<agent> agent"/"<agent>
-# subagent" phrase must appear in the command's canonical body — else FAIL
-# (over-claim). A command body that mentions rdf-<agent> for an agent the
-# row omits is a WARN (under-claim) — advisory, does not block.
+# token of "--"/"—"/"none"/empty claims nothing; every other token must be
+# matched by _doc_truth_dispatch_re in the command's canonical body — else
+# FAIL (over-claim). The reverse direction uses the same regex against the
+# command's prose only: a dispatch the row omits is a WARN (under-claim) —
+# advisory, does not block.
 _doc_truth_dispatch() {
     local path="$1"
     local wf="${path}/WORKFORCE.md"
@@ -1216,24 +1261,27 @@ _doc_truth_dispatch() {
                 ;;
         esac
 
-        local a
+        local a claim_re
         for a in "${claimed_tokens[@]+"${claimed_tokens[@]}"}"; do
-            if ! grep -qE "\\brdf-${a}\\b|\\b${a}[[:space:]]+(sub)?agent\\b" "$cmdfile" 2>/dev/null; then  # unreadable file (loop already checked -f) reads as "no match"
+            claim_re="$(_doc_truth_dispatch_re "$a")"
+            if ! grep -qE "$claim_re" "$cmdfile" 2>/dev/null; then  # unreadable file (loop already checked -f) reads as "no match"
                 _add_result "doc-truth" "$_FAIL" "WORKFORCE.md: ${cmd} claims dispatch of '${a}' but canonical/commands/${cmd}.md never dispatches it"
             fi
         done
 
-        local af agent_name is_claimed t
+        local af agent_name is_claimed t prose
+        prose="$(_doc_truth_prose "$cmdfile")"
         for af in "${canonical_dir}/agents"/*.md; do
             [[ -f "$af" ]] || continue
             agent_name="$(command basename "$af" .md)"
-            grep -qE "\\brdf-${agent_name}\\b" "$cmdfile" 2>/dev/null || continue  # unreadable file (loop already checked -f) reads as "no match"
+            claim_re="$(_doc_truth_dispatch_re "$agent_name")"
+            grep -qE "$claim_re" <<< "$prose" || continue
             is_claimed=0
             for t in "${claimed_tokens[@]+"${claimed_tokens[@]}"}"; do
                 [[ "$t" == "$agent_name" ]] && { is_claimed=1; break; }
             done
             if [[ $is_claimed -eq 0 ]]; then
-                _add_result "doc-truth" "$_WARN" "canonical/commands/${cmd}.md: dispatches rdf-${agent_name} but WORKFORCE.md row for ${cmd} omits it"
+                _add_result "doc-truth" "$_WARN" "canonical/commands/${cmd}.md: dispatches ${agent_name} but WORKFORCE.md row for ${cmd} omits it"
             fi
         done
     done < "$wf"
@@ -1299,7 +1347,8 @@ _check_doc_truth() {
         return 0
     fi
 
-    _doc_truth_scan_rdf_tree "$path"
+    _doc_truth_scan_tree "$path" "RDF.md" 1
+    _doc_truth_scan_tree "$path" "README.md" 0
     _doc_truth_profiles "$path"
     _doc_truth_adapters "$path"
     _doc_truth_tests "$path"

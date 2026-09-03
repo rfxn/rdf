@@ -11,15 +11,15 @@
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 export RDF_SRC
 
-# Usage: _run_doc_truth <fn-name> <project_root> — prints _RESULTS rows
+# Usage: _run_doc_truth <fn-name> <project_root> [extra-args...] — prints _RESULTS rows
 _run_doc_truth() {
     local fn="$1"
-    local project_root="$2"
+    shift
     bash -c '
         set -euo pipefail
         rdf_src="$1"
         fn="$2"
-        project_root="$3"
+        shift 2
         RDF_HOME="$(mktemp -d)"
         RDF_LIBDIR="${rdf_src}/lib"
         RDF_VERSION="0.0.0-test"
@@ -27,11 +27,11 @@ _run_doc_truth() {
         rdf_init
         source "${rdf_src}/lib/cmd/doctor.sh"
         _reset_results
-        "$fn" "$project_root"
+        "$fn" "$@"
         if [ "${#_RESULTS[@]}" -gt 0 ]; then
             printf "%s\n" "${_RESULTS[@]}"
         fi
-    ' -- "$RDF_SRC" "$fn" "$project_root"
+    ' -- "$RDF_SRC" "$fn" "$@"
 }
 
 @test "doc-truth FAILs when README badge profile count drifts" {
@@ -99,7 +99,7 @@ _run_doc_truth() {
     printf -- '### Lifecycle Commands (1)\n\n| Command | Slash | Dispatches | Purpose |\n|---------|-------|------------|---------|\n| r-foo | /r-foo | -- | Does a thing |\n\n### Utility Commands (0)\n' > "$fix/WORKFORCE.md"
     run _run_doc_truth _doc_truth_dispatch "$fix"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"doc-truth|WARN|canonical/commands/r-foo.md: dispatches rdf-qa but WORKFORCE.md row for r-foo omits it"* ]]
+    [[ "$output" == *"doc-truth|WARN|canonical/commands/r-foo.md: dispatches qa but WORKFORCE.md row for r-foo omits it"* ]]
     [[ "$output" != *"|FAIL|"* ]]
     rm -rf "$fix"
 }
@@ -132,11 +132,11 @@ rdf/
 |   +-- gemini-cli/
 ```
 RDFMD
-    run _run_doc_truth _doc_truth_scan_rdf_tree "$fix"
+    run _run_doc_truth _doc_truth_scan_tree "$fix" RDF.md 1
     [ "$status" -eq 0 ]
-    [[ "$output" == *"doc-truth|FAIL|RDF.md: adapters/ tree cites 'ghost-meta.json' — no matching file under adapters/"* ]]
-    [[ "$output" == *"doc-truth|FAIL|RDF.md: adapters/ tree cites 'gemini-cli/' — no matching directory under adapters/"* ]]
-    [[ "$output" != *"'adapter.sh'"* ]]
+    [[ "$output" == *"doc-truth|FAIL|RDF.md: tree cites 'adapters/claude-code/ghost-meta.json' — no such file"* ]]
+    [[ "$output" == *"doc-truth|FAIL|RDF.md: tree cites 'adapters/gemini-cli/' — no such directory"* ]]
+    [[ "$output" != *"'adapters/claude-code/adapter.sh'"* ]]
     rm -rf "$fix"
 }
 
@@ -161,12 +161,15 @@ RDFMD
     rm -rf "$fix"
 }
 
-@test "doc-truth passes on the live repo (no FAIL rows)" {
+@test "doc-truth passes on the live repo (no FAIL and no WARN rows)" {
     run _run_doc_truth _check_doc_truth "$RDF_SRC"
     [ "$status" -eq 0 ]
     [[ "$output" != *"|FAIL|"* ]]
-    [[ "$output" == *"doc-truth|OK|README.md: profiles badge = 13"* ]]
-    [[ "$output" == *"doc-truth|OK|README.md: adapters badge = 5"* ]]
+    [[ "$output" != *"|WARN|"* ]]
+    [[ "$output" == *"doc-truth|OK|README.md: profiles badge = "* ]]
+    [[ "$output" == *"doc-truth|OK|README.md: adapters badge = "* ]]
+    [[ "$output" == *"doc-truth|OK|RDF.md: "*" tree-cited paths exist on disk"* ]]
+    [[ "$output" == *"doc-truth|OK|README.md: "*" tree-cited paths exist on disk"* ]]
     [[ "$output" == *"doc-truth|OK|CONTRIBUTING.md:"*"CI claims match .github/workflows/ci.yml"* ]]
 }
 
@@ -177,5 +180,188 @@ RDFMD
     run _run_doc_truth _check_doc_truth "$fix"
     [ "$status" -eq 0 ]
     [ -z "$output" ]
+    rm -rf "$fix"
+}
+
+@test "doc-truth FAILs when a tree cites a glob instead of a concrete path" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands"
+    touch "$fix/canonical/commands/r-util-code-map.md"
+    cat > "$fix/RDF.md" <<'RDFMD'
+```
+rdf/
+|-- canonical/
+|   |-- commands/
+|   |   |-- r-util-*.md              # 16 utility commands
+```
+RDFMD
+    run _run_doc_truth _doc_truth_scan_tree "$fix" RDF.md 1
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|RDF.md: canonical/ tree cites glob 'r-util-*.md' — cite a concrete path"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth FAILs when a cited file exists only under a different parent" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/adapters/claude-code" "$fix/adapters/agents-md"
+    touch "$fix/adapters/claude-code/adapter.sh" "$fix/adapters/agents-md/agent-meta.json"
+    cat > "$fix/RDF.md" <<'RDFMD'
+```
+rdf/
+|-- adapters/
+|   |-- claude-code/
+|   |   |-- adapter.sh
+|   |   +-- agent-meta.json
+```
+RDFMD
+    run _run_doc_truth _doc_truth_scan_tree "$fix" RDF.md 1
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|RDF.md: tree cites 'adapters/claude-code/agent-meta.json' — no such file"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth checks README.md's directory tree the same way as RDF.md's" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/lib/cmd"
+    touch "$fix/lib/rdf_common.sh"
+    cat > "$fix/README.md" <<'READMEMD'
+### Directory Structure
+
+```
+rdf/
+|-- lib/
+|   |-- rdf_common.sh                  # Shared helpers
+|   |-- ghost.sh                       # deleted long ago
+|   +-- cmd/                           # Subcommands
+```
+READMEMD
+    run _run_doc_truth _doc_truth_scan_tree "$fix" README.md 0
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|README.md: tree cites 'lib/ghost.sh' — no such file"* ]]
+    [[ "$output" != *"'lib/rdf_common.sh'"* ]]
+    [[ "$output" != *"'lib/cmd/'"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth tree scan is deterministic when many paths share a basename" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/adapters/claude-code"
+    touch "$fix/adapters/claude-code/adapter.sh"
+    i=1
+    while [ "$i" -le 100 ]; do
+        mkdir -p "$fix/adapters/noise-${i}"
+        touch "$fix/adapters/noise-${i}/adapter.sh"
+        i=$((i + 1))
+    done
+    cat > "$fix/RDF.md" <<'RDFMD'
+```
+rdf/
+|-- adapters/
+|   |-- claude-code/
+|   |   +-- adapter.sh
+```
+RDFMD
+    runs=0
+    bad=0
+    while [ "$runs" -lt 20 ]; do
+        out="$(_run_doc_truth _doc_truth_scan_tree "$fix" RDF.md 1)"
+        if [[ "$out" == *"|FAIL|"* ]]; then
+            bad=$((bad + 1))
+        fi
+        if [[ "$out" != *"doc-truth|OK|RDF.md: 2 tree-cited paths exist on disk"* ]]; then
+            bad=$((bad + 1))
+        fi
+        runs=$((runs + 1))
+    done
+    [ "$bad" -eq 0 ]
+    rm -rf "$fix"
+}
+
+@test "doc-truth FAILs when the RDF.md profile tree drifts from registry.json" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical" "$fix/profiles/core" "$fix/profiles/shell" "$fix/profiles/python"
+    touch "$fix/profiles/core/governance-template.md" "$fix/profiles/shell/governance-template.md" \
+          "$fix/profiles/python/governance-template.md"
+    printf '{"profiles":{"core":{},"shell":{},"python":{}}}\n' > "$fix/profiles/registry.json"
+    cat > "$fix/RDF.md" <<'RDFMD'
+```
+rdf/
+|-- profiles/
+|   |-- core/
+|   +-- shell/
+```
+RDFMD
+    run _run_doc_truth _check_doc_truth "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|RDF.md: profile tree entries claims 2, actual 3"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth FAILs when the RDF.md adapter tree drifts from adapters/" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical" "$fix/adapters/claude-code" "$fix/adapters/gemini-cli" "$fix/adapters/legacy"
+    touch "$fix/adapters/claude-code/adapter.sh" "$fix/adapters/gemini-cli/adapter.sh"
+    cat > "$fix/RDF.md" <<'RDFMD'
+```
+rdf/
+|-- adapters/
+|   |-- claude-code/
+|   |-- gemini-cli/
+|   +-- legacy/
+```
+RDFMD
+    run _run_doc_truth _check_doc_truth "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|RDF.md: adapter tree entries claims 3, actual 2"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth dispatch claim needs a dispatch verb, not incidental prose" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/canonical/agents"
+    touch "$fix/canonical/agents/reviewer.md"
+    printf 'You are the mode command.\n\nNote: the reviewer agent uses the mode banner.\n' > "$fix/canonical/commands/r-mode.md"
+    printf -- '### Lifecycle Commands (1)\n\n| Command | Slash | Dispatches | Purpose |\n|---------|-------|------------|---------|\n| r-mode | /r-mode | reviewer | Switch operational mode |\n\n### Utility Commands (0)\n' > "$fix/WORKFORCE.md"
+    run _run_doc_truth _doc_truth_dispatch "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|WORKFORCE.md: r-mode claims dispatch of 'reviewer' but canonical/commands/r-mode.md never dispatches it"* ]]
+    [[ "$output" != *"|WARN|"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth accepts a dispatch-verb phrase without an rdf- prefix" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/canonical/agents"
+    touch "$fix/canonical/agents/reviewer.md"
+    printf 'You are the mode command.\n\nDispatch the reviewer agent in challenge mode.\n' > "$fix/canonical/commands/r-mode.md"
+    printf -- '### Lifecycle Commands (1)\n\n| Command | Slash | Dispatches | Purpose |\n|---------|-------|------------|---------|\n| r-mode | /r-mode | reviewer | Switch operational mode |\n\n### Utility Commands (0)\n' > "$fix/WORKFORCE.md"
+    run _run_doc_truth _doc_truth_dispatch "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"|FAIL|"* ]]
+    [[ "$output" == *"doc-truth|OK|WORKFORCE.md: 1 lifecycle dispatch claims checked"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth under-claim scan ignores fenced and indented code blocks" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/canonical/agents"
+    touch "$fix/canonical/agents/qa.md" "$fix/canonical/agents/engineer.md" "$fix/canonical/agents/uat.md"
+    cat > "$fix/canonical/commands/r-foo.md" <<'FOOMD'
+You are the foo command. Dispatch the `rdf-qa` subagent.
+
+Agent files carry frontmatter:
+
+    name: rdf-engineer
+    model: opus
+
+```
+Dispatch the uat subagent   # illustrative transcript, not a dispatch
+```
+FOOMD
+    printf -- '### Lifecycle Commands (1)\n\n| Command | Slash | Dispatches | Purpose |\n|---------|-------|------------|---------|\n| r-foo | /r-foo | qa | Does a thing |\n\n### Utility Commands (0)\n' > "$fix/WORKFORCE.md"
+    run _run_doc_truth _doc_truth_dispatch "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"|WARN|"* ]]
+    [[ "$output" != *"|FAIL|"* ]]
     rm -rf "$fix"
 }

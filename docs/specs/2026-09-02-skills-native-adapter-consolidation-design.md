@@ -526,10 +526,17 @@ Doctor doc-truth (§13):
 
 ```
 $ bin/rdf doctor --scope doc-truth
-[doc-truth]     [OK]   profiles: 14 dirs = 14 registry = README badge 14 = RDF.md tree 14
-[doc-truth]     [OK]   tests: 24/24 tests/*.bats registered in tests/Makefile
-[doc-truth]     [FAIL] WORKFORCE.md: r-plan claims dispatch of 'planner' but canonical/commands/r-plan.md never dispatches it
-[doc-truth]     [OK]   CONTRIBUTING.md CI claims match .github/workflows/ci.yml
+[doc-truth]   [OK]  RDF.md: 79 tree-cited paths exist on disk
+[doc-truth]   [OK]  README.md: 31 tree-cited paths exist on disk
+[doc-truth]   [OK]  README.md: profiles badge = 13
+[doc-truth]   [OK]  RDF.md: profile tree entries = 13
+[doc-truth]   [OK]  docs/index.md: profiles = 13
+[doc-truth]   [OK]  tests: 24/24 tests/*.bats registered in tests/Makefile
+[doc-truth]   [OK]  WORKFORCE.md: 21 lifecycle dispatch claims checked
+[doc-truth]   [OK]  CONTRIBUTING.md: 7 CI claims match .github/workflows/ci.yml
+
+on drift — one row per false claim:
+[doc-truth] [FAIL]  WORKFORCE.md: r-mode claims dispatch of 'reviewer' but canonical/commands/r-mode.md never dispatches it
 ```
 
 ## 6. Conventions
@@ -761,10 +768,11 @@ lines) emits one row per claim class:
 
 | Claim | Source of truth | Checked surfaces | Result |
 |-------|-----------------|------------------|--------|
-| profile count | `profiles/*/governance-template.md` dirs (excludes `lite`) and `registry.json` `.profiles \| length` | README `profiles-N` badge, `RDF.md` "N profiles"/tree entries, `docs/index.md` | FAIL on any mismatch |
-| adapter count | `adapters/*/adapter.sh` | README `adapters-N` badge, footer, `docs/index.md` | FAIL |
+| profile count | `profiles/*/governance-template.md` dirs (excludes `lite`) and `registry.json` `.profiles \| length` | README `profiles-N` badge, `RDF.md` tree entries, `docs/index.md` | FAIL on any mismatch |
+| adapter count | `adapters/*/adapter.sh` | README `adapters-N` badge, `RDF.md` tree entries, `docs/index.md` (the README footer counts are doc-stats' job) | FAIL |
+| tree paths | filesystem | every path cited in the `RDF.md` and `README.md` fenced tree diagrams under `adapters/`, `lib/`, `state/`, `canonical/`, `profiles/`, `tests/`, resolved at the parent the indentation reconstructs | FAIL per path that does not exist, and per glob (`*`/`?`) token — a glob citation can never be falsified |
 | test wiring | `tests/*.bats` | every basename present in `tests/Makefile` | FAIL per missing file |
-| dispatch claims | `WORKFORCE.md` rows **inside the `### Lifecycle Commands` section only** (from that heading to the next `^###`), matching the 4-column shape `^\| (r-[a-z-]+) \| /r-[a-z-]+ \| ([^|]*) \| [^|]+\|$` — the third cell split on `,`, each token stripped of whitespace, `*`, and a parenthesised annotation; `--`, `—`, `none`, or empty = claims nothing (the live table uses `--`, 12 rows) | for every token `a`: `grep -qE "\brdf-${a}\b|\b${a}[[:space:]]+agent\b" canonical/commands/<cmd>.md` | FAIL per false claim; a command file that dispatches an agent the row omits is a WARN (under-claim) |
+| dispatch claims | `WORKFORCE.md` rows **inside the `### Lifecycle Commands` section only** (from that heading to the next `^###`), matching the 4-column shape `^\| (r-[a-z-]+) \| /r-[a-z-]+ \| ([^|]*) \| [^|]+\|$` — the third cell split on `,`, each token stripped of whitespace, `*`, and a parenthesised annotation; `--`, `—`, `none`, or empty = claims nothing (the live table uses `--`, 12 rows) | for every token `a`: `grep -qE "\brdf-${a}\b|[Dd]ispatch[a-z]*([[:space:]]+[a-z]+){0,3}[[:space:]]+${a}[[:space:]]+(sub)?agent\b" canonical/commands/<cmd>.md` — the dispatch-verb anchor keeps incidental prose ("the reviewer agent's findings") from satisfying a claim | FAIL per false claim; the same regex run against the command's prose (fenced and 4-space-indented code blocks stripped) flags a dispatch the row omits as a WARN (under-claim) |
 | CI claims | `CONTRIBUTING.md` "CI runs" bullet list (backticked commands) | each appears in `.github/workflows/ci.yml` | FAIL per missing |
 
 `doc-stats` (counts in README footer, WORKFORCE totals, index) is unchanged;

@@ -135,7 +135,7 @@ rdf/                                 # Repository root
 |   |   |-- r-verify.md              # QA verification
 |   |   |-- r-test.md                # UAT acceptance
 |   |   |-- r-review.md              # Adversarial review
-|   |   |-- r-util-*.md              # 16 utility commands
+|   |   |-- r-util-code-map.md       # 16 r-util-* utility commands
 |   |   +-- templates/               # Governance template docs
 |   |
 |   |-- scripts/                     # Hook scripts (bash, tool-agnostic)

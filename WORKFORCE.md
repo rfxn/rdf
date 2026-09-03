@@ -131,8 +131,8 @@ dispatcher, or invoked via `/r-review`.
 | r-init | /r-init | -- | Governance initialization |
 | r-start | /r-start | -- | Session initialization |
 | r-save | /r-save | -- | Session state sync |
-| r-plan | /r-plan | -- | Planning workflow (planner runs inline) |
-| r-spec | /r-spec | -- | Specification authoring |
+| r-plan | /r-plan | reviewer | Planning workflow (planner runs inline) |
+| r-spec | /r-spec | reviewer | Specification authoring |
 | r-mode | /r-mode | -- | Switch operational mode |
 | r-status | /r-status | -- | Project health dashboard |
 | r-tasks | /r-tasks | -- | Task list status |
@@ -142,7 +142,7 @@ dispatcher, or invoked via `/r-review`.
 | r-audit | /r-audit | reviewer, qa | Full codebase audit |
 | r-audit-slop | /r-audit-slop | engineer, reviewer | Discovery-first AI slop audit (engineer x3, reviewer sentinel) |
 | r-ship | /r-ship | qa, reviewer | Release workflow |
-| r-build | /r-build | dispatcher | Execute plan phase |
+| r-build | /r-build | dispatcher, qa | Execute plan phase |
 | r-vpe | /r-vpe | -- | Pipeline orchestrator |
 | r-verify | /r-verify | qa | QA verification |
 | r-verify-claim | /r-verify-claim | -- | Falsifiable claim verification (5 classes) |
