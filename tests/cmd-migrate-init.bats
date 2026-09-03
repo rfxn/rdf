@@ -217,6 +217,89 @@ _mkrepo() { command mkdir -p "$1"; git -C "$1" init -q; }
     [ ! -e "$proj/AGENTS.md" ]
 }
 
+@test "init detects typescript from an untracked .ts source" {
+    local proj="$TEST_TMP/tsuntracked"
+    _mkrepo "$proj"
+    printf 'export const x: number = 1;\n' > "$proj/app.ts"
+    # deliberately not `git add` — untracked sources must still be detected
+    run bash "$RDF" init "$proj" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "auto-detected profiles: typescript" ]]
+}
+
+@test "init --tools agents-md on a non-git directory exits 1 before writing" {
+    local proj="$TEST_TMP/toolsnogit"
+    command mkdir -p "$proj"
+    run bash "$RDF" init --tools agents-md --no-memory "$proj" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "--tools agents-md requires a git repository" ]]
+    [ ! -e "$proj/CLAUDE.md" ]
+    [ ! -e "$proj/AGENTS.md" ]
+    [ ! -e "$proj/SECURITY.md" ]
+    [ ! -e "$proj/CONTRIBUTING.md" ]
+    [ ! -d "$proj/.rdf" ]
+}
+
+@test "init --tools agent-skills reports a skipped symlink as a warning and exit 1" {
+    local proj="$TEST_TMP/toolsskipsym"
+    _mkrepo "$proj"
+    command mkdir -p "$proj/.agents/skills"
+    printf 'mine\n' > "$proj/.agents/skills/keep.md"
+    run bash "$RDF" init --tools agent-skills --no-memory "$proj" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "exists (not a symlink)" ]]
+    [[ "$output" =~ ".agents/skills was not deployed" ]]
+    # the rest of init still ran
+    [ -f "$proj/CLAUDE.md" ]
+    [ -d "$proj/.rdf/governance" ]
+    [ -f "$proj/.agents/skills/keep.md" ]
+}
+
+@test "init --tools trims whitespace around tokens" {
+    local proj="$TEST_TMP/toolstrim"
+    _mkrepo "$proj"
+    run bash "$RDF" init --tools 'agents-md, agent-skills' --no-memory "$proj" </dev/null
+    [ "$status" -eq 0 ]
+    [ -f "$proj/AGENTS.md" ]
+    [ -L "$proj/.agents/skills" ]
+}
+
+@test "init --tools rejects an empty token after trimming" {
+    _mkrepo "$TEST_TMP/toolstrail"
+    run bash "$RDF" init --tools 'agents-md,' "$TEST_TMP/toolstrail" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "empty --tools value in list" ]]
+
+    _mkrepo "$TEST_TMP/toolslead"
+    run bash "$RDF" init --tools ',agents-md' "$TEST_TMP/toolslead" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "empty --tools value in list" ]]
+
+    _mkrepo "$TEST_TMP/toolsblank"
+    run bash "$RDF" init --tools '  ' "$TEST_TMP/toolsblank" </dev/null
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "empty --tools value in list" ]]
+}
+
+@test "init flags reject a missing value instead of dying on unbound \$2" {
+    _mkrepo "$TEST_TMP/toolsnoval"
+    local flag
+    for flag in --tools --type --version; do
+        run bash "$RDF" init "$TEST_TMP/toolsnoval" "$flag" </dev/null
+        [ "$status" -eq 1 ]
+        [[ "$output" =~ "${flag} requires a value" ]]
+        [[ ! "$output" =~ "unbound variable" ]]
+    done
+}
+
+@test "init writes .agents/ into .git/info/exclude" {
+    local proj="$TEST_TMP/excl"
+    _mkrepo "$proj"
+    run bash "$RDF" init "$proj" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    grep -qxF '.agents/' "$proj/.git/info/exclude"
+}
+
 @test "init --tools agents-md on a repo with AGENTS.md skips with a log" {
     local proj="$TEST_TMP/toolsskip"
     _mkrepo "$proj"

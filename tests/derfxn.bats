@@ -161,12 +161,16 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
 }
 
 @test "README documents the --tools value set" {
-    run grep -- '--tools LIST' "$RDF_SRC/README.md"
-    [ "$status" -eq 0 ]
+    # Scoped to the --tools paragraph: a bare repo-wide grep for `codex` passes
+    # on any unrelated mention and proves nothing about this flag's docs
+    local para
+    para="$(grep -A6 -- '--tools LIST' "$RDF_SRC/README.md")"
+    [ -n "$para" ]
+    local value
     for value in claude-code agent-skills agents-md codex antigravity; do
-        run grep -F -- "\`${value}\`" "$RDF_SRC/README.md"
-        [ "$status" -eq 0 ]
+        printf '%s\n' "$para" | grep -qF -- "\`${value}\`"
     done
+    printf '%s\n' "$para" | grep -qF -- 'requires a git repository'
 }
 
 @test "README and quickstart claims are truthful" {

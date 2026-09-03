@@ -113,7 +113,8 @@ also wire up other surfaces in the target project: `claude-code` (default,
 no-op when combined with others), `agent-skills` (symlinks `.agents/skills`),
 `agents-md` (composes `AGENTS.md` from the project's own `CLAUDE.md`), and the
 composites `codex` / `antigravity` (both expand to `agent-skills` +
-`agents-md`). An existing `AGENTS.md` is left untouched.
+`agents-md`). AGENTS.md composition requires a git repository. An existing
+`AGENTS.md` is left untouched.
 
 ### Convention Inheritance
 

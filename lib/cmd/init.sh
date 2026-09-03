@@ -20,7 +20,8 @@ Options:
                         (e.g., shell, rust,infrastructure, python,database)
                         (default: auto-detect from project signals)
   --tools LIST          claude-code (default), agent-skills, agents-md, codex,
-                        antigravity (comma-separated)
+                        antigravity (comma-separated; agents-md and the
+                        composites require a git repository)
   --version X.Y.Z       Initial version string (default: from VERSION file or 0.1.0)
   --no-memory           Skip MEMORY.md placeholder creation
   --github              Create labels + repo project board via gh CLI
@@ -61,8 +62,9 @@ _has_real_ts_files() {
     local path="$1"
 
     if [[ -d "${path}/.git" ]]; then
-        # List all .ts files, exclude .d.ts, check if any remain
-        git -C "$path" ls-files '*.ts' 2>/dev/null \
+        # --cached --others --exclude-standard mirrors _has_files: an untracked
+        # app.ts in a not-yet-committed repo still activates the profile
+        git -C "$path" ls-files --cached --others --exclude-standard -- '*.ts' 2>/dev/null \
             | grep -v '\.d\.ts$' \
             | grep -q . && return 0  # stderr: not a git repo is safe
     else
@@ -606,6 +608,8 @@ _init_one() {
     local name
     name="$(basename "$path")"
 
+    _init_check_tools_preconditions "$path" "$tools"
+
     rdf_log "initializing: ${name} (profiles=${profiles}, version=${version})"
 
     # 1. CLAUDE.md from governance template merge
@@ -730,37 +734,63 @@ _validate_profiles() {
 }
 
 # _init_validate_tools list — split/expand/dedupe --tools; dies on an empty or unknown token; echoes newline list
+# Space-delimited string accumulator, not arrays: expanding an empty array under
+# `set -u` is an unbound-variable error on the bash 3.2 / 4.1 floors.
 _init_validate_tools() {
     local list="$1"
-    local -a raw=()
-    local -a expanded=()
-    local -a deduped=()
-    local token d seen
+    local token expanded item out=""
 
     if [[ -z "$list" ]]; then
         rdf_die "unknown --tools value:  (allowed: claude-code, agent-skills, agents-md, codex, antigravity)"
     fi
 
-    IFS=',' read -ra raw <<< "$list"
-    for token in "${raw[@]}"; do
+    while IFS= read -r token; do
+        token="${token#"${token%%[![:space:]]*}"}"
+        token="${token%"${token##*[![:space:]]}"}"
+        if [[ -z "$token" ]]; then
+            rdf_die "empty --tools value in list: ${list} (allowed: claude-code, agent-skills, agents-md, codex, antigravity)"
+        fi
         case "$token" in
-            claude-code)       expanded+=(claude-code) ;;
-            agent-skills)      expanded+=(agent-skills) ;;
-            agents-md)         expanded+=(agents-md) ;;
-            codex|antigravity) expanded+=(agent-skills agents-md) ;;
+            claude-code)       expanded="claude-code" ;;
+            agent-skills)      expanded="agent-skills" ;;
+            agents-md)         expanded="agents-md" ;;
+            codex|antigravity) expanded="agent-skills agents-md" ;;
             *) rdf_die "unknown --tools value: ${token} (allowed: claude-code, agent-skills, agents-md, codex, antigravity)" ;;
         esac
-    done
-
-    for token in "${expanded[@]}"; do
-        seen=0
-        for d in "${deduped[@]}"; do
-            [[ "$d" == "$token" ]] && { seen=1; break; }
+        for item in $expanded; do
+            case " $out " in
+                *" $item "*) ;;
+                *) out="${out:+$out }$item" ;;
+            esac
         done
-        [[ $seen -eq 0 ]] && deduped+=("$token")
-    done
+    done <<< "${list//,/$'\n'}"
 
-    printf '%s\n' "${deduped[@]}"
+    for item in $out; do
+        printf '%s\n' "$item"
+    done
+}
+
+# _init_tools_contains tools token — rc 0 when the expanded newline list holds token
+_init_tools_contains() {
+    local t
+    while IFS= read -r t; do
+        [[ "$t" == "$2" ]] && return 0
+    done <<< "$1"
+    return 1
+}
+
+# _init_check_tools_preconditions path tools — die before any write when a
+# requested surface cannot be produced for this path
+_init_check_tools_preconditions() {
+    local path="$1"
+    local tools="$2"
+
+    # amd_compose reads the project's git tree; on a non-git path it dies after
+    # governance and companion files are already on disk
+    if _init_tools_contains "$tools" "agents-md" \
+            && ! git -C "$path" rev-parse --show-toplevel >/dev/null 2>&1; then  # stderr: "not a repository" is the condition under test
+        rdf_die "--tools agents-md requires a git repository: ${path}"
+    fi
 }
 
 # _init_apply_tools path tools dry_run — deploy agent-skills/agents-md targets after governance write
@@ -768,7 +798,7 @@ _init_apply_tools() {
     local path="$1"
     local tools="$2"
     local dry_run="$3"
-    local t sk_output
+    local t sk_output skipped_before
 
     while IFS= read -r t; do
         [[ -z "$t" ]] && continue
@@ -787,7 +817,12 @@ _init_apply_tools() {
                 fi
                 # shellcheck disable=SC1090,SC1091
                 source "${RDF_LIBDIR}/cmd/deploy.sh"
+                skipped_before="$_DEPLOY_SKIPPED"
                 _deploy_agent_skills "$dry_run" 0 "$path"
+                if [[ "$_DEPLOY_SKIPPED" -gt "$skipped_before" ]]; then
+                    rdf_warn "  .agents/skills was not deployed — resolve the existing path, then run 'rdf deploy agent-skills --project-root ${path} --force'"
+                    _INIT_SKIPPED=$((_INIT_SKIPPED + 1))
+                fi
                 ;;
             agents-md)
                 if [[ -e "${path}/AGENTS.md" ]]; then
@@ -806,6 +841,9 @@ _init_apply_tools() {
     done <<< "$tools"
 }
 
+# Incremented when a tool surface was requested but left undeployed
+_INIT_SKIPPED=0
+
 cmd_init() {
     local path=""
     local type=""
@@ -819,9 +857,15 @@ cmd_init() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --type)      type="$2"; shift 2 ;;
-            --tools)     tools="$2"; shift 2 ;;
-            --version)   version="$2"; shift 2 ;;
+            --type)
+                [[ $# -lt 2 ]] && rdf_die "--type requires a value"
+                type="$2"; shift 2 ;;
+            --tools)
+                [[ $# -lt 2 ]] && rdf_die "--tools requires a value"
+                tools="$2"; shift 2 ;;
+            --version)
+                [[ $# -lt 2 ]] && rdf_die "--version requires a value"
+                version="$2"; shift 2 ;;
             --no-memory) no_memory=1; shift ;;
             --github)    do_github=1; shift ;;
             --batch)     batch=1; shift ;;
@@ -840,6 +884,7 @@ cmd_init() {
 
     [[ -z "$path" ]] && rdf_die "missing path — run 'rdf init help'"
 
+    _INIT_SKIPPED=0
     local tools_expanded
     tools_expanded="$(_init_validate_tools "$tools")"
 
@@ -910,5 +955,10 @@ cmd_init() {
         resolved_version="$(_resolve_version "$path" "$version")"
 
         _init_one "$path" "$type" "$resolved_version" "$no_memory" "$do_github" "$dry_run" "$tools_expanded"
+    fi
+
+    if [[ "$_INIT_SKIPPED" -gt 0 ]]; then
+        rdf_warn "init finished with ${_INIT_SKIPPED} undeployed tool surface(s)"
+        return 1
     fi
 }

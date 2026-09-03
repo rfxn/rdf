@@ -1217,7 +1217,7 @@ _doc_truth_dispatch() {
         esac
 
         local a
-        for a in "${claimed_tokens[@]}"; do
+        for a in "${claimed_tokens[@]+"${claimed_tokens[@]}"}"; do
             if ! grep -qE "\\brdf-${a}\\b|\\b${a}[[:space:]]+(sub)?agent\\b" "$cmdfile" 2>/dev/null; then  # unreadable file (loop already checked -f) reads as "no match"
                 _add_result "doc-truth" "$_FAIL" "WORKFORCE.md: ${cmd} claims dispatch of '${a}' but canonical/commands/${cmd}.md never dispatches it"
             fi
@@ -1229,7 +1229,7 @@ _doc_truth_dispatch() {
             agent_name="$(command basename "$af" .md)"
             grep -qE "\\brdf-${agent_name}\\b" "$cmdfile" 2>/dev/null || continue  # unreadable file (loop already checked -f) reads as "no match"
             is_claimed=0
-            for t in "${claimed_tokens[@]}"; do
+            for t in "${claimed_tokens[@]+"${claimed_tokens[@]}"}"; do
                 [[ "$t" == "$agent_name" ]] && { is_claimed=1; break; }
             done
             if [[ $is_claimed -eq 0 ]]; then
@@ -1379,7 +1379,7 @@ _print_results() {
     echo ""
 
     local entry
-    for entry in "${_RESULTS[@]}"; do
+    for entry in "${_RESULTS[@]+"${_RESULTS[@]}"}"; do
         local category status message
         IFS='|' read -r category status message <<< "$entry"
 
@@ -1412,7 +1412,7 @@ _results_to_json() {
 
     local first=1
     local entry
-    for entry in "${_RESULTS[@]}"; do
+    for entry in "${_RESULTS[@]+"${_RESULTS[@]}"}"; do
         local category status message
         IFS='|' read -r category status message <<< "$entry"
         [[ $first -eq 0 ]] && printf ","

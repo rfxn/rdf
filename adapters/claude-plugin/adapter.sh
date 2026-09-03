@@ -31,6 +31,12 @@ _cpl_rewrite_namespace_text() {
         sed_args+=(-e "s#\([[:space:]\`(|\"'*]\)/${name}\$#\1/rdf:${name}#")
         sed_args+=(-e "s#\([[:space:]\`(|\"'*]\)/${name}\([^a-z-]\)#\1/rdf:${name}\2#g")
     done < <(_cpl_command_names_longest_first)
+    # Empty array expansion is an unbound-variable error under `set -u` on the
+    # bash 3.2/4.1 floors, and `sed` with no script is a usage error either way
+    if [[ ${#sed_args[@]} -eq 0 ]]; then
+        command cat
+        return 0
+    fi
     sed "${sed_args[@]}"
 }
 
@@ -110,6 +116,9 @@ cpl_stamp_plugin_version() {
         [[ -f "$f" ]] || continue
         agent_files+=("./adapters/claude-plugin/output/agents/$(basename "$f")")
     done
+    if [[ ${#agent_files[@]} -eq 0 ]]; then
+        rdf_die "no generated agents under ${_CPL_OUTPUT_DIR}/agents — run 'rdf generate claude-plugin' first"
+    fi
     agents_json="$(printf '%s\n' "${agent_files[@]}" | jq -R . | jq -s .)"
 
     tmp="$(command mktemp)"

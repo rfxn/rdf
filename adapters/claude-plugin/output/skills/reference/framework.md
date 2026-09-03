@@ -273,6 +273,7 @@ PLAN*.md
 AUDIT.md
 MEMORY.md
 .rdf/
+.agents/
 ```
 
 Never use `.gitignore` for these — exclusion rules stay local.

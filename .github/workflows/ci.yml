@@ -152,6 +152,18 @@ jobs:
             | grep -qE '^[0-9a-f]{8}-'
           echo "bash 3.2 bus smoke: OK"
 
+      - name: Smoke rdf init under system bash 3.2 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          proj="$(mktemp -d)"
+          git -C "$proj" init -q
+          if /bin/bash ./bin/rdf init --dry-run --tools codex "$proj"; then
+            echo "bash 3.2 init smoke: OK"
+          else
+            echo "rdf init exited $? under system bash 3.2" >&2
+            exit 1
+          fi
+
       - name: Smoke state-bootstrap under system bash 3.2 (macOS)
         if: runner.os == 'macOS'
         run: |

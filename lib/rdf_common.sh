@@ -121,6 +121,7 @@ RDF_GIT_EXCLUDE_ENTRIES=(
     "AUDIT.md"
     "MEMORY.md"
     ".rdf/"
+    ".agents/"
 )
 
 rdf_die() {
