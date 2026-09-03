@@ -1195,7 +1195,8 @@ _doc_truth_tests() {
 # keeps incidental prose ("the reviewer agent's findings") from satisfying a
 # claim.
 _doc_truth_dispatch_re() {
-    printf '\\brdf-%s\\b|[Dd]ispatch[a-z]*([[:space:]]+[a-z]+){0,3}[[:space:]]+%s[[:space:]]+(sub)?agent\\b' "$1" "$1"
+    # POSIX word boundaries, not \b — BSD ERE (macOS CI leg) may read \b literally.
+    printf '(^|[^[:alnum:]_])rdf-%s([^[:alnum:]_]|$)|[Dd]ispatch[a-z]*([[:space:]]+[a-z]+){0,3}[[:space:]]+%s[[:space:]]+(sub)?agent([^[:alnum:]_]|$)' "$1" "$1"
 }
 
 # Command body with fenced and 4-space-indented code blocks removed —

@@ -64,6 +64,11 @@ jobs:
           # SC1090/SC1091: dynamic source paths are expected (governance pattern)
           xargs shellcheck -S error --exclude=SC1090,SC1091 < /tmp/shell-files.txt
 
+      - name: shellcheck bats suites (errors only)
+        # SC2314 is error-level: a bare `!` in a bats body never fails the test,
+        # so an inert assertion would otherwise ship green.
+        run: shellcheck -S error --exclude=SC1090,SC1091 tests/*.bats
+
   doctor:
     name: Doctor (adapter health)
     runs-on: ubuntu-latest

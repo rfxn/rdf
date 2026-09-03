@@ -41,18 +41,23 @@ USAGE
 _KNOWN_PROFILES="shell python go rust typescript perl php node frontend database infrastructure minimal rfxn-workspace"
 
 # _has_files path pattern — git ls-files (tracked+untracked) in git repos, find(1) otherwise; rc 0 if any match
+# Capture rather than `| grep -q`: grep -q quits after ~96K, and under `pipefail`
+# the producer's SIGPIPE (141) then suppresses the whole detection on big repos.
 _has_files() {
     local path="$1"
     local pattern="$2"
+    local listing
 
     if [[ -d "${path}/.git" ]]; then
         # --cached --others --exclude-standard: tracked + untracked-but-not-ignored —
         # a repo initialised before its first commit still detects its sources
-        git -C "$path" ls-files --cached --others --exclude-standard -- "$pattern" 2>/dev/null | grep -q . && return 0  # stderr: not a git repo is safe
+        listing="$(git -C "$path" ls-files --cached --others --exclude-standard -- "$pattern" 2>/dev/null)" || return 1  # stderr/rc: not a git repo is safe
+        [[ -n "$listing" ]] && return 0
     else
         # Non-git fallback: find with maxdepth for top-level patterns,
         # recursive for deeper searches. Use -quit for early exit.
-        find "$path" -maxdepth 3 -name "$pattern" -print -quit 2>/dev/null | grep -q . && return 0  # stderr: permission errors safe to ignore
+        listing="$(find "$path" -maxdepth 3 -name "$pattern" -print -quit 2>/dev/null)" || return 1  # stderr/rc: permission errors safe to ignore
+        [[ -n "$listing" ]] && return 0
     fi
     return 1
 }
@@ -60,16 +65,16 @@ _has_files() {
 # Check if project has non-declaration .ts files (exclude .d.ts-only projects)
 _has_real_ts_files() {
     local path="$1"
+    local listing
 
     if [[ -d "${path}/.git" ]]; then
         # --cached --others --exclude-standard mirrors _has_files: an untracked
         # app.ts in a not-yet-committed repo still activates the profile
-        git -C "$path" ls-files --cached --others --exclude-standard -- '*.ts' 2>/dev/null \
-            | grep -v '\.d\.ts$' \
-            | grep -q . && return 0  # stderr: not a git repo is safe
+        listing="$(git -C "$path" ls-files --cached --others --exclude-standard -- '*.ts' 2>/dev/null | grep -v '\.d\.ts$')" || return 1  # stderr/rc: not a git repo, or every .ts is a declaration
+        [[ -n "$listing" ]] && return 0
     else
-        find "$path" -maxdepth 3 -name '*.ts' -not -name '*.d.ts' \
-            -print -quit 2>/dev/null | grep -q . && return 0  # stderr: permission errors safe to ignore
+        listing="$(find "$path" -maxdepth 3 -name '*.ts' -not -name '*.d.ts' -print -quit 2>/dev/null)" || return 1  # stderr/rc: permission errors safe to ignore
+        [[ -n "$listing" ]] && return 0
     fi
     return 1
 }

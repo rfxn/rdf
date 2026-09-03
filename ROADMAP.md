@@ -59,11 +59,11 @@ it earned a slot):
        tag): shared adapter library, skills-native cc/plugin output, codex
        via composite, project-scoped AGENTS.md, `--tools` real, dead
        catalogs removed
-5. [~] **Platform-alignment gate + eval hardening** — first case ruled
-       (Agent Teams → keep dispatcher; `docs/platform-triage.md` ledger +
-       `/r-ship` 1d gate); contract hardening landed (negation guards +
-       structural assertions, D3). Trigger/activation evals and OWASP
-       posture remain — see *Next minor* below
+5. [ ] **(partial)** **Platform-alignment gate + eval hardening** — first
+       case ruled (Agent Teams → keep dispatcher; `docs/platform-triage.md`
+       ledger + `/r-ship` 1d gate); contract hardening landed (negation
+       guards + structural assertions, D3). Trigger/activation evals and
+       OWASP posture remain — see *Next minor* below
 
 ## Next minor — platform alignment follow-ons
 

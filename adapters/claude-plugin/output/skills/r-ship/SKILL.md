@@ -10,8 +10,12 @@ release artifacts, and publishes a PR.
 
 ## Arguments
 
-$ARGUMENTS — optional: base branch override (default: auto-detect via
-`git symbolic-ref refs/remotes/origin/HEAD` or fall back to `main`)
+$ARGUMENTS — optional, any order:
+
+- base branch override (default: auto-detect via
+  `git symbolic-ref refs/remotes/origin/HEAD` or fall back to `main`)
+- `--version X.Y.Z` — the version this run ships. When absent, Setup prompts
+  for it (see *Target version* below)
 
 ## Setup
 
@@ -19,6 +23,22 @@ $ARGUMENTS — optional: base branch override (default: auto-detect via
 - Load governance/verification.md for project-specific release checks
 - Load governance/conventions.md for commit/changelog format
 - Determine project name, version, and branch from governance index
+
+### Target version
+
+Resolve the version *being shipped* before any gate runs. The on-disk version
+still names the **previous** release until Stage 3 bumps it, so a gate that
+reads it judges the wrong release.
+
+1. If `$ARGUMENTS` carries `--version X.Y.Z`, that is the target.
+2. Otherwise read the on-disk version (root `VERSION` file, or the project's
+   in-file `VERSION=` variable) and prompt, defaulting to the next minor:
+   `Target version for this release [next minor <MAJOR>.<MINOR+1>.0]:`
+3. If no on-disk version is readable and the user supplies none, record
+   `VERSION: unknown`.
+
+Write the answer to the progress file's `VERSION:` field. Stages 1d and 3c
+read the target from there, so a resumed session gates the same release.
 
 ## Resume Detection
 
@@ -44,7 +64,7 @@ After each stage completes, write state to `.rdf/work-output/ship-progress-${RDF
 STAGE: {preflight|verify|prep|publish|report}
 STATUS: {complete|in-progress}
 PR_URL: {if created}
-VERSION: {version string}
+VERSION: {target release version — resolved at Setup}
 ```
 
 ## Stage 1: Preflight
@@ -78,13 +98,16 @@ Per-minor gate (D4, `docs/specs/2026-09-02-platform-alignment-spike-design.md`
 §6) — a minor release must not ship without a current platform re-triage
 verdict; patch releases are unaffected.
 
-- Read the `VERSION` file at the repo root; split into `MAJOR.MINOR.PATCH`.
-  If no root `VERSION` file exists (project uses a different versioning
-  convention — e.g. an in-file `VERSION=` variable), mark `[x]` with
-  *(skipped — no root VERSION file)* and skip the remaining steps below.
-- If `PATCH` is non-zero, mark `[x]` with *(skipped — patch release)* and
-  skip the remaining steps below.
-- Otherwise grep `docs/platform-triage.md` for a top block matching
+- Split the **target version** from Setup (the progress file's `VERSION:`
+  field) into `MAJOR.MINOR.PATCH`. Do not read the on-disk `VERSION` here —
+  Stage 3 has not bumped it yet, so it names the previous release and would
+  gate the wrong one.
+- If the target is `unknown`, mark `[x]` with *(skipped — no target version)*
+  and skip the remaining steps below.
+- If `PATCH` is non-zero the gate does not apply: mark
+  `[x] **Platform triage**: *(skipped — patch release X.Y.Z)*` and skip the
+  remaining steps below.
+- Otherwise grep `docs/platform-triage.md` for a block matching
   `^## <MAJOR.MINOR> — `:
   - Present: `[x] **Platform triage**: \`<MAJOR.MINOR>\` ledger current`.
   - Absent: `[ ] **Platform triage**: no \`## <MAJOR.MINOR> — <date>\` block
@@ -97,12 +120,15 @@ verdict; patch releases are unaffected.
 Present results as a task list with inline code for values:
 
 ```
-### Preflight
+### Preflight — target `3.7.0`
 - [x] **Plan**: all phases complete (`12`/`12`)
 - [x] **Working tree**: clean
 - [ ] **Branch**: on `main` — *expected a feature/release branch*
 - [x] **Platform triage**: `3.7` ledger current
 ```
+
+A patch target renders the last line as
+`- [x] **Platform triage**: *(skipped — patch release 3.7.1)*`.
 
 If a check fails, use an unchecked box and add an italic reason.
 If a check is skipped, use a checked box with *(skipped)* annotation.
@@ -174,6 +200,8 @@ Ask user to fix or explicitly override.
 - Grep for version strings across the codebase (VERSION file,
   package.json, setup.py, Cargo.toml, etc.)
 - Verify all version references are consistent
+- Verify the on-disk version now equals the target recorded at Setup — this is
+  what proves Stage 1d gated the release actually being shipped
 - If mismatches found, report and ask user to fix
 
 ### 3d. Commit Release Prep

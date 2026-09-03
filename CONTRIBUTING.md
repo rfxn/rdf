@@ -59,7 +59,7 @@ case that exercises the non-GNU / older-bash path (see `tests/portability.bats`)
    `[Change]`, `[Fix]`, `[Remove]`. No AI-assistant attribution lines.
 3. Update `CHANGELOG` and `CHANGELOG.RELEASE` for any code-changing commit.
 4. Open a PR against `rfxn/rdf:main`. CI (`.github/workflows/ci.yml`) runs:
-   - Lint (ubuntu): `bash -n`, `shellcheck -S error --exclude=SC1090,SC1091`
+   - Lint (ubuntu): `bash -n`, `shellcheck -S error --exclude=SC1090,SC1091` over the sources and `tests/*.bats`
    - Doctor (ubuntu): `rdf generate claude-code`, `rdf doctor --scope content-drift`
    - Plugin (ubuntu): `rdf generate claude-plugin`, `claude plugin validate . --strict`
    - Tests (ubuntu + macOS, incl. a bash 3.2 smoke on macOS): `make -C tests test`

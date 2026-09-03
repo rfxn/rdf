@@ -334,7 +334,13 @@ teardown() {
     grep -q 'state/git-hooks/pre-commit' "$output_dir/skills/r-build/SKILL.md"
     grep -q 'cd \.worktrees\|cd into the worktree' "$output_dir/skills/r-build/SKILL.md"
     grep -q 'build-progress-\${RDF_SESSION_ID}' "$output_dir/skills/r-build/SKILL.md"
-    ! grep -q '8-char random hex' "$output_dir/skills/r-build/SKILL.md"
+    # explicit if/return — bats runs bodies under `set -e`, which exempts
+    # `!`-negated commands, so a bare `!` never fails the test (SC2314)
+    if grep -q '8-char random hex' "$output_dir/skills/r-build/SKILL.md"; then
+        echo "regenerated r-build still names the retired 8-char random hex session id"
+        command rm -rf "$output_dir"
+        return 1
+    fi
     command rm -rf "$output_dir"
 }
 

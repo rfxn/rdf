@@ -162,6 +162,26 @@ _mkrepo() { command mkdir -p "$1"; git -C "$1" init -q; }
     [[ "$output" =~ "auto-detected profiles: python" ]]
 }
 
+@test "init detects shell in a repo with 300 tracked sources" {
+    local proj="$TEST_TMP/bigshell" i
+    _mkrepo "$proj"
+    for i in $(seq 1 300); do printf '#!/bin/bash\n' > "$proj/script_$i.sh"; done
+    git -C "$proj" add -A >/dev/null
+    git -C "$proj" -c user.email=t@t.local -c user.name=t commit -qm init
+    run bash "$RDF" init "$proj" --no-memory </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "auto-detected profiles: shell" ]]
+}
+
+@test "profile detection never pipes a file listing into grep -q" {
+    # grep -q quits after ~96K of input; under `set -o pipefail` the producer's
+    # SIGPIPE (141) then makes `... && return 0` never fire on a large repo.
+    if grep -nE '(ls-files|find)[^|]*\|[^|]*grep -q' "$RDF_SRC/lib/cmd/init.sh"; then
+        echo "a detection helper pipes a file listing into grep -q"
+        return 1
+    fi
+}
+
 # ---- rdf init --tools -----------------------------------------------------
 
 @test "init --tools unknown exits 1 with the allowed list" {
