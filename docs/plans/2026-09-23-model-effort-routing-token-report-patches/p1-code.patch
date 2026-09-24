@@ -1,0 +1,179 @@
+diff --git a/adapters/claude-code/adapter.sh b/adapters/claude-code/adapter.sh
+index 8497d13..00b6c2a 100644
+--- a/adapters/claude-code/adapter.sh
++++ b/adapters/claude-code/adapter.sh
+@@ -122,8 +122,8 @@ cc_generate_all() {
+     [[ "$_CC_LITE" -eq 1 ]] && rdf_log "lite mode: condensed core governance, lifecycle commands only, no hooks"
+     rdf_require_dir "$RDF_CANONICAL" "canonical directory"
+     rdf_require_file "$_CC_AGENT_META" "agent-meta.json"
+-    rdf_require_agent_meta "$_CC_AGENT_META" "${RDF_CANONICAL}/agents"
+     rdf_require_bin jq
++    rdf_require_agent_meta "$_CC_AGENT_META" "${RDF_CANONICAL}/agents"
+     adp_require_hash_tool
+ 
+     local _output_final="$_CC_OUTPUT_DIR"
+diff --git a/lib/adapter_common.sh b/lib/adapter_common.sh
+index d540bd1..8d53a7f 100644
+--- a/lib/adapter_common.sh
++++ b/lib/adapter_common.sh
+@@ -25,12 +25,13 @@ adp_write_hash_sidecar() {
+     printf '%s\n' "$hash" > "${dst}.rdf-hash"
+ }
+ 
+-# adp_agent_frontmatter meta agent — YAML frontmatter (name, description,
+-# tools, disallowedTools, model) from an agent-meta.json entry. rc 1 + warn
+-# when the agent is absent from meta — caller falls back to a plain copy.
++# adp_agent_frontmatter meta agent [variant] — YAML frontmatter (name,
++# description, tools, disallowedTools, model, effort) from an agent-meta.json
++# entry, or from one of its variants. rc 1 + warn when the agent is absent
++# from meta — caller falls back to a plain copy.
+ adp_agent_frontmatter() {
+-    local meta="$1" agent="$2"
+-    local name desc model tools_json disallowed_json
++    local meta="$1" agent="$2" variant="${3:-}"
++    local name desc model effort tools_json disallowed_json
+ 
+     if ! jq -e --arg a "$agent" '.[$a]' "$meta" >/dev/null 2>&1; then  # missing entry = signal caller to plain-copy
+         rdf_warn "no metadata for agent: $agent — copying without frontmatter"
+@@ -40,6 +41,13 @@ adp_agent_frontmatter() {
+     name="$(jq -r --arg a "$agent" '.[$a].name' "$meta")"
+     desc="$(jq -r --arg a "$agent" '.[$a].description' "$meta")"
+     model="$(jq -r --arg a "$agent" '.[$a].model' "$meta")"
++    effort="$(jq -r --arg a "$agent" '.[$a].effort // empty' "$meta")"
++    if [[ -n "$variant" ]]; then
++        name="${name}-${variant}"
++        desc="$(jq -r --arg a "$agent" --arg v "$variant" '.[$a].variants[$v].description // .[$a].description' "$meta")"
++        model="$(jq -r --arg a "$agent" --arg v "$variant" '.[$a].variants[$v].model // .[$a].model' "$meta")"
++        effort="$(jq -r --arg a "$agent" --arg v "$variant" '.[$a].variants[$v].effort // empty' "$meta")"
++    fi
+     tools_json="$(jq -c --arg a "$agent" '.[$a].tools // []' "$meta")"
+     disallowed_json="$(jq -c --arg a "$agent" '.[$a].disallowedTools // []' "$meta")"
+ 
+@@ -63,6 +71,9 @@ adp_agent_frontmatter() {
+     fi
+ 
+     echo "model: ${model}"
++    if [[ -n "$effort" ]]; then
++        echo "effort: ${effort}"
++    fi
+     echo "---"
+ }
+ 
+@@ -72,7 +83,7 @@ adp_agent_frontmatter() {
+ # filter_fn "-" means stream the body unfiltered.
+ adp_emit_agents() {
+     local src_dir="$1" dst_dir="$2" meta="$3" filter_fn="$4" sidecar="$5"
+-    local src_file count=0
++    local src_file count=0 vcount=0
+ 
+     command mkdir -p "$dst_dir"
+ 
+@@ -101,8 +112,29 @@ adp_emit_agents() {
+ 
+         [[ "$sidecar" -eq 1 ]] && adp_write_hash_sidecar "$src_file" "$dst_file"
+         count=$((count + 1))
++
++        local vkey vdst
++        while IFS= read -r vkey; do
++            [[ -n "$vkey" ]] || continue
++            vdst="${dst_dir}/${basename_f}-${vkey}.md"
++            adp_agent_frontmatter "$meta" "$basename_f" "$vkey" > "${vdst}.tmp"
++            echo "" >> "${vdst}.tmp"
++            if [[ "$filter_fn" == "-" ]]; then
++                command cat "$src_file" >> "${vdst}.tmp"
++            else
++                "$filter_fn" < "$src_file" >> "${vdst}.tmp"
++            fi
++            command mv "${vdst}.tmp" "$vdst"
++            [[ "$sidecar" -eq 1 ]] && adp_write_hash_sidecar "$src_file" "$vdst"
++            count=$((count + 1))
++            vcount=$((vcount + 1))
++        done < <(jq -r --arg a "$basename_f" '(.[$a].variants // {}) | keys[]' "$meta" 2>/dev/null)  # agent absent or no variants → none
+     done
+-    rdf_log "generated ${count} agent files"
++    if [[ "$vcount" -gt 0 ]]; then
++        rdf_log "generated ${count} agent files (${vcount} variants)"
++    else
++        rdf_log "generated ${count} agent files"
++    fi
+ }
+ 
+ # adp_skill_description name src meta — echo the intent-trigger description:
+diff --git a/lib/rdf_common.sh b/lib/rdf_common.sh
+index 8aeb56d..93bb499 100644
+--- a/lib/rdf_common.sh
++++ b/lib/rdf_common.sh
+@@ -111,6 +111,73 @@ rdf_require_agent_meta() {
+         fi
+     done
+     [[ -z "$missing" ]] || rdf_die "agents missing from agent-meta.json: ${missing} — add entries before generating"
++    local errors
++    errors="$(rdf_agent_routing_errors "$meta" "$agents_dir")"
++    [[ -z "$errors" ]] || rdf_die "invalid agent routing in agent-meta.json: ${errors//$'\n'/; }"
++}
++
++# rdf_agent_routing_errors META AGENTS_DIR — one line per invalid model, effort,
++# or variant in agent-meta.json (empty = valid; a missing model/effort is valid)
++rdf_agent_routing_errors() {
++    local meta="$1" agents_dir="$2" label field value
++    while IFS=$'\t' read -r label field value; do
++        case "$field" in
++            model)
++                case "$value" in
++                    opus|sonnet|haiku|fable|inherit) ;;
++                    claude-*)
++                        case "$value" in
++                            *[!a-z0-9.-]*) printf "%s: model '%s' is not a valid model id\n" "$label" "$value" ;;
++                        esac
++                        ;;
++                    *) printf "%s: model '%s' not in opus|sonnet|haiku|fable|inherit or a claude-* id\n" "$label" "$value" ;;
++                esac
++                ;;
++            effort)
++                case "$value" in
++                    low|medium|high|xhigh|max) ;;
++                    *) printf "%s: effort '%s' not in low|medium|high|xhigh|max\n" "$label" "$value" ;;
++                esac
++                ;;
++            variants-type) printf '%s: variants must be an object\n' "$label" ;;
++            variant-key)
++                case "$value" in
++                    ""|[!a-z]*|*[!a-z0-9-]*) printf "%s: variant key '%s' must start with a-z and use only a-z, 0-9, -\n" "$label" "$value" ;;
++                    *)
++                        if [[ -e "${agents_dir}/${label}-${value}.md" ]]; then
++                            printf '%s: variant %s collides with canonical agent %s-%s.md\n' "$label" "$value" "$label" "$value"
++                        fi
++                        ;;
++                esac
++                ;;
++            variant-noeffort) printf '%s: variant requires effort\n' "$label" ;;
++        esac
++    done < <(jq -r '
++        to_entries[]
++        | select((.key | startswith("_") | not) and (.value | type == "object" and has("name")))
++        | .key as $k | .value as $v
++        | (if ($v | has("model")) then [$k, "model", ($v.model | tostring)] else empty end),
++          (if ($v | has("effort")) then [$k, "effort", ($v.effort | tostring)] else empty end),
++          (if ($v | has("variants")) then
++             (if ($v.variants | type) != "object" then [$k, "variants-type", "-"]
++              else ($v.variants | to_entries[]
++                    | .key as $vk | .value as $vv
++                    | [$k, "variant-key", $vk],
++                      (if ($vv | type) != "object" or (($vv | has("effort")) | not)
++                       then [($k + "." + $vk), "variant-noeffort", "-"]
++                       else [($k + "." + $vk), "effort", ($vv.effort | tostring)],
++                            (if ($vv | has("model")) then [($k + "." + $vk), "model", ($vv.model | tostring)] else empty end)
++                       end))
++              end)
++           else empty end)
++        | @tsv' "$meta" 2>/dev/null)  # unparseable meta → no rows (the missing-agent check reports it)
++}
++
++# rdf_agent_variant_stems META — "<agent>-<variant>" per declared variant
++rdf_agent_variant_stems() {
++    jq -r 'to_entries[]
++        | select((.key | startswith("_") | not) and (.value | type == "object") and ((.value.variants | type) == "object"))
++        | .key as $k | .value.variants | keys[] | "\($k)-\(.)"' "$1" 2>/dev/null || true  # absent/unparseable meta → no stems
+ }
+ 
+ # Working files kept out of git — single source of truth: init writes these,

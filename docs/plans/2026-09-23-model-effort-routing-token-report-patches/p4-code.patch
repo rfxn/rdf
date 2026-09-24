@@ -1,0 +1,390 @@
+diff --git a/bin/rdf b/bin/rdf
+index b6e0ea1..8386c32 100755
+--- a/bin/rdf
++++ b/bin/rdf
+@@ -39,6 +39,7 @@ Commands:
+   deploy     Deploy generated output to tool destinations
+   sync       Pull ~/.claude/ changes back to canonical
+   state      Deterministic project state snapshot (JSON)
++  tokens     Local token usage report from Claude Code transcripts
+   github     GitHub Issues + Projects integration
+   profile    Manage active domain profiles
+   refresh    Agent-driven state file updates
+@@ -60,6 +61,7 @@ case "${1:-}" in
+     deploy)   shift; source "${RDF_LIBDIR}/cmd/deploy.sh";   cmd_deploy "$@" ;;
+     sync)     shift; source "${RDF_LIBDIR}/cmd/sync.sh";     cmd_sync "$@" ;;
+     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
++    tokens)   shift; source "${RDF_LIBDIR}/cmd/tokens.sh";   cmd_tokens "$@" ;;
+     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
+     profile)  shift; source "${RDF_LIBDIR}/cmd/profile.sh";  cmd_profile "$@" ;;
+     help|--help|-h|"") _rdf_usage ;;
+diff --git a/lib/cmd/tokens.sh b/lib/cmd/tokens.sh
+new file mode 100644
+index 0000000..de61fd4
+--- /dev/null
++++ b/lib/cmd/tokens.sh
+@@ -0,0 +1,12 @@
++#!/usr/bin/env bash
++# lib/cmd/tokens.sh — rdf tokens subcommand
++# (C) 2026 R-fx Networks <proj@rfxn.com>
++# GNU GPL v2
++# Sourced by bin/rdf — do not execute directly
++
++# cmd_tokens args — run the rdf-tokens.sh helper (it owns usage text and exit codes)
++cmd_tokens() {
++    local script="${RDF_STATE_DIR}/rdf-tokens.sh"
++    rdf_require_file "$script" "rdf-tokens.sh"
++    bash "$script" "$@"
++}
+diff --git a/state/rdf-tokens.sh b/state/rdf-tokens.sh
+new file mode 100755
+index 0000000..0f49f63
+--- /dev/null
++++ b/state/rdf-tokens.sh
+@@ -0,0 +1,346 @@
++#!/usr/bin/env bash
++# state/rdf-tokens.sh — local token usage report from Claude Code transcripts
++# (C) 2026 R-fx Networks <proj@rfxn.com>
++# GNU GPL v2
++# shellcheck disable=SC2016  # literal $ in single-quoted jq programs
++set -euo pipefail
++
++RDF_CLAUDE_PROJECTS="${RDF_CLAUDE_PROJECTS:-${HOME}/.claude/projects}"
++_TOK_WORK=""
++_TOK_SINCE=""
++trap '[ -z "$_TOK_WORK" ] || command rm -rf "$_TOK_WORK"' EXIT
++
++_tok_usage() {
++    cat <<'USAGE'
++Usage: rdf tokens [options]
++
++Local token usage report from Claude Code transcripts: deduplicated usage,
++list-price cost, and breakdowns by cost class, model, agent, context depth,
++subagent boot cost, and effort.
++
++Options:
++  --project DIR      project directory (default: current directory)
++  --transcripts DIR  transcript directory (overrides --project resolution)
++  --session ID       one session and its subagents, found under any project
++                     (ignores the window)
++  --days N           window: last N days (default 30)
++  --since YYYY-MM-DD window start (overrides --days)
++  --json             full JSON report
++  --summary          compact JSON object for session logs
++  help               this text
++
++Environment:
++  RDF_CLAUDE_PROJECTS  transcript root (default: ~/.claude/projects)
++
++Prices are embedded list prices as of 2026-09-23 (estimate). Transcripts are
++read locally; nothing is sent anywhere.
++Known limitation: --session on a resumed or forked session includes the
++history it copied from its parent.
++USAGE
++}
++
++_tok_die() {
++    printf 'rdf-tokens: error: %s\n' "$1" >&2
++    exit "${2:-1}"
++}
++
++# _tok_slug dir — Claude Code project-directory slug
++_tok_slug() {
++    printf '%s' "$1" | sed 's/[^A-Za-z0-9-]/-/g'
++}
++
++# _tok_resolve_dir project — transcripts dir for a project, logical path first
++_tok_resolve_dir() {
++    local project="$1" logical physical a b
++    logical="$(cd "$project" 2>/dev/null && pwd)" || _tok_die "no such directory: ${project}" 1  # unreadable dir reported as missing
++    physical="$(cd "$project" && pwd -P)" || _tok_die "no such directory: ${project}" 1
++    a="${RDF_CLAUDE_PROJECTS}/$(_tok_slug "$logical")"
++    b="${RDF_CLAUDE_PROJECTS}/$(_tok_slug "$physical")"
++    if [ -d "$a" ]; then
++        printf '%s' "$a"
++    elif [ -d "$b" ]; then
++        printf '%s' "$b"
++    else
++        _tok_die "no transcripts for ${logical} (looked in ${a} and ${b})" 1
++    fi
++}
++
++# _tok_prices — embedded USD-per-MTok list prices (2026-09-23)
++_tok_prices() {
++    printf '%s' '{"claude-opus-5-5":{"in":4,"out":20,"cr":0.2},"claude-opus-5":{"in":5,"out":25,"cr":0.5},"claude-opus-4-8":{"in":5,"out":25,"cr":0.5},"claude-fable-5-1":{"in":10,"out":50,"cr":0.25},"claude-fable-5":{"in":10,"out":50,"cr":1},"claude-sonnet-5":{"in":2,"out":10,"cr":0.2},"claude-haiku-4-5":{"in":1,"out":5,"cr":0.1}}'
++}
++
++# _tok_window days since — sets _TOK_SINCE and the mtime-prefilter ref file
++_tok_window() {
++    local days="$1" since="$2" e now ref
++    if [ -n "$since" ]; then
++        _TOK_SINCE="${since}T00:00:00Z"
++        e="$(jq -n --arg s "$_TOK_SINCE" '$s | fromdateiso8601')"
++    else
++        now="$(command date +%s)"
++        e=$(( now - days * 86400 ))
++        _TOK_SINCE="$(jq -nr --argjson e "$e" '$e | todate')"
++    fi
++    ref="$(jq -nr --argjson e "$(( e - 86400 ))" '$e | strftime("%Y%m%d%H%M")')"
++    command touch -t "$ref" "${_TOK_WORK}/ref"
++}
++
++# _tok_files tdir sid — NUL list of transcript paths into ${_TOK_WORK}/files
++_tok_files() {
++    local tdir="$1" sid="$2" out="${_TOK_WORK}/files" main="" f
++    if [ -n "$sid" ]; then
++        for f in "${RDF_CLAUDE_PROJECTS}"/*/"${sid}.jsonl"; do
++            [ -f "$f" ] && { main="$f"; break; }
++        done
++        [ -n "$main" ] || _tok_die "no transcript for session ${sid} under ${RDF_CLAUDE_PROJECTS}" 1
++        {
++            printf '%s\0' "$main"
++            if [ -d "${main%.jsonl}/subagents" ]; then
++                find "${main%.jsonl}/subagents" -name 'agent-*.jsonl' -print0
++            fi
++        } > "$out"
++    else
++        {
++            find "$tdir" -maxdepth 1 -name '*.jsonl' -newer "${_TOK_WORK}/ref" -print0
++            find "$tdir" -mindepth 3 -path '*/subagents/*' -name 'agent-*.jsonl' -newer "${_TOK_WORK}/ref" -print0
++        } > "$out"
++    fi
++}
++
++# _tok_agent_map — merged {meta path: agentType} into ${_TOK_WORK}/agents.json
++_tok_agent_map() {
++    local f m metas="${_TOK_WORK}/metas"
++    : > "$metas"
++    while IFS= read -r -d '' f; do
++        case "$f" in
++            */subagents/*)
++                m="${f%.jsonl}.meta.json"
++                [ -f "$m" ] && printf '%s\0' "$m" >> "$metas"
++                ;;
++        esac
++    done < "${_TOK_WORK}/files"
++    if [ -s "$metas" ]; then
++        xargs -0 jq -c '{(input_filename): (.agentType // "unknown")}' < "$metas" \
++            | jq -s 'add // {}' > "${_TOK_WORK}/agents.json"
++    else
++        printf '{}\n' > "${_TOK_WORK}/agents.json"
++    fi
++}
++
++# _tok_rows — one compact row per kept assistant entry into ${_TOK_WORK}/rows
++_tok_rows() {
++    if [ ! -s "${_TOK_WORK}/files" ]; then
++        : > "${_TOK_WORK}/rows"
++        return 0
++    fi
++    xargs -0 jq -cR --arg since "$_TOK_SINCE" '
++        fromjson? | select(type == "object")
++        | select(.type == "assistant"
++            and ((.message.id // "") != "")
++            and ((.message.usage | type) == "object")
++            and (.message.model != "<synthetic>")
++            and (((.timestamp // "")[0:19]) >= ($since[0:19])))
++        | .message.usage as $u
++        | {id: .message.id, ts: (.timestamp // ""), file: input_filename,
++           sid: (.sessionId // ""), model: (.message.model // "unknown"),
++           eff: (.effort // .perTurnEffort // "unset"),
++           in: ($u.input_tokens // 0), cr: ($u.cache_read_input_tokens // 0),
++           out: ($u.output_tokens // 0),
++           th: ($u.output_tokens_details.thinking_tokens // 0),
++           cw5: (if ($u.cache_creation | type) == "object"
++                 then ($u.cache_creation.ephemeral_5m_input_tokens // 0)
++                 else ($u.cache_creation_input_tokens // 0) end),
++           cw1h: (if ($u.cache_creation | type) == "object"
++                  then ($u.cache_creation.ephemeral_1h_input_tokens // 0)
++                  else 0 end)}
++    ' < "${_TOK_WORK}/files" > "${_TOK_WORK}/rows"
++}
++
++# _tok_report mode label sid — dedup, price, aggregate; render text|json|summary
++_tok_report() {
++    local mode="$1" plabel="$2" sid="$3" tdir="$4"
++    jq -s -r --slurpfile agents "${_TOK_WORK}/agents.json" \
++        --argjson prices "$(_tok_prices)" \
++        --arg mode "$mode" --arg plabel "$plabel" --arg sid "$sid" \
++        --arg since "$_TOK_SINCE" --arg tdir "$tdir" '
++        def r4: (. * 10000 + 0.5 | floor) / 10000;
++        def r1: (. * 10 + 0.5 | floor) / 10;
++        def nr($p): length as $n
++            | if $n == 0 then 0 else .[((0 - ((0 - ($p * $n)) | floor)) - 1)] end;
++        def usd: (. * 100 + 0.5 | floor) as $c
++            | "\($c / 100 | floor).\(($c % 100) | tostring | if length == 1 then "0" + . else . end)";
++        def pct: (. * 1000 + 0.5 | floor) as $t | "\($t / 10 | floor).\($t % 10)";
++        def k: if . >= 1000 then (((. / 100) | floor) / 10 | tostring) + "K"
++               else tostring end;
++        def pkey($m): ($m | if endswith("[1m]") then .[0:(length - 4)] else . end) as $s
++            | ([$prices | keys[] ] | sort_by(length) | reverse
++               | map(select(. as $k | $s | startswith($k)))) | .[0];
++        ($agents[0] // {}) as $amap
++        | group_by(.id)
++        | map(sort_by(.ts) as $g
++              | $g[0] + {in: ([$g[].in] | max), cw5: ([$g[].cw5] | max),
++                         cw1h: ([$g[].cw1h] | max), cr: ([$g[].cr] | max),
++                         out: ([$g[].out] | max), th: ([$g[].th] | max)})
++        | map(. as $r
++              | (if ($r.file | contains("/subagents/")) then "sub" else "main" end) as $role
++              | pkey($r.model) as $pk
++              | (if $pk == null then null else $prices[$pk] end) as $p
++              | $r + {role: $role,
++                      agent: (if $role == "main" then "main"
++                              else ($amap[($r.file | rtrimstr(".jsonl")) + ".meta.json"] // "unknown") end),
++                      priced: ($p != null),
++                      c_in: (if $p == null then 0 else $r.in * $p.in / 1000000 end),
++                      c_cw: (if $p == null then 0 else ($r.cw5 * $p.in * 1.25 + $r.cw1h * $p.in * 2) / 1000000 end),
++                      c_cr: (if $p == null then 0 else $r.cr * $p.cr / 1000000 end),
++                      c_out: (if $p == null then 0 else $r.out * $p.out / 1000000 end)}
++              | . + {c: (.c_in + .c_cw + .c_cr + .c_out)})
++        | . as $rows
++        | ([$rows[] | .c] | add // 0) as $total
++        | ([$rows[] | select(.role == "main") | (.in + .cw5 + .cw1h + .cr)] | sort) as $ctx
++        | ([$rows[] | select(.role == "sub")] | group_by(.file)
++           | map(sort_by(.ts) | .[0] | (.cw5 + .cw1h)) | sort) as $boot
++        | {scope: {project: $plabel, transcripts: (if $sid == "" then $tdir else null end),
++                   since: (if $sid == "" then $since else null end),
++                   session: (if $sid == "" then null else $sid end)},
++           sessions: ([$rows[] | select(.role == "main") | .sid] | unique | length),
++           api_turns: ($rows | length),
++           main_turns: ([$rows[] | select(.role == "main")] | length),
++           subagent_turns: ([$rows[] | select(.role == "sub")] | length),
++           subagent_runs: ([$rows[] | select(.role == "sub") | .file] | unique | length),
++           tokens: {input: ([$rows[].in] | add // 0), cache_write_5m: ([$rows[].cw5] | add // 0),
++                    cache_write_1h: ([$rows[].cw1h] | add // 0), cache_read: ([$rows[].cr] | add // 0),
++                    output: ([$rows[].out] | add // 0), thinking: ([$rows[].th] | add // 0)},
++           cost_usd: ($total | r4),
++           share: (if $total > 0 then
++                     {input: (([$rows[].c_in] | add) / $total | r4),
++                      cache_write: (([$rows[].c_cw] | add) / $total | r4),
++                      cache_read: (([$rows[].c_cr] | add) / $total | r4),
++                      output: (([$rows[].c_out] | add) / $total | r4)}
++                   else {input: 0, cache_write: 0, cache_read: 0, output: 0} end),
++           by_model: ($rows | group_by(.model)
++                      | map({model: .[0].model, turns: length,
++                             cost_usd: (if .[0].priced then ([.[].c] | add | r4) else null end)})
++                      | sort_by(.cost_usd // -1) | reverse),
++           by_agent: ($rows | group_by(.agent)
++                      | map({agent: .[0].agent,
++                             runs: (if .[0].agent == "main" then ([.[].sid] | unique | length)
++                                    else ([.[].file] | unique | length) end),
++                             turns: length, cost_usd: ([.[].c] | add | r4)})
++                      | sort_by(.cost_usd) | reverse),
++           main_context: {median: ($ctx | nr(0.5)), p90: ($ctx | nr(0.9)),
++                          over_200k_pct: (if ($ctx | length) == 0 then 0
++                                          else ([$ctx[] | select(. > 200000)] | length) * 100 / ($ctx | length) | r1 end)},
++           subagent_boot: {median_cache_write: ($boot | nr(0.5)), runs: ($boot | length)},
++           effort: ($rows | group_by(.eff) | map({key: .[0].eff, value: length}) | from_entries),
++           unpriced_models: ([$rows[] | select(.priced | not) | .model] | unique)}
++        | . as $R
++        | if $mode == "json" then $R | tojson
++          elif $mode == "summary" then
++            {session: $R.scope.session, cost_usd: $R.cost_usd, api_turns: $R.api_turns,
++             cache_read_share: $R.share.cache_read, main_ctx_median: $R.main_context.median,
++             subagent_runs: $R.subagent_runs,
++             by_model: ([$R.by_model[] | select(.cost_usd != null) | {key: .model, value: .cost_usd}] | from_entries)}
++            | tojson
++          elif $R.api_turns == 0 then "X\tno usage in window"
++          else
++            (if $sid == "" then "H\trdf tokens — \($plabel) · since \($since) · list-price estimate"
++             else "H\trdf tokens — session \($sid) · list-price estimate" end),
++            "H\tsessions \($R.sessions) · api turns \($R.api_turns) (main \($R.main_turns) · subagents \($R.subagent_turns) in \($R.subagent_runs) runs)",
++            "B",
++            "T\t\($total | usd)",
++            "S\tcache read\t\($R.share.cache_read | pct)\t\([$rows[].c_cr] | add | usd)",
++            "S\tcache write\t\($R.share.cache_write | pct)\t\([$rows[].c_cw] | add | usd)",
++            "S\toutput\t\($R.share.output | pct)\t\([$rows[].c_out] | add | usd)",
++            "S\tinput\t\($R.share.input | pct)\t\([$rows[].c_in] | add | usd)",
++            "B",
++            "MH",
++            ($R.by_model[] | "M\t\(.model)\t\(.turns)\t\(if .cost_usd == null then "unpriced" else (.cost_usd | usd) end)"),
++            "B",
++            "AH",
++            ($R.by_agent[] | "A\t\(.agent)\t\(.runs)\t\(.turns)\t\(.cost_usd | usd)"),
++            "B",
++            "H\tmain context/turn  median \($R.main_context.median | k) · p90 \($R.main_context.p90 | k) · >200K \($R.main_context.over_200k_pct)%",
++            "H\tsubagent boot      median \($R.subagent_boot.median_cache_write | k) cache-write tokens (\($R.subagent_boot.runs) runs)",
++            "H\teffort             \([$R.effort | to_entries | sort_by(.value) | reverse[] | "\(.key) \(.value)"] | join(" · "))",
++            (if ($R.unpriced_models | length) > 0 then "H\tunpriced models    \($R.unpriced_models | join(", "))" else empty end)
++          end
++    ' "${_TOK_WORK}/rows"
++}
++
++# _tok_render — format the tagged text lines from _tok_report
++_tok_render() {
++    local tag a b c d
++    while IFS=$'\t' read -r tag a b c d; do
++        case "$tag" in
++            H|X) printf '%s\n' "$a" ;;
++            B)   printf '\n' ;;
++            T)   printf 'spend  $%s\n' "$a" ;;
++            S)   printf '  %-12s %6s%%  %9s\n' "$a" "$b" "\$${c}" ;;
++            MH)  printf '%-28s %6s %10s\n' "by model" "turns" "cost" ;;
++            M)   printf '  %-26s %6s %10s\n' "$a" "$b" "$( [ "$c" = "unpriced" ] && printf 'unpriced' || printf '$%s' "$c")" ;;
++            AH)  printf '%-28s %6s %6s %10s\n' "by agent" "runs" "turns" "cost" ;;
++            A)   printf '  %-26s %6s %6s %10s\n' "$a" "$b" "$c" "\$${d}" ;;
++        esac
++    done
++}
++
++main() {
++    local project="" tdir="" sid="" sid_set=0 days="30" since="" mode="text" plabel
++
++    while [ $# -gt 0 ]; do
++        case "$1" in
++            --project)     [ $# -ge 2 ] || _tok_die "--project needs a value" 2; project="$2"; shift 2 ;;
++            --transcripts) [ $# -ge 2 ] || _tok_die "--transcripts needs a value" 2; tdir="$2"; shift 2 ;;
++            --session)     [ $# -ge 2 ] || _tok_die "--session needs a value" 2; sid="$2"; sid_set=1; shift 2 ;;
++            --days)        [ $# -ge 2 ] || _tok_die "--days needs a value" 2; days="$2"; shift 2 ;;
++            --since)       [ $# -ge 2 ] || _tok_die "--since needs a value" 2; since="$2"; shift 2 ;;
++            --json)        mode="json"; shift ;;
++            --summary)     mode="summary"; shift ;;
++            help|--help|-h) _tok_usage; return 0 ;;
++            *) _tok_die "unknown option: $1 — run 'rdf tokens help'" 2 ;;
++        esac
++    done
++
++    case "$days" in
++        ''|*[!0-9]*|0) _tok_die "--days expects a positive integer" 2 ;;
++    esac
++    if [ -n "$since" ]; then
++        case "$since" in
++            [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
++            *) _tok_die "--since expects YYYY-MM-DD" 2 ;;
++        esac
++    fi
++    if [ "$sid_set" -eq 1 ]; then
++        case "$sid" in
++            ''|*[!A-Za-z0-9-]*) _tok_die "--session expects an id of letters, digits and dashes" 2 ;;
++        esac
++    fi
++    command -v jq >/dev/null 2>&1 || _tok_die "jq is required (apt/dnf install jq, or brew install jq)" 1
++
++    _TOK_WORK="$(command mktemp -d "${TMPDIR:-/tmp}/rdf-tokens.XXXXXX")"
++
++    if [ "$sid_set" -eq 1 ]; then
++        plabel="session"
++    else
++        if [ -n "$tdir" ]; then
++            [ -d "$tdir" ] || _tok_die "transcripts directory not found: ${tdir}" 1
++            plabel="$(command basename "$tdir")"
++        else
++            tdir="$(_tok_resolve_dir "${project:-.}")"
++            plabel="$(command basename "$(cd "${project:-.}" && pwd)")"
++        fi
++        _tok_window "$days" "$since"
++    fi
++
++    _tok_files "$tdir" "$sid"
++    _tok_agent_map
++    _tok_rows
++
++    if [ "$mode" = "text" ]; then
++        _tok_report text "$plabel" "$sid" "$tdir" | _tok_render
++    else
++        _tok_report "$mode" "$plabel" "$sid" "$tdir"
++    fi
++}
++
++main "$@"

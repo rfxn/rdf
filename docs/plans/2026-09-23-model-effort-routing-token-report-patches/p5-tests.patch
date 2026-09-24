@@ -1,0 +1,49 @@
+diff --git a/tests/tokens.bats b/tests/tokens.bats
+index e41a7c7..a2c80b8 100644
+--- a/tests/tokens.bats
++++ b/tests/tokens.bats
+@@ -144,3 +144,44 @@ _tok_row() {
+     run grep -nE '\$(label|import|include|def|if|then|elif|else|end|as|reduce|foreach|try|catch|and|or|not|__loc__)([^A-Za-z0-9_]|$)' "$TOK"
+     [ "$status" -eq 1 ]
+ }
++
++# ── session_last: rdf-state.sh keeps the /r-save tokens object ───────────────
++
++# _state_last <lines…> — write a session-log with the given lines, print the
++# rdf-state.sh session_last value (a JSON string, decoded)
++_state_last() {
++    local proj; proj="$(mktemp -d)"
++    mkdir -p "${proj}/.rdf/work-output"
++    printf '%s\n' "$@" > "${proj}/.rdf/work-output/session-log.jsonl"
++    bash "${RDF_SRC}/state/rdf-state.sh" --full "$proj" | jq -r '.session_last'
++    rm -rf "$proj"
++}
++
++SAVE='{"timestamp":"2026-09-23T10:00:00Z","head_after":"55e8473","commits":2,"diff_summary":"1 spec","pipeline":"spec","tokens":{"cost_usd":4.12,"api_turns":212}}'
++HOOK='{"timestamp":"2026-09-23T10:05:00Z","head_after":"55e8473","branch":"main","dirty_files":0,"reason":"other","source":"session-end-hook","insight":null}'
++
++@test "rdf-state.sh session_last preserves a tokens object" {
++    run _state_last "$SAVE"
++    [ "$status" -eq 0 ]
++    [ "$(jq -c '.tokens.cost_usd' <<< "$output")" = "4.12" ]
++}
++
++@test "session_last prefers the /r-save entry over a trailing same-state SessionEnd-hook entry" {
++    run _state_last "$SAVE" "$HOOK"
++    [ "$status" -eq 0 ]
++    [ "$(jq -c '[.commits, .tokens.cost_usd]' <<< "$output")" = "[2,4.12]" ]
++}
++
++@test "session_last keeps a hook entry whose head_after differs" {
++    run _state_last "$SAVE" "${HOOK/55e8473/abc1234}"
++    [ "$status" -eq 0 ]
++    [ "$(jq -r '.head_after' <<< "$output")" = "abc1234" ]
++    [ "$(jq -c '.tokens' <<< "$output")" = "null" ]
++}
++
++@test "session_last selects a pretty-spaced /r-save entry" {
++    local spaced='{"timestamp": "2026-09-23T10:00:00Z", "head_after": "55e8473", "commits": 3, "tokens": {"cost_usd": 1.5}}'
++    run _state_last "$spaced" "$HOOK"
++    [ "$status" -eq 0 ]
++    [ "$(jq -c '[.commits, .tokens.cost_usd]' <<< "$output")" = "[3,1.5]" ]
++}

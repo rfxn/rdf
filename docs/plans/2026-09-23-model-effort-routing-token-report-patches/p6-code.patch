@@ -1,0 +1,69 @@
+diff --git a/adapters/claude-code/agent-meta.json b/adapters/claude-code/agent-meta.json
+index 15ca38d..0a643e9 100644
+--- a/adapters/claude-code/agent-meta.json
++++ b/adapters/claude-code/agent-meta.json
+@@ -3,40 +3,58 @@
+     "name": "rdf-planner",
+     "description": "Research-driven collaborative planner. Brainstorms ideas, researches best practices, challenges assumptions, writes specs and implementation plans. Use for any planning, scoping, or design work.",
+     "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+-    "model": "opus"
++    "model": "fable",
++    "effort": "high"
+   },
+   "dispatcher": {
+     "name": "rdf-dispatcher",
+     "description": "Plan execution orchestrator. Reads PLAN.md, executes phases via TDD, dispatches engineer/qa/uat/reviewer subagents, enforces quality gates. Use when executing implementation plans.",
+     "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+-    "model": "sonnet"
++    "model": "opus",
++    "effort": "high"
+   },
+   "engineer": {
+     "name": "rdf-engineer",
+     "description": "Universal implementation engineer. Follows TDD, reads governance for domain-specific conventions. Dispatched by the dispatcher for plan phase execution.",
+     "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+-    "model": "opus"
++    "model": "opus",
++    "effort": "xhigh",
++    "variants": {
++      "focused": {
++        "effort": "medium",
++        "description": "Implementation engineer for docs/focused-scope plan phases (medium effort). Failures escalate to rdf-engineer."
++      }
++    }
+   },
+   "qa": {
+     "name": "rdf-qa",
+     "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-verify.",
+     "tools": ["Bash", "Read", "Glob", "Grep"],
+     "disallowedTools": ["Write", "Edit"],
+-    "model": "sonnet"
++    "model": "opus",
++    "effort": "medium"
+   },
+   "uat": {
+     "name": "rdf-uat",
+     "description": "User acceptance testing. Runs real-world scenarios from end-user persona. Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-test.",
+     "tools": ["Bash", "Read", "Glob", "Grep"],
+     "disallowedTools": ["Write", "Edit"],
+-    "model": "sonnet"
++    "model": "opus",
++    "effort": "medium"
+   },
+   "reviewer": {
+     "name": "rdf-reviewer",
+     "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 2-3 pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r-review.",
+     "tools": ["Bash", "Read", "Glob", "Grep"],
+     "disallowedTools": ["Write", "Edit"],
+-    "model": "opus"
++    "model": "opus",
++    "effort": "xhigh",
++    "variants": {
++      "challenge": {
++        "effort": "high",
++        "description": "Adversarial reviewer, challenge mode: pre-implementation spec/plan review (high effort). Read-only."
++      }
++    }
+   },
+   "commands": {
+     "r-build": {

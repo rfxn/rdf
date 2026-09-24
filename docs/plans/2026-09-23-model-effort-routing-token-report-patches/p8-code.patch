@@ -1,0 +1,514 @@
+diff --git a/CHANGELOG b/CHANGELOG
+index f78c1b8..d8d9192 100644
+--- a/CHANGELOG
++++ b/CHANGELOG
+@@ -1,5 +1,44 @@
+ # RDF Changelog
+ 
++## Unreleased
++
++-- New Features --
++
++[New] role-based model + effort routing: agent-meta.json declares model and effort
++      per agent (planner fable/high; dispatcher opus/high; engineer and reviewer
++      opus/xhigh; qa and uat opus/medium) plus variants emitted from the same
++      canonical body as rdf-engineer-focused (medium) and rdf-reviewer-challenge
++      (high); rdf generate and doctor catalogs reject invalid routing values
++[New] rdf tokens: local token usage report from Claude Code transcripts (bash + jq,
++      jq 1.5 floor; usage deduplicated by message.id) with list-price cost by cost
++      class, model, agent, context depth, subagent boot, and effort; --json and
++      --summary; /r-save records a per-session tokens summary, /r-start shows cost
++[New] rdf doctor --scope harness (15th scope): WARNs when Opus 5.5 would run at
++      its medium default, when CLAUDE_CODE_EFFORT_LEVEL flattens per-agent effort,
++      and when the Bash output limit exceeds 30000; reads settings, never writes
++
++-- Bug Fixes --
++
++[Fix] rdf doctor --json escapes quotes, backslashes, and control characters in
++      check messages and names (a quote in any message produced invalid JSON)
++[Fix] rdf-state.sh session_last prefers the /r-save entry over the trailing
++      same-state SessionEnd-hook entry, restoring commits/diff_summary (and now
++      tokens) on the /r-start Last line
++
++-- Changes --
++
++[Change] dispatcher routes scope:docs/focused phases to rdf-engineer-focused and
++         escalates a failed focused phase to rdf-engineer; challenge reviews from
++         /r-spec, /r-plan, /r-review dispatch rdf-reviewer-challenge; no canonical
++         routing site passes a per-invocation model any more
++[Change] /r-spec and /r-plan carry a non-blocking Claude Code advisory to run spec
++         and plan sessions on claude --model fable --effort high; the /r-plan
++         handoff names the Opus build session; /r-plan stays in main context
++[Change] rdf sync never creates a canonical agent (generated variants and stray
++         output agents are skipped and counted)
++[Change] checkout installs: run rdf deploy claude-code once to link the new
++         state/rdf-tokens.sh helper (plugin installs pick it up on restart)
++
+ ## 3.7.0
+ 
+ -- New Features --
+diff --git a/CHANGELOG.RELEASE b/CHANGELOG.RELEASE
+index 26573bc..b8197a9 100644
+--- a/CHANGELOG.RELEASE
++++ b/CHANGELOG.RELEASE
+@@ -1,121 +1,40 @@
+-# RDF 3.7.0 Release Notes
++# RDF Unreleased Release Notes
+ 
+-## 3.7.0
++## Unreleased
+ 
+ -- New Features --
+ 
+-[New] skills-native Claude Code output: claude-code and claude-plugin emit
+-      skills/<name>/SKILL.md (name + intent-trigger description frontmatter,
+-      canonical body byte-identical) through one shared emitter with the
+-      Codex/Antigravity agent-skills surface; plugin.json declares skills;
+-      rdf deploy owns per-skill ~/.claude/skills/<name> symlinks (+ the shared
+-      skills/reference tree) with stale-link pruning and removes the legacy
+-      ~/.claude/commands symlink it created
+-[New] lib/adapter_common.sh — adp_* emitters (agents, skills, scripts,
+-      reference, hash sidecars, atomic staging) shared by the claude-code,
+-      claude-plugin, and agent-skills adapters; byte-identity fixture-tested
+-[New] AGENTS.md composer: rdf generate agents-md [--project-root P] builds a
+-      project-scoped AGENTS.md from the target repo's own CLAUDE.md (governance
+-      index fallback), Agent Skills pointer, and agent roster; codex and
+-      antigravity are the same composite (agent-skills + agents-md) for
+-      generate and deploy
+-[New] rdf init --tools claude-code|agent-skills|agents-md|codex|antigravity
+-      (comma list): deploys .agents/skills and composes AGENTS.md into the repo;
+-      unknown or empty values exit 1; AGENTS.md composition requires a git repo
+-[New] rdf doctor --scope doc-truth (14th scope): profile/adapter counts vs
+-      README badges, RDF.md trees, docs/index.md; every tests/*.bats wired into
+-      tests/Makefile; WORKFORCE.md dispatch claims vs canonical command bodies
+-      (verb-anchored, code blocks skipped); CONTRIBUTING CI claims vs ci.yml;
+-      README/RDF.md directory-tree paths exist on disk (globs rejected)
+-[New] docs/platform-triage.md — per-minor re-triage ledger of native Claude
+-      Code capabilities vs RDF mechanisms (first block 3.7: keep the dispatcher
+-      over experimental Agent Teams); /r-ship resolves the target version at
+-      Setup (--version X.Y.Z or prompt) and preflight 1d blocks a minor release
+-      whose target MAJOR.MINOR has no ledger block (patch releases skip)
+-[New] governance-contract harness: negation guards + structural assertions
+-      (security-floor formula verbatim in dispatcher.md and tiers.md, section
+-      order, cross-file indicator-list equality); tests/adapter-common.bats,
+-      tests/doc-truth.bats; CI lints tests/*.bats at error severity and smokes
+-      rdf init under macOS system bash 3.2
+-[New] RDF_WORKSPACE env override for the doctor --all workspace root
+-[New] docs/specs/2026-09-02-platform-alignment-spike-design.md — D1-D5 verdicts
+-      (Workflow-backed /r-build gated behind A/B evidence, local trigger-eval
+-      harness, contract hardening, per-minor triage gate, OWASP AST10 posture)
+-      + docs/specs/support/rdf-build-workflow.prototype.js (unwired artifact)
++[New] role-based model + effort routing: agent-meta.json declares model and effort
++      per agent (planner fable/high; dispatcher opus/high; engineer and reviewer
++      opus/xhigh; qa and uat opus/medium) plus variants emitted from the same
++      canonical body as rdf-engineer-focused (medium) and rdf-reviewer-challenge
++      (high); rdf generate and doctor catalogs reject invalid routing values
++[New] rdf tokens: local token usage report from Claude Code transcripts (bash + jq,
++      jq 1.5 floor; usage deduplicated by message.id) with list-price cost by cost
++      class, model, agent, context depth, subagent boot, and effort; --json and
++      --summary; /r-save records a per-session tokens summary, /r-start shows cost
++[New] rdf doctor --scope harness (15th scope): WARNs when Opus 5.5 would run at
++      its medium default, when CLAUDE_CODE_EFFORT_LEVEL flattens per-agent effort,
++      and when the Bash output limit exceeds 30000; reads settings, never writes
+ 
+ -- Bug Fixes --
+ 
+-[Fix] rdf init and rdf doctor died on bash <= 4.3 (macOS 3.2 / el6 4.1 floors)
+-      from empty-array expansion under set -u; class swept across lib/ and the
+-      plugin adapter
+-[Fix] profile detection sees untracked, non-ignored sources (git ls-files
+-      --others) for every language incl. TypeScript, and no longer races git
+-      against grep -q under pipefail — a repo initialised before its first
+-      commit no longer detects as minimal
+-[Fix] rdf deploy help: the hooks.json merge how-to failed on a fresh Claude
+-      Code HOME (jq "object and null cannot be multiplied", exit 2); it now
+-      seeds an empty settings.json before merging
+-[Fix] doctor no longer WARNs on its own output: drift is N/A without a parent
+-      CLAUDE.md, artifacts are N/A in the framework checkout, sync says "not
+-      the RDF framework checkout"; doctor --all refuses to scan $HOME as the
+-      workspace (quickstart layout) and names the remedy
+-[Fix] doctor's .git/info/exclude completeness check missed AUDIT.md; the entry
+-      list (now incl. .agents/) lives once in rdf_common.sh for init and doctor
+-[Fix] tests/derfxn.bats was in neither tests/Makefile nor CI and had never run;
+-      CI generates claude-code output before BATS so output assertions stop
+-      self-skipping; a contract fails when any tests/*.bats file is unwired
+-[Fix] context-audit.sh died with "_repo_sizes: unbound variable" off the rfxn
+-      workspace layout (rdf-state.sh now resolved by probe order), leaked
+-      redirect errors to stderr, and counted 0 deployed skills (find -L)
+-[Fix] generated CONTRIBUTING.md claimed bash -n/shellcheck/BATS for every
+-      stack; standards and test command follow the detected profiles
+-[Fix] codex adapter emitted an empty "## Project Governance" section since
+-      2026-03 (read a file that no longer existed) and a stale o4-mini config —
+-      retired in favour of the composite
+-[Fix] self AGENTS.md carried rfxn/CentOS text and the checkout directory name;
+-      it is now composed from CLAUDE.md, names the main repo (stable across
+-      clones and worktrees), and is written atomically
+-[Fix] doc truth: README badges (adapters 6->5, profiles 11->13), RDF.md
+-      profile/adapter trees and a deleted catalog citation, WORKFORCE.md rows
+-      that claimed dispatches that never happen (r-start, planner) or omitted
+-      ones that do (r-plan/r-spec reviewer, r-build qa), CONTRIBUTING's CI
+-      paragraph, tiers.md:41 gate formula (security floor was omitted)
+-[Fix] deploy: a skipped skills entry no longer aborts the remaining surfaces;
+-      linked count excludes skips; dry-run says what it would do; the legacy
+-      commands prune matches the output root with a path boundary
+-[Fix] doctor install-mode counts only RDF-owned skill links; content-drift and
+-      sync-health cover skills/reference; sync, doctor, and context-audit fail
+-      closed (WARN/die) when the skills tree is absent instead of no-oping
+-[Fix] adapter library: adp_names_lite returned 1 on success and adp_count
+-      tripped pipefail on a missing dir; byte-identity fixture decoupled from
+-      canonical content; RDF_LIBDIR honours a pre-set value
+-[Fix] governance contracts: bare "! grep" guards were inert under BATS set -e
+-      (negated commands are exempt) and order-anchor && chains were inert
+-      mid-body — rewritten as explicit branches; GNU-only \b replaced with
+-      portable ERE boundaries
+-[Fix] docs/multi-tool-parity.md no longer claims there is no rdf deploy
+-      antigravity target or that per-project AGENTS.md is unimplemented;
+-      quickstart exclude-entry count; published self AGENTS.md no longer
+-      carries a /root/.claude path
+-[Fix] doc-truth CI-claims check verified only up to the first wrapped bullet;
+-      indented continuation lines now stay in the section
++[Fix] rdf doctor --json escapes quotes, backslashes, and control characters in
++      check messages and names (a quote in any message produced invalid JSON)
++[Fix] rdf-state.sh session_last prefers the /r-save entry over the trailing
++      same-state SessionEnd-hook entry, restoring commits/diff_summary (and now
++      tokens) on the /r-start Last line
+ 
+ -- Changes --
+ 
+-[Remove] adapters: 6 -> 5 (codex directory deleted; gemini-cli stays frozen
+-         legacy and untouched); dead command-meta-v3.json, command-map-v3.md,
+-         agents-md sections.json removed; three adapters shrink onto the
+-         shared library
+-[Change] rdf generate accepts flags in any position (--project-root,
+-         --deploy, --rules, --lite) and rejects a second positional; codex and
+-         antigravity composites honour --project-root
+-[Change] docs describe the skills layout (README data-flow diagram and adapter
+-         table, RDF.md, docs/index.md, quickstart, multi-tool-parity Claude
+-         Code row); context-bar.md relocated to docs/; CLAUDE.md inheritance
+-         line generic; /r-context-audit no longer suppresses stderr
+-[Change] ROADMAP: 2026-08 item 4 built, item 5 first case ruled (keep the
+-         dispatcher); Workflow-backed /r-build and the trigger-eval harness
+-         queued for the next minor
+-[Change] rollback to 3.6.5 leaves ~/.claude/skills/r-* symlinks dangling (the
+-         3.6.5 deploy has no prune) — remove with: rm ~/.claude/skills/r-*
+-         (and ~/.claude/skills/reference)
++[Change] dispatcher routes scope:docs/focused phases to rdf-engineer-focused and
++         escalates a failed focused phase to rdf-engineer; challenge reviews from
++         /r-spec, /r-plan, /r-review dispatch rdf-reviewer-challenge; no canonical
++         routing site passes a per-invocation model any more
++[Change] /r-spec and /r-plan carry a non-blocking Claude Code advisory to run spec
++         and plan sessions on claude --model fable --effort high; the /r-plan
++         handoff names the Opus build session; /r-plan stays in main context
++[Change] rdf sync never creates a canonical agent (generated variants and stray
++         output agents are skipped and counted)
++[Change] checkout installs: run rdf deploy claude-code once to link the new
++         state/rdf-tokens.sh helper (plugin installs pick it up on restart)
+diff --git a/RDF.md b/RDF.md
+index f73dace..1b2cbda 100644
+--- a/RDF.md
++++ b/RDF.md
+@@ -76,12 +76,12 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
+ 
+ | Agent | CC Name | Model | Role |
+ |-------|---------|-------|------|
+-| planner | rdf-planner | opus | Research, specs, implementation plans — runs inline in `/r-spec` and `/r-plan`; direct dispatch also available |
+-| dispatcher | rdf-dispatcher | sonnet | Plan execution orchestrator |
+-| engineer | rdf-engineer | opus | Universal implementation |
+-| qa | rdf-qa | sonnet | Verification gate |
+-| uat | rdf-uat | sonnet | User acceptance testing |
+-| reviewer | rdf-reviewer | opus / sonnet | Adversarial review (sentinel=opus, challenge=sonnet) |
++| planner | rdf-planner | fable · high | Research, specs, implementation plans — runs inline in `/r-spec` and `/r-plan`; direct dispatch also available |
++| dispatcher | rdf-dispatcher | opus · high | Plan execution orchestrator |
++| engineer | rdf-engineer, rdf-engineer-focused | opus · xhigh / medium | Universal implementation (focused variant for docs/focused phases) |
++| qa | rdf-qa | opus · medium | Verification gate |
++| uat | rdf-uat | opus · medium | User acceptance testing |
++| reviewer | rdf-reviewer, rdf-reviewer-challenge | opus · xhigh / high | Adversarial review (sentinel / challenge variant) |
+ 
+ **Slash commands:** `/r-{name}` (lifecycle) or `/r-util-{name}` (utility)
+ 
+@@ -104,6 +104,7 @@ rdf/                                 # Repository root
+ |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
+ |       |-- migrate.sh               # rdf migrate (version migration helpers)
+ |       |-- state.sh                 # rdf state [path] -> JSON to stdout
++|       |-- tokens.sh                # rdf tokens -> local token usage report
+ |       |-- refresh.sh               # rdf refresh [path] [--scope memory|plan|github|all]
+ |       |-- sync.sh                  # rdf sync -> pull ~/.claude/ back to canonical
+ |       +-- github.sh                # rdf github <setup|sync-labels|ecosystem-init|ecosystem-add>
+@@ -186,6 +187,7 @@ rdf/                                 # Repository root
+ |
+ |-- state/
+ |   |-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
++|   |-- rdf-tokens.sh                # Local token usage report from Claude Code transcripts
+ |   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
+ |   |-- rdf-lessons.sh               # Lessons ID-index + consolidation scan (3.4)
+ |   |-- rdf-overhead.sh              # Per-session token overhead -> JSON (3.4)
+diff --git a/README.md b/README.md
+index 3259f0c..ec82b55 100644
+--- a/README.md
++++ b/README.md
+@@ -165,6 +165,13 @@ against drift in CI.
+ | `--rules` (opt-in scoped governance) | ~2.1K tokens (adds the unscoped core rule) |
+ | `rdf-lite` (minimal deploy) | ~0.7K tokens (condensed core governance) |
+ 
++**Token usage.** `rdf tokens` reports what your sessions actually spent, from
++the Claude Code transcripts already on your machine: usage deduplicated by
++message id (one API turn is logged once per content block), list-price cost,
++and breakdowns by cost class, model, agent, context depth, subagent boot cost,
++and effort. `--session <id> --summary` is what `/r-save` records per session;
++`/r-start` shows it. Prices are embedded estimates -- nothing is sent anywhere.
++
+ Scoped language rules load only when a matching file is read -- they add nothing
+ to the always-loaded figures. Opt into either variant with a deploy flag:
+ `bin/rdf deploy --rules claude-code` (scoped governance alongside the default
+@@ -243,8 +250,9 @@ Run 'rdf <command> help' for details.
+ | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
+ | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
+ | `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
+-| `rdf doctor [--scope] [--all]` | 13 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme |
++| `rdf doctor [--scope] [--all]` | 15 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness |
+ | `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
++| `rdf tokens [--days N] [--session ID] [--json]` | Local token usage report from Claude Code transcripts (deduplicated, list-price estimate) |
+ | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
+ | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
+ | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
+@@ -396,16 +404,18 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
+ 
+ ### Agent Roster
+ 
+-| Agent | Model | Role | Tools |
+-|-------|-------|------|-------|
+-| **rdf-planner** | opus | Design specs, implementation plans | Full read/write |
+-| **rdf-dispatcher** | sonnet | Phase orchestration, TDD cycles | Full read/write |
+-| **rdf-engineer** | opus* | Implementation via governance protocol | Full read/write |
+-| **rdf-qa** | sonnet | Verification gate (read-only) | Read + execute |
+-| **rdf-reviewer** | opus* | Adversarial review -- challenge + sentinel (read-only) | Read + execute |
+-| **rdf-uat** | sonnet | User acceptance from end-user persona (read-only) | Read + execute |
++| Agent | Model · Effort | Role | Tools |
++|-------|----------------|------|-------|
++| **rdf-planner** | fable · high | Design specs, implementation plans (direct dispatch; `/r-spec` and `/r-plan` run inline) | Full read/write |
++| **rdf-dispatcher** | opus · high | Phase orchestration, TDD cycles | Full read/write |
++| **rdf-engineer** | opus · xhigh | Implementation via governance protocol | Full read/write |
++| **rdf-engineer-focused** | opus · medium | Variant of rdf-engineer for `scope:docs`/`scope:focused` phases; failures escalate to rdf-engineer | Full read/write |
++| **rdf-qa** | opus · medium | Verification gate (read-only) | Read + execute |
++| **rdf-reviewer** | opus · xhigh | Adversarial review -- sentinel (read-only) | Read + execute |
++| **rdf-reviewer-challenge** | opus · high | Variant of rdf-reviewer for challenge (pre-implementation) review | Read + execute |
++| **rdf-uat** | opus · medium | User acceptance from end-user persona (read-only) | Read + execute |
+ 
+-*\*Dynamic model routing: dispatcher downgrades engineer to sonnet for `scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet, sentinel stays opus.*
++*Routing lives in `adapters/claude-code/agent-meta.json` (`model`, `effort`, `variants`). Variants are generated from the base agent's canonical body -- the Agent tool cannot pass effort per call, so each effort level is its own agent. `CLAUDE_CODE_EFFORT_LEVEL` overrides every agent's effort; prefer `/effort`, which saves a level per model. Spec and plan sessions are tuned for `claude --model fable --effort high`, builds for `claude --model opus`. No Fable access? Set the planner's `"model"` to `"opus"` and regenerate. `/r-util-claudemd-review` deliberately fans out to Sonnet for bulk transcript reading.*
+ 
+ ### Scripts (16)
+ 
+@@ -467,7 +477,7 @@ rdf/
+ |-- lib/
+ |   |-- rdf_common.sh                  # Shared helpers, profile system
+ |   +-- cmd/                           # Subcommands: generate, profile, init, doctor,
+-|                                      #   state, refresh, sync, github, deploy, dispatch, migrate
++|                                      #   state, tokens, refresh, sync, github, deploy, migrate
+ |-- canonical/
+ |   |-- agents/                        # 6 universal agents (pure markdown)
+ |   |-- commands/                      # 37 commands (/r- namespace)
+@@ -507,6 +517,7 @@ rdf/
+ |   +-- agents-md/                     # Cross-tool AGENTS.md composer
+ |-- state/
+ |   |-- rdf-state.sh                   # Project state -> JSON (<1s, timeout-guarded)
++|   |-- rdf-tokens.sh                  # Local token usage report (bash + jq)
+ |   |-- context-audit.sh               # Context weight audit -> JSON
+ |   +-- rotate-work-output.sh          # Age/size-based work-output rotation
+ +-- reference/                         # Diagrams, architecture docs
+@@ -595,9 +606,14 @@ Commands use `/r-<name>` (lifecycle) or `/r-util-<subject>` (utility).
+      "name": "rdf-<name>",
+      "description": "...",
+      "tools": ["Bash", "Read", "Glob", "Grep"],
+-     "model": "sonnet"
++     "model": "opus",
++     "effort": "medium"
+    }
+    ```
++   `model` is a Claude Code alias (`opus`, `sonnet`, `haiku`, `fable`,
++   `inherit`) or a `claude-*` id; `effort` is `low`..`max`. An optional
++   `"variants": {"<key>": {"effort": "...", "description": "..."}}` emits
++   `rdf-<name>-<key>` from the same body at a different effort.
+ 3. `rdf generate claude-code` and verify frontmatter
+ </details>
+ 
+diff --git a/WORKFORCE.md b/WORKFORCE.md
+index 142e6f9..129c0d4 100644
+--- a/WORKFORCE.md
++++ b/WORKFORCE.md
+@@ -14,24 +14,24 @@ USER
+  │                                     scans state; dispatches nothing
+  │
+  ├─► /r-plan     (planner inline,     Research & Planning
+- │                opus; direct         Specs, plans; mandatory challenge
++ │                fable; direct        Specs, plans; mandatory challenge
+  │                dispatch available)  review before presenting for approval
+- │                └─► reviewer         Challenge Mode — pre-impl (sonnet)
++ │                └─► reviewer         Challenge Mode — pre-impl (opus·high)
+  │
+- ├─► /r-build ─► dispatcher  (sonnet) Plan Execution
++ ├─► /r-build ─► dispatcher  (opus)   Plan Execution
+  │                │                    Phase orchestration, quality gates
+  │                │
+- │                ├─► engineer  (opus)  Universal Implementation
++ │                ├─► engineer  (opus)  Universal Implementation (xhigh; focused variant medium)
+  │                │                    TDD, governance-driven protocol
+  │                │
+- │                ├─► qa  (sonnet)     Verification Gate — read-only
++ │                ├─► qa  (opus)       Verification Gate — read-only
+  │                │                    Lint, tests, anti-patterns
+  │                │
+  │                ├─► reviewer         Adversarial Review — read-only
+- │                │                    Challenge mode (pre-impl, sonnet)
+- │                │                    Sentinel mode (post-impl, opus, 2-3 pass)
++ │                │                    Challenge mode (pre-impl, opus·high)
++ │                │                    Sentinel mode (post-impl, opus·xhigh, 2-3 pass)
+  │                │
+- │                └─► uat  (sonnet)   User Acceptance — read-only
++ │                └─► uat  (opus)     User Acceptance — read-only
+  │                                    End-user persona, real scenarios
+  │
+  └─► /r-audit ──► reviewer(×3) + qa   Full Codebase Audit
+@@ -39,7 +39,7 @@ USER
+ 
+ ════════════════════════════════════════════════════════════════════
+ LIFECYCLE PIPELINE
+-  USER → /r-plan (planner + mandatory reviewer challenge pass, sonnet)
++  USER → /r-plan (planner + mandatory reviewer challenge pass, opus·high)
+        → /r-build [N] (dispatcher → engineer → qa/reviewer/uat gates)
+        → /r-ship → MERGE
+ ════════════════════════════════════════════════════════════════════
+@@ -47,14 +47,18 @@ LIFECYCLE PIPELINE
+ 
+ ### Model Summary
+ 
+-| Model  | Agents                                    |
+-|--------|-------------------------------------------|
+-| opus   | planner, engineer, reviewer (sentinel)    |
+-| sonnet | dispatcher, qa, uat, reviewer (challenge) |
++| Agent                          | Model · Effort          |
++|--------------------------------|-------------------------|
++| planner                        | fable · high            |
++| dispatcher                     | opus · high             |
++| engineer / engineer-focused    | opus · xhigh / medium   |
++| reviewer / reviewer-challenge  | opus · xhigh / high     |
++| qa, uat                        | opus · medium           |
+ 
+-Dynamic model routing: the dispatcher downgrades engineer to sonnet for
+-`scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet,
+-sentinel stays opus.
++Routing is by agent name: the dispatcher sends `scope:docs`/`scope:focused`
++phases to rdf-engineer-focused and escalates a failed focused phase to
++rdf-engineer; challenge reviews dispatch rdf-reviewer-challenge. Model and
++effort live in `adapters/claude-code/agent-meta.json`.
+ 
+ ### Concurrent-Session Primitives (3.1.0)
+ 
+@@ -74,39 +78,39 @@ Hook source: `state/git-hooks/pre-commit`.
+ 
+ ## 2. Agent Details
+ 
+-### planner (opus)
++### planner (fable · high)
+ 
+ Research-driven collaborative planner. Brainstorms ideas, researches best
+ practices, challenges assumptions, writes specs and implementation plans.
+ Runs inline in `/r-spec` and `/r-plan` (the command bodies are the
+ planner protocol); direct dispatch via the Agent tool is also available.
+ 
+-### dispatcher (sonnet)
++### dispatcher (opus · high)
+ 
+ Plan execution orchestrator. Reads PLAN.md, executes phases via TDD,
+ dispatches engineer/qa/uat/reviewer subagents, enforces quality gates.
+ Invoked via `/r-build`.
+ 
+-### engineer (opus)
++### engineer (opus · xhigh; focused variant medium)
+ 
+ Universal implementation engineer. Follows TDD, reads governance files
+ for domain-specific conventions and constraints. Behavior is shaped by
+ the project's governance files, not by baked-in domain knowledge.
+ Dispatched by the dispatcher for plan phase execution.
+ 
+-### qa (sonnet)
++### qa (opus · medium)
+ 
+ Verification gate. Reads governance files for project-specific checks
+ (lint commands, test commands, anti-pattern patterns). Read-only -- cannot
+ modify source files. Dispatched by dispatcher or invoked via `/r-verify`.
+ 
+-### uat (sonnet)
++### uat (opus · medium)
+ 
+ User acceptance testing. Runs real-world scenarios from an end-user
+ persona. Read-only -- cannot modify source files. Dispatched by
+ dispatcher or invoked via `/r-test`.
+ 
+-### reviewer (opus sentinel / sonnet challenge)
++### reviewer (opus · xhigh sentinel / high challenge variant)
+ 
+ Adversarial reviewer with two modes:
+ - **Challenge mode** (pre-impl): Reviews specs and plans for design flaws,
+diff --git a/docs/demo-walkthrough.md b/docs/demo-walkthrough.md
+index aa491c7..f7be8ec 100644
+--- a/docs/demo-walkthrough.md
++++ b/docs/demo-walkthrough.md
+@@ -513,9 +513,9 @@ The next `/r-start` dashboard surfaces this history automatically.
+ 
+ | Agent | Model | Role | Read-only? |
+ |-------|-------|------|------------|
+-| Planner | opus | Research, brainstorm, spec/plan authoring | No |
+-| Dispatcher | sonnet | Phase orchestration, gate selection, finding resolution | No |
+-| Engineer | opus | TDD implementation, follows governance | No |
+-| QA | sonnet | Lint, tests, convention checks | Yes |
+-| Reviewer | opus | Adversarial: challenge (design) or sentinel (code) | Yes |
+-| UAT | sonnet | End-user scenarios, real-world testing | Yes |
++| Planner | fable · high | Research, brainstorm, spec/plan authoring | No |
++| Dispatcher | opus · high | Phase orchestration, gate selection, finding resolution | No |
++| Engineer | opus · xhigh (focused variant: medium) | TDD implementation, follows governance | No |
++| QA | opus · medium | Lint, tests, convention checks | Yes |
++| Reviewer | opus · xhigh (challenge variant: high) | Adversarial: challenge (design) or sentinel (code) | Yes |
++| UAT | opus · medium | End-user scenarios, real-world testing | Yes |
+diff --git a/docs/multi-tool-parity.md b/docs/multi-tool-parity.md
+index bca02b7..4979aa9 100644
+--- a/docs/multi-tool-parity.md
++++ b/docs/multi-tool-parity.md
+@@ -121,6 +121,15 @@ command TOML are unchanged except the one TOML-escaping fix.
+   the migration source. Fixing the escaping directly serves Antigravity
+   adoption — a frozen legacy artifact that doubles as the transition input.
+ 
++## 4b. Model and effort routing
++
++Claude Code only. `adapters/claude-code/agent-meta.json` pins `model` and
++`effort` per agent and emits effort variants (`rdf-engineer-focused`,
++`rdf-reviewer-challenge`) because the Agent tool cannot pass effort per call.
++Codex (`.codex/agents/*.toml` `model_reasoning_effort`) and Antigravity
++(`.agents/agents/<name>.md` `model:`; effort is session-level) emit no agents
++today, so routing there stays with the user's session settings (deferred, §5).
++
+ ## 5. Deferred surfaces (probe-gated)
+ 
+ The following ship only after a live-docs probe confirms a stable schema, per
+@@ -134,3 +143,5 @@ before code. Cross-reference spec §13.7:
+ - Global/user-level `~/.agents/skills/` scanning — unverified.
+ - SKILL.md optional AAIF fields (`license`, `metadata`, `allowed-tools`).
+ - MCP server work — a standing §3 non-goal.
++- Codex / Antigravity per-agent effort emission (§4b) — neither adapter emits
++  agents yet; Codex spawn-time overrides are reportedly ignored, so pin in TOML.
+diff --git a/docs/privacy.md b/docs/privacy.md
+index bac4148..653cec4 100644
+--- a/docs/privacy.md
++++ b/docs/privacy.md
+@@ -18,6 +18,11 @@ makes no network calls to R-fx Networks or any third party. There is no
+ data to sell, share, or breach on our side, because none leaves your
+ machine.
+ 
++`rdf tokens` (and the per-session summary `/r-save` records) reads the
++Claude Code transcripts already stored on your machine under
++`~/.claude/projects/` and writes its summary to your local
++`.rdf/work-output/session-log.jsonl`. It sends nothing anywhere.
++
+ ## Where your data lives
+ 
+ All state RDF creates stays local to your machine:

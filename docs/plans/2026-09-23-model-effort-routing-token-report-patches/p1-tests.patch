@@ -1,0 +1,183 @@
+diff --git a/tests/adapter-common.bats b/tests/adapter-common.bats
+index 710f4b4..00ef4e4 100644
+--- a/tests/adapter-common.bats
++++ b/tests/adapter-common.bats
+@@ -27,8 +27,10 @@ teardown() {
+ # blocks. Bodies, scripts/ and reference/ are compared against canonical/ (and
+ # sidecars re-derived with rdf_hash_stdin), so editing canonical content never
+ # fails this test — only a change in the emitted frontmatter does.
+-# Regenerate the tar only when the agent frontmatter contract changes on purpose:
+-#   bin/rdf generate all >/dev/null && d="$(mktemp -d)" && cp -r adapters/claude-code/output/agents "$d/agents" && cp -r adapters/claude-plugin/output/agents "$d/plugin-agents" && tar -cf tests/fixtures/adapter-common/agents-expected.tar -C "$d" agents plugin-agents
++# The meta is the frozen 3.7.0 catalog (no effort/variants), so this pins the
++# emitter mechanics, not live routing values. Regenerate the tar only when the
++# agent frontmatter contract changes on purpose (emit from the frozen meta):
++#   d="$(mktemp -d)" && bash -c 'RDF_HOME="$PWD"; RDF_LIBDIR="$PWD/lib"; RDF_VERSION=x; source lib/rdf_common.sh; rdf_init; source lib/adapter_common.sh; source adapters/claude-plugin/adapter.sh; m=tests/fixtures/adapter-common/agent-meta-3.7.0.json; adp_emit_agents canonical/agents "$1/agents" "$m" - 0; adp_emit_agents canonical/agents "$1/plugin-agents" "$m" _cpl_rewrite_namespace_text 0' -- "$d" && tar -cf tests/fixtures/adapter-common/agents-expected.tar -C "$d" agents plugin-agents
+ 
+ @test "adp_emit_agents output is byte-identical to the 3.6.5 emitter fixture" {
+     local expected="${TEST_WORK}/expected"
+@@ -43,7 +45,7 @@ teardown() {
+         source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+         source "${rdf_src}/lib/adapter_common.sh"
+         source "${rdf_src}/adapters/claude-plugin/adapter.sh"
+-        agent_meta="${RDF_ADAPTERS}/claude-code/agent-meta.json"
++        agent_meta="${rdf_src}/tests/fixtures/adapter-common/agent-meta-3.7.0.json"
+         adp_emit_agents "${RDF_CANONICAL}/agents" "${out}/agents" "$agent_meta" - 1
+         adp_copy_scripts "${RDF_CANONICAL}/scripts" "${out}/scripts"
+         adp_copy_reference "${RDF_CANONICAL}/reference" "${out}/reference" 1
+@@ -114,6 +116,34 @@ teardown() {
+     [ -f "${dst_dir}/example.md.rdf-hash" ]
+ }
+ 
++# ── Test 2b: effort line + variant emission ──────────────────────────────────
++
++@test "adp_emit_agents emits an effort line and a variant file per declared variant" {
++    local src_dir="${TEST_WORK}/src" dst_dir="${TEST_WORK}/dst" meta="${TEST_WORK}/meta.json"
++    mkdir -p "$src_dir" "$dst_dir"
++    cp "${RDF_SRC}/tests/fixtures/canonical/agents/example.md" "${src_dir}/example.md"
++    printf '%s\n' '{"example":{"name":"rdf-example","description":"Base agent.","tools":["Read"],"model":"opus","effort":"xhigh","variants":{"lite":{"effort":"medium","description":"Lite variant."}}}}' > "$meta"
++
++    run bash -c '
++        set -euo pipefail
++        rdf_src="$1"; src_dir="$2"; dst_dir="$3"; meta="$4"
++        RDF_LIBDIR="${rdf_src}/lib"
++        source "${rdf_src}/lib/rdf_common.sh"
++        source "${rdf_src}/lib/adapter_common.sh"
++        adp_emit_agents "$src_dir" "$dst_dir" "$meta" - 1
++    ' -- "$RDF_SRC" "$src_dir" "$dst_dir" "$meta"
++    [ "$status" -eq 0 ]
++    [[ "$output" == *"generated 2 agent files (1 variants)"* ]]
++
++    grep -q '^effort: xhigh$' "${dst_dir}/example.md"
++    grep -q '^name: rdf-example-lite$' "${dst_dir}/example-lite.md"
++    grep -q '^  Lite variant\.$' "${dst_dir}/example-lite.md"
++    grep -q '^model: opus$' "${dst_dir}/example-lite.md"
++    grep -q '^effort: medium$' "${dst_dir}/example-lite.md"
++    diff <(sed '1,/^---$/d' "${dst_dir}/example.md" | sed -n '/^---$/,$p') <(sed '1,/^---$/d' "${dst_dir}/example-lite.md" | sed -n '/^---$/,$p')
++    [ "$(cat "${dst_dir}/example-lite.md.rdf-hash")" = "$(cat "${dst_dir}/example.md.rdf-hash")" ]
++}
++
+ # ── Test 3: staging swap ──────────────────────────────────────────────────────
+ 
+ @test "adp_stage_commit rotates .old and leaves no staging dirs" {
+diff --git a/tests/fixtures/adapter-common/agent-meta-3.7.0.json b/tests/fixtures/adapter-common/agent-meta-3.7.0.json
+new file mode 100644
+index 0000000..15ca38d
+--- /dev/null
++++ b/tests/fixtures/adapter-common/agent-meta-3.7.0.json
+@@ -0,0 +1,71 @@
++{
++  "planner": {
++    "name": "rdf-planner",
++    "description": "Research-driven collaborative planner. Brainstorms ideas, researches best practices, challenges assumptions, writes specs and implementation plans. Use for any planning, scoping, or design work.",
++    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
++    "model": "opus"
++  },
++  "dispatcher": {
++    "name": "rdf-dispatcher",
++    "description": "Plan execution orchestrator. Reads PLAN.md, executes phases via TDD, dispatches engineer/qa/uat/reviewer subagents, enforces quality gates. Use when executing implementation plans.",
++    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
++    "model": "sonnet"
++  },
++  "engineer": {
++    "name": "rdf-engineer",
++    "description": "Universal implementation engineer. Follows TDD, reads governance for domain-specific conventions. Dispatched by the dispatcher for plan phase execution.",
++    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
++    "model": "opus"
++  },
++  "qa": {
++    "name": "rdf-qa",
++    "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-verify.",
++    "tools": ["Bash", "Read", "Glob", "Grep"],
++    "disallowedTools": ["Write", "Edit"],
++    "model": "sonnet"
++  },
++  "uat": {
++    "name": "rdf-uat",
++    "description": "User acceptance testing. Runs real-world scenarios from end-user persona. Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-test.",
++    "tools": ["Bash", "Read", "Glob", "Grep"],
++    "disallowedTools": ["Write", "Edit"],
++    "model": "sonnet"
++  },
++  "reviewer": {
++    "name": "rdf-reviewer",
++    "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 2-3 pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r-review.",
++    "tools": ["Bash", "Read", "Glob", "Grep"],
++    "disallowedTools": ["Write", "Edit"],
++    "model": "opus"
++  },
++  "commands": {
++    "r-build": {
++      "file": "commands/r-build.md",
++      "dispatches": "dispatcher",
++      "type": "subagent-foreground",
++      "args": "[N]",
++      "description": "Execute implementation plan phase via dispatcher"
++    },
++    "r-verify": {
++      "file": "commands/r-verify.md",
++      "dispatches": "qa",
++      "type": "subagent-foreground",
++      "args": "[scope]",
++      "description": "Run QA verification against diff or specified scope"
++    },
++    "r-test": {
++      "file": "commands/r-test.md",
++      "dispatches": "uat",
++      "type": "subagent-foreground",
++      "args": "[scope]",
++      "description": "Run UAT acceptance tests from end-user perspective"
++    },
++    "r-review": {
++      "file": "commands/r-review.md",
++      "dispatches": "reviewer",
++      "type": "subagent-foreground",
++      "args": "[--challenge <file>] [--sentinel] [scope]",
++      "description": "Adversarial review in challenge or sentinel mode"
++    }
++  }
++}
+diff --git a/tests/strip.bats b/tests/strip.bats
+index 38333f3..6629b29 100644
+--- a/tests/strip.bats
++++ b/tests/strip.bats
+@@ -64,6 +64,40 @@ _strip() {  # run rdf_strip_frontmatter against a fixture file
+     rm -rf "$d"
+ }
+ 
++_require_meta() {  # $1 = meta JSON, $2.. = canonical agent stems to create
++    local d; d="$(mktemp -d)"
++    printf '%s\n' "$1" > "$d/meta.json"; shift
++    local a; for a in "$@"; do touch "$d/${a}.md"; done
++    bash -c 'source "$1/lib/rdf_common.sh"; rdf_require_agent_meta "$2/meta.json" "$2"' -- "$RDF_SRC" "$d"
++    local rc=$?
++    rm -rf "$d"
++    return "$rc"
++}
++
++@test "require_agent_meta: dies on invalid effort, model, variant key, missing variant effort, and variant collision" {
++    run _require_meta '{"a":{"name":"a","effort":"ultra"}}' a
++    [ "$status" -eq 1 ]
++    [[ "$output" == *"invalid agent routing in agent-meta.json: a: effort 'ultra' not in low|medium|high|xhigh|max"* ]]
++    run _require_meta '{"a":{"name":"a","model":"gpt-9"}}' a
++    [ "$status" -eq 1 ]
++    [[ "$output" == *"a: model 'gpt-9' not in opus|sonnet|haiku|fable|inherit"* ]]
++    run _require_meta '{"a":{"name":"a","variants":{"9x":{"effort":"low"}}}}' a
++    [ "$status" -eq 1 ]
++    [[ "$output" == *"a: variant key '9x' must start with a-z"* ]]
++    run _require_meta '{"a":{"name":"a","variants":{"lite":{"model":"opus"}}}}' a
++    [ "$status" -eq 1 ]
++    [[ "$output" == *"a.lite: variant requires effort"* ]]
++    run _require_meta '{"a":{"name":"a","variants":{"lite":{"effort":"low"}}},"a-lite":{"name":"x"}}' a a-lite
++    [ "$status" -eq 1 ]
++    [[ "$output" == *"a: variant lite collides with canonical agent a-lite.md"* ]]
++}
++
++@test "require_agent_meta: missing model and effort are valid" {
++    run _require_meta '{"a":{"name":"a"},"b":{"name":"b","model":"claude-opus-5-5","effort":"max","variants":{"x":{"effort":"low"}}}}' a b
++    [ "$status" -eq 0 ]
++    [ -z "$output" ]
++}
++
+ @test "strip: sync.sh defines no local strip implementation" {
+     run grep -c '^_strip_frontmatter()' "$RDF_SRC/lib/cmd/sync.sh"
+     [ "$output" = "0" ]

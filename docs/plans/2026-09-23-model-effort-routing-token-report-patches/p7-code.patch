@@ -1,0 +1,244 @@
+diff --git a/canonical/agents/dispatcher.md b/canonical/agents/dispatcher.md
+index 10fd943..f4e49b8 100644
+--- a/canonical/agents/dispatcher.md
++++ b/canonical/agents/dispatcher.md
+@@ -260,26 +260,27 @@ User-facing modifier (any scope level):
+ 
+ Default (cannot determine scope): scope:multi-file
+ 
+-Model routing (engineer dispatch):
+-  scope:docs          → pass model: "sonnet" to engineer dispatch
+-  scope:focused       → pass model: "sonnet" to engineer dispatch
+-  scope:multi-file    → no override (engineer default: opus)
+-  scope:cross-cutting → no override (engineer default: opus)
+-  scope:sensitive     → no override (engineer default: opus)
+-
+-  When dispatching the engineer subagent, include the model parameter
+-  in the Agent call if the scope requires a downgrade. Omit the model
+-  parameter for multi-file and above — the agent's frontmatter default
+-  (opus) applies automatically.
+-
+-Model routing (reviewer dispatch):
+-  Gate 3 (sentinel)     → no override (reviewer default: opus)
+-  End-of-plan sentinel  → no override (reviewer default: opus)
+-
+-  Note: challenge-mode reviewer dispatches originate from commands
+-  (r-review, r-spec, r-plan), not from the dispatcher. Those commands
+-  pass model: "sonnet" for challenge mode. The dispatcher only
+-  dispatches sentinel reviews.
++Agent routing (engineer dispatch):
++  scope:docs          → dispatch rdf-engineer-focused (medium effort)
++  scope:focused       → dispatch rdf-engineer-focused (medium effort)
++  scope:multi-file    → dispatch rdf-engineer (xhigh effort)
++  scope:cross-cutting → dispatch rdf-engineer (xhigh effort)
++  scope:sensitive     → dispatch rdf-engineer (xhigh effort)
++
++  Route by agent name — model and effort live in each agent's definition.
++  Never pass a per-invocation model parameter for routing: it cannot carry
++  effort and splits the prompt cache.
++
++  Escalation: a phase first dispatched to rdf-engineer-focused sends every
++  fix-cycle re-dispatch to rdf-engineer (see Red/Green Decision).
++
++Agent routing (reviewer dispatch):
++  Gate 3 (sentinel)     → rdf-reviewer (xhigh effort)
++  End-of-plan sentinel  → rdf-reviewer (xhigh effort)
++
++  Note: challenge-mode reviews originate from commands (r-review, r-spec,
++  r-plan), which dispatch rdf-reviewer-challenge (high effort). The
++  dispatcher only dispatches sentinel reviews.
+ 
+ ### Tier Cap (min(scope_gate, tier_cap)) — with a security floor
+ 
+@@ -398,6 +399,8 @@ from either agent enters the Finding Resolution loop.
+ ### Red/Green Decision
+ - All gates pass → update the phase result file in `.rdf/work-output/`, next phase
+ - Any gate fails → send feedback to engineer, re-enter TDD cycle
++- Escalation: if the phase was dispatched to rdf-engineer-focused, every
++  fix-cycle re-dispatch goes to rdf-engineer (xhigh effort)
+ - Max 3 retry loops → surface to user with failure context
+ 
+ ### End-of-Plan Sentinel
+diff --git a/canonical/commands/r-plan.md b/canonical/commands/r-plan.md
+index b3a5813..f5e5286 100644
+--- a/canonical/commands/r-plan.md
++++ b/canonical/commands/r-plan.md
+@@ -7,6 +7,14 @@ You produce plans.
+ 
+ This is the second stage of the spec-plan-build-ship pipeline.
+ 
++## Model
++
++In Claude Code this stage is tuned for Fable at high effort. If the active
++model is not Fable, mention once: "Tip: launch plan sessions with
++`claude --model fable --effort high`" — then continue on the current model.
++Never block, and never switch models mid-session (a model switch rebuilds
++the whole prompt cache).
++
+ `$ARGUMENTS` — input source for the plan:
+ 
+ ```
+@@ -498,10 +506,10 @@ Mark task "Challenge review and user approval" as `in_progress`.
+ 
+ ### 3.1 Plan Review
+ 
+-After writing the full plan, dispatch the reviewer agent in challenge
+-mode with `model: "sonnet"`. Challenge review is structural
+-pattern-matching — Sonnet handles it at full quality. The dispatch prompt
+-must include the quality standard as an explicit checklist:
++After writing the full plan, dispatch the `rdf-reviewer-challenge`
++subagent (challenge mode, high effort; no per-invocation model override).
++The dispatch prompt must include the quality standard as an explicit
++checklist:
+ 
+ ```
+ Review this implementation plan against the quality standard. Each
+@@ -517,7 +525,7 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
+    for obvious schema breaks (missing metadata field, malformed
+    Regression-case). Do not re-walk every rule — /r-build Section 1 is
+    the independent late-binding check, and same-context re-validation
+-   by a weaker model is not real defense in depth. Flag MUST-FIX only
++   at lower effort is not real defense in depth. Flag MUST-FIX only
+    if Step 2.7 appears to have been skipped or a spot-check reveals an
+    obvious miss.
+ 4. Accept criteria are concrete and testable?
+@@ -603,6 +611,7 @@ After all steps complete, present the pipeline handoff:
+ ```
+ > **Plan ready** — `$PLAN_FILE` ({N} phases)
+ > Run `/r-build` to begin execution, or `/r-build 3` for a specific phase.
++> In Claude Code, run the build in an Opus session: `claude --model opus`.
+ ```
+ 
+ ---
+diff --git a/canonical/commands/r-review.md b/canonical/commands/r-review.md
+index 3e2a050..ee0c871 100644
+--- a/canonical/commands/r-review.md
++++ b/canonical/commands/r-review.md
+@@ -100,11 +100,10 @@ PROJECT_ROOT: <absolute path to project root>
+ 
+ Dispatch the `rdf-reviewer` subagent with the assembled payload.
+ 
+-Model override: If mode is `challenge`, pass `model: "sonnet"` in
+-the Agent dispatch call. Challenge review is structural
+-pattern-matching — Sonnet handles it at full quality. If mode is
+-`sentinel`, do not pass a model parameter — the reviewer's default
+-(opus) applies.
++Agent routing: if mode is `challenge`, dispatch `rdf-reviewer-challenge`
++(high effort); if mode is `sentinel`, dispatch `rdf-reviewer` (xhigh
++effort). Never pass a per-invocation model — model and effort live in the
++agent definitions.
+ 
+ - Challenge mode: reviewer performs design review and produces a
+   challenge report with MUST-FIX(blocking-concern) / SHOULD-FIX(advisory-concern) / INFORMATIONAL(risk-area) findings
+diff --git a/canonical/commands/r-save.md b/canonical/commands/r-save.md
+index 7b9b37d..46190c3 100644
+--- a/canonical/commands/r-save.md
++++ b/canonical/commands/r-save.md
+@@ -198,10 +198,22 @@ Append a structured entry to `.rdf/work-output/session-log.jsonl`:
+   "plan_phases_in_progress": [{list of phase numbers}],
+   "dirty_files": {N},
+   "unpushed": {N},
+-  "insight": "{punchline text, or null if skipped}"
++  "insight": "{punchline text, or null if skipped}",
++  "tokens": {tokens summary object, or null}
+ }
+ ```
+ 
++Append the entry as ONE compact JSON line (no pretty-printing);
++`head_after` is the short hash (`git rev-parse --short HEAD`).
++
++`tokens` is this session's token usage summary from the state helper, or
++`null` when it is unavailable:
++
++```bash
++tok="$(bash ~/.rdf/state/rdf-tokens.sh --session "${CLAUDE_CODE_SESSION_ID:-}" --summary 2>/dev/null)" || tok=""   # helper absent / no id / no transcript → record null
++[ -n "$tok" ] || tok=null
++```
++
+ Create `.rdf/work-output/` directory if it does not exist.
+ 
+ The `head_before` value comes from: the last session-log entry's
+diff --git a/canonical/commands/r-spec.md b/canonical/commands/r-spec.md
+index 365da4c..064d0d7 100644
+--- a/canonical/commands/r-spec.md
++++ b/canonical/commands/r-spec.md
+@@ -6,6 +6,14 @@ You produce design documents.
+ 
+ This is the first stage of the spec-plan-build-ship pipeline.
+ 
++## Model
++
++In Claude Code this stage is tuned for Fable at high effort. If the active
++model is not Fable, mention once: "Tip: launch spec sessions with
++`claude --model fable --effort high`" — then continue on the current model.
++Never block, and never switch models mid-session (a model switch rebuilds
++the whole prompt cache).
++
+ `$ARGUMENTS` — optional input to seed the design:
+ - No args → start fresh design session
+ - GitHub URL (starts with `http`/`https`) → fetch as design seed
+@@ -555,10 +563,9 @@ Mark task "Write architecture-grade spec" as `completed`.
+ 
+ Mark task "Challenge review and user approval" as `in_progress`.
+ 
+-Dispatch the reviewer agent in challenge mode with `model: "sonnet"`.
+-Challenge review is structural pattern-matching — Sonnet handles it
+-at full quality. The dispatch prompt must include the quality standard
+-as an explicit checklist:
++Dispatch the `rdf-reviewer-challenge` subagent (challenge mode, high
++effort; no per-invocation model override). The dispatch prompt must
++include the quality standard as an explicit checklist:
+ 
+ ```
+ Review this spec against the quality standard. Each criterion is
+@@ -640,7 +647,7 @@ After all phases complete, present the pipeline handoff:
+ 
+ ```
+ > **Spec complete** — `docs/specs/{filename}`
+-> Reviewed and approved. Run `/r-plan` to create the implementation plan.
++> Reviewed and approved. Run `/r-plan` in this same session to create the implementation plan.
+ ```
+ 
+ Clean up: update `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` with final state:
+diff --git a/canonical/commands/r-start.md b/canonical/commands/r-start.md
+index ace024b..21852f4 100644
+--- a/canonical/commands/r-start.md
++++ b/canonical/commands/r-start.md
+@@ -179,9 +179,12 @@ heading already signals `idle`.
+ 
+ From session log (if exists):
+ ```
+-Last: {N} commits · {diff_summary} · {pipeline} *({age})*
++Last: {N} commits · {diff_summary} · {pipeline} · ${cost} *({age})*
+ ```
+ 
++Render `· ${cost}` only when `session_last.tokens.cost_usd` is present
++(written by `/r-save`); omit the segment otherwise.
++
+ Fallback (no session log) — 3 most recent commits:
+ ```
+ - `{hash}` {message} *({age})*
+diff --git a/canonical/commands/r-sync.md b/canonical/commands/r-sync.md
+index bfccbad..919ca3d 100644
+--- a/canonical/commands/r-sync.md
++++ b/canonical/commands/r-sync.md
+@@ -126,6 +126,7 @@ Agent files deployed by `rdf generate` have YAML frontmatter:
+     name: rdf-engineer
+     description: Universal implementation engineer...
+     model: opus
++    effort: xhigh
+     ---
+     (actual agent prompt content)
+ 
+@@ -139,6 +140,11 @@ lines after the frontmatter block are also trimmed.
+   to canonical)
+ - **New files**: if a deployed file has no canonical counterpart, report
+   it as *new file* and ask the user whether to import it
++- **Generated variants**: a deployed agent `<agent>-<variant>.md` whose
++  variant is declared under `variants` in `adapters/claude-code/agent-meta.json`
++  (e.g. `engineer-focused.md`, `reviewer-challenge.md`) is a generated copy of
++  `canonical/agents/<agent>.md` — never report it as a new file or offer to
++  import it; edits belong in the base agent
+ - **Missing deployments**: if a canonical file has no deployed counterpart,
+   ignore it (it may not have been generated for this adapter)
+ - The `rdf sync` CLI command handles the actual file operations —

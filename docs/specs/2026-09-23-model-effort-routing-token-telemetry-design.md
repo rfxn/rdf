@@ -293,8 +293,9 @@ state/rdf-state.sh  ── session_last keep-list includes "tokens"
   - variant emission lands no later than canonical text naming the variants
   - plugin output is regenerated in the same commit as any canonical/meta change
   - the frozen fixture lands with (or before) the `agent-meta.json` change
-  - README/RDF.md trees are updated in the same commit as new files (doc-truth
-    tree scan)
+  - README/RDF.md trees and count-bearing docs land together in one final
+    docs phase; the doc-truth tree scan only checks that listed paths exist,
+    so intermediate commits stay green (plan review: 0 FAIL at each phase)
 
 ## 5. File Contents
 
@@ -800,7 +801,7 @@ No dead functions found in the files read.
 
 | Goal | Test file | `@test` |
 |---|---|---|
-| 1 | `governance-contracts.bats` | "agent-meta pins model and effort for every agent per the routing table" |
+| 1 | `adapter-common.bats` | "agent-meta pins model and effort for every agent per the routing table" |
 | 2 | `adapter-common.bats` | "live agent-meta emits effort lines and the two variant files with overridden name/effort" |
 | 2 | `plugin-adapter.bats` | "plugin.json agents array includes generated variant files" |
 | 3 | `adapter-common.bats` | existing "adp_emit_agents output is byte-identical to the 3.6.5 emitter fixture", now reading `tests/fixtures/adapter-common/agent-meta-3.7.0.json` |
@@ -811,10 +812,10 @@ No dead functions found in the files read.
 | 7 | `sync.bats` | "sync never creates a canonical agent from a variant or stray output file" |
 | 7 | `governance-contracts.bats` | "r-sync never offers generated variant agents for import" |
 | 7 | `doctor.bats` | "doctor sync: agent count excludes declared variants" |
-| 8 | `tokens.bats` | "--json on the fixture reproduces the hand-computed report" (all §10a figures); "dedups repeated message.id entries"; "labels subagents by meta agentType including workflow subagents"; "skips synthetic, id-less and malformed entries"; "--since excludes older entries"; "--session includes out-of-window rows and only that session"; "unknown model is reported unpriced and excluded from shares"; "text output shows spend and by-agent rows"; "bad --days and bad --session exit 2; missing transcripts exit 1"; "rdf tokens wrapper forwards help and exit codes" |
+| 8 | `tokens.bats` | "--json on the fixture reproduces the hand-computed report" (all §10a figures); "dedups repeated message.id entries"; "labels subagents by meta agentType including workflow subagents"; "skips synthetic, id-less and malformed entries"; "--since excludes older entries"; "--session includes out-of-window rows and only that session"; "unknown model is reported unpriced and excluded from shares"; "text output shows spend and by-agent rows"; "bad --days and bad --session exit 2; missing transcripts exit 1"; "rdf tokens wrapper forwards help and exit codes"; "prices [1m] and dated model ids, labels a meta-less subagent unknown, dedups across files, falls back to the physical slug" |
 | 9 | `tokens.bats` | "--summary emits the compact session object"; "rdf-state.sh session_last preserves a tokens object"; "session_last prefers the /r-save entry over a trailing same-state SessionEnd-hook entry"; "session_last keeps a hook entry whose head_after differs"; "session_last selects a pretty-spaced /r-save entry" |
 | 9 | `governance-contracts.bats` | "r-save session-log entry records a tokens summary or null"; "r-start Last line renders session cost when present" |
-| 10 | `doctor.bats` | "doctor --json stays valid when a message contains quotes and backslashes"; "harness: unpinned Opus 5.5 WARNs"; "harness: modelSettings pin is OK"; "harness: CLAUDE_CODE_EFFORT_LEVEL WARNs as flattening"; "harness: project top-level effortLevel pins, user top-level does not"; "harness: non-opus model is not applicable"; "harness: BASH_MAX_OUTPUT_LENGTH above 30000 WARNs"; "harness: bashOutputMaxChars setting takes precedence over the env var"; "harness: CLAUDE_CODE_EFFORT_LEVEL=auto counts as unset" |
+| 10 | `doctor.bats` | "doctor --json stays valid when a message contains quotes and backslashes"; "harness: unpinned Opus 5.5 WARNs"; "harness: modelSettings pin is OK"; "harness: CLAUDE_CODE_EFFORT_LEVEL WARNs as flattening"; "harness: project top-level effortLevel pins, user top-level does not"; "harness: non-opus model is not applicable"; "harness: BASH_MAX_OUTPUT_LENGTH above 30000 WARNs"; "harness: bashOutputMaxChars setting takes precedence over the env var"; "harness: CLAUDE_CODE_EFFORT_LEVEL=auto counts as unset"; "harness: managed-settings top-level effortLevel pins"; "harness: unparseable settings file is skipped and the next file is read" |
 | 11 | existing `doc-truth.bats`, full suite, `rdf doctor` | verification G11 |
 
 ### Token fixture (`tests/fixtures/tokens/proj/`)
@@ -999,8 +1000,9 @@ shellcheck -S error --exclude=SC1090,SC1091 state/rdf-tokens.sh lib/cmd/tokens.s
    - string-compared timestamps
    - no regex builtins
 6. **Doc-truth / doc-stats FAIL from count changes.** Mitigation: count-bearing
-   docs are updated in the same phase as the code, and that phase's
-   verification runs `rdf doctor --scope doc-truth` and `--scope doc-stats`.
+   docs are updated together in the final docs phase, and code phases that
+   add files or scopes run `rdf doctor --scope doc-truth` (and the docs phase
+   `--scope doc-stats`) to confirm no intermediate FAIL.
 7. **`CLAUDE_CODE_SESSION_ID` absent** (other harnesses, older CC).
    Mitigation: `/r-save` records `null`, and the helper exits 2 on an empty id.
 8. **Users rely on `CLAUDE_CODE_EFFORT_LEVEL`,** which silently flattens the

@@ -1,0 +1,244 @@
+diff --git a/lib/cmd/doctor.sh b/lib/cmd/doctor.sh
+index cbc4717..3fe7ab9 100644
+--- a/lib/cmd/doctor.sh
++++ b/lib/cmd/doctor.sh
+@@ -18,7 +18,8 @@ Options:
+   --scope SCOPE         Check specific category only:
+                         artifacts, drift, memory, plan, github, sync,
+                         install-mode, deps, catalogs, state-helpers,
+-                        content-drift, doc-stats, readme, doc-truth
++                        content-drift, doc-stats, readme, doc-truth,
++                        harness
+   --json                Output results as JSON
+   --quiet               Only show WARN and FAIL
+ 
+@@ -37,6 +38,9 @@ Examples:
+ USAGE
+ }
+ 
++# Managed settings files read by the harness check (colon-separated; tests override)
++_HARNESS_MANAGED_PATHS="/etc/claude-code/managed-settings.json:/Library/Application Support/ClaudeCode/managed-settings.json"
++
+ # Default workspace root — RDF_WORKSPACE, else the parent of RDF home
+ _WORKSPACE_ROOT="${RDF_WORKSPACE:-$(command dirname "${RDF_HOME}")}"
+ 
+@@ -487,20 +491,35 @@ _check_sync() {
+         return 0
+     fi
+ 
+-    # Compare agent count
++    # Compare agent count; generated variants (agent-meta "variants") are not canonical agents
+     local canon_agents=0
+     local output_agents=0
+-    for f in "${canonical_dir}/agents"/*.md; do
+-        [[ -f "$f" ]] && canon_agents=$((canon_agents + 1))
+-    done
+-    for f in "${output_dir}/agents"/*.md; do
+-        [[ -f "$f" ]] && output_agents=$((output_agents + 1))
+-    done
+-
+-    if [[ $canon_agents -ne $output_agents ]]; then
+-        _add_result "sync" "$_WARN" "agent count mismatch: canonical=${canon_agents}, output=${output_agents}"
++    local variant_count=0
++    local stems stem
++    if ! command -v jq >/dev/null 2>&1; then
++        _add_result "sync" "$_WARN" "jq not found — agent count skipped"
+     else
+-        _add_result "sync" "$_OK" "agent count matches (${canon_agents})"
++        stems="$(rdf_agent_variant_stems "${path}/adapters/claude-code/agent-meta.json")"
++        for f in "${canonical_dir}/agents"/*.md; do
++            [[ -f "$f" ]] && canon_agents=$((canon_agents + 1))
++        done
++        for f in "${output_dir}/agents"/*.md; do
++            [[ -f "$f" ]] || continue
++            stem="$(command basename "$f" .md)"
++            if [[ -n "$stems" ]] && grep -qxF "$stem" <<< "$stems"; then
++                variant_count=$((variant_count + 1))
++            else
++                output_agents=$((output_agents + 1))
++            fi
++        done
++
++        if [[ $canon_agents -ne $output_agents ]]; then
++            _add_result "sync" "$_WARN" "agent count mismatch: canonical=${canon_agents}, output=${output_agents}"
++        elif [[ $variant_count -gt 0 ]]; then
++            _add_result "sync" "$_OK" "agent count matches (${canon_agents} + ${variant_count} variants)"
++        else
++            _add_result "sync" "$_OK" "agent count matches (${canon_agents})"
++        fi
+     fi
+ 
+     # Compare command count against skills/*/SKILL.md
+@@ -793,6 +812,17 @@ _check_catalogs() {
+             _add_result "catalogs" "$_OK" "agent-meta.json covers all canonical agents"
+         fi
+         [[ -n "$orphans" ]] && _add_result "catalogs" "$_WARN" "agent-meta.json orphan entries (no canonical agent): ${orphans}"
++        local rerr n_agents n_variants
++        rerr="$(rdf_agent_routing_errors "$agent_meta" "$agents_dir")"
++        if [[ -n "$rerr" ]]; then
++            while IFS= read -r b; do
++                _add_result "catalogs" "$_FAIL" "agent routing: ${b}"
++            done <<< "$rerr"
++        else
++            n_agents="$(jq '[to_entries[] | select((.key | startswith("_") | not) and (.value | type == "object" and has("name")))] | length' "$agent_meta" 2>/dev/null || echo 0)"  # unparseable → 0 (missing-agent check already reported)
++            n_variants="$(rdf_agent_variant_stems "$agent_meta" | grep -c . || true)"  # grep -c exits 1 on zero matches
++            _add_result "catalogs" "$_OK" "agent routing valid (${n_agents} agents, ${n_variants} variants)"
++        fi
+     else
+         _add_result "catalogs" "$_FAIL" "agent-meta.json not found: ${agent_meta}"
+     fi
+@@ -849,6 +879,110 @@ _check_state_helpers() {
+     return 0
+ }
+ 
++# ── Check: harness — Claude Code settings that change agent effort or context cost ──
++# Reads managed, local, project, and user settings plus env; never writes them.
++_check_harness() {
++    local path="$1"
++    if ! command -v jq >/dev/null 2>&1; then
++        _add_result "harness" "$_WARN" "harness checks skipped (jq not found)"
++        return 0
++    fi
++
++    local cand=() files=() f save_ifs="$IFS"
++    IFS=':'
++    for f in $_HARNESS_MANAGED_PATHS; do
++        cand+=("$f")
++    done
++    IFS="$save_ifs"
++    cand+=("${path}/.claude/settings.local.json" "${path}/.claude/settings.json" "${HOME}/.claude/settings.json")
++    for f in "${cand[@]}"; do
++        [[ -f "$f" ]] && jq -e . "$f" >/dev/null 2>&1 && files+=("$f")  # unparseable settings file → skipped
++    done
++
++    local lvl="${CLAUDE_CODE_EFFORT_LEVEL:-}" lsrc="env"
++    if [[ -z "$lvl" ]]; then
++        for f in "${files[@]+"${files[@]}"}"; do
++            lvl="$(jq -r '.env.CLAUDE_CODE_EFFORT_LEVEL // empty' "$f" 2>/dev/null || true)"  # non-object env → unset
++            [[ -n "$lvl" ]] && { lsrc="$f"; break; }
++        done
++    fi
++    [[ "$lvl" == "auto" ]] && lvl=""
++    case "$lvl" in *[!a-z]*) lvl="(invalid)" ;; esac
++    if [[ -n "$lvl" ]]; then
++        _add_result "harness" "$_WARN" "CLAUDE_CODE_EFFORT_LEVEL=${lvl} (${lsrc}) overrides every agent's effort — RDF per-role routing (xhigh/high/medium) is flattened to ${lvl}; unset it and use /effort <level>, which saves per model and leaves agent effort intact"
++    fi
++
++    local model="${ANTHROPIC_MODEL:-}"
++    if [[ -z "$model" ]]; then
++        for f in "${files[@]+"${files[@]}"}"; do
++            model="$(jq -r '.model // empty' "$f" 2>/dev/null || true)"  # non-string model → treated as unset
++            [[ -n "$model" ]] && break
++        done
++    fi
++    local opus_bound=0
++    case "$model" in
++        ""|default|opus|"opus[1m]"|claude-opus-5-5*) opus_bound=1 ;;
++    esac
++    if [[ $opus_bound -eq 0 ]]; then
++        local shown
++        shown="$(printf '%s' "$model" | command tr -cd 'A-Za-z0-9.[]_-')"
++        _add_result "harness" "$_OK" "main model ${shown} — Opus 5.5 effort check not applicable"
++    else
++        local pin=""
++        [[ -n "$lvl" ]] && pin="CLAUDE_CODE_EFFORT_LEVEL"
++        if [[ -z "$pin" ]]; then
++            for f in "${files[@]+"${files[@]}"}"; do
++                if [[ "$f" != "${HOME}/.claude/settings.json" ]] && jq -e 'has("effortLevel")' "$f" >/dev/null 2>&1; then  # non-object settings → no pin
++                    pin="top-level effortLevel in ${f}"
++                    break
++                fi
++                if jq -e '(.modelSettings // {}) | to_entries | map(select((.key | startswith("claude-opus-5-5")) and (.value | type == "object") and (.value | has("effortLevel")))) | length > 0' "$f" >/dev/null 2>&1; then  # malformed modelSettings → no pin
++                    pin="modelSettings in ${f}"
++                    break
++                fi
++            done
++        fi
++        if [[ -n "$pin" ]]; then
++            _add_result "harness" "$_OK" "Opus 5.5 main-thread effort pinned (${pin})"
++        else
++            local legacy=""
++            if [[ -f "${HOME}/.claude/settings.json" ]] && jq -e 'has("effortLevel")' "${HOME}/.claude/settings.json" >/dev/null 2>&1; then  # absent/unparseable → no legacy note
++                legacy=" (a top-level effortLevel in ~/.claude/settings.json does not apply to Opus 5.5)"
++            fi
++            _add_result "harness" "$_WARN" "Opus 5.5 main thread runs at its 'medium' default — run '/effort xhigh' in a session (saves per model) or add modelSettings claude-opus-5-5 effortLevel xhigh to ~/.claude/settings.json; RDF agents pin their own effort${legacy}"
++        fi
++    fi
++
++    local lim="" src=""
++    for f in "${files[@]+"${files[@]}"}"; do
++        lim="$(jq -r '.bashOutputMaxChars // empty' "$f" 2>/dev/null || true)"  # non-object settings → unset
++        [[ -n "$lim" ]] && { src="bashOutputMaxChars"; break; }
++    done
++    if [[ -z "$lim" ]]; then
++        src="BASH_MAX_OUTPUT_LENGTH"
++        lim="${BASH_MAX_OUTPUT_LENGTH:-}"
++        if [[ -z "$lim" ]]; then
++            for f in "${files[@]+"${files[@]}"}"; do
++                lim="$(jq -r '.env.BASH_MAX_OUTPUT_LENGTH // empty' "$f" 2>/dev/null || true)"  # non-object env → unset
++                [[ -n "$lim" ]] && break
++            done
++        fi
++    fi
++    case "$lim" in
++        ""|*[!0-9]*)
++            _add_result "harness" "$_OK" "Bash output limit at or below platform default"
++            ;;
++        *)
++            if [[ ${#lim} -gt 9 ]] || [[ "$lim" -gt 30000 ]]; then
++                _add_result "harness" "$_WARN" "${src}=${lim} exceeds the 30000 default — large Bash results stay in context for the rest of the session; overflow already spills to a file"
++            else
++                _add_result "harness" "$_OK" "Bash output limit at or below platform default"
++            fi
++            ;;
++    esac
++    return 0
++}
++
+ # ── Check: doc-stats (RDF-specific) ──
+ # Verifies the human-maintained inventory counts in WORKFORCE.md, RDF.md, and
+ # docs/index.md against live counts derived from the filesystem. Count drift
+@@ -1455,17 +1589,24 @@ _print_results() {
+ }
+ 
+ # Convert results to JSON object for one project
++# _json_esc string — JSON string body: newlines/control chars dropped, \ and " escaped
++_json_esc() {
++    local s="${1//$'\n'/ }"
++    printf '%s' "$s" | sed 's/[[:cntrl:]]//g; s/\\/\\\\/g; s/"/\\"/g'
++}
++
+ _results_to_json() {
+     local name="$1"
+     local path="$2"
+ 
+     printf '{"project":"%s","path":"%s","ok":%d,"warn":%d,"fail":%d,"checks":[' \
+-        "$name" "$path" "$_PASS_COUNT" "$_WARN_COUNT" "$_FAIL_COUNT"
++        "$(_json_esc "$name")" "$(_json_esc "$path")" "$_PASS_COUNT" "$_WARN_COUNT" "$_FAIL_COUNT"
+ 
+     local first=1
+     local entry
+     for entry in "${_RESULTS[@]+"${_RESULTS[@]}"}"; do
+         local category status message
++        entry="$(_json_esc "$entry")"
+         IFS='|' read -r category status message <<< "$entry"
+         [[ $first -eq 0 ]] && printf ","
+         printf '{"category":"%s","status":"%s","message":"%s"}' \
+@@ -1505,6 +1646,7 @@ _doctor_one() {
+             _check_doc_stats "$path"
+             _check_readme "$path"
+             _check_doc_truth "$path"
++            _check_harness "$path"
+             ;;
+         artifacts)      _check_artifacts "$path" ;;
+         drift)          _check_drift "$path" ;;
+@@ -1520,7 +1662,8 @@ _doctor_one() {
+         doc-stats)      _check_doc_stats "$path" ;;
+         readme)         _check_readme "$path" ;;
+         doc-truth)      _check_doc_truth "$path" ;;
+-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth" ;;
++        harness)        _check_harness "$path" ;;
++        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness" ;;
+     esac
+ }
+ 
