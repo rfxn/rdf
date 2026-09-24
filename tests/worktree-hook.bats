@@ -1,0 +1,302 @@
+#!/usr/bin/env bats
+# tests/worktree-hook.bats — phase-branch scope guard in a consumer-project layout
+# (C) 2026 R-fx Networks <proj@rfxn.com>
+# GNU GPL v2
+# shellcheck disable=SC2016  # literal $ in bash -c programs and generated hook bodies
+
+RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+SID="0199aaaa-bbbb-7ccc-8ddd-eeeeeeeeeeee"
+INCLUDE_KEY='includeIf.onbranch:rdf/phase-**.path'
+
+# _git args — git with a throwaway identity (HOME is a sandbox, so no global config)
+_git() {
+    git -c user.email=t@t -c user.name=t "$@"
+}
+
+# _make_repo dir — consumer repo: no state/, a committed plan, a main-root session pointer
+_make_repo() {
+    local repo="$1"
+    mkdir -p "$repo/src" "$repo/docs/plans"
+    git -C "$repo" init -q
+    git -C "$repo" symbolic-ref HEAD refs/heads/main
+    printf 'echo a\n' > "$repo/src/a.sh"
+    printf 'readme\n' > "$repo/README.md"
+    printf '### Phase 1: thing\n\n**Files:**\n- Modify: `src/a.sh`\n- Modify: `README.md`\n' > "$repo/docs/plans/p.md"
+    printf '.rdf/\n.worktrees/\n.husky/\n' >> "$repo/.git/info/exclude"
+    _git -C "$repo" add src/a.sh README.md docs/plans/p.md
+    _git -C "$repo" commit -q -m init
+    mkdir -p "$repo/.rdf"
+    printf '%s\n' "$repo/docs/plans/p.md" > "$repo/.rdf/active-plan-${SID}"
+}
+
+# _install [dir] — source the deployed bus in a child shell and install into dir's repo
+_install() {
+    bash -c 'source "$1" && rdf_phase_hook_install "$2"' _ "${HOME}/.rdf/state/rdf-bus.sh" "${1:-$REPO}"
+}
+
+# _uninstall [dir]
+_uninstall() {
+    bash -c 'source "$1" && rdf_phase_hook_uninstall "$2"' _ "${HOME}/.rdf/state/rdf-bus.sh" "${1:-$REPO}"
+}
+
+# _phase_wt [branch] — linked worktree on a phase branch; sets WT
+_phase_wt() {
+    local br="${1:-rdf/phase-1-${SID}}"
+    WT="${REPO}/.worktrees/phase"
+    git -C "$REPO" worktree add -q "$WT" -b "$br" HEAD
+}
+
+# _prior_hook name body — executable hook in the repo's default hooks dir
+_prior_hook() {
+    printf '#!/usr/bin/env bash\n%s\n' "$2" > "${REPO}/.git/hooks/$1"
+    chmod +x "${REPO}/.git/hooks/$1"
+}
+
+setup() {
+    SANDBOX="$(mktemp -d)"
+    export HOME="${SANDBOX}/home"
+    mkdir -p "${HOME}/.rdf/state/git-hooks"
+    cp "$RDF_SRC/state/rdf-bus.sh" "${HOME}/.rdf/state/"
+    cp "$RDF_SRC/state/git-hooks/pre-commit" "${HOME}/.rdf/state/git-hooks/"
+    unset CLAUDE_CODE_SESSION_ID RDF_SESSION_ID
+    MARK="${SANDBOX}/marks"
+    export MARK
+    REPO="${SANDBOX}/café/app"   # non-ASCII path: git C-quotes it in non -z config output
+    _make_repo "$REPO"
+}
+
+teardown() {
+    rm -rf "$SANDBOX"
+}
+
+@test "install writes the onbranch include; main and feature worktrees keep their hooks path" {
+    run _install
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$REPO" config --get "$INCLUDE_KEY")" = "rdf-hooks.inc" ]
+    _phase_wt
+    [[ "$(git -C "$WT" rev-parse --git-path hooks)" == */.git/rdf-hooks ]]
+    [[ "$(git -C "$REPO" rev-parse --git-path hooks)" == *.git/hooks ]]
+    git -C "$REPO" worktree add -q "${REPO}/.worktrees/feat" -b feature/x HEAD
+    [[ "$(git -C "${REPO}/.worktrees/feat" rev-parse --git-path hooks)" == */.git/hooks ]]
+}
+
+@test "consumer: out-of-scope commit on a phase branch is rejected" {
+    _install
+    _phase_wt
+    printf 'x\n' > "$WT/outside.txt"
+    git -C "$WT" add outside.txt
+    run _git -C "$WT" commit -q -m oob
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"SCOPE VIOLATION"* ]]
+    [[ "$output" == *"outside.txt"* ]]
+}
+
+@test "consumer: in-scope commit on a phase branch succeeds" {
+    _install
+    _phase_wt
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m ok
+    [ "$status" -eq 0 ]
+}
+
+@test "consumer: session id comes from the branch with no session env" {
+    _install
+    _phase_wt
+    printf 'x\n' > "$WT/outside.txt"
+    git -C "$WT" add outside.txt
+    # A different ambient session id must not hide the branch's plan pointer.
+    run env CLAUDE_CODE_SESSION_ID=0199ffff-ffff-7fff-8fff-ffffffffffff \
+        git -c user.email=t@t -c user.name=t -C "$WT" commit -q -m oob
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"SCOPE VIOLATION"* ]]
+}
+
+@test "worktree-local plan pointer takes precedence over the main-root pointer" {
+    _install
+    _phase_wt
+    mkdir -p "$WT/.rdf"
+    printf '### Phase 1: other\n\n**Files:**\n- Create: `other.txt`\n' > "$WT/local-plan.md"
+    printf '%s\n' "$WT/local-plan.md" > "$WT/.rdf/active-plan-${SID}"
+    printf 'x\n' > "$WT/other.txt"
+    git -C "$WT" add other.txt
+    run _git -C "$WT" commit -q -m local
+    [ "$status" -eq 0 ]
+}
+
+@test "main-root session pointer outranks a stale committed PLAN.md in the worktree" {
+    printf '### Phase 9: stale\n\n**Files:**\n- Modify: `nothing.txt`\n' > "$REPO/PLAN.md"
+    _git -C "$REPO" add PLAN.md
+    _git -C "$REPO" commit -q -m legacy
+    _install
+    _phase_wt
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m ok
+    [ "$status" -eq 0 ]
+}
+
+@test "phase branch with a non-SID suffix is still enforced" {
+    _install
+    _phase_wt "rdf/phase-1-a.b"
+    printf 'x\n' > "$WT/outside.txt"
+    git -C "$WT" add outside.txt
+    run env RDF_SESSION_ID="$SID" git -c user.email=t@t -c user.name=t -C "$WT" commit -q -m oob
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"SCOPE VIOLATION"* ]]
+}
+
+@test "prior pre-commit runs after RDF passes and its failure blocks the commit" {
+    _prior_hook pre-commit 'echo pre >> "$MARK"; exit 1'
+    _install
+    _phase_wt
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m ok
+    [ "$status" -ne 0 ]
+    [ "$(grep -c pre "$MARK")" -eq 1 ]
+}
+
+@test "prior pre-commit does not run when RDF rejects" {
+    _prior_hook pre-commit 'echo pre >> "$MARK"'
+    _install
+    _phase_wt
+    printf 'x\n' > "$WT/outside.txt"
+    git -C "$WT" add outside.txt
+    run _git -C "$WT" commit -q -m oob
+    [ "$status" -ne 0 ]
+    [ ! -e "$MARK" ]
+}
+
+@test "other prior hooks run through the passthrough (commit-msg), including from a non-ASCII repo path" {
+    _prior_hook commit-msg 'echo "msg $(head -1 "$1")" >> "$MARK"'
+    _install
+    _phase_wt
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m hello
+    [ "$status" -eq 0 ]
+    [ "$(cat "$MARK")" = "msg hello" ]
+}
+
+@test "prior pre-commit running git checkout fires post-checkout, not itself again" {
+    _prior_hook pre-commit 'echo pre >> "$MARK"; git checkout -q -- README.md'
+    _prior_hook post-checkout 'echo post >> "$MARK"'
+    _install
+    _phase_wt
+    rm -f "$MARK"   # worktree add already fired post-checkout once
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m ok
+    [ "$status" -eq 0 ]
+    [ "$(grep -c pre "$MARK")" -eq 1 ]
+    [ "$(grep -c post "$MARK")" -eq 1 ]
+}
+
+@test "relative hooksPath absent in the phase worktree: commit proceeds" {
+    git -C "$REPO" config core.hooksPath .husky/_
+    mkdir -p "$REPO/.husky/_"
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$REPO/.husky/_/pre-commit"
+    chmod +x "$REPO/.husky/_/pre-commit"
+    _install
+    _phase_wt
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m ok
+    [ "$status" -eq 0 ]
+}
+
+@test "an RDF hook copy in the prior hooks dir is not re-run" {
+    _prior_hook pre-commit '# RDF worktree scope enforcement (stale copy)
+echo copy >> "$MARK"'
+    _install
+    _phase_wt
+    printf 'echo b\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m ok
+    [ "$status" -eq 0 ]
+    [ ! -e "$MARK" ]
+}
+
+@test "worktree added from inside a phase worktree on a feature branch is not enforced" {
+    _install
+    _phase_wt
+    git -C "$WT" worktree add -q "${REPO}/.worktrees/nested" -b feature/y HEAD
+    [[ "$(git -C "${REPO}/.worktrees/nested" rev-parse --git-path hooks)" == */.git/hooks ]]
+    printf 'x\n' > "${REPO}/.worktrees/nested/outside.txt"
+    git -C "${REPO}/.worktrees/nested" add outside.txt
+    run _git -C "${REPO}/.worktrees/nested" commit -q -m free
+    [ "$status" -eq 0 ]
+}
+
+@test "consumer: anti-pattern classes are off by default" {
+    _install
+    _phase_wt
+    printf 'rm /tmp/x\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m bare
+    [ "$status" -eq 0 ]
+}
+
+@test "anti-pattern-enable opts a consumer in; non-shell files are never scanned" {
+    mkdir -p "$REPO/.rdf/governance"
+    printf '# anti-pattern-enable: all\n' > "$REPO/.rdf/governance/ignore.md"
+    _install
+    _phase_wt
+    printf 'rm the cache before release\n' >> "$WT/README.md"
+    git -C "$WT" add README.md
+    run _git -C "$WT" commit -q -m prose
+    [ "$status" -eq 0 ]
+    printf 'rm /tmp/x\n' >> "$WT/src/a.sh"
+    git -C "$WT" add src/a.sh
+    run _git -C "$WT" commit -q -m bare
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"ANTI-PATTERN [bare-coreutils-no-prefix]"* ]]
+}
+
+@test "install refuses with rc 2 when git is older than 2.23" {
+    local real_git shim
+    real_git="$(command -v git)"
+    shim="${SANDBOX}/shim"
+    mkdir -p "$shim"
+    printf '#!/usr/bin/env bash\nif [ "$1" = version ]; then echo "git version 2.22.0"; exit 0; fi\nexec "%s" "$@"\n' "$real_git" > "$shim/git"
+    chmod +x "$shim/git"
+    run env PATH="${shim}:${PATH}" bash -c 'source "$1" && rdf_phase_hook_install "$2"' _ "${HOME}/.rdf/state/rdf-bus.sh" "$REPO"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"git >= 2.23 required"* ]]
+    run git -C "$REPO" config --get "$INCLUDE_KEY"
+    [ "$status" -ne 0 ]
+    [ ! -e "$REPO/.git/rdf-hooks" ]
+}
+
+@test "reinstall is idempotent: one include entry, symlinked repo path handled" {
+    ln -s "$REPO" "${SANDBOX}/link"
+    _install "${SANDBOX}/link"
+    run _install "${SANDBOX}/link"
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$REPO" config --get-all "$INCLUDE_KEY" | wc -l | tr -d ' ')" -eq 1 ]
+    [ "$(git config --file "$REPO/.git/rdf-hooks.inc" --get core.hooksPath)" = "$(cd -P "$REPO/.git" && pwd -P)/rdf-hooks" ]
+    _phase_wt
+    printf 'x\n' > "$WT/outside.txt"
+    git -C "$WT" add outside.txt
+    run _git -C "$WT" commit -q -m oob
+    [ "$status" -ne 0 ]
+}
+
+@test "uninstall removes the include and files, restores prior hook resolution, and is repeatable" {
+    _install
+    _phase_wt
+    run _uninstall
+    [ "$status" -eq 0 ]
+    run _uninstall
+    [ "$status" -eq 0 ]
+    run git -C "$REPO" config --get "$INCLUDE_KEY"
+    [ "$status" -ne 0 ]
+    [ ! -e "$REPO/.git/rdf-hooks" ]
+    [ ! -e "$REPO/.git/rdf-hooks.inc" ]
+    [[ "$(git -C "$WT" rev-parse --git-path hooks)" == */.git/hooks ]]
+    printf 'x\n' > "$WT/outside.txt"
+    git -C "$WT" add outside.txt
+    run _git -C "$WT" commit -q -m free
+    [ "$status" -eq 0 ]
+}

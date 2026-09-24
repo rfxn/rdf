@@ -3,7 +3,8 @@
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
 #
-# Installed into worktrees by dispatcher (canonical/agents/dispatcher.md).
+# Installed by rdf_phase_hook_install (state/rdf-bus.sh); an includeIf "onbranch:rdf/phase-**"
+# include makes it the pre-commit hook on phase branches only.
 # Rejects commits that touch files outside the phase's declared Files list
 # or Tests-may-touch flex zone (plan-schema.md Rule 8).
 #
@@ -11,46 +12,65 @@
 # serves as defense-in-depth backstop).
 set -euo pipefail
 
-# Locate project root (nearest ancestor with state/rdf-bus.sh — the RDF anchor)
-_proj=""
-_dir="$(command pwd)"
-while [[ "$_dir" != "/" ]]; do
-    [[ -f "$_dir/state/rdf-bus.sh" ]] && { _proj="$_dir"; break; }
-    _dir="$(command dirname "$_dir")"
-done
-if [[ -z "$_proj" ]]; then
-    echo "rdf pre-commit: state/rdf-bus.sh not found in any ancestor; skipping scope check" >&2
-    exit 0
-fi
+_hd="$(command dirname "$0")"
 
-# Source helpers
-if [[ ! -f "$_proj/state/rdf-bus.sh" ]]; then
-    echo "rdf pre-commit: state/rdf-bus.sh not found; skipping scope check" >&2
+# _rdf_pass — succeed, handing off to the project's own pre-commit when installed by rdf_phase_hook_install
+_rdf_pass() {
+    if [[ -x "${_hd}/.rdf-passthrough" ]]; then
+        export RDF_HOOK_NAME=pre-commit
+        exec "${_hd}/.rdf-passthrough"
+    fi
     exit 0
+}
+
+# Phase branch: rdf/phase-<N>-<SID>. symbolic-ref resolves on empty repos too,
+# where rev-parse --abbrev-ref returns "HEAD".
+_branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo "")" # fails on detached HEAD → no-op
+_phase_re='^rdf/phase-([0-9]+)-([^/]+)$'
+[[ "$_branch" =~ $_phase_re ]] || _rdf_pass
+_phase_n="${BASH_REMATCH[1]}"
+_sfx="${BASH_REMATCH[2]}"
+case "$_sfx" in
+    *[!A-Za-z0-9-]*) ;;   # not a session id; the session env decides
+    *) export RDF_SESSION_ID="$_sfx" ;;
+esac
+
+_top="$(git rev-parse --show-toplevel)"
+_main="$_top"
+[[ -f "${_hd}/.rdf-main-root" ]] && _main="$(< "${_hd}/.rdf-main-root")"
+
+# RDF's own checkout carries the bus in-tree; every other project uses the deployed copy.
+_self_host=0
+if [[ -f "${_top}/state/rdf-bus.sh" ]]; then
+    _bus="${_top}/state/rdf-bus.sh"
+    _self_host=1
+else
+    _bus="${HOME:-}/.rdf/state/rdf-bus.sh"
+fi
+if [[ ! -f "$_bus" ]]; then
+    echo "rdf pre-commit: rdf-bus.sh not found (checked ${_top}/state and ~/.rdf/state); skipping scope check" >&2
+    _rdf_pass
 fi
 # shellcheck source=/dev/null
-source "$_proj/state/rdf-bus.sh"
-
-# Derive phase number from branch name: rdf/phase-<N>-<UUID>
-# symbolic-ref resolves correctly on both empty and non-empty repos;
-# git rev-parse --abbrev-ref returns "HEAD" (not the branch) on empty repos.
-_branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo "")" # fails on detached HEAD → no-op
-_phase_n=""
-if [[ "$_branch" =~ ^rdf/phase-([0-9]+)- ]]; then
-    _phase_n="${BASH_REMATCH[1]}"
-fi
-if [[ -z "$_phase_n" ]]; then
-    # Not a worktree branch; no enforcement
-    exit 0
-fi
+source "$_bus"
 
 # Parse phase scope — read loop, not eval; plan files arrive via commits
 # (post-3.1.2 canonical workflow) and may carry shell metachars (`;`, `&`)
 # in Files entries that bypass rdf_parse_phase_scope's regex-metachar escape.
-_plan="$(rdf_active_plan_path "$_proj")"
+# _rdf_session_plan root — plan named by root's session-scoped pointer (checked in both roots before any legacy fallback)
+_rdf_session_plan() {
+    local _ptr="${1}/.rdf/active-plan-${RDF_SESSION_ID:-}" _p
+    [[ -n "${RDF_SESSION_ID:-}" && -f "$_ptr" ]] || return 1
+    _p="$(< "$_ptr")"
+    _p="${_p%[$'\r\n']}"
+    [[ -n "$_p" && -f "$_p" ]] || return 1
+    printf '%s\n' "$_p"
+}
+_plan="$(_rdf_session_plan "$_top" || _rdf_session_plan "$_main" \
+    || rdf_active_plan_path "$_top" || rdf_active_plan_path "$_main" || true)"  # no pointer anywhere → empty
 if [[ -z "$_plan" ]]; then
     echo "rdf pre-commit: no active plan found; skipping scope check" >&2
-    exit 0
+    _rdf_pass
 fi
 ALLOWED_REGEX=""
 FLEX_REGEX=""
@@ -78,7 +98,7 @@ fi
 # Get staged files
 _staged="$(git diff --cached --name-only)"
 if [[ -z "$_staged" ]]; then
-    exit 0   # nothing staged
+    _rdf_pass   # nothing staged
 fi
 
 # Validate each staged path
@@ -137,9 +157,12 @@ fi
 #   Class 4: local-rc-mask
 #     local <var>=$( — masks subshell exit code
 #
+# Scope: shell files only (.sh/.bash or a sh/bash shebang). Classes are on for
+# RDF's own checkout; other projects opt in via .rdf/governance/ignore.md:
+#   # anti-pattern-enable: <class-name>|all
 # Suppression: same-line # on the offending line suppresses any class.
-# Opt-out: governance/ignore.md in project root containing
-#   # anti-pattern-skip: <class-name>  opts-out that class for all files.
+# Opt-out (same file, or legacy governance/ignore.md):
+#   # anti-pattern-skip: <class-name>
 # ---------------------------------------------------------------------------
 
 _AP_CLASSES=(
@@ -161,15 +184,46 @@ _AP_PATTERNS=(
     '^\s*local[[:space:]]+[a-z_]+=\$\('
 )
 
-# Load opt-out classes from governance/ignore.md (project root, not worktree).
+# Load enable/skip directives: main-root .rdf/governance/ignore.md, then legacy governance/ignore.md.
+_ap_enabled=()
+[[ "$_self_host" -eq 1 ]] && _ap_enabled=("${_AP_CLASSES[@]}")
 _ap_skipped=()
-if [[ -f "$_proj/governance/ignore.md" ]]; then
+_ap_enable_re='^#[[:space:]]*anti-pattern-enable:[[:space:]]*(.+)$'
+_ap_skip_re='^#[[:space:]]*anti-pattern-skip:[[:space:]]*(.+)$'
+for _igf in "${_main}/.rdf/governance/ignore.md" "${_top}/governance/ignore.md"; do
+    [[ -f "$_igf" ]] || continue
     while IFS= read -r _igline; do
-        if [[ "$_igline" =~ ^#[[:space:]]*anti-pattern-skip:[[:space:]]*(.+)$ ]]; then
+        if [[ "$_igline" =~ $_ap_skip_re ]]; then
             _ap_skipped+=("${BASH_REMATCH[1]//[[:space:]]/}")
+        elif [[ "$_igline" =~ $_ap_enable_re ]]; then
+            _ap_val="${BASH_REMATCH[1]//[[:space:]]/}"
+            if [[ "$_ap_val" == "all" ]]; then
+                _ap_enabled=("${_AP_CLASSES[@]}")
+            else
+                _ap_enabled+=("$_ap_val")
+            fi
         fi
-    done < "$_proj/governance/ignore.md"
-fi
+    done < "$_igf"
+done
+[[ "${#_ap_enabled[@]}" -gt 0 ]] || _rdf_pass
+
+# _ap_class_enabled name — return 0 if class is in the enabled list
+_ap_class_enabled() {
+    local _cls="$1" _s
+    for _s in "${_ap_enabled[@]+"${_ap_enabled[@]}"}"; do
+        [[ "$_s" == "$_cls" ]] && return 0
+    done
+    return 1
+}
+
+_ap_shebang_re='^#!.*(/|[[:space:]])(ba)?sh([[:space:]]|$)'
+# _ap_is_shell path — staged path is shell by extension or by its staged shebang
+_ap_is_shell() {
+    local _l=""
+    case "$1" in *.sh|*.bash) return 0 ;; esac
+    IFS= read -r _l < <(git cat-file -p ":$1" 2>/dev/null | command head -c 256) || true  # deleted/empty/unreadable blob → no shebang
+    [[ "$_l" =~ $_ap_shebang_re ]]
+}
 
 # _ap_class_skipped name — return 0 if class is in the skip list
 _ap_class_skipped() {
@@ -183,6 +237,7 @@ _ap_class_skipped() {
 # Iterate staged files; grep each added diff hunk.
 _ap_found=0
 while IFS= read -r _ap_path; do
+    _ap_is_shell "$_ap_path" || continue
     # Extract only added lines from the diff (strip leading '+', skip '+++' headers).
     _ap_diff="$(git diff --cached -U0 -- "$_ap_path" \
         | grep -E '^\+[^+]' \
@@ -200,7 +255,7 @@ while IFS= read -r _ap_path; do
         _ap_pat="${_AP_PATTERNS[$_ap_i]}"
         _ap_i=$((_ap_i + 1))
 
-        # Class-level opt-out via governance/ignore.md
+        _ap_class_enabled "$_ap_class" || continue
         _ap_class_skipped "$_ap_class" && continue
 
         # One grep over all remaining added lines for this class.
@@ -219,7 +274,7 @@ while IFS= read -r _ap_path; do
             echo "rdf pre-commit: ANTI-PATTERN [$_ap_class] in $_ap_path:" >&2
             echo "  $_ap_line" >&2
             echo "  Suppress with a same-line # comment explaining why this is safe," >&2
-            echo "  or add '# anti-pattern-skip: $_ap_class' to governance/ignore.md." >&2
+            echo "  or add '# anti-pattern-skip: $_ap_class' to .rdf/governance/ignore.md." >&2
             _ap_found=1
         done <<< "$_ap_hits"
     done
@@ -229,4 +284,4 @@ if [[ "$_ap_found" -ne 0 ]]; then
     exit 1
 fi
 
-exit 0
+_rdf_pass

@@ -6,7 +6,8 @@
 # Provides: rdf_session_init, rdf_scoped_filename, rdf_session_short,
 #           rdf_parse_phase_scope, rdf_active_plan_path,
 #           rdf_set_active_plan, rdf_clear_active_plan,
-#           rdf_set_active_tier, rdf_active_tier, rdf_clear_active_tier.
+#           rdf_set_active_tier, rdf_active_tier, rdf_clear_active_tier,
+#           rdf_phase_hook_install, rdf_phase_hook_uninstall.
 # Sourced by /r-* commands and the pre-commit hook. Idempotent.
 
 # rdf_uuidv7 — emit a UUIDv7 string to stdout
@@ -232,4 +233,139 @@ rdf_clear_active_tier() {
     local root="${1:-$PWD}"
     rdf_session_init
     command rm -f "${root}/.rdf/active-tier-${RDF_SESSION_ID}"
+}
+
+# _rdf_git_at_least major minor — rc 0 when the installed git is at least major.minor
+_rdf_git_at_least() {
+    local want_major="$1" want_minor="$2" v major minor
+    v="$(git version 2>/dev/null)" || return 1   # no git on PATH
+    v="${v#git version }"
+    major="${v%%.*}"
+    v="${v#*.}"
+    minor="${v%%[!0-9]*}"
+    case "$major" in ''|*[!0-9]*) return 1 ;; esac
+    case "$minor" in ''|*[!0-9]*) return 1 ;; esac
+    [[ "$major" -gt "$want_major" ]] && return 0
+    [[ "$major" -eq "$want_major" && "$minor" -ge "$want_minor" ]]
+}
+
+# _rdf_realdir dir [base] — physical absolute path of dir; a relative dir resolves against base
+_rdf_realdir() {
+    local dir="$1" base="${2:-.}"
+    [[ "$dir" == /* ]] && base="/"
+    (CDPATH='' cd -P -- "$base" >/dev/null && CDPATH='' cd -P -- "$dir" >/dev/null && pwd -P)
+}
+
+# _rdf_atomic_write dest mode — write stdin to dest through a same-directory temp file, so a concurrent reader never sees a partial file
+_rdf_atomic_write() {
+    local dest="$1" mode="$2" tmp
+    tmp="$(command mktemp "${dest%/*}/.tmp.XXXXXX")" || return 1
+    if command cat > "$tmp" && command chmod "$mode" "$tmp" && command mv -f -- "$tmp" "$dest"; then
+        return 0
+    fi
+    command rm -f -- "$tmp"
+    return 1
+}
+
+# _rdf_passthrough_script — emit the static hook that runs whatever git would run without RDF's include
+_rdf_passthrough_script() {
+    command cat <<'PASSTHROUGH'
+#!/usr/bin/env bash
+# RDF phase-branch passthrough — installed by rdf_phase_hook_install (state/rdf-bus.sh)
+set -euo pipefail
+name="${RDF_HOOK_NAME:-${0##*/}}"
+unset RDF_HOOK_NAME
+prior=""
+while IFS= read -r -d '' _o && IFS= read -r -d '' _v; do
+    case "$_o" in *rdf-hooks.inc) continue ;; esac
+    prior="$_v"
+done < <(git config -z --type=path --show-origin --get-all core.hooksPath 2>/dev/null)  # unset → rc 1, no output
+[[ -n "$prior" ]] || prior="$(git rev-parse --git-common-dir)/hooks"
+if [[ -d "$prior" ]] && [[ "$(CDPATH='' cd -P -- "$prior" && pwd -P)" == "$(CDPATH='' cd -P -- "${0%/*}" && pwd -P)" ]]; then
+    exit 0
+fi
+[[ -x "${prior}/${name}" ]] || exit 0
+if grep -q 'RDF worktree scope enforcement' "${prior}/${name}" 2>/dev/null; then  # unreadable target: run it anyway
+    exit 0
+fi
+exec "${prior}/${name}" "$@"
+PASSTHROUGH
+}
+
+# rdf_phase_hook_install [dir [hook_src]] — activate the scope-guard pre-commit on rdf/phase-* branches of dir's repo
+# rc 0 installed or refreshed; 1 not a repo, not the main worktree toplevel, or no hook source; 2 git < 2.23
+rdf_phase_hook_install() {
+    local dir="${1:-$PWD}" src="${2:-}" gc gd common gitdir main hdir prior name f o v
+    if ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then   # probe only; reason printed below
+        printf 'rdf_phase_hook_install: not a git repository: %s\n' "$dir" >&2
+        return 1
+    fi
+    if ! _rdf_git_at_least 2 23; then
+        printf 'rdf_phase_hook_install: git >= 2.23 required (includeIf onbranch)\n' >&2
+        return 2
+    fi
+    gc="$(git -C "$dir" rev-parse --git-common-dir)" || return 1
+    common="$(_rdf_realdir "$gc" "$dir")" || return 1
+    gd="$(git -C "$dir" rev-parse --absolute-git-dir)" || return 1
+    gitdir="$(_rdf_realdir "$gd")" || return 1
+    if [[ "$gitdir" == "$common" ]]; then
+        if ! main="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" || [[ -z "$main" ]]; then   # bare repo or inside .git/modules
+            printf 'rdf_phase_hook_install: run from the main worktree toplevel (no worktree at %s)\n' "$dir" >&2
+            return 1
+        fi
+    elif [[ "${common##*/}" == ".git" ]]; then
+        main="${common%/*}"
+    else
+        printf 'rdf_phase_hook_install: run from the main worktree toplevel\n' >&2
+        return 1
+    fi
+    [[ -n "$src" ]] || src="${HOME:-}/.rdf/state/git-hooks/pre-commit"
+    [[ -f "$src" ]] || src="${main}/state/git-hooks/pre-commit"
+    if [[ ! -f "$src" ]]; then
+        printf 'rdf_phase_hook_install: pre-commit hook source not found (checked ~/.rdf/state/git-hooks and %s/state/git-hooks)\n' "$main" >&2
+        return 1
+    fi
+    hdir="${common}/rdf-hooks"
+    command mkdir -p "$hdir" || return 1
+    _rdf_atomic_write "${hdir}/pre-commit" 755 < "$src" || return 1
+    printf '%s\n' "$main" | _rdf_atomic_write "${hdir}/.rdf-main-root" 644 || return 1
+    _rdf_passthrough_script | _rdf_atomic_write "${hdir}/.rdf-passthrough" 755 || return 1
+    for name in applypatch-msg pre-applypatch post-applypatch pre-merge-commit prepare-commit-msg \
+        commit-msg post-commit pre-rebase post-checkout post-merge pre-push post-rewrite pre-auto-gc; do
+        _rdf_atomic_write "${hdir}/${name}" 755 < "${hdir}/.rdf-passthrough" || return 1
+    done
+    prior=""
+    while IFS= read -r -d '' o && IFS= read -r -d '' v; do
+        case "$o" in *rdf-hooks.inc) continue ;; esac
+        prior="$v"
+    done < <(git -C "$main" config -z --type=path --show-origin --get-all core.hooksPath 2>/dev/null)   # unset → rc 1, no output
+    [[ -n "$prior" ]] || prior="${common}/hooks"
+    [[ "$prior" == /* ]] || prior="${main}/${prior}"
+    if [[ -d "$prior" && "$(_rdf_realdir "$prior")" != "$hdir" ]]; then
+        for f in "$prior"/*; do
+            [[ -f "$f" && -x "$f" ]] || continue
+            name="${f##*/}"
+            case "$name" in pre-commit|*.sample) continue ;; esac
+            _rdf_atomic_write "${hdir}/${name}" 755 < "${hdir}/.rdf-passthrough" || return 1
+        done
+    fi
+    git config --file "${common}/rdf-hooks.inc" core.hooksPath "$hdir" || return 1
+    if [[ "$(git config --file "${common}/config" --get 'includeIf.onbranch:rdf/phase-**.path' 2>/dev/null)" != "rdf-hooks.inc" ]]; then   # unset → empty
+        git config --file "${common}/config" 'includeIf.onbranch:rdf/phase-**.path' rdf-hooks.inc || return 1
+    fi
+    return 0
+}
+
+# rdf_phase_hook_uninstall [dir] — remove the phase-branch include and RDF hook files; repeat calls are no-ops
+rdf_phase_hook_uninstall() {
+    local dir="${1:-$PWD}" gc common
+    if ! gc="$(git -C "$dir" rev-parse --git-common-dir 2>/dev/null)"; then   # reason printed below
+        printf 'rdf_phase_hook_uninstall: not a git repository: %s\n' "$dir" >&2
+        return 1
+    fi
+    common="$(_rdf_realdir "$gc" "$dir")" || return 1
+    if git config --file "${common}/config" --get 'includeIf.onbranch:rdf/phase-**.path' >/dev/null 2>&1; then   # absent: nothing to remove
+        git config --file "${common}/config" --remove-section 'includeIf.onbranch:rdf/phase-**' || return 1
+    fi
+    command rm -rf -- "${common}/rdf-hooks" "${common}/rdf-hooks.inc"
 }

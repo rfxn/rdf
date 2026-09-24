@@ -140,6 +140,14 @@ EOF
     [[ ! "$output" =~ "touch /tmp/keep" ]]
 }
 
+@test "self-hosting: staged markdown and .bats files are not scanned" {
+    printf 'rm the cache before release\n' > "$TEST_REPO/notes.md"
+    printf '#!/usr/bin/env bats\ncp a b\n' > "$TEST_REPO/t.bats"
+    git -C "$TEST_REPO" add notes.md t.bats
+    run git -C "$TEST_REPO" commit -m "prose and bats"
+    [ "$status" -eq 0 ]
+}
+
 @test "scope-check ordering preserved (scope first, anti-pattern second)" {
     # On a non-worktree branch the scope block exits 0 early (line ~44 of hook).
     # The anti-pattern section must NOT run before the scope block.
