@@ -571,3 +571,157 @@ _run_path_check() {
     [[ "$output" == *"=== someproj ==="* ]]
     rm -rf "$h" "$ws"
 }
+
+# ── Context economy: routing catalog, variant-aware sync, JSON escaping, harness ──
+
+@test "doctor --json stays valid when a message contains quotes and backslashes" {
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"
+        RDF_HOME="$(mktemp -d)"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _add_result "harness" "$_WARN" "add \"modelSettings\" to C:\\dir"$'"'"'\t'"'"'"tab"
+        _results_to_json "p\"q" "/tmp/x"
+    ' -- "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    echo "$output" | jq -e . >/dev/null
+    [ "$(echo "$output" | jq -r '.checks[0].message')" = 'add "modelSettings" to C:\dirtab' ]
+    [ "$(echo "$output" | jq -r '.project')" = 'p"q' ]
+}
+
+@test "doctor catalogs: invalid agent routing FAILs; valid routing reports OK" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/agents" "$fix/canonical/commands" \
+             "$fix/adapters/claude-code" "$fix/adapters/agent-skills"
+    touch "$fix/canonical/agents/a.md"
+    printf '{"a":{"name":"a","model":"opus","effort":"ultra"}}\n' > "$fix/adapters/claude-code/agent-meta.json"
+    printf '{}\n' > "$fix/adapters/agent-skills/skill-meta.json"
+    run _run_check _check_catalogs "$fix" "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"catalogs|FAIL|agent routing: a: effort 'ultra' not in low|medium|high|xhigh|max"* ]]
+    printf '{"a":{"name":"a","model":"opus","effort":"xhigh","variants":{"lite":{"effort":"medium"}}}}\n' > "$fix/adapters/claude-code/agent-meta.json"
+    run _run_check _check_catalogs "$fix" "$fix"
+    [[ "$output" == *"catalogs|OK|agent routing valid (1 agents, 1 variants)"* ]]
+    rm -rf "$fix"
+}
+
+@test "doctor sync: agent count excludes declared variants" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/agents" "$fix/canonical/commands" "$fix/adapters/claude-code/output/agents" "$fix/adapters/claude-code/output/skills"
+    touch "$fix/canonical/agents/a.md" "$fix/adapters/claude-code/output/agents/a.md" "$fix/adapters/claude-code/output/agents/a-lite.md"
+    printf '{"a":{"name":"a","variants":{"lite":{"effort":"low"}}}}\n' > "$fix/adapters/claude-code/agent-meta.json"
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; fix="$2"
+        RDF_HOME="$fix"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        _check_sync "$fix"
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"sync|OK|agent count matches (1 + 1 variants)"* ]]
+    rm -rf "$fix"
+}
+
+# Usage: _run_harness <project> <home> [VAR=value ...] — _check_harness rows, hermetic env
+_run_harness() {
+    local project="$1" home="$2"; shift 2
+    env -u BASH_MAX_OUTPUT_LENGTH -u CLAUDE_CODE_EFFORT_LEVEL -u ANTHROPIC_MODEL "$@" bash -c '
+        set -euo pipefail
+        rdf_src="$1"; project="$2"; HOME="$3"
+        RDF_HOME="$(mktemp -d)"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _HARNESS_MANAGED_PATHS="${RDF_TEST_MANAGED_PATHS:-}"
+        _reset_results
+        _check_harness "$project"
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$project" "$home"
+}
+
+_harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
+    local p h; p="$(mktemp -d)"; h="$(mktemp -d)"
+    mkdir -p "$p/.claude" "$h/.claude"
+    printf '%s %s' "$p" "$h"
+}
+
+@test "doctor harness: unpinned Opus 5.5 WARNs; legacy user effortLevel is named" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"model":"opus[1m]","effortLevel":"xhigh"}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"harness|WARN|Opus 5.5 main thread runs at its 'medium' default"* ]]
+    [[ "$output" == *"does not apply to Opus 5.5"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: modelSettings pin is OK" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"model":"opus","modelSettings":{"claude-opus-5-5":{"effortLevel":"xhigh"}}}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|OK|Opus 5.5 main-thread effort pinned (modelSettings in"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: CLAUDE_CODE_EFFORT_LEVEL WARNs as flattening; auto counts as unset" {
+    read -r p h <<< "$(_harness_fixture)"
+    run _run_harness "$p" "$h" CLAUDE_CODE_EFFORT_LEVEL=low
+    [[ "$output" == *"harness|WARN|CLAUDE_CODE_EFFORT_LEVEL=low (env) overrides every agent's effort"* ]]
+    run _run_harness "$p" "$h" CLAUDE_CODE_EFFORT_LEVEL=auto
+    [[ "$output" != *"overrides every agent's effort"* ]]
+    [[ "$output" == *"harness|WARN|Opus 5.5 main thread runs at its 'medium' default"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: project top-level effortLevel pins, user top-level does not" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"effortLevel":"xhigh"}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|WARN|Opus 5.5 main thread"* ]]
+    printf '{"effortLevel":"high"}\n' > "$p/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|OK|Opus 5.5 main-thread effort pinned (top-level effortLevel in ${p}/.claude/settings.json)"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: managed-settings top-level effortLevel pins" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"effortLevel":"xhigh"}\n' > "$h/managed-settings.json"
+    run _run_harness "$p" "$h" RDF_TEST_MANAGED_PATHS="${h}/absent.json:${h}/managed-settings.json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"harness|OK|Opus 5.5 main-thread effort pinned (top-level effortLevel in ${h}/managed-settings.json)"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: unparseable settings file is skipped and the next file is read" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"model":"sonnet",\n' > "$p/.claude/settings.json"
+    printf '{"model":"fable"}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"harness|OK|main model fable — Opus 5.5 effort check not applicable"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: non-opus model is not applicable" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"model":"fable"}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|OK|main model fable — Opus 5.5 effort check not applicable"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: BASH_MAX_OUTPUT_LENGTH above 30000 WARNs; bashOutputMaxChars takes precedence" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"model":"sonnet","env":{"BASH_MAX_OUTPUT_LENGTH":"128000"}}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|WARN|BASH_MAX_OUTPUT_LENGTH=128000 exceeds the 30000 default"* ]]
+    printf '{"model":"sonnet","bashOutputMaxChars":20000,"env":{"BASH_MAX_OUTPUT_LENGTH":"128000"}}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|OK|Bash output limit at or below platform default"* ]]
+    rm -rf "$p" "$h"
+}
