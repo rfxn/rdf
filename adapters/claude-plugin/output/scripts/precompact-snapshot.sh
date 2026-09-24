@@ -23,12 +23,11 @@ _json_field() {
     printf '%s' "$val"
 }
 
-# _resolve_active_plan root — echo the active plan path if a .rdf pointer names
-# an existing file; cheap read of the pointer written by rdf_set_active_plan
-# (no heavy lib sourcing — the PreCompact session id is not RDF_SESSION_ID).
+# _resolve_active_plan root sid — echo the active plan path if a .rdf pointer names
+# an existing file; this session's pointer first (sid is RDF_SESSION_ID in Claude Code)
 _resolve_active_plan() {
-    local root="$1" pointer plan
-    for pointer in "$root"/.rdf/active-plan-* "$root"/.rdf/active-plan; do
+    local root="$1" sid="$2" pointer plan
+    for pointer in "$root/.rdf/active-plan-${sid}" "$root"/.rdf/active-plan-* "$root"/.rdf/active-plan; do
         [[ -f "$pointer" ]] || continue
         plan=""
         read -r plan < "$pointer" || true   # pointer may lack trailing newline
@@ -69,7 +68,7 @@ main() {
         lines+=("- head: ${head:-unknown}")
         lines+=("- dirty-files: ${dirty:-0}")
 
-        plan="$(_resolve_active_plan "$cwd")"
+        plan="$(_resolve_active_plan "$cwd" "$session_id")"
         [[ -n "$plan" ]] && lines+=("- active-plan: $plan")
 
         wo="$cwd/.rdf/work-output"

@@ -6,7 +6,7 @@
 RDF_SRC="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 
 setup() {
-    unset RDF_SESSION_ID
+    unset RDF_SESSION_ID CLAUDE_CODE_SESSION_ID
     # shellcheck disable=SC1091
     source "$RDF_SRC/state/rdf-bus.sh"
     TEST_TMP="$(mktemp -d)"
@@ -26,6 +26,35 @@ teardown() {
     export RDF_SESSION_ID
     rdf_session_init
     [ "$RDF_SESSION_ID" = "01951c8a-7b30-7c2f-8e1d-a4b3f9c2e105" ]
+}
+
+CC_SID="e231d9a1-b9ad-493c-8d68-e66f3c9b3891"
+
+@test "rdf_session_init adopts CLAUDE_CODE_SESSION_ID" {
+    # shellcheck disable=SC2016  # bash -c body expands in the child shell
+    run env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID="$CC_SID" bash -c 'source "$1/state/rdf-bus.sh"; rdf_session_init; printf "%s" "$RDF_SESSION_ID"' _ "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    [ "$output" = "$CC_SID" ]
+}
+
+@test "rdf_session_init mints a UUIDv7 when CLAUDE_CODE_SESSION_ID holds path characters" {
+    # shellcheck disable=SC2016  # bash -c body expands in the child shell
+    run env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID="../../etc" bash -c 'source "$1/state/rdf-bus.sh"; rdf_session_init; printf "%s" "$RDF_SESSION_ID"' _ "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]]
+}
+
+@test "active-plan pointer set in one shell resolves in the next within one Claude Code session" {
+    mkdir -p "$TEST_TMP/proj/.rdf" "$TEST_TMP/proj/docs/plans"
+    printf '# new\n' > "$TEST_TMP/proj/docs/plans/new.md"
+    printf '# stale\n' > "$TEST_TMP/proj/docs/plans/stale.md"
+    printf '%s\n' "$TEST_TMP/proj/docs/plans/stale.md" > "$TEST_TMP/proj/.rdf/active-plan"
+    # shellcheck disable=SC2016  # bash -c body expands in the child shell
+    env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID="$CC_SID" bash -c 'cd "$1" || exit 1; source "$2/state/rdf-bus.sh"; rdf_set_active_plan docs/plans/new.md' _ "$TEST_TMP/proj" "$RDF_SRC"
+    # shellcheck disable=SC2016  # bash -c body expands in the child shell
+    run env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID="$CC_SID" bash -c 'cd "$1" || exit 1; source "$2/state/rdf-bus.sh"; rdf_active_plan_path' _ "$TEST_TMP/proj" "$RDF_SRC"
+    [ "$status" -eq 0 ]
+    [ "$output" = "$TEST_TMP/proj/docs/plans/new.md" ]
 }
 
 @test "rdf_scoped_filename appends session ID before extension" {

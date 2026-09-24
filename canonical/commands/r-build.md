@@ -231,7 +231,7 @@ parallel within each batch):
 1. Create task per phase in the batch
 2. For each phase, create a git worktree:
    git worktree add .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} -b rdf/phase-{N}-${RDF_SESSION_ID} HEAD
-   (RDF_SESSION_ID is the full UUIDv7; prevents cross-session collisions)
+   (RDF_SESSION_ID is the full session id; prevents cross-session collisions)
 
    After `git worktree add`, install the pre-commit hook into the
    worktree's per-worktree hooks directory:

@@ -86,11 +86,12 @@ Agent work products created during a session. Structured files in
 | `uat-phase-N-verdict-<SESSION_ID>.md` | uat | dispatcher |
 
 **Session Identity (`RDF_SESSION_ID`):** Set by the `rdf_session_init`
-helper in `~/.rdf/state/rdf-bus.sh`. UUIDv7 string. Subagents inherit from
-parent (env passthrough). Used as filename suffix for transient state
-files to prevent collisions between concurrent sessions on the same
-repository. Helper functions:
-- `rdf_session_init` — generate UUIDv7 if `RDF_SESSION_ID` is unset; export
+helper in `~/.rdf/state/rdf-bus.sh`. The Claude Code session id when
+`CLAUDE_CODE_SESSION_ID` is set (stable across Bash calls and shared with
+subagents), else a minted UUIDv7. Subagents inherit from parent. Used as
+filename suffix for transient state files to prevent collisions between
+concurrent sessions on the same repository. Helper functions:
+- `rdf_session_init` — if `RDF_SESSION_ID` is unset, adopt `CLAUDE_CODE_SESSION_ID` or generate a UUIDv7; export
 - `rdf_scoped_filename <basepath>` — derive `<basepath>-$RDF_SESSION_ID.<ext>`
 - `rdf_session_short` — last 12 chars for log display
 - `rdf_parse_phase_scope <plan> <N>` — extract phase Files + Tests-may-touch

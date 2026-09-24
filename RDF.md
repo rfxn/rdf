@@ -44,8 +44,9 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   hierarchy is: initiative (planning horizon) -> release (committed version) ->
   phase (execution unit) -> task comments (progress trail).
 - **Concurrent-session safety (3.1.0+):** Multiple Claude Code sessions on the
-  same repository do not corrupt each other. Every session generates a UUIDv7
-  `RDF_SESSION_ID` (inherited by all subagents); every transient state file
+  same repository do not corrupt each other. Every session has an
+  `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7;
+  inherited by all subagents); every transient state file
   (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) is
   suffixed with that ID. A pre-commit hook installed in each dispatched worktree
   physically rejects out-of-scope commits; the dispatcher's post-merge

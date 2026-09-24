@@ -66,7 +66,7 @@ effort live in `adapters/claude-code/agent-meta.json`.
 
 | Primitive | Owner | Purpose |
 |-----------|-------|---------|
-| `RDF_SESSION_ID` (UUIDv7) | session shell + every subagent | Identity inherited via env |
+| `RDF_SESSION_ID` (CC session id, else UUIDv7) | session shell + every subagent | Identity inherited via env |
 | Scoped state filenames | engineer, qa, reviewer, dispatcher | `<basepath>-<SESSION_ID>.<ext>` |
 | Worktree pre-commit hook | dispatcher (installer), engineer's own commit | Physical scope enforcement |
 | Pre-aggregation dirty check | engineer Setup | Fail fast before build steps |

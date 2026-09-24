@@ -346,7 +346,7 @@ lifecycle commands, not a registered profile.
 
 ### Concurrent Session Safety
 
-RDF is designed to be run in parallel against the same repository — different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session generates its own UUIDv7 `RDF_SESSION_ID` (inherited by all subagents), and all transient handoff files are scoped by it:
+RDF is designed to be run in parallel against the same repository — different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session has its own `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7; inherited by all subagents), and all transient handoff files are scoped by it:
 
 ```
 .rdf/work-output/
@@ -360,7 +360,7 @@ Three layers protect concurrent sessions from corrupting each other:
 
 | Layer | Mechanism | Where |
 |-------|-----------|-------|
-| **Session-scoped state** | UUIDv7 suffix on every transient file | `state/rdf-bus.sh` helpers |
+| **Session-scoped state** | Session-id suffix on every transient file | `state/rdf-bus.sh` helpers |
 | **Worktree boundary** | Pre-commit hook rejects out-of-scope commits | installed in every dispatched worktree |
 | **Pre-aggregation gate** | Engineer dirty-check before build steps | `engineer.md` Setup |
 

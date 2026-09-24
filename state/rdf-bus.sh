@@ -34,10 +34,14 @@ rdf_uuidv7() {
         "${hex_rand:7:12}"
 }
 
-# rdf_session_init — set RDF_SESSION_ID if unset; export
+# rdf_session_init — set RDF_SESSION_ID if unset (Claude Code session id, else UUIDv7); export
+# Each Bash tool call is a fresh shell, so a minted id would differ per call.
 rdf_session_init() {
     if [[ -z "${RDF_SESSION_ID:-}" ]]; then
-        RDF_SESSION_ID="$(rdf_uuidv7)"
+        case "${CLAUDE_CODE_SESSION_ID:-}" in
+            ""|*[!A-Za-z0-9-]*) RDF_SESSION_ID="$(rdf_uuidv7)" ;;
+            *) RDF_SESSION_ID="$CLAUDE_CODE_SESSION_ID" ;;
+        esac
         export RDF_SESSION_ID
     fi
 }

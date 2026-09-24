@@ -231,7 +231,8 @@ _check_plan() {
     # Surface active-plan pointer state — runs before any early return so
     # canonical-only projects (plan in docs/plans/, no root PLAN.md) still
     # see pointer status.
-    if [[ -n "${RDF_SESSION_ID:-}" && -f "${path}/.rdf/active-plan-${RDF_SESSION_ID}" ]]; then
+    local sid="${RDF_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-}}"
+    if [[ -n "$sid" && -f "${path}/.rdf/active-plan-${sid}" ]]; then
         _add_result "plan-pointer" "$_OK" "session pointer present"
     elif [[ -f "${path}/.rdf/active-plan" ]]; then
         _add_result "plan-pointer" "$_OK" "un-suffixed pointer present"

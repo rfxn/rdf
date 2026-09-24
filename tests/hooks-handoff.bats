@@ -89,6 +89,23 @@ _minbin() {
     [[ "$output" == *"phase-1-result.md"* ]]
 }
 
+@test "precompact prefers its own session's active-plan pointer over other sessions' pointers" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    local repo="$TEST_TMP/repo3"
+    _mkrepo "$repo"
+    mkdir -p "$repo/.rdf"
+    printf '# other\n' > "$repo/.rdf/other.md"
+    printf '# mine\n' > "$repo/.rdf/mine.md"
+    printf '%s\n' "$repo/.rdf/other.md" > "$repo/.rdf/active-plan-sid-A"
+    printf '%s\n' "$repo/.rdf/mine.md" > "$repo/.rdf/active-plan-sid-C"
+    printf '{"session_id":"sid-C","cwd":"%s","trigger":"auto"}' "$repo" > "$JSON"
+
+    run bash "$PRE" < "$JSON"
+    [ "$status" -eq 0 ]
+    run cat "$HANDOFF/sid-C.md"
+    [[ "$output" == *"active-plan: $repo/.rdf/mine.md"* ]]
+}
+
 @test "precompact snapshot stays within the 40-line ceiling" {
     command -v git >/dev/null 2>&1 || skip "git unavailable"
     local repo="$TEST_TMP/repo3"

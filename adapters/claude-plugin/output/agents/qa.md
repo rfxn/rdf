@@ -38,7 +38,7 @@ If the dispatch payload indicates scope ≥ multi-file:
   1. Derive the result file path:
      `.rdf/work-output/phase-<N>-result-<RDF_SESSION_ID>.md`
      where <N> is the phase number and <RDF_SESSION_ID> is the
-     session UUIDv7, both from the dispatch payload.
+     session id, both from the dispatch payload.
      If RDF_SESSION_ID is absent (older dispatcher), log a warning
      and fall back to un-suffixed `phase-<N>-result.md` for
      backwards compatibility.

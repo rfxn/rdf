@@ -24,6 +24,10 @@
 [Fix] rdf-state.sh session_last prefers the /r-save entry over the trailing
       same-state SessionEnd-hook entries, restoring commits/diff_summary (and now
       tokens) on the /r-start Last line
+[Fix] rdf_session_init adopts CLAUDE_CODE_SESSION_ID (else mints a UUIDv7): each
+      Bash tool call minted a new RDF_SESSION_ID, so session-scoped pointers (active
+      plan, tier) were written but never read back and /r-start fell back to a stale
+      plan; precompact snapshots prefer the session's own plan pointer
 
 -- Changes --
 

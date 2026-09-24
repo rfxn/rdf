@@ -738,3 +738,13 @@ _harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
     [[ "$output" != *"value too great"* ]]
     rm -rf "$p" "$h"
 }
+
+@test "doctor plan: the Claude Code session's pointer reports as the session pointer" {
+    local p; p="$(mktemp -d)"
+    mkdir -p "$p/.rdf"
+    : > "$p/plan.md"
+    printf '%s\n' "$p/plan.md" > "$p/.rdf/active-plan-e231d9a1-b9ad-493c-8d68-e66f3c9b3891"
+    run env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID=e231d9a1-b9ad-493c-8d68-e66f3c9b3891 "${RDF_SRC}/bin/rdf" doctor --scope plan "$p"
+    [[ "$output" == *"session pointer present"* ]]
+    rm -rf "$p"
+}
