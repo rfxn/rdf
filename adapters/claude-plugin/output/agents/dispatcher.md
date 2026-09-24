@@ -168,10 +168,11 @@ Procedure:
 2. Compute touched paths in engineer's commit:
    ```
    touched=$(git -C "$worktree_path" diff-tree -z --no-commit-id \
-     --name-only -r HEAD | command tr '\0' '\n')
+     --name-only -r HEAD | command tr '\n\0' '\001\n')
    ```
    (`-z`: without it git C-quotes non-ASCII paths, which never match
-   the scope regex.)
+   the scope regex; an embedded newline becomes `\001`, which no scope
+   regex matches, so such a name is always out of scope.)
 
 3. For each touched path: check it matches
    `${ALLOWED_REGEX}|${FLEX_REGEX}`. Out-of-scope paths emit a

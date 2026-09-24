@@ -23,8 +23,9 @@
       steps (a) and (b) already read
 [Fix] phase scope checks C-quoted non-ASCII, '"' and '\' paths, so declared in-scope
       files with such names were rejected: the pre-commit hook and the dispatcher's
-      post-merge check list paths with -z; the engineer dirty check and
-      pre-commit-validate.sh read them with core.quotePath=false
+      post-merge check list paths with -z (a newline-embedded name is always out of
+      scope); the engineer dirty check and pre-commit-validate.sh use
+      core.quotePath=false (non-ASCII names only)
 
 -- Changes --
 

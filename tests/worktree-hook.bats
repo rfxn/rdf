@@ -151,6 +151,16 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
+@test "a file whose name embeds a newline between declared paths is rejected" {
+    _install
+    _phase_wt
+    printf 'x\n' > "$WT/src/a.sh"$'\n'"README.md"
+    git -C "$WT" add -- "src/a.sh"$'\n'"README.md"
+    run _git -C "$WT" commit -q -m newline
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"SCOPE VIOLATION"* ]]
+}
+
 @test "phase branch with a non-SID suffix is still enforced" {
     _install
     _phase_wt "rdf/phase-1-a.b"

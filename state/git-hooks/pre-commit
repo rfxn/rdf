@@ -96,8 +96,8 @@ if [[ -n "${FLEX_REGEX:-}" ]]; then
 fi
 
 # Get staged files
-# -z: paths verbatim (the default output C-quotes non-ASCII, '"' and '\' names, which never match the scope regex)
-_staged="$(git diff --cached --name-only -z | command tr '\0' '\n')"
+# -z: paths verbatim (default output C-quotes non-ASCII, '"', '\'); an embedded newline becomes \001, which no scope regex matches
+_staged="$(git diff --cached --name-only -z | command tr '\n\0' '\001\n')"
 if [[ -z "$_staged" ]]; then
     _rdf_pass   # nothing staged
 fi

@@ -245,7 +245,7 @@ Three call sites consume this rule:
 - **Dispatcher post-merge check** (defense-in-depth): runs
   `git diff-tree -z --name-only` after engineer returns; same union check.
 - **Engineer dirty check** (`canonical/agents/engineer.md` Setup):
-  runs `git status --porcelain` before any aggregation/build step;
+  runs `git -c core.quotePath=false status --porcelain` before any aggregation/build step;
   same union check.
 
 All three derive scope via `rdf_parse_phase_scope` from
