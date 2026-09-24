@@ -27,8 +27,10 @@ teardown() {
 # blocks. Bodies, scripts/ and reference/ are compared against canonical/ (and
 # sidecars re-derived with rdf_hash_stdin), so editing canonical content never
 # fails this test — only a change in the emitted frontmatter does.
-# Regenerate the tar only when the agent frontmatter contract changes on purpose:
-#   bin/rdf generate all >/dev/null && d="$(mktemp -d)" && cp -r adapters/claude-code/output/agents "$d/agents" && cp -r adapters/claude-plugin/output/agents "$d/plugin-agents" && tar -cf tests/fixtures/adapter-common/agents-expected.tar -C "$d" agents plugin-agents
+# The meta is the frozen 3.7.0 catalog (no effort/variants), so this pins the
+# emitter mechanics, not live routing values. Regenerate the tar only when the
+# agent frontmatter contract changes on purpose (emit from the frozen meta):
+#   d="$(mktemp -d)" && bash -c 'RDF_HOME="$PWD"; RDF_LIBDIR="$PWD/lib"; RDF_VERSION=x; source lib/rdf_common.sh; rdf_init; source lib/adapter_common.sh; source adapters/claude-plugin/adapter.sh; m=tests/fixtures/adapter-common/agent-meta-3.7.0.json; adp_emit_agents canonical/agents "$1/agents" "$m" - 0; adp_emit_agents canonical/agents "$1/plugin-agents" "$m" _cpl_rewrite_namespace_text 0' -- "$d" && tar -cf tests/fixtures/adapter-common/agents-expected.tar -C "$d" agents plugin-agents
 
 @test "adp_emit_agents output is byte-identical to the 3.6.5 emitter fixture" {
     local expected="${TEST_WORK}/expected"
@@ -43,7 +45,7 @@ teardown() {
         source "${rdf_src}/lib/rdf_common.sh"; rdf_init
         source "${rdf_src}/lib/adapter_common.sh"
         source "${rdf_src}/adapters/claude-plugin/adapter.sh"
-        agent_meta="${RDF_ADAPTERS}/claude-code/agent-meta.json"
+        agent_meta="${rdf_src}/tests/fixtures/adapter-common/agent-meta-3.7.0.json"
         adp_emit_agents "${RDF_CANONICAL}/agents" "${out}/agents" "$agent_meta" - 1
         adp_copy_scripts "${RDF_CANONICAL}/scripts" "${out}/scripts"
         adp_copy_reference "${RDF_CANONICAL}/reference" "${out}/reference" 1
@@ -112,6 +114,34 @@ teardown() {
 
     diff -q "${src_dir}/example.md" "${dst_dir}/example.md"
     [ -f "${dst_dir}/example.md.rdf-hash" ]
+}
+
+# ── Test 2b: effort line + variant emission ──────────────────────────────────
+
+@test "adp_emit_agents emits an effort line and a variant file per declared variant" {
+    local src_dir="${TEST_WORK}/src" dst_dir="${TEST_WORK}/dst" meta="${TEST_WORK}/meta.json"
+    mkdir -p "$src_dir" "$dst_dir"
+    cp "${RDF_SRC}/tests/fixtures/canonical/agents/example.md" "${src_dir}/example.md"
+    printf '%s\n' '{"example":{"name":"rdf-example","description":"Base agent.","tools":["Read"],"model":"opus","effort":"xhigh","variants":{"lite":{"effort":"medium","description":"Lite variant."}}}}' > "$meta"
+
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; src_dir="$2"; dst_dir="$3"; meta="$4"
+        RDF_LIBDIR="${rdf_src}/lib"
+        source "${rdf_src}/lib/rdf_common.sh"
+        source "${rdf_src}/lib/adapter_common.sh"
+        adp_emit_agents "$src_dir" "$dst_dir" "$meta" - 1
+    ' -- "$RDF_SRC" "$src_dir" "$dst_dir" "$meta"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"generated 2 agent files (1 variants)"* ]]
+
+    grep -q '^effort: xhigh$' "${dst_dir}/example.md"
+    grep -q '^name: rdf-example-lite$' "${dst_dir}/example-lite.md"
+    grep -q '^  Lite variant\.$' "${dst_dir}/example-lite.md"
+    grep -q '^model: opus$' "${dst_dir}/example-lite.md"
+    grep -q '^effort: medium$' "${dst_dir}/example-lite.md"
+    diff <(sed '1,/^---$/d' "${dst_dir}/example.md" | sed -n '/^---$/,$p') <(sed '1,/^---$/d' "${dst_dir}/example-lite.md" | sed -n '/^---$/,$p')
+    [ "$(cat "${dst_dir}/example-lite.md.rdf-hash")" = "$(cat "${dst_dir}/example.md.rdf-hash")" ]
 }
 
 # ── Test 3: staging swap ──────────────────────────────────────────────────────

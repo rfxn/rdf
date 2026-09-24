@@ -25,12 +25,13 @@ adp_write_hash_sidecar() {
     printf '%s\n' "$hash" > "${dst}.rdf-hash"
 }
 
-# adp_agent_frontmatter meta agent — YAML frontmatter (name, description,
-# tools, disallowedTools, model) from an agent-meta.json entry. rc 1 + warn
-# when the agent is absent from meta — caller falls back to a plain copy.
+# adp_agent_frontmatter meta agent [variant] — YAML frontmatter (name,
+# description, tools, disallowedTools, model, effort) from an agent-meta.json
+# entry, or from one of its variants. rc 1 + warn when the agent is absent
+# from meta — caller falls back to a plain copy.
 adp_agent_frontmatter() {
-    local meta="$1" agent="$2"
-    local name desc model tools_json disallowed_json
+    local meta="$1" agent="$2" variant="${3:-}"
+    local name desc model effort tools_json disallowed_json
 
     if ! jq -e --arg a "$agent" '.[$a]' "$meta" >/dev/null 2>&1; then  # missing entry = signal caller to plain-copy
         rdf_warn "no metadata for agent: $agent — copying without frontmatter"
@@ -40,6 +41,13 @@ adp_agent_frontmatter() {
     name="$(jq -r --arg a "$agent" '.[$a].name' "$meta")"
     desc="$(jq -r --arg a "$agent" '.[$a].description' "$meta")"
     model="$(jq -r --arg a "$agent" '.[$a].model' "$meta")"
+    effort="$(jq -r --arg a "$agent" '.[$a].effort // empty' "$meta")"
+    if [[ -n "$variant" ]]; then
+        name="${name}-${variant}"
+        desc="$(jq -r --arg a "$agent" --arg v "$variant" '.[$a].variants[$v].description // .[$a].description' "$meta")"
+        model="$(jq -r --arg a "$agent" --arg v "$variant" '.[$a].variants[$v].model // .[$a].model' "$meta")"
+        effort="$(jq -r --arg a "$agent" --arg v "$variant" '.[$a].variants[$v].effort // empty' "$meta")"
+    fi
     tools_json="$(jq -c --arg a "$agent" '.[$a].tools // []' "$meta")"
     disallowed_json="$(jq -c --arg a "$agent" '.[$a].disallowedTools // []' "$meta")"
 
@@ -63,6 +71,9 @@ adp_agent_frontmatter() {
     fi
 
     echo "model: ${model}"
+    if [[ -n "$effort" ]]; then
+        echo "effort: ${effort}"
+    fi
     echo "---"
 }
 
@@ -72,7 +83,7 @@ adp_agent_frontmatter() {
 # filter_fn "-" means stream the body unfiltered.
 adp_emit_agents() {
     local src_dir="$1" dst_dir="$2" meta="$3" filter_fn="$4" sidecar="$5"
-    local src_file count=0
+    local src_file count=0 vcount=0
 
     command mkdir -p "$dst_dir"
 
@@ -101,8 +112,29 @@ adp_emit_agents() {
 
         [[ "$sidecar" -eq 1 ]] && adp_write_hash_sidecar "$src_file" "$dst_file"
         count=$((count + 1))
+
+        local vkey vdst
+        while IFS= read -r vkey; do
+            [[ -n "$vkey" ]] || continue
+            vdst="${dst_dir}/${basename_f}-${vkey}.md"
+            adp_agent_frontmatter "$meta" "$basename_f" "$vkey" > "${vdst}.tmp"
+            echo "" >> "${vdst}.tmp"
+            if [[ "$filter_fn" == "-" ]]; then
+                command cat "$src_file" >> "${vdst}.tmp"
+            else
+                "$filter_fn" < "$src_file" >> "${vdst}.tmp"
+            fi
+            command mv "${vdst}.tmp" "$vdst"
+            [[ "$sidecar" -eq 1 ]] && adp_write_hash_sidecar "$src_file" "$vdst"
+            count=$((count + 1))
+            vcount=$((vcount + 1))
+        done < <(jq -r --arg a "$basename_f" '(.[$a].variants // {}) | keys[]' "$meta" 2>/dev/null)  # agent absent or no variants → none
     done
-    rdf_log "generated ${count} agent files"
+    if [[ "$vcount" -gt 0 ]]; then
+        rdf_log "generated ${count} agent files (${vcount} variants)"
+    else
+        rdf_log "generated ${count} agent files"
+    fi
 }
 
 # adp_skill_description name src meta — echo the intent-trigger description:

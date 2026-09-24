@@ -64,6 +64,40 @@ _strip() {  # run rdf_strip_frontmatter against a fixture file
     rm -rf "$d"
 }
 
+_require_meta() {  # $1 = meta JSON, $2.. = canonical agent stems to create
+    local d; d="$(mktemp -d)"
+    printf '%s\n' "$1" > "$d/meta.json"; shift
+    local a; for a in "$@"; do touch "$d/${a}.md"; done
+    bash -c 'source "$1/lib/rdf_common.sh"; rdf_require_agent_meta "$2/meta.json" "$2"' -- "$RDF_SRC" "$d"
+    local rc=$?
+    rm -rf "$d"
+    return "$rc"
+}
+
+@test "require_agent_meta: dies on invalid effort, model, variant key, missing variant effort, and variant collision" {
+    run _require_meta '{"a":{"name":"a","effort":"ultra"}}' a
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"invalid agent routing in agent-meta.json: a: effort 'ultra' not in low|medium|high|xhigh|max"* ]]
+    run _require_meta '{"a":{"name":"a","model":"gpt-9"}}' a
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"a: model 'gpt-9' not in opus|sonnet|haiku|fable|inherit"* ]]
+    run _require_meta '{"a":{"name":"a","variants":{"9x":{"effort":"low"}}}}' a
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"a: variant key '9x' must start with a-z"* ]]
+    run _require_meta '{"a":{"name":"a","variants":{"lite":{"model":"opus"}}}}' a
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"a.lite: variant requires effort"* ]]
+    run _require_meta '{"a":{"name":"a","variants":{"lite":{"effort":"low"}}},"a-lite":{"name":"x"}}' a a-lite
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"a: variant lite collides with canonical agent a-lite.md"* ]]
+}
+
+@test "require_agent_meta: missing model and effort are valid" {
+    run _require_meta '{"a":{"name":"a"},"b":{"name":"b","model":"claude-opus-5-5","effort":"max","variants":{"x":{"effort":"low"}}}}' a b
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
 @test "strip: sync.sh defines no local strip implementation" {
     run grep -c '^_strip_frontmatter()' "$RDF_SRC/lib/cmd/sync.sh"
     [ "$output" = "0" ]

@@ -111,6 +111,73 @@ rdf_require_agent_meta() {
         fi
     done
     [[ -z "$missing" ]] || rdf_die "agents missing from agent-meta.json: ${missing} — add entries before generating"
+    local errors
+    errors="$(rdf_agent_routing_errors "$meta" "$agents_dir")"
+    [[ -z "$errors" ]] || rdf_die "invalid agent routing in agent-meta.json: ${errors//$'\n'/; }"
+}
+
+# rdf_agent_routing_errors META AGENTS_DIR — one line per invalid model, effort,
+# or variant in agent-meta.json (empty = valid; a missing model/effort is valid)
+rdf_agent_routing_errors() {
+    local meta="$1" agents_dir="$2" label field value
+    while IFS=$'\t' read -r label field value; do
+        case "$field" in
+            model)
+                case "$value" in
+                    opus|sonnet|haiku|fable|inherit) ;;
+                    claude-*)
+                        case "$value" in
+                            *[!a-z0-9.-]*) printf "%s: model '%s' is not a valid model id\n" "$label" "$value" ;;
+                        esac
+                        ;;
+                    *) printf "%s: model '%s' not in opus|sonnet|haiku|fable|inherit or a claude-* id\n" "$label" "$value" ;;
+                esac
+                ;;
+            effort)
+                case "$value" in
+                    low|medium|high|xhigh|max) ;;
+                    *) printf "%s: effort '%s' not in low|medium|high|xhigh|max\n" "$label" "$value" ;;
+                esac
+                ;;
+            variants-type) printf '%s: variants must be an object\n' "$label" ;;
+            variant-key)
+                case "$value" in
+                    ""|[!a-z]*|*[!a-z0-9-]*) printf "%s: variant key '%s' must start with a-z and use only a-z, 0-9, -\n" "$label" "$value" ;;
+                    *)
+                        if [[ -e "${agents_dir}/${label}-${value}.md" ]]; then
+                            printf '%s: variant %s collides with canonical agent %s-%s.md\n' "$label" "$value" "$label" "$value"
+                        fi
+                        ;;
+                esac
+                ;;
+            variant-noeffort) printf '%s: variant requires effort\n' "$label" ;;
+        esac
+    done < <(jq -r '
+        to_entries[]
+        | select((.key | startswith("_") | not) and (.value | type == "object" and has("name")))
+        | .key as $k | .value as $v
+        | (if ($v | has("model")) then [$k, "model", ($v.model | tostring)] else empty end),
+          (if ($v | has("effort")) then [$k, "effort", ($v.effort | tostring)] else empty end),
+          (if ($v | has("variants")) then
+             (if ($v.variants | type) != "object" then [$k, "variants-type", "-"]
+              else ($v.variants | to_entries[]
+                    | .key as $vk | .value as $vv
+                    | [$k, "variant-key", $vk],
+                      (if ($vv | type) != "object" or (($vv | has("effort")) | not)
+                       then [($k + "." + $vk), "variant-noeffort", "-"]
+                       else [($k + "." + $vk), "effort", ($vv.effort | tostring)],
+                            (if ($vv | has("model")) then [($k + "." + $vk), "model", ($vv.model | tostring)] else empty end)
+                       end))
+              end)
+           else empty end)
+        | @tsv' "$meta" 2>/dev/null)  # unparseable meta → no rows (the missing-agent check reports it)
+}
+
+# rdf_agent_variant_stems META — "<agent>-<variant>" per declared variant
+rdf_agent_variant_stems() {
+    jq -r 'to_entries[]
+        | select((.key | startswith("_") | not) and (.value | type == "object") and ((.value.variants | type) == "object"))
+        | .key as $k | .value.variants | keys[] | "\($k)-\(.)"' "$1" 2>/dev/null || true  # absent/unparseable meta → no stems
 }
 
 # Working files kept out of git — single source of truth: init writes these,
