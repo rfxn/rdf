@@ -53,7 +53,7 @@ After a crash or new session start:
 5. **Check for stale status files:** `.rdf/work-output/phase-*-status.md` files with
    mtime >1 hour indicate interrupted work.
 6. **Check for progress files** that indicate interrupted workflows:
-   *Per Wave A (RDF 3.1.0), each progress file is suffixed with the writing session's RDF_SESSION_ID (the Claude Code session id, else a UUIDv7). Glob `<basename>-*.md` to enumerate across sessions. `claude --resume`/`--continue` reuses the session id, so its pointers and progress files carry over; to resume into a second concurrent terminal, pass `--fork-session` (a forked session starts without the parent's pointers).*
+   *Per Wave A (RDF 3.1.0), each progress file is suffixed with the writing session's RDF_SESSION_ID (the Claude Code session id, else a UUIDv7). Glob `<basename>-*.md` to enumerate across sessions. `claude --resume <id>` keeps the session id, so its pointers and progress files carry over (`--continue` or a bare `--resume` may start under a new id, and `/clear` renews it; resolution then falls back to the project pointer). To resume into a second concurrent terminal, pass `--fork-session` (a forked session starts without the parent's pointers).*
    - `.rdf/work-output/spec-progress-<SESSION_ID>.md` -- design session in progress; contains topic,
      phase, and decisions made so far. Resume with `/r-spec --resume`.
    - `.rdf/work-output/ship-progress-<SESSION_ID>.md` -- release workflow in progress; contains stage

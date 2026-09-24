@@ -120,7 +120,14 @@ _tok_agent_map() {
         esac
     done < "${_TOK_WORK}/files"
     if [ -s "$metas" ]; then
-        xargs -0 jq -c '{(input_filename): (.agentType // "unknown")}' < "$metas" \
+        # one "path<TAB>json" line per meta: CC writes metas without a trailing newline, and a bad one must not abort the map
+        while IFS= read -r -d '' m; do
+            printf '%s\t' "$m"
+            command tr -d '\n' < "$m" 2>/dev/null || true  # meta removed mid-run → empty → agent unknown
+            printf '\n'
+        done < "$metas" \
+            | jq -cR 'index("\t") as $i | select($i != null)
+                | {(.[0:$i]): (.[($i + 1):] | fromjson? | select(type == "object") | (.agentType // "unknown") | tostring)}' \
             | jq -s 'add // {}' > "${_TOK_WORK}/agents.json"
     else
         printf '{}\n' > "${_TOK_WORK}/agents.json"
@@ -135,6 +142,7 @@ _tok_rows() {
     fi
     xargs -0 jq -cR --arg since "$_TOK_SINCE" '
         fromjson? | select(type == "object")
+        | select((.message | type) == "object" and ((.timestamp // "") | type) == "string")
         | select(.type == "assistant"
             and ((.message.id // "") != "")
             and ((.message.usage | type) == "object")

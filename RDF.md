@@ -33,8 +33,9 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   by baking domain knowledge into agent prompts. Profiles provide governance seed
   templates, not agent/command bundles.
 - **Unified CLI:** Single `rdf` dispatcher with lazy-sourced subcommand modules
-  (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
-  `rdf refresh`, `rdf sync`, `rdf github`).
+  (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
+  `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`,
+  `rdf migrate`).
 - **Not a runtime:** Claude Code / Codex / Antigravity CLI IS the runtime
   (Gemini CLI legacy). RDF is the governance layer that tells the runtime how to behave.
 - **Plugin is an adapter, not the architecture:** Claude Code plugin structure
@@ -216,8 +217,8 @@ rdf/                                 # Repository root
 - Canonical agent/command/script storage with tool-agnostic content
 - 6 universal agents with governance-driven behavior
 - 37 commands under `/r-` namespace (21 lifecycle + 16 utility)
-- Unified CLI (`rdf generate`, `rdf profile`, `rdf init`, `rdf doctor`, `rdf state`,
-  `rdf refresh`, `rdf sync`, `rdf github`)
+- Unified CLI (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
+  `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`, `rdf migrate`)
 - Tool-specific adapters (Claude Code, Claude Plugin, Agent Skills, Gemini CLI, AGENTS.md; Codex and Antigravity CLI served by the Agent Skills + AGENTS.md composite)
 - Governance initialization via `/r-init` with profile-based templates
 - GitHub Issues + Projects v2 integration
@@ -248,7 +249,7 @@ rdf/                                 # Repository root
 ## Success Metrics
 
 - All active projects pass `rdf doctor --all` with OK status
-- `rdf generate claude-code` produces 6 agents + 37 skills
+- `rdf generate claude-code` produces 8 agents (6 canonical + 2 routing variants) + 37 skills
 - `rdf state` returns accurate JSON for any project in <1 second
 - Zero convention drift between canonical source and deployed copies
 - Zero stale v2 references in active code

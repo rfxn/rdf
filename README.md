@@ -346,7 +346,7 @@ lifecycle commands, not a registered profile.
 
 ### Concurrent Session Safety
 
-RDF is designed to be run in parallel against the same repository — different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session has its own `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7; inherited by all subagents; `claude --resume` reuses it, so resume into a second concurrent terminal with `--fork-session`), and all transient handoff files are scoped by it:
+RDF is designed to be run in parallel against the same repository — different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session has its own `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7; inherited by all subagents; `claude --resume <id>` keeps it, so resume into a second concurrent terminal with `--fork-session`), and all transient handoff files are scoped by it:
 
 ```
 .rdf/work-output/

@@ -216,10 +216,12 @@ dispatches, quality gates, commit strategy.
 ### 6b. Dispatch Parallel Batch
 
 Before any worktree creation, source `~/.rdf/state/rdf-bus.sh` and call
-`rdf_session_init` to ensure `RDF_SESSION_ID` is set. Worktree paths
-and branch names use the full session id for collision-free identification
-across concurrent sessions on the same repository (a resumed session
-reuses its id — see session-safety.md).
+`rdf_session_init` to ensure `RDF_SESSION_ID` is set. Each Bash call is a
+fresh shell, so every block below that uses `${RDF_SESSION_ID}` starts with
+`source ~/.rdf/state/rdf-bus.sh && rdf_session_init` in the same call.
+Worktree paths and branch names use the full session id for collision-free
+identification across concurrent sessions on the same repository (a resumed
+session can reuse its id — see session-safety.md).
 
 For each batch in the dispatch plan (sequential between batches,
 parallel within each batch):
@@ -241,8 +243,11 @@ parallel within each batch):
    any leftover worktree and branch for this phase, logging the branch tip
    so a failed attempt's commits stay recoverable (`git branch <name> <tip>`):
    ```
-   wt=.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}; br=rdf/phase-{N}-${RDF_SESSION_ID}
-   if tip=$(git rev-parse --verify -q "$br"); then
+   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
+   [ -n "$RDF_SESSION_ID" ] || { echo "rdf: no session id; refusing worktree setup" >&2; exit 1; }
+   root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
+   wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
+   if tip=$(git rev-parse --verify -q "refs/heads/$br"); then
        echo "removing leftover $br (tip $tip)"
        git worktree remove --force "$wt" 2>/dev/null || true  # worktree may already be gone
        git branch -D "$br"
@@ -255,6 +260,7 @@ parallel within each batch):
    worktree's per-worktree hooks directory:
 
    ```
+   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
    wt_git_dir=$(git -C .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} rev-parse --git-dir)
    hook_src=~/.rdf/state/git-hooks/pre-commit
    [[ -f "$hook_src" ]] || hook_src=state/git-hooks/pre-commit  # RDF self-hosting fallback
@@ -394,9 +400,9 @@ When one or more phases in a parallel batch fail:
    - Option 3: Write progress to
      `build-progress-${RDF_SESSION_ID}.md`, stop. User can resume
      with `/rdf:r-build --parallel` (which calls `rdf_session_init`
-     and reads the scoped progress file); in the same or a resumed
-     session the id matches, and step 2 clears the paused phase's
-     leftover worktree before re-dispatching it.
+     and reads the scoped progress file); in the same session (or after
+     `claude --resume <id>`) the id matches, and step 2 clears the paused
+     phase's leftover worktree before re-dispatching it.
 
 ## Constraints
 

@@ -123,6 +123,19 @@ _minbin() {
     [[ "$output" == *"active-plan: $repo/.rdf/default.md"* ]]
 }
 
+@test "precompact falls back to a legacy root PLAN.md when no pointer resolves" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    local repo="$TEST_TMP/repo5"
+    _mkrepo "$repo"
+    printf '# legacy\n' > "$repo/PLAN.md"
+    printf '{"session_id":"sid-L","cwd":"%s","trigger":"auto"}' "$repo" > "$JSON"
+
+    run bash "$PRE" < "$JSON"
+    [ "$status" -eq 0 ]
+    run cat "$HANDOFF/sid-L.md"
+    [[ "$output" == *"active-plan: $repo/PLAN.md"* ]]
+}
+
 @test "precompact snapshot stays within the 40-line ceiling" {
     command -v git >/dev/null 2>&1 || skip "git unavailable"
     local repo="$TEST_TMP/repo3"

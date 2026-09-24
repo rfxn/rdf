@@ -152,6 +152,20 @@ _tok_row() {
     rm -rf "$t"
 }
 
+@test "malformed subagent meta and non-object rows are skipped, not fatal" {
+    local t; t="$(mktemp -d)"
+    cp -R "$FX" "${t}/proj"
+    printf '{"agentType":' > "${t}/proj/s1/subagents/agent-a1.meta.json"
+    printf '"str"' > "${t}/proj/s1/subagents/workflows/wf_x/agent-w1.meta.json"
+    printf '%s\n' '{"type":"assistant","message":"x","timestamp":"2026-09-20T00:00:00Z"}' \
+        '{"type":"assistant","message":{"id":"msg_T","model":"claude-opus-5-5","usage":{"input_tokens":1}},"timestamp":42}' >> "${t}/proj/s2.jsonl"
+    run _tok --transcripts "${t}/proj" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[6,0.3981]" ]
+    [ "$(jq -r '[.by_agent[].agent] | sort | join(",")' <<< "$output")" = "main,unknown" ]
+    rm -rf "$t"
+}
+
 @test "--days with leading zeros is decimal; zero days and impossible --since dates exit 2" {
     run _tok --transcripts "$FX" --days 010 --json
     [ "$status" -eq 0 ]

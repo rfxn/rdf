@@ -88,8 +88,8 @@ Agent work products created during a session. Structured files in
 **Session Identity (`RDF_SESSION_ID`):** Set by the `rdf_session_init`
 helper in `~/.rdf/state/rdf-bus.sh`. The Claude Code session id when
 `CLAUDE_CODE_SESSION_ID` is set and matches `[A-Za-z0-9-]` (stable across
-Bash calls, shared with subagents, reused by `--resume` unless
-`--fork-session`), else a minted UUIDv7. An explicit `RDF_SESSION_ID`
+Bash calls, shared with subagents, kept by `--resume <id>` unless
+`--fork-session`, renewed on `/clear`), else a minted UUIDv7. An explicit `RDF_SESSION_ID`
 (dispatch payload) wins. Used as
 filename suffix for transient state files to prevent collisions between
 concurrent sessions on the same repository. Helper functions:
