@@ -198,8 +198,20 @@ Append a structured entry to `.rdf/work-output/session-log.jsonl`:
   "plan_phases_in_progress": [{list of phase numbers}],
   "dirty_files": {N},
   "unpushed": {N},
-  "insight": "{punchline text, or null if skipped}"
+  "insight": "{punchline text, or null if skipped}",
+  "tokens": {tokens summary object, or null}
 }
+```
+
+Append the entry as ONE compact JSON line (no pretty-printing);
+`head_after` is the short hash (`git rev-parse --short HEAD`).
+
+`tokens` is this session's token usage summary from the state helper, or
+`null` when it is unavailable:
+
+```bash
+tok="$(bash ~/.rdf/state/rdf-tokens.sh --session "${CLAUDE_CODE_SESSION_ID:-}" --summary 2>/dev/null)" || tok=""   # helper absent / no id / no transcript → record null
+[ -n "$tok" ] || tok=null
 ```
 
 Create `.rdf/work-output/` directory if it does not exist.

@@ -185,8 +185,11 @@ heading already signals `idle`.
 
 From session log (if exists):
 ```
-Last: {N} commits · {diff_summary} · {pipeline} *({age})*
+Last: {N} commits · {diff_summary} · {pipeline} · ${cost} *({age})*
 ```
+
+Render `· ${cost}` only when `session_last.tokens.cost_usd` is present
+(written by `/rdf:r-save`); omit the segment otherwise.
 
 Fallback (no session log) — 3 most recent commits:
 ```

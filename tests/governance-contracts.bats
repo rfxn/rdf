@@ -293,3 +293,56 @@ _no_contract() {
     done
     [ -z "$missing" ] || { echo "not in tests/Makefile:${missing}"; return 1; }
 }
+
+# ── Model & effort routing (context economy, spec A) ─────────────────────────
+
+@test "no canonical routing directive passes model: sonnet" {
+    _no_contract agents/dispatcher.md 'model: ?"sonnet"'
+    _no_contract commands/r-spec.md 'model: ?"sonnet"'
+    _no_contract commands/r-plan.md 'model: ?"sonnet"'
+    _no_contract commands/r-review.md 'model: ?"sonnet"'
+}
+
+@test "dispatcher routes focused phases to rdf-engineer-focused and escalates failures to rdf-engineer" {
+    _contract agents/dispatcher.md 'scope:focused +→ dispatch rdf-engineer-focused'
+    _contract agents/dispatcher.md 'scope:sensitive +→ dispatch rdf-engineer \(xhigh'
+    _contract agents/dispatcher.md 'Escalation: if the phase was dispatched to rdf-engineer-focused'
+    _contract agents/dispatcher.md 'Never pass a per-invocation model parameter for routing'
+}
+
+@test "challenge reviews dispatch rdf-reviewer-challenge" {
+    _contract commands/r-spec.md 'Dispatch the `rdf-reviewer-challenge` subagent'
+    _contract commands/r-plan.md 'dispatch the `rdf-reviewer-challenge`'
+    _contract commands/r-review.md 'challenge`, dispatch `rdf-reviewer-challenge`'
+}
+
+@test "r-spec and r-plan carry the non-blocking Fable advisory" {
+    _contract commands/r-spec.md 'claude --model fable --effort high'
+    _contract commands/r-plan.md 'claude --model fable --effort high'
+    _contract commands/r-spec.md 'Never block, and never switch models mid-session'
+    _contract commands/r-plan.md 'Never block, and never switch models mid-session'
+}
+
+@test "r-spec handoff keeps /r-plan in the same session" {
+    _contract commands/r-spec.md 'Run `/r-plan` in this same session'
+}
+
+@test "r-plan handoff names the Opus build session" {
+    _contract commands/r-plan.md 'run the build in an Opus session: `claude --model opus`'
+}
+
+@test "r-sync never offers generated variant agents for import" {
+    _contract commands/r-sync.md 'Generated variants'
+    _contract commands/r-sync.md 'never report it as a new file or offer to'
+}
+
+@test "r-save session-log entry records a tokens summary or null" {
+    _contract commands/r-save.md '"tokens": \{tokens summary object, or null\}'
+    _contract commands/r-save.md 'rdf-tokens\.sh --session "\$\{CLAUDE_CODE_SESSION_ID:-\}" --summary'
+    _contract commands/r-save.md 'ONE compact JSON line'
+}
+
+@test "r-start Last line renders session cost when present" {
+    _contract commands/r-start.md 'Last: \{N\} commits · \{diff_summary\} · \{pipeline\} · \$\{cost\}'
+    _contract commands/r-start.md 'session_last\.tokens\.cost_usd'
+}

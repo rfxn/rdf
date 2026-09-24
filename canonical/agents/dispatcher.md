@@ -260,26 +260,27 @@ User-facing modifier (any scope level):
 
 Default (cannot determine scope): scope:multi-file
 
-Model routing (engineer dispatch):
-  scope:docs          → pass model: "sonnet" to engineer dispatch
-  scope:focused       → pass model: "sonnet" to engineer dispatch
-  scope:multi-file    → no override (engineer default: opus)
-  scope:cross-cutting → no override (engineer default: opus)
-  scope:sensitive     → no override (engineer default: opus)
+Agent routing (engineer dispatch):
+  scope:docs          → dispatch rdf-engineer-focused (medium effort)
+  scope:focused       → dispatch rdf-engineer-focused (medium effort)
+  scope:multi-file    → dispatch rdf-engineer (xhigh effort)
+  scope:cross-cutting → dispatch rdf-engineer (xhigh effort)
+  scope:sensitive     → dispatch rdf-engineer (xhigh effort)
 
-  When dispatching the engineer subagent, include the model parameter
-  in the Agent call if the scope requires a downgrade. Omit the model
-  parameter for multi-file and above — the agent's frontmatter default
-  (opus) applies automatically.
+  Route by agent name — model and effort live in each agent's definition.
+  Never pass a per-invocation model parameter for routing: it cannot carry
+  effort and splits the prompt cache.
 
-Model routing (reviewer dispatch):
-  Gate 3 (sentinel)     → no override (reviewer default: opus)
-  End-of-plan sentinel  → no override (reviewer default: opus)
+  Escalation: a phase first dispatched to rdf-engineer-focused sends every
+  fix-cycle re-dispatch to rdf-engineer (see Red/Green Decision).
 
-  Note: challenge-mode reviewer dispatches originate from commands
-  (r-review, r-spec, r-plan), not from the dispatcher. Those commands
-  pass model: "sonnet" for challenge mode. The dispatcher only
-  dispatches sentinel reviews.
+Agent routing (reviewer dispatch):
+  Gate 3 (sentinel)     → rdf-reviewer (xhigh effort)
+  End-of-plan sentinel  → rdf-reviewer (xhigh effort)
+
+  Note: challenge-mode reviews originate from commands (r-review, r-spec,
+  r-plan), which dispatch rdf-reviewer-challenge (high effort). The
+  dispatcher only dispatches sentinel reviews.
 
 ### Tier Cap (min(scope_gate, tier_cap)) — with a security floor
 
@@ -398,6 +399,8 @@ from either agent enters the Finding Resolution loop.
 ### Red/Green Decision
 - All gates pass → update the phase result file in `.rdf/work-output/`, next phase
 - Any gate fails → send feedback to engineer, re-enter TDD cycle
+- Escalation: if the phase was dispatched to rdf-engineer-focused, every
+  fix-cycle re-dispatch goes to rdf-engineer (xhigh effort)
 - Max 3 retry loops → surface to user with failure context
 
 ### End-of-Plan Sentinel

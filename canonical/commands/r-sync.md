@@ -126,6 +126,7 @@ Agent files deployed by `rdf generate` have YAML frontmatter:
     name: rdf-engineer
     description: Universal implementation engineer...
     model: opus
+    effort: xhigh
     ---
     (actual agent prompt content)
 
@@ -139,6 +140,11 @@ lines after the frontmatter block are also trimmed.
   to canonical)
 - **New files**: if a deployed file has no canonical counterpart, report
   it as *new file* and ask the user whether to import it
+- **Generated variants**: a deployed agent `<agent>-<variant>.md` whose
+  variant is declared under `variants` in `adapters/claude-code/agent-meta.json`
+  (e.g. `engineer-focused.md`, `reviewer-challenge.md`) is a generated copy of
+  `canonical/agents/<agent>.md` — never report it as a new file or offer to
+  import it; edits belong in the base agent
 - **Missing deployments**: if a canonical file has no deployed counterpart,
   ignore it (it may not have been generated for this adapter)
 - The `rdf sync` CLI command handles the actual file operations —

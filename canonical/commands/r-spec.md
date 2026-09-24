@@ -6,6 +6,14 @@ You produce design documents.
 
 This is the first stage of the spec-plan-build-ship pipeline.
 
+## Model
+
+In Claude Code this stage is tuned for Fable at high effort. If the active
+model is not Fable, mention once: "Tip: launch spec sessions with
+`claude --model fable --effort high`" — then continue on the current model.
+Never block, and never switch models mid-session (a model switch rebuilds
+the whole prompt cache).
+
 `$ARGUMENTS` — optional input to seed the design:
 - No args → start fresh design session
 - GitHub URL (starts with `http`/`https`) → fetch as design seed
@@ -555,10 +563,9 @@ Mark task "Write architecture-grade spec" as `completed`.
 
 Mark task "Challenge review and user approval" as `in_progress`.
 
-Dispatch the reviewer agent in challenge mode with `model: "sonnet"`.
-Challenge review is structural pattern-matching — Sonnet handles it
-at full quality. The dispatch prompt must include the quality standard
-as an explicit checklist:
+Dispatch the `rdf-reviewer-challenge` subagent (challenge mode, high
+effort; no per-invocation model override). The dispatch prompt must
+include the quality standard as an explicit checklist:
 
 ```
 Review this spec against the quality standard. Each criterion is
@@ -640,7 +647,7 @@ After all phases complete, present the pipeline handoff:
 
 ```
 > **Spec complete** — `docs/specs/{filename}`
-> Reviewed and approved. Run `/r-plan` to create the implementation plan.
+> Reviewed and approved. Run `/r-plan` in this same session to create the implementation plan.
 ```
 
 Clean up: update `.rdf/work-output/spec-progress-${RDF_SESSION_ID}.md` with final state:

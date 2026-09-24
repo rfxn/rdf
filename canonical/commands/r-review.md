@@ -100,11 +100,10 @@ PROJECT_ROOT: <absolute path to project root>
 
 Dispatch the `rdf-reviewer` subagent with the assembled payload.
 
-Model override: If mode is `challenge`, pass `model: "sonnet"` in
-the Agent dispatch call. Challenge review is structural
-pattern-matching — Sonnet handles it at full quality. If mode is
-`sentinel`, do not pass a model parameter — the reviewer's default
-(opus) applies.
+Agent routing: if mode is `challenge`, dispatch `rdf-reviewer-challenge`
+(high effort); if mode is `sentinel`, dispatch `rdf-reviewer` (xhigh
+effort). Never pass a per-invocation model — model and effort live in the
+agent definitions.
 
 - Challenge mode: reviewer performs design review and produces a
   challenge report with MUST-FIX(blocking-concern) / SHOULD-FIX(advisory-concern) / INFORMATIONAL(risk-area) findings

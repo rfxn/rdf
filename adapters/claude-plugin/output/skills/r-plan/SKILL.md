@@ -13,6 +13,14 @@ You produce plans.
 
 This is the second stage of the spec-plan-build-ship pipeline.
 
+## Model
+
+In Claude Code this stage is tuned for Fable at high effort. If the active
+model is not Fable, mention once: "Tip: launch plan sessions with
+`claude --model fable --effort high`" — then continue on the current model.
+Never block, and never switch models mid-session (a model switch rebuilds
+the whole prompt cache).
+
 `$ARGUMENTS` — input source for the plan:
 
 ```
@@ -504,10 +512,10 @@ Mark task "Challenge review and user approval" as `in_progress`.
 
 ### 3.1 Plan Review
 
-After writing the full plan, dispatch the reviewer agent in challenge
-mode with `model: "sonnet"`. Challenge review is structural
-pattern-matching — Sonnet handles it at full quality. The dispatch prompt
-must include the quality standard as an explicit checklist:
+After writing the full plan, dispatch the `rdf-reviewer-challenge`
+subagent (challenge mode, high effort; no per-invocation model override).
+The dispatch prompt must include the quality standard as an explicit
+checklist:
 
 ```
 Review this implementation plan against the quality standard. Each
@@ -523,7 +531,7 @@ criterion is checked independently — if ANY fail, finding is MUST-FIX:
    for obvious schema breaks (missing metadata field, malformed
    Regression-case). Do not re-walk every rule — /rdf:r-build Section 1 is
    the independent late-binding check, and same-context re-validation
-   by a weaker model is not real defense in depth. Flag MUST-FIX only
+   at lower effort is not real defense in depth. Flag MUST-FIX only
    if Step 2.7 appears to have been skipped or a spot-check reveals an
    obvious miss.
 4. Accept criteria are concrete and testable?
@@ -609,6 +617,7 @@ After all steps complete, present the pipeline handoff:
 ```
 > **Plan ready** — `$PLAN_FILE` ({N} phases)
 > Run `/rdf:r-build` to begin execution, or `/rdf:r-build 3` for a specific phase.
+> In Claude Code, run the build in an Opus session: `claude --model opus`.
 ```
 
 ---
