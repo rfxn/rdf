@@ -28,13 +28,19 @@ teardown() {
     [ "$RDF_SESSION_ID" = "01951c8a-7b30-7c2f-8e1d-a4b3f9c2e105" ]
 }
 
-CC_SID="e231d9a1-b9ad-493c-8d68-e66f3c9b3891"
+CC_SID="11111111-2222-4333-8444-555555555555"
 
 @test "rdf_session_init adopts CLAUDE_CODE_SESSION_ID" {
     # shellcheck disable=SC2016  # bash -c body expands in the child shell
     run env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID="$CC_SID" bash -c 'source "$1/state/rdf-bus.sh"; rdf_session_init; printf "%s" "$RDF_SESSION_ID"' _ "$RDF_SRC"
     [ "$status" -eq 0 ]
     [ "$output" = "$CC_SID" ]
+}
+
+@test "rdf_session_init keeps an explicit RDF_SESSION_ID over CLAUDE_CODE_SESSION_ID" {
+    # shellcheck disable=SC2016  # bash -c body expands in the child shell
+    run env RDF_SESSION_ID=payload-sid CLAUDE_CODE_SESSION_ID="$CC_SID" bash -c 'source "$1/state/rdf-bus.sh"; rdf_session_init; printf "%s" "$RDF_SESSION_ID"' _ "$RDF_SRC"
+    [ "$output" = "payload-sid" ]
 }
 
 @test "rdf_session_init mints a UUIDv7 when CLAUDE_CODE_SESSION_ID holds path characters" {

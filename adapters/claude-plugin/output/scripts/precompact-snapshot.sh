@@ -23,11 +23,11 @@ _json_field() {
     printf '%s' "$val"
 }
 
-# _resolve_active_plan root sid — echo the active plan path if a .rdf pointer names
-# an existing file; this session's pointer first (sid is RDF_SESSION_ID in Claude Code)
+# _resolve_active_plan root sid — active plan path, in rdf_active_plan_path order:
+# this session's pointer (sid is RDF_SESSION_ID in Claude Code), project pointer, legacy PLAN.md fallback
 _resolve_active_plan() {
     local root="$1" sid="$2" pointer plan
-    for pointer in "$root/.rdf/active-plan-${sid}" "$root"/.rdf/active-plan-* "$root"/.rdf/active-plan; do
+    for pointer in "$root/.rdf/active-plan-${sid}" "$root/.rdf/active-plan"; do
         [[ -f "$pointer" ]] || continue
         plan=""
         read -r plan < "$pointer" || true   # pointer may lack trailing newline
@@ -36,6 +36,9 @@ _resolve_active_plan() {
             return 0
         fi
     done
+    if [[ -f "$root/PLAN.md" ]]; then  # legacy fallback
+        printf '%s' "$root/PLAN.md"   # legacy fallback
+    fi
     return 0
 }
 

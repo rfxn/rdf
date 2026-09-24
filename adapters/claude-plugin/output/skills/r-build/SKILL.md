@@ -217,8 +217,9 @@ dispatches, quality gates, commit strategy.
 
 Before any worktree creation, source `~/.rdf/state/rdf-bus.sh` and call
 `rdf_session_init` to ensure `RDF_SESSION_ID` is set. Worktree paths
-and branch names use the full UUID for collision-free identification
-across concurrent sessions on the same repository.
+and branch names use the full session id for collision-free identification
+across concurrent sessions on the same repository (a resumed session
+reuses its id — see session-safety.md).
 
 For each batch in the dispatch plan (sequential between batches,
 parallel within each batch):
@@ -235,8 +236,19 @@ parallel within each batch):
 
 **Worktree dispatch (parallel-worktree):**
 1. Create task per phase in the batch
-2. For each phase, create a git worktree:
-   git worktree add .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} -b rdf/phase-{N}-${RDF_SESSION_ID} HEAD
+2. For each phase, create a git worktree. A retry (Option 2) or a resume
+   (Option 3) in the same session reuses the session id, so first clear
+   any leftover worktree and branch for this phase, logging the branch tip
+   so a failed attempt's commits stay recoverable (`git branch <name> <tip>`):
+   ```
+   wt=.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}; br=rdf/phase-{N}-${RDF_SESSION_ID}
+   if tip=$(git rev-parse --verify -q "$br"); then
+       echo "removing leftover $br (tip $tip)"
+       git worktree remove --force "$wt" 2>/dev/null || true  # worktree may already be gone
+       git branch -D "$br"
+   fi
+   git worktree add "$wt" -b "$br" HEAD
+   ```
    (RDF_SESSION_ID is the full session id; prevents cross-session collisions)
 
    After `git worktree add`, install the pre-commit hook into the
@@ -377,11 +389,14 @@ When one or more phases in a parallel batch fail:
    - Option 1: Merge successful phases in plan order, then dispatch
      phase 2 serially against new HEAD
    - Option 2: Re-dispatch phase 2's dispatcher subagent (same
-     isolation level, max 3 total attempts)
+     isolation level, max 3 total attempts); worktree dispatch clears the
+     failed attempt's worktree and branch first (step 2)
    - Option 3: Write progress to
      `build-progress-${RDF_SESSION_ID}.md`, stop. User can resume
      with `/rdf:r-build --parallel` (which calls `rdf_session_init`
-     and reads the scoped progress file).
+     and reads the scoped progress file); in the same or a resumed
+     session the id matches, and step 2 clears the paused phase's
+     leftover worktree before re-dispatching it.
 
 ## Constraints
 

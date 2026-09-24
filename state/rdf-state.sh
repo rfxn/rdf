@@ -61,9 +61,9 @@ _session_head() {
 # the SessionEnd-hook entries that trail it record the same head_after
 _session_pick() {
     local lines=() line last a b i
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
         lines+=("$line")
-    done < <(command tail -n 20 "$1" 2>/dev/null || true)   # unreadable log → empty
+    done < <(command tail -n 20 "$1" 2>/dev/null || true)   # unreadable log → empty; || keeps an unterminated last line
     [[ ${#lines[@]} -gt 0 ]] || return 0
     last="${lines[${#lines[@]}-1]}"
     case "$last" in

@@ -106,6 +106,23 @@ _minbin() {
     [[ "$output" == *"active-plan: $repo/.rdf/mine.md"* ]]
 }
 
+@test "precompact without its own pointer falls back to the project pointer, not another session's" {
+    command -v git >/dev/null 2>&1 || skip "git unavailable"
+    local repo="$TEST_TMP/repo4"
+    _mkrepo "$repo"
+    mkdir -p "$repo/.rdf"
+    printf '# default\n' > "$repo/.rdf/default.md"
+    printf '# other\n' > "$repo/.rdf/other.md"
+    printf '%s\n' "$repo/.rdf/default.md" > "$repo/.rdf/active-plan"
+    printf '%s\n' "$repo/.rdf/other.md" > "$repo/.rdf/active-plan-aaaa-other-session"
+    printf '{"session_id":"bbbb-this-session","cwd":"%s","trigger":"auto"}' "$repo" > "$JSON"
+
+    run bash "$PRE" < "$JSON"
+    [ "$status" -eq 0 ]
+    run cat "$HANDOFF/bbbb-this-session.md"
+    [[ "$output" == *"active-plan: $repo/.rdf/default.md"* ]]
+}
+
 @test "precompact snapshot stays within the 40-line ceiling" {
     command -v git >/dev/null 2>&1 || skip "git unavailable"
     local repo="$TEST_TMP/repo3"

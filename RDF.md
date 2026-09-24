@@ -46,7 +46,8 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 - **Concurrent-session safety (3.1.0+):** Multiple Claude Code sessions on the
   same repository do not corrupt each other. Every session has an
   `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7;
-  inherited by all subagents); every transient state file
+  inherited by all subagents; resume into a second concurrent terminal
+  with `claude --resume --fork-session`); every transient state file
   (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) is
   suffixed with that ID. A pre-commit hook installed in each dispatched worktree
   physically rejects out-of-scope commits; the dispatcher's post-merge

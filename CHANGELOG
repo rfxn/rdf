@@ -27,7 +27,12 @@
 [Fix] rdf_session_init adopts CLAUDE_CODE_SESSION_ID (else mints a UUIDv7): each
       Bash tool call minted a new RDF_SESSION_ID, so session-scoped pointers (active
       plan, tier) were written but never read back and /r-start fell back to a stale
-      plan; precompact snapshots prefer the session's own plan pointer
+      plan; the worktree scope-guard hook now resolves the phase plan; precompact
+      snapshots follow the resolver order (own pointer, project pointer, PLAN.md);
+      /r-build clears a retried phase's leftover worktree; claude --resume reuses
+      the id (use --fork-session for a second concurrent terminal)
+[Fix] /r-util-claudemd-review read the unset CLAUDE_SESSION_ID, so the active
+      conversation was mined as a past one; it now reads CLAUDE_CODE_SESSION_ID
 
 -- Changes --
 

@@ -222,3 +222,13 @@ HOOK='{"timestamp":"2026-09-23T10:05:00Z","head_after":"55e8473","branch":"main"
     [ "$status" -eq 0 ]
     [ "$(jq -c '[.commits, .tokens.cost_usd]' <<< "$output")" = "[2,4.12]" ]
 }
+
+@test "session_last keeps an unterminated final /r-save line" {
+    local proj; proj="$(mktemp -d)"
+    mkdir -p "${proj}/.rdf/work-output"
+    printf '%s\n%s' "$HOOK" "$SAVE" > "${proj}/.rdf/work-output/session-log.jsonl"
+    run bash -c 'bash "$1/state/rdf-state.sh" --full "$2" | jq -r ".session_last"' _ "$RDF_SRC" "$proj"
+    rm -rf "$proj"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.commits, .tokens.cost_usd]' <<< "$output")" = "[2,4.12]" ]
+}

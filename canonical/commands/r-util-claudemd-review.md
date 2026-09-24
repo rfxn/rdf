@@ -42,7 +42,7 @@ session) to a scratch directory:
 SCRATCH="$(mktemp -d -t claudemd-review-XXXXXX)"
 
 # CURRENT_SESSION_ID is the active conversation; skip it.
-CURRENT_SESSION_ID="${CLAUDE_SESSION_ID:-}"
+CURRENT_SESSION_ID="${CLAUDE_CODE_SESSION_ID:-}"
 
 for f in $(ls -t "$CONVO_DIR"/*.jsonl | head -20); do
   base="$(basename "$f" .jsonl)"
