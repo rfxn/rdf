@@ -350,7 +350,7 @@ teardown() { rm -rf "$FIX_HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -L "${home}/.rdf/state/rdf-bus.sh" ]
     [ -L "${home}/.rdf/state/rdf-overhead.sh" ]
     [ -L "${home}/.rdf/state/git-hooks/pre-commit" ]
-    [ "$(find "${home}/.rdf/state" -maxdepth 1 -type l | wc -l | tr -d ' ')" = "7" ]
+    [ "$(find "${home}/.rdf/state" -maxdepth 1 -type l | wc -l | tr -d ' ')" = "$(find "$RDF_SRC/state" -maxdepth 1 -name '*.sh' | wc -l | tr -d ' ')" ]
     rm -rf "$home"
 }
 

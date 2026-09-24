@@ -39,6 +39,7 @@ Commands:
   deploy     Deploy generated output to tool destinations
   sync       Pull ~/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
+  tokens     Local token usage report from Claude Code transcripts
   github     GitHub Issues + Projects integration
   profile    Manage active domain profiles
   refresh    Agent-driven state file updates
@@ -60,6 +61,7 @@ case "${1:-}" in
     deploy)   shift; source "${RDF_LIBDIR}/cmd/deploy.sh";   cmd_deploy "$@" ;;
     sync)     shift; source "${RDF_LIBDIR}/cmd/sync.sh";     cmd_sync "$@" ;;
     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
+    tokens)   shift; source "${RDF_LIBDIR}/cmd/tokens.sh";   cmd_tokens "$@" ;;
     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
     profile)  shift; source "${RDF_LIBDIR}/cmd/profile.sh";  cmd_profile "$@" ;;
     help|--help|-h|"") _rdf_usage ;;

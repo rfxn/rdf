@@ -1,0 +1,1 @@
+{"type":"assistant","timestamp":"2026-09-21T00:00:00.000Z","sessionId":"s2","message":{"id":"msg_F","model":"claude-mystery-9","usage":{"input_tokens":100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":100}}}
