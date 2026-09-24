@@ -231,7 +231,7 @@ the hook outside RDF's own layout.
   - a stale committed `PLAN.md` in the worktree does not shadow the session pointer
 - **Regression-case**: tests/worktree-hook.bats::@test "consumer: out-of-scope commit on a phase branch is rejected"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-24-worktree-scope-guard-patches
@@ -241,7 +241,7 @@ the hook outside RDF's own layout.
   # expect: applied
   ```
 
-- [ ] **Step 2: Red. The new tests fail before the code exists**
+- [x] **Step 2: Red. The new tests fail before the code exists**
 
   ```bash
   bats tests/worktree-hook.bats tests/pre-commit-anti-patterns.bats 2>&1 | grep -c '^not ok'
@@ -253,7 +253,7 @@ the hook outside RDF's own layout.
   All 19 `worktree-hook.bats` tests fail: `rdf_phase_hook_install` does not exist yet, and the old
   hook scans markdown.
 
-- [ ] **Step 3: Apply the code patch**
+- [x] **Step 3: Apply the code patch**
 
   The patch:
   - adds `_rdf_git_at_least`, `_rdf_realdir`, `_rdf_atomic_write`, `_rdf_passthrough_script`,
@@ -280,7 +280,7 @@ the hook outside RDF's own layout.
   # expect: applied
   ```
 
-- [ ] **Step 4: Green + lint**
+- [x] **Step 4: Green + lint**
 
   ```bash
   bats tests/worktree-hook.bats tests/pre-commit-anti-patterns.bats tests/rdf-bus.bats 2>&1 | grep -c '^not ok'
@@ -297,7 +297,7 @@ the hook outside RDF's own layout.
   # expect: lint-ok
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add state/rdf-bus.sh state/git-hooks/pre-commit tests/worktree-hook.bats tests/pre-commit-anti-patterns.bats tests/Makefile
@@ -354,7 +354,7 @@ the schema and framework references, and regenerates adapter output.
   - a bare repo gets rc 1, then the warning, then layer 2
 - **Regression-case**: tests/adapter.bats::@test "regenerated r-build mentions UUIDv7 worktree session-id and controller cd"
 
-- [ ] **Step 1: Apply the code patch**
+- [x] **Step 1: Apply the code patch**
 
   ```bash
   P=docs/plans/2026-09-24-worktree-scope-guard-patches
@@ -364,7 +364,7 @@ the schema and framework references, and regenerates adapter output.
   # expect: applied
   ```
 
-- [ ] **Step 2: Regenerate and verify**
+- [x] **Step 2: Regenerate and verify**
 
   ```bash
   bin/rdf generate claude-code 2>&1 | grep -o 'complete: [0-9]* agents'
@@ -385,7 +385,7 @@ the schema and framework references, and regenerates adapter output.
   # expect: 0
   ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
   ```bash
   git add canonical/commands/r-build.md canonical/agents/dispatcher.md canonical/reference/plan-schema.md canonical/reference/framework.md adapters/claude-plugin/output/agents/dispatcher.md adapters/claude-plugin/output/reference/framework.md adapters/claude-plugin/output/reference/plan-schema.md adapters/claude-plugin/output/skills/r-build/SKILL.md adapters/claude-plugin/output/skills/reference/framework.md adapters/claude-plugin/output/skills/reference/plan-schema.md
@@ -435,7 +435,7 @@ Brings the mechanism wording in RDF.md, README.md and WORKFORCE.md up to date. A
   locally in `bash:3.2` Docker.
 - **Regression-case**: N/A — refactor — docs, changelog and a CI smoke step only; no production code changes in this phase
 
-- [ ] **Step 1: Apply the code patch**
+- [x] **Step 1: Apply the code patch**
 
   ```bash
   P=docs/plans/2026-09-24-worktree-scope-guard-patches
@@ -445,7 +445,7 @@ Brings the mechanism wording in RDF.md, README.md and WORKFORCE.md up to date. A
   # expect: applied
   ```
 
-- [ ] **Step 2: Run the new CI smoke block locally**
+- [x] **Step 2: Run the new CI smoke block locally**
 
   ```bash
   python3 - > /tmp/i2-ci-smoke.sh <<'PY'
@@ -457,7 +457,7 @@ Brings the mechanism wording in RDF.md, README.md and WORKFORCE.md up to date. A
   # expect: bash 3.2 phase scope guard smoke: OK
   ```
 
-- [ ] **Step 3: Full verification**
+- [x] **Step 3: Full verification**
 
   ```bash
   make -C tests test > /tmp/test-rdf-i2-P3.log 2>&1; grep -c '^not ok' /tmp/test-rdf-i2-P3.log
@@ -476,7 +476,7 @@ Brings the mechanism wording in RDF.md, README.md and WORKFORCE.md up to date. A
   # expect: ## Unreleased
   ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
   ```bash
   git add RDF.md README.md WORKFORCE.md .github/workflows/ci.yml CHANGELOG CHANGELOG.RELEASE
@@ -507,3 +507,30 @@ These run after Phase 3 and are not dispatched to a phase. Results go in the shi
   record its worktree path, branch, and whether the hook fires on a commit there.
   `# expect: a recorded observation. If the branch is not rdf/phase-*, file the §3 isolation
   follow-up.`
+
+### Results (2026-09-24)
+
+- **Build:** Phase 1 `4fdc8bf`, Phase 2 `dad7868`, Phase 3 `0fc2f0f`. Every step's output matched
+  its `# expect:`; the controller verified each commit against the validated scratch tree.
+- **(a) PASS.**
+  - The consumer sandbox was built with the committed `r-build.md` snippets, run verbatim against
+    the live `~/.rdf/state`. Install returned rc 0, and the phase worktree resolved to
+    `.git/rdf-hooks`.
+  - A subagent in its own harness Bash environment (with `CLAUDE_CODE_SESSION_ID` set) committed an
+    out-of-scope `notes.txt`. Result: rc 1, `SCOPE VIOLATION`.
+  - Its in-scope `src/a.sh` commit returned rc 0.
+- **(b) Observed.**
+  - The `isolation: "worktree"` agent ran in `.claude/worktrees/agent-<id>` on branch
+    `worktree-agent-<id>`, which does not match `rdf/phase-*`, so its hooks resolve to `.git/hooks`.
+  - Its base was `origin/main` (`475f62d`), not local HEAD (`0fc2f0f`).
+  - The guard therefore holds on phase branches but does not cover a dispatcher that commits in
+    its own isolation cwd. That dispatcher would also start from stale pushed code.
+  - Filed as the §3 follow-up (r-build parallel-worktree double isolation), not fixed here.
+- **End-of-plan sentinel (independent):**
+  - Result: 0 MUST-FIX, 1 SHOULD-FIX. Declared in-scope files with C-quoted (non-ASCII, `"`, `\`)
+    names were rejected.
+  - Fixed as a class in fix wave `f296d55`: `-z` in the hook and the layer-2 check, and
+    `core.quotePath=false` in the engineer dirty check and `pre-commit-validate.sh`.
+  - Test suite after the fix wave: `1..444`, 0 failures. The three hook suites, 47 tests, pass
+    under real bash 3.2.57.
+
