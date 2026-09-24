@@ -98,6 +98,8 @@ concurrent sessions on the same repository. Helper functions:
 - `rdf_session_short` — last 12 chars for log display
 - `rdf_parse_phase_scope <plan> <N>` — extract phase Files + Tests-may-touch
   for the pre-commit hook (see Phase 4 below and `plan-schema.md` Rule 8)
+- `rdf_phase_hook_install [dir]` — activate that hook on `rdf/phase-*`
+  branches (`/r-build`); `rdf_phase_hook_uninstall [dir]` removes it
 
 Concurrent-session coordination design: `docs/specs/2026-04-25-concurrent-sessions-design.md`.
 

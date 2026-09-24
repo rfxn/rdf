@@ -250,25 +250,22 @@ parallel within each batch):
    ```
    (RDF_SESSION_ID is the full session id; prevents cross-session collisions)
 
-   After `git worktree add`, install the pre-commit hook into the
-   worktree's per-worktree hooks directory:
+   After the batch's `git worktree add` calls, activate the phase scope
+   guard from the main worktree (idempotent; once per batch is enough):
 
    ```
-   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
-   wt_git_dir=$(git -C .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} rev-parse --git-dir)
-   hook_src=~/.rdf/state/git-hooks/pre-commit
-   [[ -f "$hook_src" ]] || hook_src=state/git-hooks/pre-commit  # RDF self-hosting fallback
-   if [[ -f "$hook_src" ]]; then
-       command cp "$hook_src" "${wt_git_dir}/hooks/pre-commit"
-       command chmod +x "${wt_git_dir}/hooks/pre-commit"
-   else
-       echo "warn: pre-commit hook not found (checked ~/.rdf/state and state/); worktree scope guard disabled" >&2
-   fi
+   source ~/.rdf/state/rdf-bus.sh
+   rdf_phase_hook_install "$(git rev-parse --show-toplevel)" \
+     || echo "warn: phase scope guard (layer 1) not installed; post-merge scope check still applies" >&2
    ```
 
-   The hook enforces phase scope (Files ∪ Tests-may-touch) at
-   `git commit` time. See `plan-schema.md` Rule 8 and dispatcher.md
-   "Worktree Pre-Commit Hook Installation".
+   The helper copies `~/.rdf/state/git-hooks/pre-commit` (RDF
+   self-hosting: `state/git-hooks/pre-commit`) into the repo's
+   `rdf-hooks/` and adds an `includeIf "onbranch:rdf/phase-**"` include,
+   so the hook runs on phase branches only and chains the project's own
+   hooks; rc 2 means git < 2.23. The hook enforces phase scope
+   (Files ∪ Tests-may-touch) at `git commit` time. See `plan-schema.md`
+   Rule 8 and dispatcher.md "Worktree Pre-Commit Hook Installation".
 
 3. Before each `Task` dispatch, the controller MUST change directory
    into the target worktree:
@@ -288,6 +285,7 @@ parallel within each batch):
    - Each gets the standard dispatch payload plus:
      PARALLEL_BATCH: true
      PROJECT_ROOT: {worktree path}
+     PROJECT_ROOT_MAIN: {main worktree toplevel}
    - Each dispatched with isolation: "worktree"
 4. Wait for all subagents in the batch to complete
 5. Merge completed worktrees in plan order:

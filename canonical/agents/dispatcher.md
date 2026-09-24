@@ -92,30 +92,26 @@ This sync is one-shot at worktree creation; subsequent operator edits
 to the main-repo plan are not reflected in worktrees. If the operator
 changes the plan mid-build, dispatch must be re-invoked.
 
-**(b) Install the pre-commit hook.** Probe the deployed hook first;
-fall back to `${PROJECT_ROOT_MAIN}/state/` only when RDF builds itself.
+**(b) Ensure the scope guard is active.** `/r-build` normally installed
+it before dispatch; the call is idempotent:
 ```bash
-worktree_git_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-dir)
-_hook_src="${HOME}/.rdf/state/git-hooks/pre-commit"
-[[ -f "$_hook_src" ]] || _hook_src="${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit"
-if [[ -f "$_hook_src" ]]; then
-    command cp "$_hook_src" "${worktree_git_dir}/hooks/pre-commit"
-    command chmod +x "${worktree_git_dir}/hooks/pre-commit"
-else
-    echo "dispatcher: pre-commit hook not found (checked ~/.rdf/state and ${PROJECT_ROOT_MAIN}/state); continuing without scope guard" >&2
-fi
+source ~/.rdf/state/rdf-bus.sh
+rdf_phase_hook_install "$PROJECT_ROOT_MAIN" \
+  || echo "dispatcher: phase scope guard not installed; continuing with the post-merge scope check only" >&2
 ```
 
-The hook is normally the deployed `~/.rdf/state/git-hooks/pre-commit`
-(written by `rdf generate`); the `${PROJECT_ROOT_MAIN}/state/` copy
-exists only in an RDF checkout. `${PROJECT_ROOT_MAIN}` is the main
-project root — passed in the dispatch payload separately from
-`PROJECT_ROOT` (which is the worktree path).
+The helper copies the deployed `~/.rdf/state/git-hooks/pre-commit`
+(RDF self-hosting: `${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit`)
+into the repo's `rdf-hooks/` and activates it on `rdf/phase-*` branches
+through an `includeIf "onbranch:"` include, chaining the project's own
+hooks. `${PROJECT_ROOT_MAIN}` is the main project root — passed in the
+dispatch payload separately from `PROJECT_ROOT` (which is the worktree
+path).
 
 The hook reads the active plan from the worktree (now synced via step
-(a)) and rejects commits outside the union of `**Files:**` and
-`**Tests-may-touch:**`. See `plan-schema.md` Rule 8 for the full
-enforcement contract.
+(a)), falling back to the main root's pointer, and rejects commits
+outside the union of `**Files:**` and `**Tests-may-touch:**`. See
+`plan-schema.md` Rule 8 for the full enforcement contract.
 
 If either step fails (filesystem permission, missing source):
 log a warning and proceed. The Post-Merge Scope Check (next

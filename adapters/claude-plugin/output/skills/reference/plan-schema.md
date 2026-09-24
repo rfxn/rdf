@@ -233,10 +233,15 @@ get strict `**Files:**`-only enforcement.
 
 Three call sites consume this rule:
 
-- **Pre-commit hook** (`state/git-hooks/pre-commit`, installed in
-  worktrees by dispatcher): primary gate; rejects `git commit` if
-  staged files violate the union of `**Files:**` and `**Tests-may-touch:**`,
-  or if either ceiling is exceeded.
+- **Pre-commit hook** (`state/git-hooks/pre-commit`, installed by
+  `/r-build` via `rdf_phase_hook_install` and active on `rdf/phase-*`
+  branches through an `includeIf "onbranch:"` include; the project's own
+  hooks still run): primary gate; rejects `git commit` if staged files
+  violate the union of `**Files:**` and `**Tests-may-touch:**`, or if
+  either ceiling is exceeded. Its anti-pattern classes scan shell files
+  only; they are on for RDF's own checkout and opt-in elsewhere via
+  `# anti-pattern-enable: <class>|all` in `.rdf/governance/ignore.md`.
+  `rdf_phase_hook_uninstall` removes it.
 - **Dispatcher post-merge check** (defense-in-depth): runs
   `git diff-tree --name-only` after engineer returns; same union check.
 - **Engineer dirty check** (`canonical/agents/engineer.md` Setup):
