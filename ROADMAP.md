@@ -80,10 +80,14 @@ carried in this release:
       covered), an A/B run on one real plan, and an indicator-list contract.
       The prototype (`docs/specs/support/rdf-build-workflow.prototype.js`)
       stays unwired until this lands.
-- [ ] **D2 — local trigger-eval harness.** `state/rdf-trigger-eval.sh`
-      reading `evals/*/case.yaml` (37 positive + ~10 negative cases), a
-      `/r-ship` 1e line, and an optional CI job; switch to `claude plugin
-      eval` once it exits early access (see `docs/platform-triage.md`).
+- [ ] **D2 — trigger-eval suite on `claude plugin eval`.** GA since
+      v2.1.269 (3.8 re-triage), so no local harness: an `evals/*/case.yaml`
+      suite (37 positive + ~10 negative cases), a `/r-ship` 1e line, and an
+      optional CI job (see `docs/platform-triage.md`).
+- [ ] **Context economy spec B.** Subagent onboarding diet (`omitClaudeMd`
+      where the dispatch payload carries everything, measured with
+      `rdf tokens`) and stage-bounded sessions — from the
+      [research brief](docs/specs/2026-09-23-context-economy-model-routing-research.md).
 
 ## Later — ecosystem
 
@@ -92,6 +96,20 @@ carried in this release:
 - [ ] Community profile packs (language/domain governance beyond the
       built-in profiles — see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
+
+## Shipped in 3.8.0 — context economy (spec A)
+
+Spec → plan → build → sentinel in one unattended pass.
+[design](docs/specs/2026-09-23-model-effort-routing-token-telemetry-design.md) ·
+[plan](docs/plans/2026-09-23-model-effort-routing-token-report-plan.md).
+
+- [x] Role-based model + effort routing from `agent-meta.json`, with effort
+      variants (`rdf-engineer-focused`, `rdf-reviewer-challenge`)
+- [x] `rdf tokens`: measured per-session cost from local transcripts; shown
+      by `/r-save` and `/r-start`
+- [x] `rdf doctor --scope harness` catches the Opus 5.5 `medium` default and
+      effort flattening (14 → 15 scopes)
+- [x] Session-scoped state keyed on `CLAUDE_CODE_SESSION_ID`; BATS 364 → 423
 
 ## Delivered — 3.4 "Memory & Context"
 

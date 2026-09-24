@@ -29,10 +29,43 @@ Deferred from the spike's Go/No-Go summary (spike §8):
   `tiers.md` bugfix/`min()` contradiction, define a plan `Status:` form,
   add a `deploy.sh` workflows dir, a `/r-build --workflow` arg (with BATS
   coverage), an A/B run on one real plan, and an indicator-list contract.
-- **D2 — local trigger-eval harness.** `state/rdf-trigger-eval.sh` reading
-  `evals/*/case.yaml` (37 positive + ~10 negative cases), a `/r-ship` 1e
-  line, and an optional CI job — then switch to `claude plugin eval` once
-  it exits early access (see the Eval availability row in the newest block).
+- **D2 — trigger-eval suite on `claude plugin eval`.** The 3.8 re-triage
+  found `claude plugin eval` GA (v2.1.269+), so D2 skips the local harness:
+  an `evals/*/case.yaml` suite (37 positive + ~10 negative cases) run by
+  `claude plugin eval`, a `/r-ship` 1e line, and an optional CI job.
+
+---
+
+## 3.8 — 2026-09-24
+
+Re-run against Claude Code 2.1.280 docs (`workflows.md`, `agent-teams.md`,
+`skills.md`, `plugins-reference`, `memory.md`, `plugin-evals.md`, `sub-agents.md`,
+`model-config.md`, `env-vars.md`). Four rows are new this minor because 3.8
+routes model/effort per agent and keys session state on the harness session id.
+
+| Line | Decision rule | Verdict | Evidence | Re-check trigger |
+|---|---|---|---|---|
+| Workflows | absorb when GA on the user's plan and the RDF mechanism is a loop with no user input | absorb (gated spike, D1 — still deferred) | `workflows.md`: "available on all paid plans, with Anthropic API access, and on Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry" (unchanged) | D1's A/B evidence lands |
+| Agent Teams | absorb only when non-experimental, `-p` capable, worktree-isolated, nested | **keep dispatcher** (3.7 first case stands) | `agent-teams.md`: still experimental and off by default; "In non-interactive mode with the `-p` flag ... Claude doesn't spawn teammates"; "teammates cannot spawn their own teammates" | experimental flag drops, `-p` support lands, or per-teammate worktree isolation ships |
+| Skills frontmatter | absorb keys the CC adapter can emit from `skill-meta.json` | keep (absorbed in 3.7; no new keys since 2026-09-02). Skill `model`/`effort` last one turn, so Fable for `/r-spec`/`/r-plan` is a session-start advisory, not skill frontmatter | `skills.md` frontmatter reference | CC's skill-frontmatter schema changes |
+| Plugin components | absorb a component only when an RDF mechanism maps 1:1 | keep | `plugins-reference`: "Plugin components include skills, agents, hooks, MCP servers, LSP servers, and monitors" (unchanged) | a new plugin component ships with an RDF-equivalent mechanism |
+| Auto-memory | retire `~/.rdf/lessons-learned.md` only when a native *cross-project* store exists | keep | `memory.md`: "Auto memory is machine-local. All worktrees and subdirectories within the same git repository share one auto memory directory" | Anthropic ships a native cross-project memory store |
+| `.claude/rules/` + `@import` | verify each minor that `cc_generate_rules` output still loads | keep as-is | `memory.md` (no behavior change); `tests/rules-deploy.bats` green | `rules-deploy.bats` regresses or CC's `@import` behavior changes |
+| Eval availability | switch the trigger-eval runner to `claude plugin eval` when the probe stops printing "early access" | **trigger fired** — `claude plugin eval` is GA (v2.1.269+); D2 is re-scoped to a `claude plugin eval` suite, no local harness (not built this release) | `plugin-evals.md`: requires "v2.1.269 or later"; the early-access message means "Your build predates general availability"; `claude plugin eval --help` on 2.1.280 has no early-access wording | D2 lands, or the command reports "currently unavailable" (switched off server-side) |
+| Hazard `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | a named subagent launches as a teammate when the flag is set | document "unset with RDF" | `agent-teams.md` (unchanged) | RDF intentionally wants Agent Teams semantics for a named subagent |
+| Subagent `model` / `effort` (new) | absorb per-agent routing when the adapter can emit it from `agent-meta.json` | **absorbed this release** — `model`/`effort` per agent plus effort variants (`rdf-engineer-focused`, `rdf-reviewer-challenge`), since the Agent tool takes a per-call `model` but no `effort` | `sub-agents.md`: `effort` "Overrides the session effort level. Default: inherits from session"; `model-config.md`: frontmatter effort overrides "the session level but not the environment variable" | the Agent tool gains a per-call `effort` (variants become unnecessary) |
+| Opus 5.5 effort default (new) | detect and advise; never write user settings | doctor `harness` scope WARNs | `model-config.md`: Opus 5.5 defaults to `medium`; "a top-level `effortLevel` in your user settings file doesn't count for Opus 5.5" | the default or the precedence changes |
+| `omitClaudeMd` (new) | absorb for agents that take everything from the dispatch payload, once measured | defer to context-economy spec B | `sub-agents.md`: skips user, project, and local CLAUDE.md; managed policy still loads; v2.1.271+ | spec B lands |
+| `CLAUDE_CODE_SESSION_ID` (new) | key session-scoped state on the harness session id; mint only outside Claude Code | **absorbed this release** (`rdf_session_init`) | `env-vars.md`: "Set automatically to the current session ID in Bash and PowerShell tool subprocesses, hook command subprocesses"; matches the hook `session_id`; updated on `/clear`; `--resume <id>` keeps it, `--continue` may get the startup ID | the variable's scope or semantics change |
+
+### Product rulings
+
+1. **No dual `/r-build` path this minor** — carried from 3.7 (D1 still unbuilt).
+2. **No `disable-model-invocation` on lifecycle skills** — carried from 3.7.
+3. **D4 gate strength: minor-only blocking** — carried from 3.7.
+4. **Routing lives in `agent-meta.json`, not in dispatch calls.** Canonical text
+   dispatches by agent name; no per-call `model:` override (3.8). Effort that
+   differs by mode is a variant agent, not a parameter.
 
 ---
 

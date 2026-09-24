@@ -15,6 +15,33 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.8.0 — 2026-09-24
+
+ADDED: role-based model + effort routing — `adapters/claude-code/agent-meta.json`
+`model`/`effort`/`variants` (planner fable·high; dispatcher opus·high; engineer,
+reviewer opus·xhigh; qa, uat opus·medium; variants `rdf-engineer-focused` medium,
+`rdf-reviewer-challenge` high), validated by `rdf_agent_routing_errors`
+(`lib/rdf_common.sh`) and emitted by `adp_agent_frontmatter`/`adp_emit_agents`.
+ADDED: `rdf tokens` (`state/rdf-tokens.sh`, `lib/cmd/tokens.sh`) — local token and
+list-price cost report from Claude Code transcripts (message.id dedup, jq 1.5 floor);
+`/r-save` records a per-session `tokens` summary and `/r-start` shows its cost.
+ADDED: `rdf doctor --scope harness` (15th scope) — Opus 5.5 effort pin,
+`CLAUDE_CODE_EFFORT_LEVEL` flattening, Bash output limit; `catalogs` validates
+routing, `sync` counts exclude variants, `--json` output is escaped.
+MODIFIED: canonical text dispatches by agent name (no per-call `model:`);
+`/r-spec` and `/r-plan` advise a Fable session; challenge reviews use
+`rdf-reviewer-challenge`; the dispatcher escalates focused → base engineer.
+MODIFIED: `state/rdf-bus.sh` `rdf_session_init` adopts `CLAUDE_CODE_SESSION_ID`
+(session pointers persist across Bash calls); `state/rdf-state.sh`
+`_session_pick` walks back over same-state hook lines; `lib/cmd/sync.sh` never
+creates a canonical agent; precompact follows the resolver order; `/r-build`
+worktree setup guards the id and clears a retried phase's leftovers.
+MODIFIED: README, RDF.md, WORKFORCE.md, demo walkthrough, multi-tool-parity §4b,
+privacy, framework and session-safety references; `docs/platform-triage.md`
+3.8 block.
+REMOVED: per-call `model: "sonnet"` dispatch directives from canonical agents and
+commands.
+
 ## 3.7.0 — 2026-09-02
 
 ADDED: `lib/adapter_common.sh` — shared `adp_*` emitters (agents, skills,
