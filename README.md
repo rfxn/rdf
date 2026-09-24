@@ -361,7 +361,7 @@ Three layers protect concurrent sessions from corrupting each other:
 | Layer | Mechanism | Where |
 |-------|-----------|-------|
 | **Session-scoped state** | Session-id suffix on every transient file | `state/rdf-bus.sh` helpers |
-| **Worktree boundary** | Pre-commit hook rejects out-of-scope commits | installed in every dispatched worktree |
+| **Worktree boundary** | Pre-commit hook rejects out-of-scope commits | active on every `rdf/phase-*` branch |
 | **Pre-aggregation gate** | Engineer dirty-check before build steps | `engineer.md` Setup |
 
 Plan authors can declare a `**Tests-may-touch:**` glob list (plan schema Rule 8) to pre-authorize trivial test-infra drift (≤30 lines, ≤3 files) without surfacing as out-of-scope. See `docs/specs/2026-04-25-concurrent-sessions-design.md` for the full 12-primitive design.

@@ -68,7 +68,7 @@ effort live in `adapters/claude-code/agent-meta.json`.
 |-----------|-------|---------|
 | `RDF_SESSION_ID` (CC session id, else UUIDv7) | session shell + every subagent | Identity inherited via env |
 | Scoped state filenames | engineer, qa, reviewer, dispatcher | `<basepath>-<SESSION_ID>.<ext>` |
-| Worktree pre-commit hook | dispatcher (installer), engineer's own commit | Physical scope enforcement |
+| Worktree pre-commit hook | `/r-build` (installer: `rdf_phase_hook_install`), engineer's own commit | Physical scope enforcement |
 | Pre-aggregation dirty check | engineer Setup | Fail fast before build steps |
 | `**Tests-may-touch:**` (plan schema Rule 8) | planner declares, all three call sites enforce | Pre-authorized flex zone (≤30 lines, ≤3 files) |
 

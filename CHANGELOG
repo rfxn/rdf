@@ -1,5 +1,34 @@
 # RDF Changelog
 
+## Unreleased
+
+-- New Features --
+
+[New] rdf_phase_hook_install / rdf_phase_hook_uninstall (state/rdf-bus.sh): activate
+      the phase scope guard on rdf/phase-* branches through an includeIf "onbranch:"
+      include that chains the project's own hooks; uninstall removes the include,
+      .git/rdf-hooks.inc and .git/rdf-hooks/; needs git >= 2.23 (rc 2 below, where
+      /r-build keeps the post-merge scope check)
+
+-- Bug Fixes --
+
+[Fix] phase scope guard never engaged outside RDF's own checkout: /r-build copied the
+      hook to .git/worktrees/<id>/hooks, which git never reads, and the hook found its
+      helpers only through an in-tree state/rdf-bus.sh; it now installs through
+      rdf_phase_hook_install and reads ~/.rdf/state (I-2)
+[Fix] pre-commit hook takes the session id from the phase branch name (no
+      CLAUDE_CODE_SESSION_ID needed: Codex sessions, manual commits) and checks the
+      worktree's and the main worktree's session pointers before legacy fallbacks
+[Fix] /r-build worktree dispatch payload carries PROJECT_ROOT_MAIN, which dispatcher
+      steps (a) and (b) already read
+
+-- Changes --
+
+[Change] pre-commit anti-pattern classes scan shell files only (.sh/.bash or a sh/bash
+         shebang; .bats excluded) and are off outside RDF's own checkout unless enabled
+         with "# anti-pattern-enable: <class>|all" in .rdf/governance/ignore.md, where
+         opt-outs are now read too
+
 ## 3.8.0
 
 -- New Features --

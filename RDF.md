@@ -50,7 +50,8 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   inherited by all subagents; resume into a second concurrent terminal
   with `claude --resume --fork-session`); every transient state file
   (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) is
-  suffixed with that ID. A pre-commit hook installed in each dispatched worktree
+  suffixed with that ID. A pre-commit hook active on every `rdf/phase-*` branch
+  (one `includeIf "onbranch:"` include; the project's own hooks still run)
   physically rejects out-of-scope commits; the dispatcher's post-merge
   `git diff-tree` is the defense-in-depth backstop. Plan authors may declare
   `**Tests-may-touch:**` glob lists (plan schema Rule 8) to pre-authorize

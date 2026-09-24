@@ -183,3 +183,27 @@ jobs:
           test -x "$h/.rdf/state/s.sh"
           test "$(cat "$h/.rdf/state/.rdf-version")" = "9.9.9"
           echo "bash 3.2 bootstrap smoke (sanity-exit + copy paths): OK"
+
+      - name: Smoke phase scope guard under system bash 3.2 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          h="$(mktemp -d)"; mkdir -p "$h/.rdf/state/git-hooks"
+          cp state/rdf-bus.sh "$h/.rdf/state/"
+          cp state/git-hooks/pre-commit "$h/.rdf/state/git-hooks/"
+          repo="$(mktemp -d)/app"; mkdir -p "$repo/.rdf"
+          git -C "$repo" init -q
+          printf 'echo a\n' > "$repo/a.sh"
+          printf '### Phase 1: x\n\n**Files:**\n- Modify: `a.sh`\n' > "$repo/p.md"
+          printf '%s\n' "$repo/p.md" > "$repo/.rdf/active-plan"
+          printf '.rdf/\n' >> "$repo/.git/info/exclude"
+          git -C "$repo" add a.sh p.md
+          git -C "$repo" -c user.email=t@t -c user.name=t commit -q -m init
+          HOME="$h" /bin/bash -c 'source "$HOME/.rdf/state/rdf-bus.sh" && rdf_phase_hook_install "$1"' _ "$repo"
+          git -C "$repo" checkout -q -b rdf/phase-1-x
+          printf 'x\n' > "$repo/outside.txt"; git -C "$repo" add outside.txt
+          if HOME="$h" PATH="/bin:/usr/bin:$PATH" git -C "$repo" -c user.email=t@t -c user.name=t commit -q -m oob 2> "$h/err"; then
+            echo "out-of-scope commit was not rejected under system bash 3.2" >&2
+            exit 1
+          fi
+          grep -q 'SCOPE VIOLATION' "$h/err"
+          echo "bash 3.2 phase scope guard smoke: OK"
