@@ -55,6 +55,20 @@ _run_sync() {  # $1 = temp RDF_HOME
     rm -rf "$home"
 }
 
+@test "sync never creates a canonical agent from a variant or stray output file" {
+    home="$(mktemp -d)"
+    mkdir -p "${home}/canonical/agents" "${home}/adapters/claude-code/output/agents"
+    printf 'base body\n' > "${home}/canonical/agents/a.md"
+    printf -- '---\nname: rdf-a\n---\n\nbase body\n' > "${home}/adapters/claude-code/output/agents/a.md"
+    printf -- '---\nname: rdf-a-lite\neffort: low\n---\n\nbase body\n' > "${home}/adapters/claude-code/output/agents/a-lite.md"
+    run _run_sync "$home"
+    [ "$status" -eq 0 ]
+    [ ! -e "${home}/canonical/agents/a-lite.md" ]
+    echo "$output" | grep -q 'skipping agents/a-lite.md: no canonical agent'
+    echo "$output" | grep -q '1 skipped'
+    rm -rf "$home"
+}
+
 @test "sync pulls an edited SKILL.md back to canonical/commands" {
     home="$(mktemp -d)"
     mkdir -p "${home}/canonical/commands" \

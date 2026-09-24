@@ -42,6 +42,7 @@ cmd_sync() {
     local target="claude-code"
     local changed=0
     local unchanged=0
+    local skipped=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -64,6 +65,11 @@ cmd_sync() {
             local basename_f
             basename_f="$(basename "$out_file")"
             local canon_file="${RDF_CANONICAL}/agents/${basename_f}"
+            if [[ ! -f "$canon_file" ]]; then
+                rdf_log "skipping agents/${basename_f}: no canonical agent (generated variant or stray output)"
+                skipped=$((skipped + 1))
+                continue
+            fi
             local body
             if ! body="$(_sync_body "$out_file")"; then
                 rdf_warn "skipping agents/${basename_f}: unclosed frontmatter (empty body after strip)"
@@ -146,5 +152,7 @@ cmd_sync() {
 
     local verb="updated"
     [[ $dry_run -eq 1 ]] && verb="would update"
-    rdf_log "sync complete: ${changed} ${verb}, ${unchanged} unchanged"
+    local tail_msg=""
+    [[ $skipped -gt 0 ]] && tail_msg=", ${skipped} skipped"
+    rdf_log "sync complete: ${changed} ${verb}, ${unchanged} unchanged${tail_msg}"
 }
