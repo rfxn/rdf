@@ -54,12 +54,10 @@ it earned a slot):
        `reference/` ships in CC-family outputs and `~/.claude/reference`,
        deploy exits 1 on skips with a real hooks-merge how-to, node profile
        detection, doc truth sweep (bash 3.2+ floor, links, `--tools`)
-3. [ ] **Right-size the command surface to measured usage** — fold session
-       bookkeeping into hooks, retire unwired commands, fix the
-       security-floor substring matching, deduplicate the phase/plan/ship
-       triple review; target ~20 commands
-4. [x] **Consolidate adapters on evidence** — shipped in 3.7.0 —
-       tag): shared adapter library, skills-native cc/plugin output, codex
+3. ~~**Right-size the command surface to measured usage**~~ — dropped
+       2026-09-24
+4. [x] **Consolidate adapters on evidence** — shipped in 3.7.0: shared
+       adapter library, skills-native cc/plugin output, codex
        via composite, project-scoped AGENTS.md, `--tools` real, dead
        catalogs removed
 5. [ ] **(partial)** **Platform-alignment gate + eval hardening** — first
