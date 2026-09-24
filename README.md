@@ -165,6 +165,13 @@ against drift in CI.
 | `--rules` (opt-in scoped governance) | ~2.1K tokens (adds the unscoped core rule) |
 | `rdf-lite` (minimal deploy) | ~0.7K tokens (condensed core governance) |
 
+**Token usage.** `rdf tokens` reports what your sessions actually spent, from
+the Claude Code transcripts already on your machine: usage deduplicated by
+message id (one API turn is logged once per content block), list-price cost,
+and breakdowns by cost class, model, agent, context depth, subagent boot cost,
+and effort. `--session <id> --summary` is what `/r-save` records per session;
+`/r-start` shows it. Prices are embedded estimates -- nothing is sent anywhere.
+
 Scoped language rules load only when a matching file is read -- they add nothing
 to the always-loaded figures. Opt into either variant with a deploy flag:
 `bin/rdf deploy --rules claude-code` (scoped governance alongside the default
@@ -243,8 +250,9 @@ Run 'rdf <command> help' for details.
 | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
 | `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
-| `rdf doctor [--scope] [--all]` | 13 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme |
+| `rdf doctor [--scope] [--all]` | 15 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness |
 | `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
+| `rdf tokens [--days N] [--session ID] [--json]` | Local token usage report from Claude Code transcripts (deduplicated, list-price estimate) |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
@@ -396,16 +404,18 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 ### Agent Roster
 
-| Agent | Model | Role | Tools |
-|-------|-------|------|-------|
-| **rdf-planner** | opus | Design specs, implementation plans | Full read/write |
-| **rdf-dispatcher** | sonnet | Phase orchestration, TDD cycles | Full read/write |
-| **rdf-engineer** | opus* | Implementation via governance protocol | Full read/write |
-| **rdf-qa** | sonnet | Verification gate (read-only) | Read + execute |
-| **rdf-reviewer** | opus* | Adversarial review -- challenge + sentinel (read-only) | Read + execute |
-| **rdf-uat** | sonnet | User acceptance from end-user persona (read-only) | Read + execute |
+| Agent | Model · Effort | Role | Tools |
+|-------|----------------|------|-------|
+| **rdf-planner** | fable · high | Design specs, implementation plans (direct dispatch; `/r-spec` and `/r-plan` run inline) | Full read/write |
+| **rdf-dispatcher** | opus · high | Phase orchestration, TDD cycles | Full read/write |
+| **rdf-engineer** | opus · xhigh | Implementation via governance protocol | Full read/write |
+| **rdf-engineer-focused** | opus · medium | Variant of rdf-engineer for `scope:docs`/`scope:focused` phases; failures escalate to rdf-engineer | Full read/write |
+| **rdf-qa** | opus · medium | Verification gate (read-only) | Read + execute |
+| **rdf-reviewer** | opus · xhigh | Adversarial review -- sentinel (read-only) | Read + execute |
+| **rdf-reviewer-challenge** | opus · high | Variant of rdf-reviewer for challenge (pre-implementation) review | Read + execute |
+| **rdf-uat** | opus · medium | User acceptance from end-user persona (read-only) | Read + execute |
 
-*\*Dynamic model routing: dispatcher downgrades engineer to sonnet for `scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet, sentinel stays opus.*
+*Routing lives in `adapters/claude-code/agent-meta.json` (`model`, `effort`, `variants`). Variants are generated from the base agent's canonical body -- the Agent tool cannot pass effort per call, so each effort level is its own agent. `CLAUDE_CODE_EFFORT_LEVEL` overrides every agent's effort; prefer `/effort`, which saves a level per model. Spec and plan sessions are tuned for `claude --model fable --effort high`, builds for `claude --model opus`. No Fable access? Set the planner's `"model"` to `"opus"` and regenerate. `/r-util-claudemd-review` deliberately fans out to Sonnet for bulk transcript reading.*
 
 ### Scripts (16)
 
@@ -467,7 +477,7 @@ rdf/
 |-- lib/
 |   |-- rdf_common.sh                  # Shared helpers, profile system
 |   +-- cmd/                           # Subcommands: generate, profile, init, doctor,
-|                                      #   state, refresh, sync, github, deploy, dispatch, migrate
+|                                      #   state, tokens, refresh, sync, github, deploy, migrate
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
 |   |-- commands/                      # 37 commands (/r- namespace)
@@ -507,6 +517,7 @@ rdf/
 |   +-- agents-md/                     # Cross-tool AGENTS.md composer
 |-- state/
 |   |-- rdf-state.sh                   # Project state -> JSON (<1s, timeout-guarded)
+|   |-- rdf-tokens.sh                  # Local token usage report (bash + jq)
 |   |-- context-audit.sh               # Context weight audit -> JSON
 |   +-- rotate-work-output.sh          # Age/size-based work-output rotation
 +-- reference/                         # Diagrams, architecture docs
@@ -595,9 +606,14 @@ Commands use `/r-<name>` (lifecycle) or `/r-util-<subject>` (utility).
      "name": "rdf-<name>",
      "description": "...",
      "tools": ["Bash", "Read", "Glob", "Grep"],
-     "model": "sonnet"
+     "model": "opus",
+     "effort": "medium"
    }
    ```
+   `model` is a Claude Code alias (`opus`, `sonnet`, `haiku`, `fable`,
+   `inherit`) or a `claude-*` id; `effort` is `low`..`max`. An optional
+   `"variants": {"<key>": {"effort": "...", "description": "..."}}` emits
+   `rdf-<name>-<key>` from the same body at a different effort.
 3. `rdf generate claude-code` and verify frontmatter
 </details>
 

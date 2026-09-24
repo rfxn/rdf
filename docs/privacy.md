@@ -18,6 +18,11 @@ makes no network calls to R-fx Networks or any third party. There is no
 data to sell, share, or breach on our side, because none leaves your
 machine.
 
+`rdf tokens` (and the per-session summary `/r-save` records) reads the
+Claude Code transcripts already stored on your machine under
+`~/.claude/projects/` and writes its summary to your local
+`.rdf/work-output/session-log.jsonl`. It sends nothing anywhere.
+
 ## Where your data lives
 
 All state RDF creates stays local to your machine:

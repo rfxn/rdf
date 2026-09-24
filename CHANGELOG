@@ -1,5 +1,44 @@
 # RDF Changelog
 
+## Unreleased
+
+-- New Features --
+
+[New] role-based model + effort routing: agent-meta.json declares model and effort
+      per agent (planner fable/high; dispatcher opus/high; engineer and reviewer
+      opus/xhigh; qa and uat opus/medium) plus variants emitted from the same
+      canonical body as rdf-engineer-focused (medium) and rdf-reviewer-challenge
+      (high); rdf generate and doctor catalogs reject invalid routing values
+[New] rdf tokens: local token usage report from Claude Code transcripts (bash + jq,
+      jq 1.5 floor; usage deduplicated by message.id) with list-price cost by cost
+      class, model, agent, context depth, subagent boot, and effort; --json and
+      --summary; /r-save records a per-session tokens summary, /r-start shows cost
+[New] rdf doctor --scope harness (15th scope): WARNs when Opus 5.5 would run at
+      its medium default, when CLAUDE_CODE_EFFORT_LEVEL flattens per-agent effort,
+      and when the Bash output limit exceeds 30000; reads settings, never writes
+
+-- Bug Fixes --
+
+[Fix] rdf doctor --json escapes quotes, backslashes, and control characters in
+      check messages and names (a quote in any message produced invalid JSON)
+[Fix] rdf-state.sh session_last prefers the /r-save entry over the trailing
+      same-state SessionEnd-hook entry, restoring commits/diff_summary (and now
+      tokens) on the /r-start Last line
+
+-- Changes --
+
+[Change] dispatcher routes scope:docs/focused phases to rdf-engineer-focused and
+         escalates a failed focused phase to rdf-engineer; challenge reviews from
+         /r-spec, /r-plan, /r-review dispatch rdf-reviewer-challenge; no canonical
+         routing site passes a per-invocation model any more
+[Change] /r-spec and /r-plan carry a non-blocking Claude Code advisory to run spec
+         and plan sessions on claude --model fable --effort high; the /r-plan
+         handoff names the Opus build session; /r-plan stays in main context
+[Change] rdf sync never creates a canonical agent (generated variants and stray
+         output agents are skipped and counted)
+[Change] checkout installs: run rdf deploy claude-code once to link the new
+         state/rdf-tokens.sh helper (plugin installs pick it up on restart)
+
 ## 3.7.0
 
 -- New Features --

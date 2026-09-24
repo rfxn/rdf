@@ -1,121 +1,40 @@
-# RDF 3.7.0 Release Notes
+# RDF Unreleased Release Notes
 
-## 3.7.0
+## Unreleased
 
 -- New Features --
 
-[New] skills-native Claude Code output: claude-code and claude-plugin emit
-      skills/<name>/SKILL.md (name + intent-trigger description frontmatter,
-      canonical body byte-identical) through one shared emitter with the
-      Codex/Antigravity agent-skills surface; plugin.json declares skills;
-      rdf deploy owns per-skill ~/.claude/skills/<name> symlinks (+ the shared
-      skills/reference tree) with stale-link pruning and removes the legacy
-      ~/.claude/commands symlink it created
-[New] lib/adapter_common.sh — adp_* emitters (agents, skills, scripts,
-      reference, hash sidecars, atomic staging) shared by the claude-code,
-      claude-plugin, and agent-skills adapters; byte-identity fixture-tested
-[New] AGENTS.md composer: rdf generate agents-md [--project-root P] builds a
-      project-scoped AGENTS.md from the target repo's own CLAUDE.md (governance
-      index fallback), Agent Skills pointer, and agent roster; codex and
-      antigravity are the same composite (agent-skills + agents-md) for
-      generate and deploy
-[New] rdf init --tools claude-code|agent-skills|agents-md|codex|antigravity
-      (comma list): deploys .agents/skills and composes AGENTS.md into the repo;
-      unknown or empty values exit 1; AGENTS.md composition requires a git repo
-[New] rdf doctor --scope doc-truth (14th scope): profile/adapter counts vs
-      README badges, RDF.md trees, docs/index.md; every tests/*.bats wired into
-      tests/Makefile; WORKFORCE.md dispatch claims vs canonical command bodies
-      (verb-anchored, code blocks skipped); CONTRIBUTING CI claims vs ci.yml;
-      README/RDF.md directory-tree paths exist on disk (globs rejected)
-[New] docs/platform-triage.md — per-minor re-triage ledger of native Claude
-      Code capabilities vs RDF mechanisms (first block 3.7: keep the dispatcher
-      over experimental Agent Teams); /r-ship resolves the target version at
-      Setup (--version X.Y.Z or prompt) and preflight 1d blocks a minor release
-      whose target MAJOR.MINOR has no ledger block (patch releases skip)
-[New] governance-contract harness: negation guards + structural assertions
-      (security-floor formula verbatim in dispatcher.md and tiers.md, section
-      order, cross-file indicator-list equality); tests/adapter-common.bats,
-      tests/doc-truth.bats; CI lints tests/*.bats at error severity and smokes
-      rdf init under macOS system bash 3.2
-[New] RDF_WORKSPACE env override for the doctor --all workspace root
-[New] docs/specs/2026-09-02-platform-alignment-spike-design.md — D1-D5 verdicts
-      (Workflow-backed /r-build gated behind A/B evidence, local trigger-eval
-      harness, contract hardening, per-minor triage gate, OWASP AST10 posture)
-      + docs/specs/support/rdf-build-workflow.prototype.js (unwired artifact)
+[New] role-based model + effort routing: agent-meta.json declares model and effort
+      per agent (planner fable/high; dispatcher opus/high; engineer and reviewer
+      opus/xhigh; qa and uat opus/medium) plus variants emitted from the same
+      canonical body as rdf-engineer-focused (medium) and rdf-reviewer-challenge
+      (high); rdf generate and doctor catalogs reject invalid routing values
+[New] rdf tokens: local token usage report from Claude Code transcripts (bash + jq,
+      jq 1.5 floor; usage deduplicated by message.id) with list-price cost by cost
+      class, model, agent, context depth, subagent boot, and effort; --json and
+      --summary; /r-save records a per-session tokens summary, /r-start shows cost
+[New] rdf doctor --scope harness (15th scope): WARNs when Opus 5.5 would run at
+      its medium default, when CLAUDE_CODE_EFFORT_LEVEL flattens per-agent effort,
+      and when the Bash output limit exceeds 30000; reads settings, never writes
 
 -- Bug Fixes --
 
-[Fix] rdf init and rdf doctor died on bash <= 4.3 (macOS 3.2 / el6 4.1 floors)
-      from empty-array expansion under set -u; class swept across lib/ and the
-      plugin adapter
-[Fix] profile detection sees untracked, non-ignored sources (git ls-files
-      --others) for every language incl. TypeScript, and no longer races git
-      against grep -q under pipefail — a repo initialised before its first
-      commit no longer detects as minimal
-[Fix] rdf deploy help: the hooks.json merge how-to failed on a fresh Claude
-      Code HOME (jq "object and null cannot be multiplied", exit 2); it now
-      seeds an empty settings.json before merging
-[Fix] doctor no longer WARNs on its own output: drift is N/A without a parent
-      CLAUDE.md, artifacts are N/A in the framework checkout, sync says "not
-      the RDF framework checkout"; doctor --all refuses to scan $HOME as the
-      workspace (quickstart layout) and names the remedy
-[Fix] doctor's .git/info/exclude completeness check missed AUDIT.md; the entry
-      list (now incl. .agents/) lives once in rdf_common.sh for init and doctor
-[Fix] tests/derfxn.bats was in neither tests/Makefile nor CI and had never run;
-      CI generates claude-code output before BATS so output assertions stop
-      self-skipping; a contract fails when any tests/*.bats file is unwired
-[Fix] context-audit.sh died with "_repo_sizes: unbound variable" off the rfxn
-      workspace layout (rdf-state.sh now resolved by probe order), leaked
-      redirect errors to stderr, and counted 0 deployed skills (find -L)
-[Fix] generated CONTRIBUTING.md claimed bash -n/shellcheck/BATS for every
-      stack; standards and test command follow the detected profiles
-[Fix] codex adapter emitted an empty "## Project Governance" section since
-      2026-03 (read a file that no longer existed) and a stale o4-mini config —
-      retired in favour of the composite
-[Fix] self AGENTS.md carried rfxn/CentOS text and the checkout directory name;
-      it is now composed from CLAUDE.md, names the main repo (stable across
-      clones and worktrees), and is written atomically
-[Fix] doc truth: README badges (adapters 6->5, profiles 11->13), RDF.md
-      profile/adapter trees and a deleted catalog citation, WORKFORCE.md rows
-      that claimed dispatches that never happen (r-start, planner) or omitted
-      ones that do (r-plan/r-spec reviewer, r-build qa), CONTRIBUTING's CI
-      paragraph, tiers.md:41 gate formula (security floor was omitted)
-[Fix] deploy: a skipped skills entry no longer aborts the remaining surfaces;
-      linked count excludes skips; dry-run says what it would do; the legacy
-      commands prune matches the output root with a path boundary
-[Fix] doctor install-mode counts only RDF-owned skill links; content-drift and
-      sync-health cover skills/reference; sync, doctor, and context-audit fail
-      closed (WARN/die) when the skills tree is absent instead of no-oping
-[Fix] adapter library: adp_names_lite returned 1 on success and adp_count
-      tripped pipefail on a missing dir; byte-identity fixture decoupled from
-      canonical content; RDF_LIBDIR honours a pre-set value
-[Fix] governance contracts: bare "! grep" guards were inert under BATS set -e
-      (negated commands are exempt) and order-anchor && chains were inert
-      mid-body — rewritten as explicit branches; GNU-only \b replaced with
-      portable ERE boundaries
-[Fix] docs/multi-tool-parity.md no longer claims there is no rdf deploy
-      antigravity target or that per-project AGENTS.md is unimplemented;
-      quickstart exclude-entry count; published self AGENTS.md no longer
-      carries a /root/.claude path
-[Fix] doc-truth CI-claims check verified only up to the first wrapped bullet;
-      indented continuation lines now stay in the section
+[Fix] rdf doctor --json escapes quotes, backslashes, and control characters in
+      check messages and names (a quote in any message produced invalid JSON)
+[Fix] rdf-state.sh session_last prefers the /r-save entry over the trailing
+      same-state SessionEnd-hook entry, restoring commits/diff_summary (and now
+      tokens) on the /r-start Last line
 
 -- Changes --
 
-[Remove] adapters: 6 -> 5 (codex directory deleted; gemini-cli stays frozen
-         legacy and untouched); dead command-meta-v3.json, command-map-v3.md,
-         agents-md sections.json removed; three adapters shrink onto the
-         shared library
-[Change] rdf generate accepts flags in any position (--project-root,
-         --deploy, --rules, --lite) and rejects a second positional; codex and
-         antigravity composites honour --project-root
-[Change] docs describe the skills layout (README data-flow diagram and adapter
-         table, RDF.md, docs/index.md, quickstart, multi-tool-parity Claude
-         Code row); context-bar.md relocated to docs/; CLAUDE.md inheritance
-         line generic; /r-context-audit no longer suppresses stderr
-[Change] ROADMAP: 2026-08 item 4 built, item 5 first case ruled (keep the
-         dispatcher); Workflow-backed /r-build and the trigger-eval harness
-         queued for the next minor
-[Change] rollback to 3.6.5 leaves ~/.claude/skills/r-* symlinks dangling (the
-         3.6.5 deploy has no prune) — remove with: rm ~/.claude/skills/r-*
-         (and ~/.claude/skills/reference)
+[Change] dispatcher routes scope:docs/focused phases to rdf-engineer-focused and
+         escalates a failed focused phase to rdf-engineer; challenge reviews from
+         /r-spec, /r-plan, /r-review dispatch rdf-reviewer-challenge; no canonical
+         routing site passes a per-invocation model any more
+[Change] /r-spec and /r-plan carry a non-blocking Claude Code advisory to run spec
+         and plan sessions on claude --model fable --effort high; the /r-plan
+         handoff names the Opus build session; /r-plan stays in main context
+[Change] rdf sync never creates a canonical agent (generated variants and stray
+         output agents are skipped and counted)
+[Change] checkout installs: run rdf deploy claude-code once to link the new
+         state/rdf-tokens.sh helper (plugin installs pick it up on restart)

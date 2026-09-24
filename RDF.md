@@ -76,12 +76,12 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 
 | Agent | CC Name | Model | Role |
 |-------|---------|-------|------|
-| planner | rdf-planner | opus | Research, specs, implementation plans — runs inline in `/r-spec` and `/r-plan`; direct dispatch also available |
-| dispatcher | rdf-dispatcher | sonnet | Plan execution orchestrator |
-| engineer | rdf-engineer | opus | Universal implementation |
-| qa | rdf-qa | sonnet | Verification gate |
-| uat | rdf-uat | sonnet | User acceptance testing |
-| reviewer | rdf-reviewer | opus / sonnet | Adversarial review (sentinel=opus, challenge=sonnet) |
+| planner | rdf-planner | fable · high | Research, specs, implementation plans — runs inline in `/r-spec` and `/r-plan`; direct dispatch also available |
+| dispatcher | rdf-dispatcher | opus · high | Plan execution orchestrator |
+| engineer | rdf-engineer, rdf-engineer-focused | opus · xhigh / medium | Universal implementation (focused variant for docs/focused phases) |
+| qa | rdf-qa | opus · medium | Verification gate |
+| uat | rdf-uat | opus · medium | User acceptance testing |
+| reviewer | rdf-reviewer, rdf-reviewer-challenge | opus · xhigh / high | Adversarial review (sentinel / challenge variant) |
 
 **Slash commands:** `/r-{name}` (lifecycle) or `/r-util-{name}` (utility)
 
@@ -104,6 +104,7 @@ rdf/                                 # Repository root
 |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
 |       |-- migrate.sh               # rdf migrate (version migration helpers)
 |       |-- state.sh                 # rdf state [path] -> JSON to stdout
+|       |-- tokens.sh                # rdf tokens -> local token usage report
 |       |-- refresh.sh               # rdf refresh [path] [--scope memory|plan|github|all]
 |       |-- sync.sh                  # rdf sync -> pull ~/.claude/ back to canonical
 |       +-- github.sh                # rdf github <setup|sync-labels|ecosystem-init|ecosystem-add>
@@ -186,6 +187,7 @@ rdf/                                 # Repository root
 |
 |-- state/
 |   |-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
+|   |-- rdf-tokens.sh                # Local token usage report from Claude Code transcripts
 |   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
 |   |-- rdf-lessons.sh               # Lessons ID-index + consolidation scan (3.4)
 |   |-- rdf-overhead.sh              # Per-session token overhead -> JSON (3.4)

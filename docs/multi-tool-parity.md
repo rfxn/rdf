@@ -121,6 +121,15 @@ command TOML are unchanged except the one TOML-escaping fix.
   the migration source. Fixing the escaping directly serves Antigravity
   adoption — a frozen legacy artifact that doubles as the transition input.
 
+## 4b. Model and effort routing
+
+Claude Code only. `adapters/claude-code/agent-meta.json` pins `model` and
+`effort` per agent and emits effort variants (`rdf-engineer-focused`,
+`rdf-reviewer-challenge`) because the Agent tool cannot pass effort per call.
+Codex (`.codex/agents/*.toml` `model_reasoning_effort`) and Antigravity
+(`.agents/agents/<name>.md` `model:`; effort is session-level) emit no agents
+today, so routing there stays with the user's session settings (deferred, §5).
+
 ## 5. Deferred surfaces (probe-gated)
 
 The following ship only after a live-docs probe confirms a stable schema, per
@@ -134,3 +143,5 @@ before code. Cross-reference spec §13.7:
 - Global/user-level `~/.agents/skills/` scanning — unverified.
 - SKILL.md optional AAIF fields (`license`, `metadata`, `allowed-tools`).
 - MCP server work — a standing §3 non-goal.
+- Codex / Antigravity per-agent effort emission (§4b) — neither adapter emits
+  agents yet; Codex spawn-time overrides are reportedly ignored, so pin in TOML.

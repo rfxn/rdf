@@ -513,9 +513,9 @@ The next `/r-start` dashboard surfaces this history automatically.
 
 | Agent | Model | Role | Read-only? |
 |-------|-------|------|------------|
-| Planner | opus | Research, brainstorm, spec/plan authoring | No |
-| Dispatcher | sonnet | Phase orchestration, gate selection, finding resolution | No |
-| Engineer | opus | TDD implementation, follows governance | No |
-| QA | sonnet | Lint, tests, convention checks | Yes |
-| Reviewer | opus | Adversarial: challenge (design) or sentinel (code) | Yes |
-| UAT | sonnet | End-user scenarios, real-world testing | Yes |
+| Planner | fable · high | Research, brainstorm, spec/plan authoring | No |
+| Dispatcher | opus · high | Phase orchestration, gate selection, finding resolution | No |
+| Engineer | opus · xhigh (focused variant: medium) | TDD implementation, follows governance | No |
+| QA | opus · medium | Lint, tests, convention checks | Yes |
+| Reviewer | opus · xhigh (challenge variant: high) | Adversarial: challenge (design) or sentinel (code) | Yes |
+| UAT | opus · medium | End-user scenarios, real-world testing | Yes |

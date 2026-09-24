@@ -14,24 +14,24 @@ USER
  │                                     scans state; dispatches nothing
  │
  ├─► /r-plan     (planner inline,     Research & Planning
- │                opus; direct         Specs, plans; mandatory challenge
+ │                fable; direct        Specs, plans; mandatory challenge
  │                dispatch available)  review before presenting for approval
- │                └─► reviewer         Challenge Mode — pre-impl (sonnet)
+ │                └─► reviewer         Challenge Mode — pre-impl (opus·high)
  │
- ├─► /r-build ─► dispatcher  (sonnet) Plan Execution
+ ├─► /r-build ─► dispatcher  (opus)   Plan Execution
  │                │                    Phase orchestration, quality gates
  │                │
- │                ├─► engineer  (opus)  Universal Implementation
+ │                ├─► engineer  (opus)  Universal Implementation (xhigh; focused variant medium)
  │                │                    TDD, governance-driven protocol
  │                │
- │                ├─► qa  (sonnet)     Verification Gate — read-only
+ │                ├─► qa  (opus)       Verification Gate — read-only
  │                │                    Lint, tests, anti-patterns
  │                │
  │                ├─► reviewer         Adversarial Review — read-only
- │                │                    Challenge mode (pre-impl, sonnet)
- │                │                    Sentinel mode (post-impl, opus, 2-3 pass)
+ │                │                    Challenge mode (pre-impl, opus·high)
+ │                │                    Sentinel mode (post-impl, opus·xhigh, 2-3 pass)
  │                │
- │                └─► uat  (sonnet)   User Acceptance — read-only
+ │                └─► uat  (opus)     User Acceptance — read-only
  │                                    End-user persona, real scenarios
  │
  └─► /r-audit ──► reviewer(×3) + qa   Full Codebase Audit
@@ -39,7 +39,7 @@ USER
 
 ════════════════════════════════════════════════════════════════════
 LIFECYCLE PIPELINE
-  USER → /r-plan (planner + mandatory reviewer challenge pass, sonnet)
+  USER → /r-plan (planner + mandatory reviewer challenge pass, opus·high)
        → /r-build [N] (dispatcher → engineer → qa/reviewer/uat gates)
        → /r-ship → MERGE
 ════════════════════════════════════════════════════════════════════
@@ -47,14 +47,18 @@ LIFECYCLE PIPELINE
 
 ### Model Summary
 
-| Model  | Agents                                    |
-|--------|-------------------------------------------|
-| opus   | planner, engineer, reviewer (sentinel)    |
-| sonnet | dispatcher, qa, uat, reviewer (challenge) |
+| Agent                          | Model · Effort          |
+|--------------------------------|-------------------------|
+| planner                        | fable · high            |
+| dispatcher                     | opus · high             |
+| engineer / engineer-focused    | opus · xhigh / medium   |
+| reviewer / reviewer-challenge  | opus · xhigh / high     |
+| qa, uat                        | opus · medium           |
 
-Dynamic model routing: the dispatcher downgrades engineer to sonnet for
-`scope:docs`/`scope:focused`; challenge-mode reviewer dispatches on sonnet,
-sentinel stays opus.
+Routing is by agent name: the dispatcher sends `scope:docs`/`scope:focused`
+phases to rdf-engineer-focused and escalates a failed focused phase to
+rdf-engineer; challenge reviews dispatch rdf-reviewer-challenge. Model and
+effort live in `adapters/claude-code/agent-meta.json`.
 
 ### Concurrent-Session Primitives (3.1.0)
 
@@ -74,39 +78,39 @@ Hook source: `state/git-hooks/pre-commit`.
 
 ## 2. Agent Details
 
-### planner (opus)
+### planner (fable · high)
 
 Research-driven collaborative planner. Brainstorms ideas, researches best
 practices, challenges assumptions, writes specs and implementation plans.
 Runs inline in `/r-spec` and `/r-plan` (the command bodies are the
 planner protocol); direct dispatch via the Agent tool is also available.
 
-### dispatcher (sonnet)
+### dispatcher (opus · high)
 
 Plan execution orchestrator. Reads PLAN.md, executes phases via TDD,
 dispatches engineer/qa/uat/reviewer subagents, enforces quality gates.
 Invoked via `/r-build`.
 
-### engineer (opus)
+### engineer (opus · xhigh; focused variant medium)
 
 Universal implementation engineer. Follows TDD, reads governance files
 for domain-specific conventions and constraints. Behavior is shaped by
 the project's governance files, not by baked-in domain knowledge.
 Dispatched by the dispatcher for plan phase execution.
 
-### qa (sonnet)
+### qa (opus · medium)
 
 Verification gate. Reads governance files for project-specific checks
 (lint commands, test commands, anti-pattern patterns). Read-only -- cannot
 modify source files. Dispatched by dispatcher or invoked via `/r-verify`.
 
-### uat (sonnet)
+### uat (opus · medium)
 
 User acceptance testing. Runs real-world scenarios from an end-user
 persona. Read-only -- cannot modify source files. Dispatched by
 dispatcher or invoked via `/r-test`.
 
-### reviewer (opus sentinel / sonnet challenge)
+### reviewer (opus · xhigh sentinel / high challenge variant)
 
 Adversarial reviewer with two modes:
 - **Challenge mode** (pre-impl): Reviews specs and plans for design flaws,
