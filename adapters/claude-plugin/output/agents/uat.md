@@ -10,7 +10,8 @@ tools:
 disallowedTools:
   - Write
   - Edit
-model: sonnet
+model: opus
+effort: medium
 ---
 
 You are the UAT Engineer. You test software from an end-user perspective

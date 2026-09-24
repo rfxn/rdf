@@ -187,6 +187,17 @@ teardown() {
          <(jq -S '[.. | objects | select(.type? == "prompt")]' "${_TEST_OUT}/hooks.json")
 }
 
+@test "plugin.json agents array includes generated variant files" {
+    jq '.example.effort = "xhigh" | .example.variants = {"lite": {"effort": "medium"}}' \
+        "${_TEST_HOME}/adapters/claude-code/agent-meta.json" > "${_TEST_HOME}/meta.tmp"
+    mv "${_TEST_HOME}/meta.tmp" "${_TEST_HOME}/adapters/claude-code/agent-meta.json"
+    _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
+    grep -q '^name: rdf-example-lite$' "${_TEST_OUT}/agents/example-lite.md"
+    run jq -r '.agents[]' "${_TEST_HOME}/.claude-plugin/plugin.json"
+    [[ "$output" == *"./adapters/claude-plugin/output/agents/example-lite.md"* ]]
+    [[ "$output" == *"./adapters/claude-plugin/output/agents/example.md"* ]]
+}
+
 @test "generate stamps plugin.json version from VERSION" {
     _generate_plugin "${_TEST_HOME}" "${_TEST_OUT}"
     run jq -r .version "${_TEST_HOME}/.claude-plugin/plugin.json"

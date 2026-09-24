@@ -10,7 +10,8 @@ tools:
 disallowedTools:
   - Write
   - Edit
-model: sonnet
+model: opus
+effort: medium
 ---
 
 You are the QA Engineer. You verify code changes against project

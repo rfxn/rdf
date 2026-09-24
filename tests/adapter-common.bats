@@ -349,3 +349,33 @@ teardown() {
     [[ "$output" == *"present=2"* ]]
     [[ "$output" == *"absent=0"* ]]
 }
+
+# ── Live routing: agent-meta pins model + effort per role; variants emit ─────
+
+@test "agent-meta pins model and effort for every agent per the routing table" {
+    run jq -r 'to_entries[] | select(.value | type == "object" and has("name")) | "\(.key) \(.value.model) \(.value.effort)"' "${RDF_SRC}/adapters/claude-code/agent-meta.json"
+    [ "$status" -eq 0 ]
+    [ "$output" = "planner fable high
+dispatcher opus high
+engineer opus xhigh
+qa opus medium
+uat opus medium
+reviewer opus xhigh" ]
+    [ "$(jq -r '.engineer.variants.focused.effort, .reviewer.variants.challenge.effort' "${RDF_SRC}/adapters/claude-code/agent-meta.json" | paste -sd, -)" = "medium,high" ]
+}
+
+@test "live agent-meta emits effort lines and the two variant files with overridden name/effort" {
+    run bash -c '
+        set -euo pipefail
+        rdf_src="$1"; out="$2"
+        RDF_HOME="$rdf_src"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        source "${rdf_src}/lib/adapter_common.sh"
+        adp_emit_agents "${RDF_CANONICAL}/agents" "$out" "${RDF_ADAPTERS}/claude-code/agent-meta.json" - 0
+    ' -- "$RDF_SRC" "${TEST_WORK}/agents"
+    [ "$status" -eq 0 ]
+    [ "$(cd "${TEST_WORK}/agents" && printf '%s\n' *.md | LC_ALL=C sort | paste -sd, -)" = "dispatcher.md,engineer-focused.md,engineer.md,planner.md,qa.md,reviewer-challenge.md,reviewer.md,uat.md" ]
+    [ "$(grep -h '^\(name\|model\|effort\):' "${TEST_WORK}/agents/engineer-focused.md" | paste -sd, -)" = "name: rdf-engineer-focused,model: opus,effort: medium" ]
+    [ "$(grep -h '^\(name\|model\|effort\):' "${TEST_WORK}/agents/reviewer-challenge.md" | paste -sd, -)" = "name: rdf-reviewer-challenge,model: opus,effort: high" ]
+    [ "$(grep -c '^effort: ' "${TEST_WORK}"/agents/*.md | grep -c ':1$')" = "8" ]
+}

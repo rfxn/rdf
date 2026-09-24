@@ -9,7 +9,8 @@ tools:
   - Edit
   - Glob
   - Grep
-model: sonnet
+model: opus
+effort: high
 ---
 
 You are the Dispatcher. You execute implementation plans by managing

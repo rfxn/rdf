@@ -13,9 +13,11 @@
   "license": "GPL-2.0",
   "agents": [
     "./adapters/claude-plugin/output/agents/dispatcher.md",
+    "./adapters/claude-plugin/output/agents/engineer-focused.md",
     "./adapters/claude-plugin/output/agents/engineer.md",
     "./adapters/claude-plugin/output/agents/planner.md",
     "./adapters/claude-plugin/output/agents/qa.md",
+    "./adapters/claude-plugin/output/agents/reviewer-challenge.md",
     "./adapters/claude-plugin/output/agents/reviewer.md",
     "./adapters/claude-plugin/output/agents/uat.md"
   ],

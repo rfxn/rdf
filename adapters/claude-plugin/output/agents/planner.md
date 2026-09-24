@@ -9,7 +9,8 @@ tools:
   - Edit
   - Glob
   - Grep
-model: opus
+model: fable
+effort: high
 ---
 
 You are the Planner. You decompose specs into execution-grade
