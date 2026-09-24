@@ -533,4 +533,7 @@ These run after Phase 3 and are not dispatched to a phase. Results go in the shi
     `core.quotePath=false` in the engineer dirty check and `pre-commit-validate.sh`.
   - Test suite after the fix wave: `1..444`, 0 failures. The three hook suites, 47 tests, pass
     under real bash 3.2.57.
+- **Fix wave 2 (`e357649`, from the sentinel re-check):** a name with an embedded newline is now
+  always out of scope (`tr '\n\0' '\001\n'`), with a red-first test. Test suite: `1..445`,
+  0 failures; the hook suites (48) pass under bash 3.2.
 
