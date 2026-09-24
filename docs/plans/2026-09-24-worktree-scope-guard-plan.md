@@ -126,7 +126,6 @@ them. Apply patches in phase order.
 | File | Lines | Purpose | Test File |
 |------|-------|---------|-----------|
 | `tests/worktree-hook.bats` | 302 | Consumer-layout suite: install, enforcement, chaining, gating, refusal, idempotency, uninstall | N/A (test) |
-| `docs/plans/2026-09-24-worktree-scope-guard-patches/p{1-tests,1-code,2-code,3-code}.patch` | 1039 total | Validated per-phase changes | N/A (plan artifact) |
 
 ### Modified Files
 | File | Changes | Test File |
@@ -139,7 +138,12 @@ them. Apply patches in phase order.
 | `canonical/agents/dispatcher.md` | Step (b) becomes an idempotent helper call; heading kept | `tests/adapter.bats` |
 | `canonical/reference/plan-schema.md` | §8d installer, mechanism, anti-pattern opt-in, uninstall | N/A (docs) |
 | `canonical/reference/framework.md` | Helper list + install/uninstall | N/A (docs) |
-| `adapters/claude-plugin/output/**` (6 files) | Regenerated from the 4 canonical files | `tests/plugin-adapter.bats` |
+| `adapters/claude-plugin/output/agents/dispatcher.md` | Regenerated from canonical | `tests/plugin-adapter.bats` |
+| `adapters/claude-plugin/output/reference/framework.md` | Regenerated from canonical | `tests/plugin-adapter.bats` |
+| `adapters/claude-plugin/output/reference/plan-schema.md` | Regenerated from canonical | `tests/plugin-adapter.bats` |
+| `adapters/claude-plugin/output/skills/r-build/SKILL.md` | Regenerated from canonical | `tests/plugin-adapter.bats` |
+| `adapters/claude-plugin/output/skills/reference/framework.md` | Regenerated from canonical | `tests/plugin-adapter.bats` |
+| `adapters/claude-plugin/output/skills/reference/plan-schema.md` | Regenerated from canonical | `tests/plugin-adapter.bats` |
 | `RDF.md`, `README.md`, `WORKFORCE.md` | Mechanism wording | `tests/doc-truth.bats` |
 | `.github/workflows/ci.yml` | + macOS `/bin/bash` 3.2 phase-scope-guard smoke | N/A (CI; block executed locally in Phase 3 Step 2) |
 | `CHANGELOG`, `CHANGELOG.RELEASE` | `## Unreleased` entries | N/A (docs) |
@@ -171,6 +175,7 @@ the hook outside RDF's own layout.
 - Modify: `tests/Makefile` (register the new suite)
 
 - **Mode**: serial-agent
+- **Goals:** 1, 2, 3, 4, 5, 6, 7, 8, 9
 - **Accept**:
   - `bats tests/worktree-hook.bats tests/pre-commit-anti-patterns.bats tests/rdf-bus.bats`
     reports 0 `not ok`.
@@ -329,6 +334,7 @@ the schema and framework references, and regenerates adapter output.
 - Modify: `adapters/claude-plugin/output/skills/reference/plan-schema.md` (regenerated)
 
 - **Mode**: serial-agent
+- **Goals:** 8
 - **Accept**:
   - `grep -rn 'rev-parse --git-dir)/hooks\|wt_git_dir}/hooks\|worktree_git_dir}/hooks' canonical/`
     prints nothing.
@@ -413,6 +419,7 @@ Brings the mechanism wording in RDF.md, README.md and WORKFORCE.md up to date. A
 - Modify: `CHANGELOG.RELEASE` (becomes Unreleased release notes)
 
 - **Mode**: serial-agent
+- **Goals:** 1
 - **Accept**:
   - The CI smoke block, extracted from `ci.yml` and run under local bash, prints
     `bash 3.2 phase scope guard smoke: OK`.
