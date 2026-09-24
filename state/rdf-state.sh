@@ -52,6 +52,30 @@ _json_str() {
     printf '%s' "$s"
 }
 
+# _session_pick file — last session-log line, preferring the /r-save entry when
+# the SessionEnd-hook entry that trails it records the same head_after
+_session_pick() {
+    local last prev a b
+    last="$(command tail -n 1 "$1" 2>/dev/null || true)"   # unreadable log → empty
+    prev="$(command tail -n 2 "$1" 2>/dev/null | command head -n 1 || true)"   # one-line log → prev == last
+    case "$last" in
+        *'"source":"session-end-hook"'*)
+            case "$prev" in
+                *'"source":"session-end-hook"'*) ;;
+                *)
+                    a="$(printf '%s' "$last" | sed -n 's/.*"head_after"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+                    b="$(printf '%s' "$prev" | sed -n 's/.*"head_after"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+                    if [[ -n "$a" && -n "$b" ]] && [[ "$a" == "$b"* || "$b" == "$a"* ]]; then
+                        printf '%s' "$prev"
+                        return 0
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+    printf '%s' "$last"
+}
+
 # Project name — directory basename
 _project_name="$(basename "$_project_path")"
 
@@ -270,13 +294,13 @@ if [[ "$_full_mode" -eq 1 ]]; then
     # Last session summary (extract only rendered fields, not raw JSONL)
     _session_file="${_project_path}/.rdf/work-output/session-log.jsonl"
     if [[ -f "$_session_file" ]]; then
-        _raw_session="$(tail -1 "$_session_file" 2>/dev/null || echo "")"
+        _raw_session="$(_session_pick "$_session_file")"
         if [[ -n "$_raw_session" ]] && command -v python3 >/dev/null 2>&1; then
             _session_last="$(echo "$_raw_session" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
-    keep = ('timestamp','head_before','head_after','commits','diff_summary','pipeline','insight')
+    keep = ('timestamp','head_before','head_after','commits','diff_summary','pipeline','insight','tokens')
     out = {k: d[k] for k in keep if k in d}
     print(json.dumps(out, separators=(',',':')))
 except: print('')
