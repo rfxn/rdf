@@ -138,6 +138,37 @@ _tok_row() {
     rm -rf "$root"
 }
 
+@test "dangling subagent symlinks are skipped and a symlinked transcripts dir is read" {
+    local t; t="$(mktemp -d)"
+    cp -R "$FX" "${t}/real"
+    ln -s /nonexistent/agent-x.jsonl "${t}/real/s1/subagents/agent-zz.jsonl"
+    ln -s real "${t}/link"
+    run _tok --transcripts "${t}/link" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[6,0.3981]" ]
+    RDF_CLAUDE_PROJECTS="$t" run _tok --session s1 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[6,0.4001]" ]
+    rm -rf "$t"
+}
+
+@test "--days with leading zeros is decimal; zero days and impossible --since dates exit 2" {
+    run _tok --transcripts "$FX" --days 010 --json
+    [ "$status" -eq 0 ]
+    local a; a="$(jq -r '.scope.since[0:10]' <<< "$output")"
+    run _tok --transcripts "$FX" --days 10 --json
+    [ "$(jq -r '.scope.since[0:10]' <<< "$output")" = "$a" ]
+    run _tok --transcripts "$FX" --days 08 --json
+    [ "$status" -eq 0 ]
+    run _tok --transcripts "$FX" --days 00
+    [ "$status" -eq 2 ]
+    run _tok --transcripts "$FX" --since 2026-13-45
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"--since expects a valid YYYY-MM-DD date"* ]]
+    run _tok --transcripts "$FX" --since 2026-02-30
+    [ "$status" -eq 2 ]
+}
+
 @test "rdf-tokens.sh uses no jq 1.6+ builtins or reserved-word variables" {
     run grep -nE '(^|[^a-z_])(round|ceil|abs|trim|ltrim|rtrim|pick|IN|INDEX|walk|halt_error|splits|test|match|capture|sub|gsub|scan)\(|\$ENV|[^a-z]env\.|--args|--jsonargs|--rawfile|strptime' "$TOK"
     [ "$status" -eq 1 ]
@@ -184,4 +215,10 @@ HOOK='{"timestamp":"2026-09-23T10:05:00Z","head_after":"55e8473","branch":"main"
     run _state_last "$spaced" "$HOOK"
     [ "$status" -eq 0 ]
     [ "$(jq -c '[.commits, .tokens.cost_usd]' <<< "$output")" = "[3,1.5]" ]
+}
+
+@test "session_last walks back over consecutive same-state SessionEnd-hook entries" {
+    run _state_last "$SAVE" "$HOOK" "$HOOK"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.commits, .tokens.cost_usd]' <<< "$output")" = "[2,4.12]" ]
 }

@@ -75,7 +75,7 @@ _tok_window() {
     local days="$1" since="$2" e now ref
     if [ -n "$since" ]; then
         _TOK_SINCE="${since}T00:00:00Z"
-        e="$(jq -n --arg s "$_TOK_SINCE" '$s | fromdateiso8601')"
+        e="$(jq -n --arg s "$_TOK_SINCE" '$s | fromdateiso8601 | if (todate[0:10]) == ($s[0:10]) then . else error("date") end' 2>/dev/null)" || _tok_die "--since expects a valid YYYY-MM-DD date" 2  # jq error or normalized date (2026-02-30) → usage error
     else
         now="$(command date +%s)"
         e=$(( now - days * 86400 ))
@@ -96,13 +96,13 @@ _tok_files() {
         {
             printf '%s\0' "$main"
             if [ -d "${main%.jsonl}/subagents" ]; then
-                find "${main%.jsonl}/subagents" -name 'agent-*.jsonl' -print0
+                find "${main%.jsonl}/subagents" -name 'agent-*.jsonl' -type f -print0
             fi
         } > "$out"
     else
         {
-            find "$tdir" -maxdepth 1 -name '*.jsonl' -newer "${_TOK_WORK}/ref" -print0
-            find "$tdir" -mindepth 3 -path '*/subagents/*' -name 'agent-*.jsonl' -newer "${_TOK_WORK}/ref" -print0
+            find -H "$tdir" -maxdepth 1 -name '*.jsonl' -type f -newer "${_TOK_WORK}/ref" -print0
+            find -H "$tdir" -mindepth 3 -path '*/subagents/*' -name 'agent-*.jsonl' -type f -newer "${_TOK_WORK}/ref" -print0
         } > "$out"
     fi
 }
@@ -302,8 +302,10 @@ main() {
     done
 
     case "$days" in
-        ''|*[!0-9]*|0) _tok_die "--days expects a positive integer" 2 ;;
+        ''|*[!0-9]*) _tok_die "--days expects a positive integer" 2 ;;
     esac
+    days=$((10#$days))
+    [ "$days" -gt 0 ] || _tok_die "--days expects a positive integer" 2
     if [ -n "$since" ]; then
         case "$since" in
             [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;

@@ -973,7 +973,7 @@ _check_harness() {
             _add_result "harness" "$_OK" "Bash output limit at or below platform default"
             ;;
         *)
-            if [[ ${#lim} -gt 9 ]] || [[ "$lim" -gt 30000 ]]; then
+            if [[ ${#lim} -gt 9 ]] || [[ $((10#$lim)) -gt 30000 ]]; then
                 _add_result "harness" "$_WARN" "${src}=${lim} exceeds the 30000 default — large Bash results stay in context for the rest of the session; overflow already spills to a file"
             else
                 _add_result "harness" "$_OK" "Bash output limit at or below platform default"
@@ -1588,13 +1588,13 @@ _print_results() {
     echo "  Summary: ${_PASS_COUNT} OK, ${_WARN_COUNT} WARN, ${_FAIL_COUNT} FAIL"
 }
 
-# Convert results to JSON object for one project
 # _json_esc string — JSON string body: newlines/control chars dropped, \ and " escaped
 _json_esc() {
     local s="${1//$'\n'/ }"
     printf '%s' "$s" | sed 's/[[:cntrl:]]//g; s/\\/\\\\/g; s/"/\\"/g'
 }
 
+# Convert results to JSON object for one project
 _results_to_json() {
     local name="$1"
     local path="$2"

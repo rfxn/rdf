@@ -725,3 +725,16 @@ _harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
     [[ "$output" == *"harness|OK|Bash output limit at or below platform default"* ]]
     rm -rf "$p" "$h"
 }
+
+@test "doctor harness: a Bash output limit with leading zeros is read as decimal" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"model":"sonnet"}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h" BASH_MAX_OUTPUT_LENGTH=040000
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"harness|WARN|BASH_MAX_OUTPUT_LENGTH=040000 exceeds the 30000 default"* ]]
+    run _run_harness "$p" "$h" BASH_MAX_OUTPUT_LENGTH=08
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"harness|OK|Bash output limit at or below platform default"* ]]
+    [[ "$output" != *"value too great"* ]]
+    rm -rf "$p" "$h"
+}

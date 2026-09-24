@@ -76,11 +76,9 @@ cmd_sync() {
                 continue
             fi
 
-            if [[ -f "$canon_file" ]]; then
-                local current; current="$(< "$canon_file")"
-                if [[ "$body" == "$current" ]]; then
-                    unchanged=$((unchanged + 1)); continue
-                fi
+            local current; current="$(< "$canon_file")"
+            if [[ "$body" == "$current" ]]; then
+                unchanged=$((unchanged + 1)); continue
             fi
 
             if [[ $dry_run -eq 1 ]]; then

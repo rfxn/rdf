@@ -98,7 +98,8 @@ PROJECT_ROOT: <absolute path to project root>
 
 ### 5. Dispatch Reviewer Subagent
 
-Dispatch the `rdf-reviewer` subagent with the assembled payload.
+Dispatch the reviewer subagent with the assembled payload, choosing the
+agent by mode.
 
 Agent routing: if mode is `challenge`, dispatch `rdf-reviewer-challenge`
 (high effort); if mode is `sentinel`, dispatch `rdf-reviewer` (xhigh

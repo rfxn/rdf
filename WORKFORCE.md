@@ -13,9 +13,11 @@ USER
  ├─► /r-start    (self-contained)     Session Init — loads context,
  │                                     scans state; dispatches nothing
  │
- ├─► /r-plan     (planner inline,     Research & Planning
- │                fable; direct        Specs, plans; mandatory challenge
- │                dispatch available)  review before presenting for approval
+ ├─► /r-plan     (planner inline,      Research & Planning
+ │                session model;       Specs, plans; mandatory challenge
+ │                Fable session        review before presenting for approval
+ │                advised; direct
+ │                dispatch available)
  │                └─► reviewer         Challenge Mode — pre-impl (opus·high)
  │
  ├─► /r-build ─► dispatcher  (opus)   Plan Execution

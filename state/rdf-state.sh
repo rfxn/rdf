@@ -52,27 +52,37 @@ _json_str() {
     printf '%s' "$s"
 }
 
+# _session_head line — head_after value of a session-log line (empty if absent)
+_session_head() {
+    printf '%s' "$1" | sed -n 's/.*"head_after"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
 # _session_pick file — last session-log line, preferring the /r-save entry when
-# the SessionEnd-hook entry that trails it records the same head_after
+# the SessionEnd-hook entries that trail it record the same head_after
 _session_pick() {
-    local last prev a b
-    last="$(command tail -n 1 "$1" 2>/dev/null || true)"   # unreadable log → empty
-    prev="$(command tail -n 2 "$1" 2>/dev/null | command head -n 1 || true)"   # one-line log → prev == last
+    local lines=() line last a b i
+    while IFS= read -r line; do
+        lines+=("$line")
+    done < <(command tail -n 20 "$1" 2>/dev/null || true)   # unreadable log → empty
+    [[ ${#lines[@]} -gt 0 ]] || return 0
+    last="${lines[${#lines[@]}-1]}"
     case "$last" in
-        *'"source":"session-end-hook"'*)
-            case "$prev" in
-                *'"source":"session-end-hook"'*) ;;
-                *)
-                    a="$(printf '%s' "$last" | sed -n 's/.*"head_after"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
-                    b="$(printf '%s' "$prev" | sed -n 's/.*"head_after"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
-                    if [[ -n "$a" && -n "$b" ]] && [[ "$a" == "$b"* || "$b" == "$a"* ]]; then
-                        printf '%s' "$prev"
-                        return 0
-                    fi
-                    ;;
-            esac
-            ;;
+        *'"source":"session-end-hook"'*) ;;
+        *) printf '%s' "$last"; return 0 ;;
     esac
+    a="$(_session_head "$last")"
+    for (( i = ${#lines[@]} - 2; i >= 0; i-- )); do
+        line="${lines[$i]}"
+        b="$(_session_head "$line")"
+        if [[ -z "$a" || -z "$b" ]] || [[ "$a" != "$b"* && "$b" != "$a"* ]]; then
+            break
+        fi
+        case "$line" in
+            *'"source":"session-end-hook"'*) continue ;;
+        esac
+        printf '%s' "$line"
+        return 0
+    done
     printf '%s' "$last"
 }
 
