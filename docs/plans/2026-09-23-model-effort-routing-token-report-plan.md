@@ -177,7 +177,7 @@ Adds `rdf_agent_routing_errors` / `rdf_agent_variant_stems`, which `rdf generate
 - **Edge cases**: variant stem collides with a canonical agent (generate dies); missing model/effort valid; metadata without effort emits byte-identical frontmatter
 - **Regression-case**: tests/adapter-common.bats::@test "adp_emit_agents output is byte-identical to the 3.6.5 emitter fixture"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -187,7 +187,7 @@ Adds `rdf_agent_routing_errors` / `rdf_agent_variant_stems`, which `rdf generate
   # expect: applied
   ```
 
-- [ ] **Step 2: Red — the new tests fail before the code exists**
+- [x] **Step 2: Red — the new tests fail before the code exists**
 
   ```bash
   bats tests/strip.bats tests/adapter-common.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -196,7 +196,7 @@ Adds `rdf_agent_routing_errors` / `rdf_agent_variant_stems`, which `rdf generate
   # adp_emit_agents emits an effort line and a variant file per declared variant
   ```
 
-- [ ] **Step 3: Apply the code patch**
+- [x] **Step 3: Apply the code patch**
 
   The patch:
   - adds `rdf_agent_routing_errors`, which reads jq `@tsv` rows `label field value` and validates them with bash `case` (no jq regex), plus `rdf_agent_variant_stems`
@@ -212,7 +212,7 @@ Adds `rdf_agent_routing_errors` / `rdf_agent_variant_stems`, which `rdf generate
   # expect: applied
   ```
 
-- [ ] **Step 4: Green + lint**
+- [x] **Step 4: Green + lint**
 
   ```bash
   bats tests/strip.bats tests/adapter-common.bats 2>&1 | grep -c '^not ok'
@@ -223,7 +223,7 @@ Adds `rdf_agent_routing_errors` / `rdf_agent_variant_stems`, which `rdf generate
   # expect: complete: 6 agents
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add lib/rdf_common.sh lib/adapter_common.sh adapters/claude-code/adapter.sh tests/strip.bats tests/adapter-common.bats tests/fixtures/adapter-common/agent-meta-3.7.0.json
@@ -256,7 +256,7 @@ Generated variants (and any stray output agent) have no canonical source. `rdf s
 - **Edge cases**: emergency edit to a deployed variant (sync skips with a message; content-drift still flags it)
 - **Regression-case**: tests/sync.bats::@test "sync agents: frontmatter-less output syncs verbatim (no truncation)"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -266,7 +266,7 @@ Generated variants (and any stray output agent) have no canonical source. `rdf s
   # expect: applied
   ```
 
-- [ ] **Step 2: Red**
+- [x] **Step 2: Red**
 
   ```bash
   bats tests/sync.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -274,7 +274,7 @@ Generated variants (and any stray output agent) have no canonical source. `rdf s
   # sync never creates a canonical agent from a variant or stray output file
   ```
 
-- [ ] **Step 3: Apply the code patch** — adds `local skipped=0`. Before `_sync_body`, a guard `if [[ ! -f "$canon_file" ]]` logs `skipping agents/<f>: no canonical agent (generated variant or stray output)`, counts it and continues. The summary appends `, N skipped` only when N > 0, so existing output is unchanged.
+- [x] **Step 3: Apply the code patch** — adds `local skipped=0`. Before `_sync_body`, a guard `if [[ ! -f "$canon_file" ]]` logs `skipping agents/<f>: no canonical agent (generated variant or stray output)`, counts it and continues. The summary appends `, N skipped` only when N > 0, so existing output is unchanged.
 
   ```bash
   git hash-object "$P/p2-code.patch"
@@ -283,7 +283,7 @@ Generated variants (and any stray output agent) have no canonical source. `rdf s
   # expect: applied
   ```
 
-- [ ] **Step 4: Green + lint**
+- [x] **Step 4: Green + lint**
 
   ```bash
   bats tests/sync.bats tests/deploy.bats 2>&1 | grep -c '^not ok'
@@ -292,7 +292,7 @@ Generated variants (and any stray output agent) have no canonical source. `rdf s
   # expect: lint-ok
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add lib/cmd/sync.sh tests/sync.bats
@@ -330,7 +330,7 @@ The phase also adds routing validation to `catalogs` and teaches the `sync` agen
 - **Edge cases**: unparseable settings file skipped; non-numeric `BASH_MAX_OUTPUT_LENGTH` = unset; main model sonnet/fable/best not applicable; message with quotes/backslash/tab → valid JSON; `CLAUDE_CODE_EFFORT_LEVEL=auto` = unset; `bashOutputMaxChars` beats the env var; managed-settings top-level `effortLevel` pins
 - **Regression-case**: tests/doctor.bats::@test "doctor catalogs: missing agent-meta entry FAILs, orphan WARNs"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -340,7 +340,7 @@ The phase also adds routing validation to `catalogs` and teaches the `sync` agen
   # expect: applied
   ```
 
-- [ ] **Step 2: Red**
+- [x] **Step 2: Red**
 
   ```bash
   bats tests/doctor.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -358,7 +358,7 @@ The phase also adds routing validation to `catalogs` and teaches the `sync` agen
   # doctor harness: BASH_MAX_OUTPUT_LENGTH above 30000 WARNs; bashOutputMaxChars takes precedence
   ```
 
-- [ ] **Step 3: Apply the code patch** — the patch makes these changes to `lib/cmd/doctor.sh`:
+- [x] **Step 3: Apply the code patch** — the patch makes these changes to `lib/cmd/doctor.sh`:
   - `_HARNESS_MANAGED_PATHS` global (colon list; tests override it)
   - `_check_harness path`, with its full algorithm in spec §5.5
   - `_json_esc`: one `sed` per entry, applied to the whole entry before the `|` split, and to name/path
@@ -373,7 +373,7 @@ The phase also adds routing validation to `catalogs` and teaches the `sync` agen
   # expect: applied
   ```
 
-- [ ] **Step 4: Green + lint + live smoke**
+- [x] **Step 4: Green + lint + live smoke**
 
   ```bash
   bats tests/doctor.bats 2>&1 | grep -c '^not ok'
@@ -386,7 +386,7 @@ The phase also adds routing validation to `catalogs` and teaches the `sync` agen
   # expect: 1
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add lib/cmd/doctor.sh tests/doctor.bats
@@ -443,7 +443,7 @@ A standalone state helper, delivered by the existing `state/*.sh` globs. It read
   - `--session` on a resumed session includes copied history (documented in usage)
 - **Regression-case**: tests/tokens.bats::@test "--json on the fixture reproduces the hand-computed report"
 
-- [ ] **Step 1: Apply the tests patch** (creates `tests/tokens.bats`, the fixture tree, the Makefile registration and the derived count in `deploy.bats`)
+- [x] **Step 1: Apply the tests patch** (creates `tests/tokens.bats`, the fixture tree, the Makefile registration and the derived count in `deploy.bats`)
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -453,7 +453,7 @@ A standalone state helper, delivered by the existing `state/*.sh` globs. It read
   # expect: applied
   ```
 
-- [ ] **Step 2: Red**
+- [x] **Step 2: Red**
 
   ```bash
   bats tests/tokens.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -474,7 +474,7 @@ A standalone state helper, delivered by the existing `state/*.sh` globs. It read
   # rdf-tokens.sh uses no jq 1.6+ builtins or reserved-word variables
   ```
 
-- [ ] **Step 3: Apply the code patch**
+- [x] **Step 3: Apply the code patch**
 
   The patch creates:
   - `state/rdf-tokens.sh` (346 lines, mode 100755), with functions `_tok_usage _tok_die _tok_slug _tok_resolve_dir _tok_prices _tok_window _tok_files _tok_agent_map _tok_rows _tok_report _tok_render main`
@@ -491,7 +491,7 @@ A standalone state helper, delivered by the existing `state/*.sh` globs. It read
   # expect: executable
   ```
 
-- [ ] **Step 4: Green + lint + real-data smoke**
+- [x] **Step 4: Green + lint + real-data smoke**
 
   ```bash
   bats tests/tokens.bats tests/deploy.bats 2>&1 | grep -c '^not ok'
@@ -508,7 +508,7 @@ A standalone state helper, delivered by the existing `state/*.sh` globs. It read
   # expect: 0
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add state/rdf-tokens.sh lib/cmd/tokens.sh bin/rdf tests/tokens.bats tests/Makefile tests/deploy.bats tests/fixtures/tokens/proj/s1.jsonl tests/fixtures/tokens/proj/s1/subagents/agent-a1.jsonl tests/fixtures/tokens/proj/s1/subagents/agent-a1.meta.json tests/fixtures/tokens/proj/s1/subagents/workflows/wf_x/agent-w1.jsonl tests/fixtures/tokens/proj/s1/subagents/workflows/wf_x/agent-w1.meta.json tests/fixtures/tokens/proj/s2.jsonl
@@ -546,7 +546,7 @@ The python keep-list gains `tokens`.
 - **Edge cases**: save-then-hook same state → save entry; spaced save entry selected; hook with different `head_after` kept; one-line log unchanged; cross-session save followed by a no-commit hook → save entry (acceptable)
 - **Regression-case**: tests/tokens.bats::@test "session_last keeps a hook entry whose head_after differs"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -556,7 +556,7 @@ The python keep-list gains `tokens`.
   # expect: applied
   ```
 
-- [ ] **Step 2: Red**
+- [x] **Step 2: Red**
 
   ```bash
   bats tests/tokens.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -566,7 +566,7 @@ The python keep-list gains `tokens`.
   # session_last selects a pretty-spaced /r-save entry
   ```
 
-- [ ] **Step 3: Apply the code patch** — adds `_session_pick` after `_json_str`, replaces `tail -1 "$_session_file"` with `_session_pick "$_session_file"`, and appends `'tokens'` to the keep-list
+- [x] **Step 3: Apply the code patch** — adds `_session_pick` after `_json_str`, replaces `tail -1 "$_session_file"` with `_session_pick "$_session_file"`, and appends `'tokens'` to the keep-list
 
   ```bash
   git hash-object "$P/p5-code.patch"
@@ -575,7 +575,7 @@ The python keep-list gains `tokens`.
   # expect: applied
   ```
 
-- [ ] **Step 4: Green (python and no-python paths) + lint**
+- [x] **Step 4: Green (python and no-python paths) + lint**
 
   ```bash
   bats tests/tokens.bats 2>&1 | grep -c '^not ok'
@@ -588,7 +588,7 @@ The python keep-list gains `tokens`.
   # expect: state-json-ok
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add state/rdf-state.sh tests/tokens.bats
@@ -644,7 +644,7 @@ It then regenerates both Claude Code targets. The live `~/.claude/agents` symlin
 - **Edge cases**: none new; the variant-collision guard from Phase 1 runs on the live metadata during generate
 - **Regression-case**: tests/adapter-common.bats::@test "agent-meta pins model and effort for every agent per the routing table"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -654,7 +654,7 @@ It then regenerates both Claude Code targets. The live `~/.claude/agents` symlin
   # expect: applied
   ```
 
-- [ ] **Step 2: Red**
+- [x] **Step 2: Red**
 
   ```bash
   bats tests/adapter-common.bats tests/plugin-adapter.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -663,7 +663,7 @@ It then regenerates both Claude Code targets. The live `~/.claude/agents` symlin
   # live agent-meta emits effort lines and the two variant files with overridden name/effort
   ```
 
-- [ ] **Step 3: Apply the code patch** — makes text edits to `agent-meta.json`, preserving the existing inline-array formatting:
+- [x] **Step 3: Apply the code patch** — makes text edits to `agent-meta.json`, preserving the existing inline-array formatting:
   - adds `effort` after each `model`
   - adds the `variants` object on engineer and reviewer
   - planner `opus` → `fable`
@@ -684,7 +684,7 @@ It then regenerates both Claude Code targets. The live `~/.claude/agents` symlin
   # reviewer opus xhigh
   ```
 
-- [ ] **Step 4: Regenerate both Claude Code targets**
+- [x] **Step 4: Regenerate both Claude Code targets**
 
   ```bash
   bin/rdf generate claude-code 2>&1 | grep -o 'generated 8 agent files (2 variants)'
@@ -703,7 +703,7 @@ It then regenerates both Claude Code targets. The live `~/.claude/agents` symlin
   # expect: 9
   ```
 
-- [ ] **Step 5: Green + validation**
+- [x] **Step 5: Green + validation**
 
   ```bash
   bats tests/adapter-common.bats tests/plugin-adapter.bats tests/deploy.bats 2>&1 | grep -c '^not ok'
@@ -716,7 +716,7 @@ It then regenerates both Claude Code targets. The live `~/.claude/agents` symlin
   # expect: ✔ Validation passed   (prints nothing when the claude CLI is absent)
   ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add adapters/claude-code/agent-meta.json tests/adapter-common.bats tests/plugin-adapter.bats .claude-plugin/plugin.json adapters/claude-plugin/output/agents/dispatcher.md adapters/claude-plugin/output/agents/engineer.md adapters/claude-plugin/output/agents/planner.md adapters/claude-plugin/output/agents/qa.md adapters/claude-plugin/output/agents/reviewer.md adapters/claude-plugin/output/agents/uat.md adapters/claude-plugin/output/agents/engineer-focused.md adapters/claude-plugin/output/agents/reviewer-challenge.md
@@ -765,7 +765,7 @@ Replaces every `model: "sonnet"` routing directive with agent-name routing, adds
 - **Edge cases**: emergency edit to a variant (r-sync text: never import, edit the base agent); `CLAUDE_CODE_SESSION_ID` unset → `/r-save` records `null`
 - **Regression-case**: tests/governance-contracts.bats::@test "no canonical routing directive passes model: sonnet"
 
-- [ ] **Step 1: Apply the tests patch**
+- [x] **Step 1: Apply the tests patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -775,7 +775,7 @@ Replaces every `model: "sonnet"` routing directive with agent-name routing, adds
   # expect: applied
   ```
 
-- [ ] **Step 2: Red**
+- [x] **Step 2: Red**
 
   ```bash
   bats tests/governance-contracts.bats 2>&1 | grep '^not ok' | sed 's/^not ok [0-9]* //'
@@ -791,7 +791,7 @@ Replaces every `model: "sonnet"` routing directive with agent-name routing, adds
   # r-start Last line renders session cost when present
   ```
 
-- [ ] **Step 3: Apply the code patch** (exact text replacements per spec §5.9)
+- [x] **Step 3: Apply the code patch** (exact text replacements per spec §5.9)
 
   ```bash
   git hash-object "$P/p7-code.patch"
@@ -802,7 +802,7 @@ Replaces every `model: "sonnet"` routing directive with agent-name routing, adds
   # expect: 0
   ```
 
-- [ ] **Step 4: Regenerate both targets and verify**
+- [x] **Step 4: Regenerate both targets and verify**
 
   ```bash
   bin/rdf generate claude-code >/dev/null 2>&1 && bin/rdf generate claude-plugin >/dev/null 2>&1 && echo regenerated
@@ -819,7 +819,7 @@ Replaces every `model: "sonnet"` routing directive with agent-name routing, adds
   # expect: ✔ Validation passed   (prints nothing when the claude CLI is absent)
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add canonical/agents/dispatcher.md canonical/commands/r-spec.md canonical/commands/r-plan.md canonical/commands/r-review.md canonical/commands/r-sync.md canonical/commands/r-save.md canonical/commands/r-start.md tests/governance-contracts.bats adapters/claude-plugin/output/agents/dispatcher.md adapters/claude-plugin/output/skills/r-spec/SKILL.md adapters/claude-plugin/output/skills/r-plan/SKILL.md adapters/claude-plugin/output/skills/r-review/SKILL.md adapters/claude-plugin/output/skills/r-sync/SKILL.md adapters/claude-plugin/output/skills/r-save/SKILL.md adapters/claude-plugin/output/skills/r-start/SKILL.md
@@ -864,7 +864,7 @@ Updates every document that states agent models, CLI commands or doctor scopes, 
 - **Edge cases**: checkout install needs `rdf deploy claude-code` once to link `rdf-tokens.sh` (Step 4, and stated in the CHANGELOG)
 - **Regression-case**: N/A — docs — documentation and changelog only; code behavior is covered by the Phase 1-7 regression cases
 
-- [ ] **Step 1: Apply the docs + changelog patch**
+- [x] **Step 1: Apply the docs + changelog patch**
 
   ```bash
   P=docs/plans/2026-09-23-model-effort-routing-token-report-patches
@@ -879,7 +879,7 @@ Updates every document that states agent models, CLI commands or doctor scopes, 
   # ## Unreleased
   ```
 
-- [ ] **Step 2: Doc-truth and stale-wording sweep**
+- [x] **Step 2: Doc-truth and stale-wording sweep**
 
   ```bash
   bin/rdf doctor --scope doc-truth 2>&1 | grep -c '\[FAIL\]'
@@ -892,7 +892,7 @@ Updates every document that states agent models, CLI commands or doctor scopes, 
   # expect: 0
   ```
 
-- [ ] **Step 3: Spec §10b end-to-end verification against HEAD**
+- [x] **Step 3: Spec §10b end-to-end verification against HEAD**
 
   ```bash
   jq -r 'to_entries[]|select(.value|type=="object" and has("name"))|"\(.key) \(.value.model) \(.value.effort)"' adapters/claude-code/agent-meta.json | paste -sd' ' -
@@ -917,7 +917,7 @@ Updates every document that states agent models, CLI commands or doctor scopes, 
   # expect: rc=0
   ```
 
-- [ ] **Step 4: Link the new helper for this checkout and confirm**
+- [x] **Step 4: Link the new helper for this checkout and confirm**
 
   `rdf deploy claude-code` symlinks `state/*.sh` per file into `~/.rdf/state/`, and it re-points every existing deployed link (`~/.claude/**`, `~/.rdf/state/*`) at the checkout that runs it. From the main checkout that changes nothing but the new link. From a worktree it would point the operator's live links at a temporary path that is deleted after merge. So the step runs only in the main checkout; in a worktree it prints a deferral, and the controller runs it from the main checkout after merge.
 
@@ -928,7 +928,7 @@ Updates every document that states agent models, CLI commands or doctor scopes, 
   # expect: all state helpers current
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add README.md RDF.md WORKFORCE.md docs/demo-walkthrough.md docs/multi-tool-parity.md docs/privacy.md CHANGELOG CHANGELOG.RELEASE
