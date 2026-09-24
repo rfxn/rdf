@@ -1,0 +1,369 @@
+diff --git a/state/git-hooks/pre-commit b/state/git-hooks/pre-commit
+index bc05801..4e16d09 100755
+--- a/state/git-hooks/pre-commit
++++ b/state/git-hooks/pre-commit
+@@ -3,7 +3,8 @@
+ # (C) 2026 R-fx Networks <proj@rfxn.com>
+ # GNU GPL v2
+ #
+-# Installed into worktrees by dispatcher (canonical/agents/dispatcher.md).
++# Installed by rdf_phase_hook_install (state/rdf-bus.sh); an includeIf "onbranch:rdf/phase-**"
++# include makes it the pre-commit hook on phase branches only.
+ # Rejects commits that touch files outside the phase's declared Files list
+ # or Tests-may-touch flex zone (plan-schema.md Rule 8).
+ #
+@@ -11,46 +12,65 @@
+ # serves as defense-in-depth backstop).
+ set -euo pipefail
+ 
+-# Locate project root (nearest ancestor with state/rdf-bus.sh — the RDF anchor)
+-_proj=""
+-_dir="$(command pwd)"
+-while [[ "$_dir" != "/" ]]; do
+-    [[ -f "$_dir/state/rdf-bus.sh" ]] && { _proj="$_dir"; break; }
+-    _dir="$(command dirname "$_dir")"
+-done
+-if [[ -z "$_proj" ]]; then
+-    echo "rdf pre-commit: state/rdf-bus.sh not found in any ancestor; skipping scope check" >&2
+-    exit 0
+-fi
++_hd="$(command dirname "$0")"
+ 
+-# Source helpers
+-if [[ ! -f "$_proj/state/rdf-bus.sh" ]]; then
+-    echo "rdf pre-commit: state/rdf-bus.sh not found; skipping scope check" >&2
++# _rdf_pass — succeed, handing off to the project's own pre-commit when installed by rdf_phase_hook_install
++_rdf_pass() {
++    if [[ -x "${_hd}/.rdf-passthrough" ]]; then
++        export RDF_HOOK_NAME=pre-commit
++        exec "${_hd}/.rdf-passthrough"
++    fi
+     exit 0
+-fi
+-# shellcheck source=/dev/null
+-source "$_proj/state/rdf-bus.sh"
++}
+ 
+-# Derive phase number from branch name: rdf/phase-<N>-<UUID>
+-# symbolic-ref resolves correctly on both empty and non-empty repos;
+-# git rev-parse --abbrev-ref returns "HEAD" (not the branch) on empty repos.
++# Phase branch: rdf/phase-<N>-<SID>. symbolic-ref resolves on empty repos too,
++# where rev-parse --abbrev-ref returns "HEAD".
+ _branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo "")" # fails on detached HEAD → no-op
+-_phase_n=""
+-if [[ "$_branch" =~ ^rdf/phase-([0-9]+)- ]]; then
+-    _phase_n="${BASH_REMATCH[1]}"
++_phase_re='^rdf/phase-([0-9]+)-([^/]+)$'
++[[ "$_branch" =~ $_phase_re ]] || _rdf_pass
++_phase_n="${BASH_REMATCH[1]}"
++_sfx="${BASH_REMATCH[2]}"
++case "$_sfx" in
++    *[!A-Za-z0-9-]*) ;;   # not a session id; the session env decides
++    *) export RDF_SESSION_ID="$_sfx" ;;
++esac
++
++_top="$(git rev-parse --show-toplevel)"
++_main="$_top"
++[[ -f "${_hd}/.rdf-main-root" ]] && _main="$(< "${_hd}/.rdf-main-root")"
++
++# RDF's own checkout carries the bus in-tree; every other project uses the deployed copy.
++_self_host=0
++if [[ -f "${_top}/state/rdf-bus.sh" ]]; then
++    _bus="${_top}/state/rdf-bus.sh"
++    _self_host=1
++else
++    _bus="${HOME:-}/.rdf/state/rdf-bus.sh"
+ fi
+-if [[ -z "$_phase_n" ]]; then
+-    # Not a worktree branch; no enforcement
+-    exit 0
++if [[ ! -f "$_bus" ]]; then
++    echo "rdf pre-commit: rdf-bus.sh not found (checked ${_top}/state and ~/.rdf/state); skipping scope check" >&2
++    _rdf_pass
+ fi
++# shellcheck source=/dev/null
++source "$_bus"
+ 
+ # Parse phase scope — read loop, not eval; plan files arrive via commits
+ # (post-3.1.2 canonical workflow) and may carry shell metachars (`;`, `&`)
+ # in Files entries that bypass rdf_parse_phase_scope's regex-metachar escape.
+-_plan="$(rdf_active_plan_path "$_proj")"
++# _rdf_session_plan root — plan named by root's session-scoped pointer (checked in both roots before any legacy fallback)
++_rdf_session_plan() {
++    local _ptr="${1}/.rdf/active-plan-${RDF_SESSION_ID:-}" _p
++    [[ -n "${RDF_SESSION_ID:-}" && -f "$_ptr" ]] || return 1
++    _p="$(< "$_ptr")"
++    _p="${_p%[$'\r\n']}"
++    [[ -n "$_p" && -f "$_p" ]] || return 1
++    printf '%s\n' "$_p"
++}
++_plan="$(_rdf_session_plan "$_top" || _rdf_session_plan "$_main" \
++    || rdf_active_plan_path "$_top" || rdf_active_plan_path "$_main" || true)"  # no pointer anywhere → empty
+ if [[ -z "$_plan" ]]; then
+     echo "rdf pre-commit: no active plan found; skipping scope check" >&2
+-    exit 0
++    _rdf_pass
+ fi
+ ALLOWED_REGEX=""
+ FLEX_REGEX=""
+@@ -78,7 +98,7 @@ fi
+ # Get staged files
+ _staged="$(git diff --cached --name-only)"
+ if [[ -z "$_staged" ]]; then
+-    exit 0   # nothing staged
++    _rdf_pass   # nothing staged
+ fi
+ 
+ # Validate each staged path
+@@ -137,9 +157,12 @@ fi
+ #   Class 4: local-rc-mask
+ #     local <var>=$( — masks subshell exit code
+ #
++# Scope: shell files only (.sh/.bash or a sh/bash shebang). Classes are on for
++# RDF's own checkout; other projects opt in via .rdf/governance/ignore.md:
++#   # anti-pattern-enable: <class-name>|all
+ # Suppression: same-line # on the offending line suppresses any class.
+-# Opt-out: governance/ignore.md in project root containing
+-#   # anti-pattern-skip: <class-name>  opts-out that class for all files.
++# Opt-out (same file, or legacy governance/ignore.md):
++#   # anti-pattern-skip: <class-name>
+ # ---------------------------------------------------------------------------
+ 
+ _AP_CLASSES=(
+@@ -161,15 +184,46 @@ _AP_PATTERNS=(
+     '^\s*local[[:space:]]+[a-z_]+=\$\('
+ )
+ 
+-# Load opt-out classes from governance/ignore.md (project root, not worktree).
++# Load enable/skip directives: main-root .rdf/governance/ignore.md, then legacy governance/ignore.md.
++_ap_enabled=()
++[[ "$_self_host" -eq 1 ]] && _ap_enabled=("${_AP_CLASSES[@]}")
+ _ap_skipped=()
+-if [[ -f "$_proj/governance/ignore.md" ]]; then
++_ap_enable_re='^#[[:space:]]*anti-pattern-enable:[[:space:]]*(.+)$'
++_ap_skip_re='^#[[:space:]]*anti-pattern-skip:[[:space:]]*(.+)$'
++for _igf in "${_main}/.rdf/governance/ignore.md" "${_top}/governance/ignore.md"; do
++    [[ -f "$_igf" ]] || continue
+     while IFS= read -r _igline; do
+-        if [[ "$_igline" =~ ^#[[:space:]]*anti-pattern-skip:[[:space:]]*(.+)$ ]]; then
++        if [[ "$_igline" =~ $_ap_skip_re ]]; then
+             _ap_skipped+=("${BASH_REMATCH[1]//[[:space:]]/}")
++        elif [[ "$_igline" =~ $_ap_enable_re ]]; then
++            _ap_val="${BASH_REMATCH[1]//[[:space:]]/}"
++            if [[ "$_ap_val" == "all" ]]; then
++                _ap_enabled=("${_AP_CLASSES[@]}")
++            else
++                _ap_enabled+=("$_ap_val")
++            fi
+         fi
+-    done < "$_proj/governance/ignore.md"
+-fi
++    done < "$_igf"
++done
++[[ "${#_ap_enabled[@]}" -gt 0 ]] || _rdf_pass
++
++# _ap_class_enabled name — return 0 if class is in the enabled list
++_ap_class_enabled() {
++    local _cls="$1" _s
++    for _s in "${_ap_enabled[@]+"${_ap_enabled[@]}"}"; do
++        [[ "$_s" == "$_cls" ]] && return 0
++    done
++    return 1
++}
++
++_ap_shebang_re='^#!.*(/|[[:space:]])(ba)?sh([[:space:]]|$)'
++# _ap_is_shell path — staged path is shell by extension or by its staged shebang
++_ap_is_shell() {
++    local _l=""
++    case "$1" in *.sh|*.bash) return 0 ;; esac
++    IFS= read -r _l < <(git cat-file -p ":$1" 2>/dev/null | command head -c 256) || true  # deleted/empty/unreadable blob → no shebang
++    [[ "$_l" =~ $_ap_shebang_re ]]
++}
+ 
+ # _ap_class_skipped name — return 0 if class is in the skip list
+ _ap_class_skipped() {
+@@ -183,6 +237,7 @@ _ap_class_skipped() {
+ # Iterate staged files; grep each added diff hunk.
+ _ap_found=0
+ while IFS= read -r _ap_path; do
++    _ap_is_shell "$_ap_path" || continue
+     # Extract only added lines from the diff (strip leading '+', skip '+++' headers).
+     _ap_diff="$(git diff --cached -U0 -- "$_ap_path" \
+         | grep -E '^\+[^+]' \
+@@ -200,7 +255,7 @@ while IFS= read -r _ap_path; do
+         _ap_pat="${_AP_PATTERNS[$_ap_i]}"
+         _ap_i=$((_ap_i + 1))
+ 
+-        # Class-level opt-out via governance/ignore.md
++        _ap_class_enabled "$_ap_class" || continue
+         _ap_class_skipped "$_ap_class" && continue
+ 
+         # One grep over all remaining added lines for this class.
+@@ -219,7 +274,7 @@ while IFS= read -r _ap_path; do
+             echo "rdf pre-commit: ANTI-PATTERN [$_ap_class] in $_ap_path:" >&2
+             echo "  $_ap_line" >&2
+             echo "  Suppress with a same-line # comment explaining why this is safe," >&2
+-            echo "  or add '# anti-pattern-skip: $_ap_class' to governance/ignore.md." >&2
++            echo "  or add '# anti-pattern-skip: $_ap_class' to .rdf/governance/ignore.md." >&2
+             _ap_found=1
+         done <<< "$_ap_hits"
+     done
+@@ -229,4 +284,4 @@ if [[ "$_ap_found" -ne 0 ]]; then
+     exit 1
+ fi
+ 
+-exit 0
++_rdf_pass
+diff --git a/state/rdf-bus.sh b/state/rdf-bus.sh
+index dccc1b3..58134aa 100644
+--- a/state/rdf-bus.sh
++++ b/state/rdf-bus.sh
+@@ -6,7 +6,8 @@
+ # Provides: rdf_session_init, rdf_scoped_filename, rdf_session_short,
+ #           rdf_parse_phase_scope, rdf_active_plan_path,
+ #           rdf_set_active_plan, rdf_clear_active_plan,
+-#           rdf_set_active_tier, rdf_active_tier, rdf_clear_active_tier.
++#           rdf_set_active_tier, rdf_active_tier, rdf_clear_active_tier,
++#           rdf_phase_hook_install, rdf_phase_hook_uninstall.
+ # Sourced by /r-* commands and the pre-commit hook. Idempotent.
+ 
+ # rdf_uuidv7 — emit a UUIDv7 string to stdout
+@@ -233,3 +234,138 @@ rdf_clear_active_tier() {
+     rdf_session_init
+     command rm -f "${root}/.rdf/active-tier-${RDF_SESSION_ID}"
+ }
++
++# _rdf_git_at_least major minor — rc 0 when the installed git is at least major.minor
++_rdf_git_at_least() {
++    local want_major="$1" want_minor="$2" v major minor
++    v="$(git version 2>/dev/null)" || return 1   # no git on PATH
++    v="${v#git version }"
++    major="${v%%.*}"
++    v="${v#*.}"
++    minor="${v%%[!0-9]*}"
++    case "$major" in ''|*[!0-9]*) return 1 ;; esac
++    case "$minor" in ''|*[!0-9]*) return 1 ;; esac
++    [[ "$major" -gt "$want_major" ]] && return 0
++    [[ "$major" -eq "$want_major" && "$minor" -ge "$want_minor" ]]
++}
++
++# _rdf_realdir dir [base] — physical absolute path of dir; a relative dir resolves against base
++_rdf_realdir() {
++    local dir="$1" base="${2:-.}"
++    [[ "$dir" == /* ]] && base="/"
++    (CDPATH='' cd -P -- "$base" >/dev/null && CDPATH='' cd -P -- "$dir" >/dev/null && pwd -P)
++}
++
++# _rdf_atomic_write dest mode — write stdin to dest through a same-directory temp file, so a concurrent reader never sees a partial file
++_rdf_atomic_write() {
++    local dest="$1" mode="$2" tmp
++    tmp="$(command mktemp "${dest%/*}/.tmp.XXXXXX")" || return 1
++    if command cat > "$tmp" && command chmod "$mode" "$tmp" && command mv -f -- "$tmp" "$dest"; then
++        return 0
++    fi
++    command rm -f -- "$tmp"
++    return 1
++}
++
++# _rdf_passthrough_script — emit the static hook that runs whatever git would run without RDF's include
++_rdf_passthrough_script() {
++    command cat <<'PASSTHROUGH'
++#!/usr/bin/env bash
++# RDF phase-branch passthrough — installed by rdf_phase_hook_install (state/rdf-bus.sh)
++set -euo pipefail
++name="${RDF_HOOK_NAME:-${0##*/}}"
++unset RDF_HOOK_NAME
++prior=""
++while IFS= read -r -d '' _o && IFS= read -r -d '' _v; do
++    case "$_o" in *rdf-hooks.inc) continue ;; esac
++    prior="$_v"
++done < <(git config -z --type=path --show-origin --get-all core.hooksPath 2>/dev/null)  # unset → rc 1, no output
++[[ -n "$prior" ]] || prior="$(git rev-parse --git-common-dir)/hooks"
++if [[ -d "$prior" ]] && [[ "$(CDPATH='' cd -P -- "$prior" && pwd -P)" == "$(CDPATH='' cd -P -- "${0%/*}" && pwd -P)" ]]; then
++    exit 0
++fi
++[[ -x "${prior}/${name}" ]] || exit 0
++if grep -q 'RDF worktree scope enforcement' "${prior}/${name}" 2>/dev/null; then  # unreadable target: run it anyway
++    exit 0
++fi
++exec "${prior}/${name}" "$@"
++PASSTHROUGH
++}
++
++# rdf_phase_hook_install [dir [hook_src]] — activate the scope-guard pre-commit on rdf/phase-* branches of dir's repo
++# rc 0 installed or refreshed; 1 not a repo, not the main worktree toplevel, or no hook source; 2 git < 2.23
++rdf_phase_hook_install() {
++    local dir="${1:-$PWD}" src="${2:-}" gc gd common gitdir main hdir prior name f o v
++    if ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then   # probe only; reason printed below
++        printf 'rdf_phase_hook_install: not a git repository: %s\n' "$dir" >&2
++        return 1
++    fi
++    if ! _rdf_git_at_least 2 23; then
++        printf 'rdf_phase_hook_install: git >= 2.23 required (includeIf onbranch)\n' >&2
++        return 2
++    fi
++    gc="$(git -C "$dir" rev-parse --git-common-dir)" || return 1
++    common="$(_rdf_realdir "$gc" "$dir")" || return 1
++    gd="$(git -C "$dir" rev-parse --absolute-git-dir)" || return 1
++    gitdir="$(_rdf_realdir "$gd")" || return 1
++    if [[ "$gitdir" == "$common" ]]; then
++        if ! main="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)" || [[ -z "$main" ]]; then   # bare repo or inside .git/modules
++            printf 'rdf_phase_hook_install: run from the main worktree toplevel (no worktree at %s)\n' "$dir" >&2
++            return 1
++        fi
++    elif [[ "${common##*/}" == ".git" ]]; then
++        main="${common%/*}"
++    else
++        printf 'rdf_phase_hook_install: run from the main worktree toplevel\n' >&2
++        return 1
++    fi
++    [[ -n "$src" ]] || src="${HOME:-}/.rdf/state/git-hooks/pre-commit"
++    [[ -f "$src" ]] || src="${main}/state/git-hooks/pre-commit"
++    if [[ ! -f "$src" ]]; then
++        printf 'rdf_phase_hook_install: pre-commit hook source not found (checked ~/.rdf/state/git-hooks and %s/state/git-hooks)\n' "$main" >&2
++        return 1
++    fi
++    hdir="${common}/rdf-hooks"
++    command mkdir -p "$hdir" || return 1
++    _rdf_atomic_write "${hdir}/pre-commit" 755 < "$src" || return 1
++    printf '%s\n' "$main" | _rdf_atomic_write "${hdir}/.rdf-main-root" 644 || return 1
++    _rdf_passthrough_script | _rdf_atomic_write "${hdir}/.rdf-passthrough" 755 || return 1
++    for name in applypatch-msg pre-applypatch post-applypatch pre-merge-commit prepare-commit-msg \
++        commit-msg post-commit pre-rebase post-checkout post-merge pre-push post-rewrite pre-auto-gc; do
++        _rdf_atomic_write "${hdir}/${name}" 755 < "${hdir}/.rdf-passthrough" || return 1
++    done
++    prior=""
++    while IFS= read -r -d '' o && IFS= read -r -d '' v; do
++        case "$o" in *rdf-hooks.inc) continue ;; esac
++        prior="$v"
++    done < <(git -C "$main" config -z --type=path --show-origin --get-all core.hooksPath 2>/dev/null)   # unset → rc 1, no output
++    [[ -n "$prior" ]] || prior="${common}/hooks"
++    [[ "$prior" == /* ]] || prior="${main}/${prior}"
++    if [[ -d "$prior" && "$(_rdf_realdir "$prior")" != "$hdir" ]]; then
++        for f in "$prior"/*; do
++            [[ -f "$f" && -x "$f" ]] || continue
++            name="${f##*/}"
++            case "$name" in pre-commit|*.sample) continue ;; esac
++            _rdf_atomic_write "${hdir}/${name}" 755 < "${hdir}/.rdf-passthrough" || return 1
++        done
++    fi
++    git config --file "${common}/rdf-hooks.inc" core.hooksPath "$hdir" || return 1
++    if [[ "$(git config --file "${common}/config" --get 'includeIf.onbranch:rdf/phase-**.path' 2>/dev/null)" != "rdf-hooks.inc" ]]; then   # unset → empty
++        git config --file "${common}/config" 'includeIf.onbranch:rdf/phase-**.path' rdf-hooks.inc || return 1
++    fi
++    return 0
++}
++
++# rdf_phase_hook_uninstall [dir] — remove the phase-branch include and RDF hook files; repeat calls are no-ops
++rdf_phase_hook_uninstall() {
++    local dir="${1:-$PWD}" gc common
++    if ! gc="$(git -C "$dir" rev-parse --git-common-dir 2>/dev/null)"; then   # reason printed below
++        printf 'rdf_phase_hook_uninstall: not a git repository: %s\n' "$dir" >&2
++        return 1
++    fi
++    common="$(_rdf_realdir "$gc" "$dir")" || return 1
++    if git config --file "${common}/config" --get 'includeIf.onbranch:rdf/phase-**.path' >/dev/null 2>&1; then   # absent: nothing to remove
++        git config --file "${common}/config" --remove-section 'includeIf.onbranch:rdf/phase-**' || return 1
++    fi
++    command rm -rf -- "${common}/rdf-hooks" "${common}/rdf-hooks.inc"
++}

@@ -1,0 +1,137 @@
+diff --git a/canonical/agents/dispatcher.md b/canonical/agents/dispatcher.md
+index f4e49b8..c373d72 100644
+--- a/canonical/agents/dispatcher.md
++++ b/canonical/agents/dispatcher.md
+@@ -92,30 +92,26 @@ This sync is one-shot at worktree creation; subsequent operator edits
+ to the main-repo plan are not reflected in worktrees. If the operator
+ changes the plan mid-build, dispatch must be re-invoked.
+ 
+-**(b) Install the pre-commit hook.** Probe the deployed hook first;
+-fall back to `${PROJECT_ROOT_MAIN}/state/` only when RDF builds itself.
++**(b) Ensure the scope guard is active.** `/r-build` normally installed
++it before dispatch; the call is idempotent:
+ ```bash
+-worktree_git_dir=$(git -C "$PROJECT_ROOT" rev-parse --git-dir)
+-_hook_src="${HOME}/.rdf/state/git-hooks/pre-commit"
+-[[ -f "$_hook_src" ]] || _hook_src="${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit"
+-if [[ -f "$_hook_src" ]]; then
+-    command cp "$_hook_src" "${worktree_git_dir}/hooks/pre-commit"
+-    command chmod +x "${worktree_git_dir}/hooks/pre-commit"
+-else
+-    echo "dispatcher: pre-commit hook not found (checked ~/.rdf/state and ${PROJECT_ROOT_MAIN}/state); continuing without scope guard" >&2
+-fi
++source ~/.rdf/state/rdf-bus.sh
++rdf_phase_hook_install "$PROJECT_ROOT_MAIN" \
++  || echo "dispatcher: phase scope guard not installed; continuing with the post-merge scope check only" >&2
+ ```
+ 
+-The hook is normally the deployed `~/.rdf/state/git-hooks/pre-commit`
+-(written by `rdf generate`); the `${PROJECT_ROOT_MAIN}/state/` copy
+-exists only in an RDF checkout. `${PROJECT_ROOT_MAIN}` is the main
+-project root — passed in the dispatch payload separately from
+-`PROJECT_ROOT` (which is the worktree path).
++The helper copies the deployed `~/.rdf/state/git-hooks/pre-commit`
++(RDF self-hosting: `${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit`)
++into the repo's `rdf-hooks/` and activates it on `rdf/phase-*` branches
++through an `includeIf "onbranch:"` include, chaining the project's own
++hooks. `${PROJECT_ROOT_MAIN}` is the main project root — passed in the
++dispatch payload separately from `PROJECT_ROOT` (which is the worktree
++path).
+ 
+ The hook reads the active plan from the worktree (now synced via step
+-(a)) and rejects commits outside the union of `**Files:**` and
+-`**Tests-may-touch:**`. See `plan-schema.md` Rule 8 for the full
+-enforcement contract.
++(a)), falling back to the main root's pointer, and rejects commits
++outside the union of `**Files:**` and `**Tests-may-touch:**`. See
++`plan-schema.md` Rule 8 for the full enforcement contract.
+ 
+ If either step fails (filesystem permission, missing source):
+ log a warning and proceed. The Post-Merge Scope Check (next
+diff --git a/canonical/commands/r-build.md b/canonical/commands/r-build.md
+index 829fc08..ee4491c 100644
+--- a/canonical/commands/r-build.md
++++ b/canonical/commands/r-build.md
+@@ -250,25 +250,22 @@ parallel within each batch):
+    ```
+    (RDF_SESSION_ID is the full session id; prevents cross-session collisions)
+ 
+-   After `git worktree add`, install the pre-commit hook into the
+-   worktree's per-worktree hooks directory:
++   After the batch's `git worktree add` calls, activate the phase scope
++   guard from the main worktree (idempotent; once per batch is enough):
+ 
+    ```
+-   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
+-   wt_git_dir=$(git -C .worktrees/rdf-phase-{N}-${RDF_SESSION_ID} rev-parse --git-dir)
+-   hook_src=~/.rdf/state/git-hooks/pre-commit
+-   [[ -f "$hook_src" ]] || hook_src=state/git-hooks/pre-commit  # RDF self-hosting fallback
+-   if [[ -f "$hook_src" ]]; then
+-       command cp "$hook_src" "${wt_git_dir}/hooks/pre-commit"
+-       command chmod +x "${wt_git_dir}/hooks/pre-commit"
+-   else
+-       echo "warn: pre-commit hook not found (checked ~/.rdf/state and state/); worktree scope guard disabled" >&2
+-   fi
++   source ~/.rdf/state/rdf-bus.sh
++   rdf_phase_hook_install "$(git rev-parse --show-toplevel)" \
++     || echo "warn: phase scope guard (layer 1) not installed; post-merge scope check still applies" >&2
+    ```
+ 
+-   The hook enforces phase scope (Files ∪ Tests-may-touch) at
+-   `git commit` time. See `plan-schema.md` Rule 8 and dispatcher.md
+-   "Worktree Pre-Commit Hook Installation".
++   The helper copies `~/.rdf/state/git-hooks/pre-commit` (RDF
++   self-hosting: `state/git-hooks/pre-commit`) into the repo's
++   `rdf-hooks/` and adds an `includeIf "onbranch:rdf/phase-**"` include,
++   so the hook runs on phase branches only and chains the project's own
++   hooks; rc 2 means git < 2.23. The hook enforces phase scope
++   (Files ∪ Tests-may-touch) at `git commit` time. See `plan-schema.md`
++   Rule 8 and dispatcher.md "Worktree Pre-Commit Hook Installation".
+ 
+ 3. Before each `Task` dispatch, the controller MUST change directory
+    into the target worktree:
+@@ -288,6 +285,7 @@ parallel within each batch):
+    - Each gets the standard dispatch payload plus:
+      PARALLEL_BATCH: true
+      PROJECT_ROOT: {worktree path}
++     PROJECT_ROOT_MAIN: {main worktree toplevel}
+    - Each dispatched with isolation: "worktree"
+ 4. Wait for all subagents in the batch to complete
+ 5. Merge completed worktrees in plan order:
+diff --git a/canonical/reference/framework.md b/canonical/reference/framework.md
+index c39f475..2899630 100644
+--- a/canonical/reference/framework.md
++++ b/canonical/reference/framework.md
+@@ -98,6 +98,8 @@ concurrent sessions on the same repository. Helper functions:
+ - `rdf_session_short` — last 12 chars for log display
+ - `rdf_parse_phase_scope <plan> <N>` — extract phase Files + Tests-may-touch
+   for the pre-commit hook (see Phase 4 below and `plan-schema.md` Rule 8)
++- `rdf_phase_hook_install [dir]` — activate that hook on `rdf/phase-*`
++  branches (`/r-build`); `rdf_phase_hook_uninstall [dir]` removes it
+ 
+ Concurrent-session coordination design: `docs/specs/2026-04-25-concurrent-sessions-design.md`.
+ 
+diff --git a/canonical/reference/plan-schema.md b/canonical/reference/plan-schema.md
+index 3532cd5..601e988 100644
+--- a/canonical/reference/plan-schema.md
++++ b/canonical/reference/plan-schema.md
+@@ -233,10 +233,15 @@ get strict `**Files:**`-only enforcement.
+ 
+ Three call sites consume this rule:
+ 
+-- **Pre-commit hook** (`state/git-hooks/pre-commit`, installed in
+-  worktrees by dispatcher): primary gate; rejects `git commit` if
+-  staged files violate the union of `**Files:**` and `**Tests-may-touch:**`,
+-  or if either ceiling is exceeded.
++- **Pre-commit hook** (`state/git-hooks/pre-commit`, installed by
++  `/r-build` via `rdf_phase_hook_install` and active on `rdf/phase-*`
++  branches through an `includeIf "onbranch:"` include; the project's own
++  hooks still run): primary gate; rejects `git commit` if staged files
++  violate the union of `**Files:**` and `**Tests-may-touch:**`, or if
++  either ceiling is exceeded. Its anti-pattern classes scan shell files
++  only; they are on for RDF's own checkout and opt-in elsewhere via
++  `# anti-pattern-enable: <class>|all` in `.rdf/governance/ignore.md`.
++  `rdf_phase_hook_uninstall` removes it.
+ - **Dispatcher post-merge check** (defense-in-depth): runs
+   `git diff-tree --name-only` after engineer returns; same union check.
+ - **Engineer dirty check** (`canonical/agents/engineer.md` Setup):

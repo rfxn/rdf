@@ -93,7 +93,7 @@ prose alone failed: "M13 dispatch produced 5/5 scope violations despite explicit
 | `README.md` | modify | 364 | "installed in every dispatched worktree" → "active on every `rdf/phase-*` branch" |
 | `WORKFORCE.md` | modify | 71 | Installer column → `/r-build` (`rdf_phase_hook_install`) |
 | `.github/workflows/ci.yml` | modify | +~14 after 158 | macOS `/bin/bash` 3.2 smoke: install + rejected commit in a consumer fixture |
-| `tests/worktree-hook.bats` | **new** | 0 → ~360 | Consumer-layout suite (§10a, 18 tests) |
+| `tests/worktree-hook.bats` | **new** | 0 → ~300 | Consumer-layout suite (§10a, 19 tests) |
 | `tests/pre-commit-anti-patterns.bats` | modify | 172 → ~195 | +1 test: self-host skips markdown and `.bats` |
 | `tests/Makefile` | modify | +1 name in `test` and `lint` | Register `worktree-hook.bats` |
 | `CHANGELOG`, `CHANGELOG.RELEASE` | modify | new `## Unreleased` section | [Fix] entries |
@@ -113,7 +113,7 @@ prose alone failed: "M13 dispatch produced 5/5 scope violations despite explicit
 |--------|--------|-------|
 | Hook-install implementations | 2 prose snippets (both wrong) | 1 shell function, 2 call sites |
 | Consumer-project enforcement | never | scope always; anti-patterns opt-in |
-| Tests exercising a linked worktree / consumer layout | 0 | 18 |
+| Tests exercising a linked worktree / consumer layout | 0 | 19 |
 | Repo footprint | none (install failed) | `includeIf` section + `.git/rdf-hooks.inc` + `.git/rdf-hooks/` |
 
 ### Dependency Tree
@@ -138,7 +138,7 @@ git commit on rdf/phase-<N>-<SID> (any worktree) ──► $COMMON/rdf-hooks/pre
         ├─ _top = --show-toplevel; _main = .rdf-main-root (else _top)
         ├─ bus: _top/state/rdf-bus.sh (self-host) | ${HOME}/.rdf/state/rdf-bus.sh ; none ──► warn, _rdf_pass
         ├─ RDF_SESSION_ID = suffix when it matches [A-Za-z0-9-]+
-        ├─ plan: rdf_active_plan_path _top || rdf_active_plan_path _main ; none ──► warn, _rdf_pass
+        ├─ plan: session pointer in _top, then _main; then rdf_active_plan_path _top || _main ; none ──► warn, _rdf_pass
         ├─ scope check (logic unchanged) ── violation ──► exit 1
         ├─ anti-pattern: enabled classes ∩ shell files ── hit ──► exit 1
         └─ _rdf_pass ──► RDF_HOOK_NAME=pre-commit exec .rdf-passthrough (when installed) | exit 0
@@ -233,7 +233,7 @@ git commit on rdf/phase-<N>-<SID> (any worktree) ──► $COMMON/rdf-hooks/pre
 | `_rdf_pass()` (new) | — | `_hd=$(command dirname "$0")`. If `$_hd/.rdf-passthrough` is executable, `RDF_HOOK_NAME=pre-commit exec "$_hd/.rdf-passthrough"`; otherwise `exit 0` (legacy `.git/hooks` installs and tests) | new, after `set` |
 | Branch parse | `^rdf/phase-([0-9]+)-` (39) after sourcing the bus | Runs first. `_phase_re='^rdf/phase-([0-9]+)-([^/]+)$'` (the same branch set the `onbranch:rdf/phase-**` include matches, since `**` does not cross `/` there) captures `_phase_n` and `_sfx`. `export RDF_SESSION_ID="$_sfx"` only when `_sfx` has no chars outside `[A-Za-z0-9-]` (`case`); otherwise the session env decides. No match calls `_rdf_pass` | 34-45 |
 | Root + bus | Ancestor walk; exit 0 if none | `_top` = `git rev-parse --show-toplevel`. `_main` = `$(< "$_hd/.rdf-main-root")` when that file exists, else `_top`. If `$_top/state/rdf-bus.sh` exists, `_self_host=1` and source it; else source `${HOME:-}/.rdf/state/rdf-bus.sh`; else print `rdf pre-commit: rdf-bus.sh not found (checked <top>/state and ~/.rdf/state); skipping scope check` and call `_rdf_pass` | 14-32 |
-| Plan resolve | `rdf_active_plan_path "$_proj"`; exit 0 if empty | `rdf_active_plan_path "$_top"`, then `rdf_active_plan_path "$_main"`, then empty (`\|\| true`); empty prints a warning and calls `_rdf_pass` | 50-54 |
+| Plan resolve | `rdf_active_plan_path "$_proj"`; exit 0 if empty | Hook-local `_rdf_session_plan` reads `<root>/.rdf/active-plan-$RDF_SESSION_ID` for `_top`, then `_main`, before `rdf_active_plan_path "$_top"` / `"$_main"` legacy fallbacks, so a stale committed `PLAN.md` in the worktree cannot shadow the session pointer (plan review round 1). Empty (`\|\| true`) prints a warning and calls `_rdf_pass` | 50-54 |
 | Nothing staged | `exit 0` | `_rdf_pass` | 81 |
 | Anti-pattern config | Skip list from `$_proj/governance/ignore.md` | `_ap_enabled=()`, filled with all five when `_self_host=1`. For each of `$_main/.rdf/governance/ignore.md` and `$_top/governance/ignore.md` that exists: `# anti-pattern-enable: all\|<class>` adds, `# anti-pattern-skip: <class>` adds to skips. `${#_ap_enabled[@]} -eq 0` calls `_rdf_pass` before any diff work | 163-181 |
 | Per-file loop | Every staged file | `_ap_is_shell "$_ap_path" \|\| continue`; the class loop checks `_ap_class_enabled` and then `_ap_class_skipped`; `"${_ap_enabled[@]+"${_ap_enabled[@]}"}"` | 184-225 |
@@ -402,6 +402,7 @@ Commits run under `env -u CLAUDE_CODE_SESSION_ID -u RDF_SESSION_ID` unless a tes
 | G2 | worktree-hook.bats | `@test "consumer: in-scope commit on a phase branch succeeds"` |
 | G3 | worktree-hook.bats | `@test "consumer: session id comes from the branch with no session env"` |
 | G3 | worktree-hook.bats | `@test "worktree-local plan pointer takes precedence over the main-root pointer"` |
+| G3 | worktree-hook.bats | `@test "main-root session pointer outranks a stale committed PLAN.md in the worktree"` |
 | G3 | worktree-hook.bats | `@test "phase branch with a non-SID suffix is still enforced"` (`rdf/phase-1-a.b`; env `RDF_SESSION_ID=<SID>`) |
 | G4 | worktree-hook.bats | `@test "prior pre-commit runs after RDF passes and its failure blocks the commit"` |
 | G4 | worktree-hook.bats | `@test "prior pre-commit does not run when RDF rejects"` |
@@ -428,9 +429,9 @@ make -C tests test 2>&1 | tee /tmp/test-rdf-i2.log | tail -2
 grep -c '^not ok' /tmp/test-rdf-i2.log
 # expect: 0
 grep -c '@test' tests/worktree-hook.bats
-# expect: 18
-grep -c 'worktree-hook.bats' tests/Makefile
-# expect: 2
+# expect: 19
+make -n -C tests test | grep -c worktree-hook; make -n -C tests lint | grep -c worktree-hook
+# expect: 1 then 1 (once per target)
 # G1 (consumer rejection) spot-run
 bats -f 'out-of-scope commit on a phase branch is rejected' tests/worktree-hook.bats
 # expect: ok 1 … (1 test, 0 failures)

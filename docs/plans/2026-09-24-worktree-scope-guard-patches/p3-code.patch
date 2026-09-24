@@ -1,0 +1,182 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index f9cf87b..880c13d 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -183,3 +183,27 @@ jobs:
+           test -x "$h/.rdf/state/s.sh"
+           test "$(cat "$h/.rdf/state/.rdf-version")" = "9.9.9"
+           echo "bash 3.2 bootstrap smoke (sanity-exit + copy paths): OK"
++
++      - name: Smoke phase scope guard under system bash 3.2 (macOS)
++        if: runner.os == 'macOS'
++        run: |
++          h="$(mktemp -d)"; mkdir -p "$h/.rdf/state/git-hooks"
++          cp state/rdf-bus.sh "$h/.rdf/state/"
++          cp state/git-hooks/pre-commit "$h/.rdf/state/git-hooks/"
++          repo="$(mktemp -d)/app"; mkdir -p "$repo/.rdf"
++          git -C "$repo" init -q
++          printf 'echo a\n' > "$repo/a.sh"
++          printf '### Phase 1: x\n\n**Files:**\n- Modify: `a.sh`\n' > "$repo/p.md"
++          printf '%s\n' "$repo/p.md" > "$repo/.rdf/active-plan"
++          printf '.rdf/\n' >> "$repo/.git/info/exclude"
++          git -C "$repo" add a.sh p.md
++          git -C "$repo" -c user.email=t@t -c user.name=t commit -q -m init
++          HOME="$h" /bin/bash -c 'source "$HOME/.rdf/state/rdf-bus.sh" && rdf_phase_hook_install "$1"' _ "$repo"
++          git -C "$repo" checkout -q -b rdf/phase-1-x
++          printf 'x\n' > "$repo/outside.txt"; git -C "$repo" add outside.txt
++          if HOME="$h" PATH="/bin:/usr/bin:$PATH" git -C "$repo" -c user.email=t@t -c user.name=t commit -q -m oob 2> "$h/err"; then
++            echo "out-of-scope commit was not rejected under system bash 3.2" >&2
++            exit 1
++          fi
++          grep -q 'SCOPE VIOLATION' "$h/err"
++          echo "bash 3.2 phase scope guard smoke: OK"
+diff --git a/CHANGELOG b/CHANGELOG
+index 4c8bc08..5a3a2b6 100644
+--- a/CHANGELOG
++++ b/CHANGELOG
+@@ -1,5 +1,34 @@
+ # RDF Changelog
+ 
++## Unreleased
++
++-- New Features --
++
++[New] rdf_phase_hook_install / rdf_phase_hook_uninstall (state/rdf-bus.sh): activate
++      the phase scope guard on rdf/phase-* branches through an includeIf "onbranch:"
++      include that chains the project's own hooks; uninstall removes the include,
++      .git/rdf-hooks.inc and .git/rdf-hooks/; needs git >= 2.23 (rc 2 below, where
++      /r-build keeps the post-merge scope check)
++
++-- Bug Fixes --
++
++[Fix] phase scope guard never engaged outside RDF's own checkout: /r-build copied the
++      hook to .git/worktrees/<id>/hooks, which git never reads, and the hook found its
++      helpers only through an in-tree state/rdf-bus.sh; it now installs through
++      rdf_phase_hook_install and reads ~/.rdf/state (I-2)
++[Fix] pre-commit hook takes the session id from the phase branch name (no
++      CLAUDE_CODE_SESSION_ID needed: Codex sessions, manual commits) and checks the
++      worktree's and the main worktree's session pointers before legacy fallbacks
++[Fix] /r-build worktree dispatch payload carries PROJECT_ROOT_MAIN, which dispatcher
++      steps (a) and (b) already read
++
++-- Changes --
++
++[Change] pre-commit anti-pattern classes scan shell files only (.sh/.bash or a sh/bash
++         shebang; .bats excluded) and are off outside RDF's own checkout unless enabled
++         with "# anti-pattern-enable: <class>|all" in .rdf/governance/ignore.md, where
++         opt-outs are now read too
++
+ ## 3.8.0
+ 
+ -- New Features --
+diff --git a/CHANGELOG.RELEASE b/CHANGELOG.RELEASE
+index ae558d7..e9a7186 100644
+--- a/CHANGELOG.RELEASE
++++ b/CHANGELOG.RELEASE
+@@ -1,46 +1,30 @@
+-# RDF 3.8.0 Release Notes
++# RDF Unreleased Release Notes
+ 
+-## 3.8.0
++## Unreleased
+ 
+ -- New Features --
+ 
+-[New] role-based model + effort routing: agent-meta.json declares model and effort
+-      per agent (planner fable/high; dispatcher opus/high; engineer and reviewer
+-      opus/xhigh; qa and uat opus/medium) plus variants emitted from the same
+-      canonical body as rdf-engineer-focused (medium) and rdf-reviewer-challenge
+-      (high); rdf generate and doctor catalogs reject invalid routing values
+-[New] rdf tokens: local token usage report from Claude Code transcripts (bash + jq,
+-      jq 1.5 floor; usage deduplicated by message.id) with list-price cost by cost
+-      class, model, agent, context depth, subagent boot, and effort; --json and
+-      --summary; /r-save records a per-session tokens summary, /r-start shows cost
+-[New] rdf doctor --scope harness (15th scope): WARNs when Opus 5.5 would run at
+-      its medium default, when CLAUDE_CODE_EFFORT_LEVEL flattens per-agent effort,
+-      and when the Bash output limit exceeds 30000; reads settings, never writes
++[New] rdf_phase_hook_install / rdf_phase_hook_uninstall (state/rdf-bus.sh): activate
++      the phase scope guard on rdf/phase-* branches through an includeIf "onbranch:"
++      include that chains the project's own hooks; uninstall removes the include,
++      .git/rdf-hooks.inc and .git/rdf-hooks/; needs git >= 2.23 (rc 2 below, where
++      /r-build keeps the post-merge scope check)
+ 
+ -- Bug Fixes --
+ 
+-[Fix] rdf doctor --json escapes quotes and backslashes and strips control characters
+-      in check messages and names (a quote in any message produced invalid JSON)
+-[Fix] rdf-state.sh session_last prefers the /r-save entry over the trailing
+-      same-state SessionEnd-hook entries, restoring commits/diff_summary (and now
+-      tokens) on the /r-start Last line
+-[Fix] rdf_session_init adopts CLAUDE_CODE_SESSION_ID (else mints a UUIDv7): each Bash
+-      call minted a new id, so session pointers (active plan, tier) were never read
+-      back and /r-start fell back to a stale plan; `claude --resume <id>` keeps the id
+-      (use --fork-session for a second concurrent terminal)
+-[Fix] /r-util-claudemd-review read the unset CLAUDE_SESSION_ID, so the active
+-      conversation was mined as a past one; it now reads CLAUDE_CODE_SESSION_ID
++[Fix] phase scope guard never engaged outside RDF's own checkout: /r-build copied the
++      hook to .git/worktrees/<id>/hooks, which git never reads, and the hook found its
++      helpers only through an in-tree state/rdf-bus.sh; it now installs through
++      rdf_phase_hook_install and reads ~/.rdf/state (I-2)
++[Fix] pre-commit hook takes the session id from the phase branch name (no
++      CLAUDE_CODE_SESSION_ID needed: Codex sessions, manual commits) and checks the
++      worktree's and the main worktree's session pointers before legacy fallbacks
++[Fix] /r-build worktree dispatch payload carries PROJECT_ROOT_MAIN, which dispatcher
++      steps (a) and (b) already read
+ 
+ -- Changes --
+ 
+-[Change] dispatcher routes scope:docs/focused phases to rdf-engineer-focused and
+-         escalates a failed focused phase to rdf-engineer; challenge reviews from
+-         /r-spec, /r-plan, /r-review dispatch rdf-reviewer-challenge; no canonical
+-         routing site passes a per-invocation model any more
+-[Change] /r-spec and /r-plan carry a non-blocking Claude Code advisory to run spec
+-         and plan sessions on claude --model fable --effort high; the /r-plan
+-         handoff names the Opus build session; /r-plan stays in main context
+-[Change] rdf sync never creates a canonical agent (generated variants and stray
+-         output agents are skipped and counted)
+-[Change] checkout installs: run rdf deploy claude-code once to link the new
+-         state/rdf-tokens.sh helper (plugin installs pick it up on restart)
++[Change] pre-commit anti-pattern classes scan shell files only (.sh/.bash or a sh/bash
++         shebang; .bats excluded) and are off outside RDF's own checkout unless enabled
++         with "# anti-pattern-enable: <class>|all" in .rdf/governance/ignore.md, where
++         opt-outs are now read too
+diff --git a/RDF.md b/RDF.md
+index e612ef9..287ccbf 100644
+--- a/RDF.md
++++ b/RDF.md
+@@ -50,7 +50,8 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
+   inherited by all subagents; resume into a second concurrent terminal
+   with `claude --resume --fork-session`); every transient state file
+   (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) is
+-  suffixed with that ID. A pre-commit hook installed in each dispatched worktree
++  suffixed with that ID. A pre-commit hook active on every `rdf/phase-*` branch
++  (one `includeIf "onbranch:"` include; the project's own hooks still run)
+   physically rejects out-of-scope commits; the dispatcher's post-merge
+   `git diff-tree` is the defense-in-depth backstop. Plan authors may declare
+   `**Tests-may-touch:**` glob lists (plan schema Rule 8) to pre-authorize
+diff --git a/README.md b/README.md
+index 654da60..f186ad1 100644
+--- a/README.md
++++ b/README.md
+@@ -361,7 +361,7 @@ Three layers protect concurrent sessions from corrupting each other:
+ | Layer | Mechanism | Where |
+ |-------|-----------|-------|
+ | **Session-scoped state** | Session-id suffix on every transient file | `state/rdf-bus.sh` helpers |
+-| **Worktree boundary** | Pre-commit hook rejects out-of-scope commits | installed in every dispatched worktree |
++| **Worktree boundary** | Pre-commit hook rejects out-of-scope commits | active on every `rdf/phase-*` branch |
+ | **Pre-aggregation gate** | Engineer dirty-check before build steps | `engineer.md` Setup |
+ 
+ Plan authors can declare a `**Tests-may-touch:**` glob list (plan schema Rule 8) to pre-authorize trivial test-infra drift (≤30 lines, ≤3 files) without surfacing as out-of-scope. See `docs/specs/2026-04-25-concurrent-sessions-design.md` for the full 12-primitive design.
+diff --git a/WORKFORCE.md b/WORKFORCE.md
+index db5822d..b4bb4a1 100644
+--- a/WORKFORCE.md
++++ b/WORKFORCE.md
+@@ -68,7 +68,7 @@ effort live in `adapters/claude-code/agent-meta.json`.
+ |-----------|-------|---------|
+ | `RDF_SESSION_ID` (CC session id, else UUIDv7) | session shell + every subagent | Identity inherited via env |
+ | Scoped state filenames | engineer, qa, reviewer, dispatcher | `<basepath>-<SESSION_ID>.<ext>` |
+-| Worktree pre-commit hook | dispatcher (installer), engineer's own commit | Physical scope enforcement |
++| Worktree pre-commit hook | `/r-build` (installer: `rdf_phase_hook_install`), engineer's own commit | Physical scope enforcement |
+ | Pre-aggregation dirty check | engineer Setup | Fail fast before build steps |
+ | `**Tests-may-touch:**` (plan schema Rule 8) | planner declares, all three call sites enforce | Pre-authorized flex zone (≤30 lines, ≤3 files) |
+ 
