@@ -24,7 +24,7 @@ codegen, asset bundling), validate the working tree is clean
 outside your phase scope:
 
 ```
-git status --porcelain
+git -c core.quotePath=false status --porcelain
 ```
 
 Compute scope by reading the active plan (resolved via `rdf_active_plan_path`
@@ -34,7 +34,7 @@ in `~/.rdf/state/rdf-bus.sh`) for your phase: union of
 `rdf_parse_phase_scope` helper in `~/.rdf/state/rdf-bus.sh` produces the
 regex.
 
-If `git status --porcelain` lists any path outside that union (or
+If that listing shows any path outside that union (or
 any path inside the flex zone exceeding ceilings: ≤30 lines per
 file, ≤3 files total), STOP and report:
 

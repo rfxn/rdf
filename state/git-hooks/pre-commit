@@ -54,9 +54,6 @@ fi
 # shellcheck source=/dev/null
 source "$_bus"
 
-# Parse phase scope — read loop, not eval; plan files arrive via commits
-# (post-3.1.2 canonical workflow) and may carry shell metachars (`;`, `&`)
-# in Files entries that bypass rdf_parse_phase_scope's regex-metachar escape.
 # _rdf_session_plan root — plan named by root's session-scoped pointer (checked in both roots before any legacy fallback)
 _rdf_session_plan() {
     local _ptr="${1}/.rdf/active-plan-${RDF_SESSION_ID:-}" _p
@@ -72,6 +69,9 @@ if [[ -z "$_plan" ]]; then
     echo "rdf pre-commit: no active plan found; skipping scope check" >&2
     _rdf_pass
 fi
+# Parse phase scope — read loop, not eval; plan files arrive via commits
+# (post-3.1.2 canonical workflow) and may carry shell metachars (`;`, `&`)
+# in Files entries that bypass rdf_parse_phase_scope's regex-metachar escape.
 ALLOWED_REGEX=""
 FLEX_REGEX=""
 FLEX_FILE_CEILING=""
@@ -96,7 +96,8 @@ if [[ -n "${FLEX_REGEX:-}" ]]; then
 fi
 
 # Get staged files
-_staged="$(git diff --cached --name-only)"
+# -z: paths verbatim (the default output C-quotes non-ASCII, '"' and '\' names, which never match the scope regex)
+_staged="$(git diff --cached --name-only -z | command tr '\0' '\n')"
 if [[ -z "$_staged" ]]; then
     _rdf_pass   # nothing staged
 fi

@@ -243,7 +243,7 @@ Three call sites consume this rule:
   `# anti-pattern-enable: <class>|all` in `.rdf/governance/ignore.md`.
   `rdf_phase_hook_uninstall` removes it.
 - **Dispatcher post-merge check** (defense-in-depth): runs
-  `git diff-tree --name-only` after engineer returns; same union check.
+  `git diff-tree -z --name-only` after engineer returns; same union check.
 - **Engineer dirty check** (`canonical/agents/engineer.md` Setup):
   runs `git status --porcelain` before any aggregation/build step;
   same union check.

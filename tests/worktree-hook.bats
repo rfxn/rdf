@@ -59,6 +59,7 @@ setup() {
     cp "$RDF_SRC/state/rdf-bus.sh" "${HOME}/.rdf/state/"
     cp "$RDF_SRC/state/git-hooks/pre-commit" "${HOME}/.rdf/state/git-hooks/"
     unset CLAUDE_CODE_SESSION_ID RDF_SESSION_ID
+    export GIT_CONFIG_NOSYSTEM=1
     MARK="${SANDBOX}/marks"
     export MARK
     REPO="${SANDBOX}/café/app"   # non-ASCII path: git C-quotes it in non -z config output
@@ -136,6 +137,20 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
+@test "in-scope files with non-ASCII and quote characters in their names are accepted" {
+    printf '### Phase 1: names\n\n**Files:**\n- Create: `docs/café.md`\n- Create: `docs/q"uote.md`\n' > "$REPO/docs/plans/p.md"
+    _git -C "$REPO" add docs/plans/p.md
+    _git -C "$REPO" commit -q -m names
+    _install
+    _phase_wt
+    mkdir -p "$WT/docs"
+    printf 'x\n' > "$WT/docs/café.md"
+    printf 'y\n' > "$WT/docs/q\"uote.md"
+    git -C "$WT" add docs
+    run _git -C "$WT" commit -q -m names
+    [ "$status" -eq 0 ]
+}
+
 @test "phase branch with a non-SID suffix is still enforced" {
     _install
     _phase_wt "rdf/phase-1-a.b"
@@ -207,6 +222,7 @@ teardown() {
 }
 
 @test "an RDF hook copy in the prior hooks dir is not re-run" {
+    grep -q 'RDF worktree scope enforcement' "$RDF_SRC/state/git-hooks/pre-commit"   # the passthrough's guard keys on this marker
     _prior_hook pre-commit '# RDF worktree scope enforcement (stale copy)
 echo copy >> "$MARK"'
     _install

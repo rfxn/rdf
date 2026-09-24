@@ -206,4 +206,7 @@ jobs:
             exit 1
           fi
           grep -q 'SCOPE VIOLATION' "$h/err"
+          git -C "$repo" reset -q
+          printf 'echo b\n' >> "$repo/a.sh"; git -C "$repo" add a.sh
+          HOME="$h" PATH="/bin:/usr/bin:$PATH" git -C "$repo" -c user.email=t@t -c user.name=t commit -q -m in-scope
           echo "bash 3.2 phase scope guard smoke: OK"

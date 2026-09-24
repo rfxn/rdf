@@ -265,8 +265,8 @@ parallel within each batch):
      || echo "warn: phase scope guard (layer 1) not installed; post-merge scope check still applies" >&2
    ```
 
-   The helper copies `~/.rdf/state/git-hooks/pre-commit` (RDF
-   self-hosting: `state/git-hooks/pre-commit`) into the repo's
+   The helper copies `~/.rdf/state/git-hooks/pre-commit` (falling back
+   to `state/git-hooks/pre-commit` when nothing is deployed) into the repo's
    `rdf-hooks/` and adds an `includeIf "onbranch:rdf/phase-**"` include,
    so the hook runs on phase branches only and chains the project's own
    hooks; rc 2 means git < 2.23. The hook enforces phase scope

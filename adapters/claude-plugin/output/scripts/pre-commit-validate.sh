@@ -23,7 +23,7 @@ errors=0
 warnings=0
 
 # Get staged files
-staged=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+staged=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)  # not a repo / no HEAD → empty; quotePath: C-quoted names fail the -f test below
 if [ -z "$staged" ]; then
     exit 0  # Nothing staged
 fi

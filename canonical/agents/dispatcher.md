@@ -101,7 +101,8 @@ rdf_phase_hook_install "$PROJECT_ROOT_MAIN" \
 ```
 
 The helper copies the deployed `~/.rdf/state/git-hooks/pre-commit`
-(RDF self-hosting: `${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit`)
+(falling back to `${PROJECT_ROOT_MAIN}/state/git-hooks/pre-commit` when
+nothing is deployed)
 into the repo's `rdf-hooks/` and activates it on `rdf/phase-*` branches
 through an `includeIf "onbranch:"` include, chaining the project's own
 hooks. `${PROJECT_ROOT_MAIN}` is the main project root — passed in the
@@ -151,9 +152,11 @@ Procedure:
 
 2. Compute touched paths in engineer's commit:
    ```
-   touched=$(git -C "$worktree_path" diff-tree --no-commit-id \
-     --name-only -r HEAD)
+   touched=$(git -C "$worktree_path" diff-tree -z --no-commit-id \
+     --name-only -r HEAD | command tr '\0' '\n')
    ```
+   (`-z`: without it git C-quotes non-ASCII paths, which never match
+   the scope regex.)
 
 3. For each touched path: check it matches
    `${ALLOWED_REGEX}|${FLEX_REGEX}`. Out-of-scope paths emit a
