@@ -95,6 +95,22 @@ carried in this release:
       built-in profiles — see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Shipped in 3.8.1 — phase scope guard
+
+Spec → plan → build → sentinel for the scope guard, then two adversarial review
+rounds over `/r-build`'s parallel-worktree path.
+[design](docs/specs/2026-09-24-worktree-scope-guard-design.md) ·
+[plan](docs/plans/2026-09-24-worktree-scope-guard-plan.md).
+
+- [x] The phase scope guard works in every project, not just RDF's own
+      checkout: `rdf_phase_hook_install` turns it on for `rdf/phase-*`
+      branches and chains the project's own hooks
+- [x] `/r-build` parallel-worktree dispatch runs end to end: each phase
+      works and commits in its own worktree, merges linearly, and keeps its
+      result files; setup refuses unsafe states up front
+- [x] CI lints the pre-commit hook and smokes the guard on macOS bash 3.2;
+      BATS 423 → 455
+
 ## Shipped in 3.8.0 — context economy (spec A)
 
 Spec → plan → build → sentinel in one unattended pass.

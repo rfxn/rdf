@@ -15,6 +15,24 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.8.1 — 2026-09-24
+
+ADDED: `rdf_phase_hook_install` / `rdf_phase_hook_uninstall` (`state/rdf-bus.sh`) —
+per-repo activation of the phase scope guard: `includeIf "onbranch:rdf/phase-**"` →
+`rdf-hooks.inc` → `core.hooksPath=<git-common-dir>/rdf-hooks`, with a static
+passthrough that chains the project's own hooks (git ≥ 2.23).
+MODIFIED: `state/git-hooks/pre-commit` runs in any project — session id from the
+phase branch name, worktree and main-root plan pointers, NUL-safe path lists;
+anti-pattern classes scan shell files only and are opt-in outside RDF via
+`# anti-pattern-enable:` in `.rdf/governance/ignore.md`.
+MODIFIED: `/r-build` parallel-worktree dispatch — dispatchers launch inside each phase
+worktree (no harness `isolation`) and fail the phase anywhere else; setup records the
+base branch in `.rdf/work-output/base-branch-<SID>` and refuses a detached HEAD, a
+submodule, or an uncommitted plan; merge rebases inside the worktree and ff-merges by
+`refs/heads/` name; cleanup copies result files out of the worktree first.
+MODIFIED: CI lints `state/git-hooks/pre-commit`; `ignore-defaults.md` no longer
+excludes `docs/specs/`.
+
 ## 3.8.0 — 2026-09-24
 
 ADDED: role-based model + effort routing — `adapters/claude-code/agent-meta.json`
