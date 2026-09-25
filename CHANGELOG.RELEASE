@@ -32,12 +32,12 @@
       worktree, and the dispatcher fails the phase unless it was launched at its top level
 [Fix] /r-build worktree merge failed for every phase after the first (a rebase run from the
       main worktree cannot check out a branch held by its worktree, rc 128); it now rebases
-      in the worktree and ff-merges from main, refusing a branch with no commits or with
-      uncommitted changes; the controller's cd into each worktree is absolute
+      in the worktree and ff-merges from main, and pauses (new Section 8 classes) on a branch
+      with no commits or a worktree with uncommitted changes; the controller cd is absolute
 [Fix] /r-build pasted the base branch name into shell, so a crafted name ran code in the
       controller; setup now records it in a file and refuses a detached HEAD, a submodule,
       and a plan with uncommitted edits (worktrees and their scope guard read the committed
-      copy), with new Section 8 pause classes for these failures
+      copy)
 [Fix] /r-build worktree cleanup and retry deleted the dispatcher's result files with the
       worktree's ignored .rdf/ (now copied out first); the dispatcher's plan sync no longer
       overwrites a tracked plan (worktree left unremovable), resolves symlinked checkout

@@ -122,7 +122,9 @@ fi
 
 This sync is one-shot at worktree creation; subsequent operator edits
 to the main-repo plan are not reflected in worktrees. If the operator
-changes the plan mid-build, dispatch must be re-invoked.
+changes the plan mid-build, dispatch must be re-invoked. Never edit the
+plan inside a phase worktree: it is outside the phase's scope, so it
+cannot be committed there. Phase status goes to `.rdf/work-output/`.
 
 **(b) Ensure the scope guard is active.** `/r-build` normally installed
 it before dispatch; the call is idempotent:

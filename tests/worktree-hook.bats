@@ -342,6 +342,7 @@ _rbuild_step() {
     body="$(_md_block "$RDF_SRC/canonical/commands/r-build.md" '^[*][*]Worktree dispatch [(]parallel-worktree[)]:[*][*]' "$1")"
     [[ -n "$body" ]] || { echo "r-build.md worktree-dispatch block $1 not found"; return 1; }
     body="$(printf '%s\n' "$body" | sed -e "s/{N}/$2/g" -e "s/{base-branch}/$(git -C "$REPO" branch --show-current)/g")"
+    [[ -n "$body" ]] || { echo "placeholder substitution emptied block $1"; return 1; }
     (cd "$3" && bash -c "${body}"$'\n'"${4:-}")
 }
 
@@ -515,4 +516,28 @@ GUARD_RE='^[*][*][(]0[)] Confirm you were launched in the phase worktree'
     [ "$status" -eq 1 ]
     [[ "$output" == *"uncommitted changes"* ]]
     [ "$(git -C "$REPO" rev-parse main)" = "$before" ]
+}
+
+@test "r-build merge: uncommitted-only work, a vanished worktree, and a tag shadowing the base" {
+    _rbuild_env
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID"
+    _rbuild_step 0 1 "$REPO"
+    # Work left uncommitted (e.g. the hook rejected the commit) is reported as such, not as "no commits".
+    printf 'echo p1\n' >> "$wt1/src/a.sh"
+    run _rbuild_step 3 1 "$REPO"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uncommitted changes"* ]]
+    git -C "$wt1" add src/a.sh
+    _git -C "$wt1" commit -q -m p1
+    # A tag named like the base branch must not redirect the rebase or the merge.
+    _git -C "$REPO" tag main HEAD~1
+    run _rbuild_step 3 1 "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$REPO" log -1 --format=%s refs/heads/main)" = "p1" ]
+    # A phase worktree that disappeared is reported, not misread as a clean tree.
+    _rbuild_step 0 2 "$REPO"
+    rm -rf "$REPO/.worktrees/rdf-phase-2-$SID"
+    run _rbuild_step 3 2 "$REPO"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing or unreadable"* ]]
 }

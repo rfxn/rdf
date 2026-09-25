@@ -252,8 +252,9 @@ parallel within each batch):
    [ -n "$RDF_SESSION_ID" ] || { echo "rdf: no session id; refusing worktree setup" >&2; exit 1; }
    root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
    cd "$root" || exit 1
-   top="$(git rev-parse --show-toplevel 2>/dev/null)"  # fails inside .git/modules (submodule) → empty
-   [ "$top" = "$(pwd -P)" ] || { echo "rdf: $root is not a worktree toplevel (submodule?); refusing worktree setup" >&2; exit 1; }
+   inwt="$(git rev-parse --is-inside-work-tree 2>/dev/null)"  # false or fails in .git/modules, a bare repo, or a separate git dir
+   [ "$inwt" = true ] && [ -z "$(git rev-parse --show-prefix)" ] \
+     || { echo "rdf: $root is not a worktree toplevel (submodule, bare repo, or separate git dir); refusing worktree setup" >&2; exit 1; }
    base="$(git branch --show-current)"
    [ -n "$base" ] || { echo "rdf: HEAD is detached; check out the base branch first" >&2; exit 1; }
    plan="$(rdf_active_plan_path)" || { echo "rdf: no active plan" >&2; exit 1; }
@@ -333,17 +334,18 @@ parallel within each batch):
    wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
    [ -n "$base" ] && [ "$(git branch --show-current)" = "$base" ] \
      || { echo "rdf: main worktree is not on the recorded base branch '$base'" >&2; exit 1; }
-   n="$(git rev-list --count "refs/heads/${base}..refs/heads/${br}")" || exit 1
-   [ "$n" -gt 0 ] || { echo "rdf: $br has no commits; the phase did not land on its branch" >&2; exit 1; }
-   if [ -n "$(git -C "$wt" status --porcelain)" ]; then
+   st="$(git -C "$wt" status --porcelain)" || { echo "rdf: phase worktree $wt is missing or unreadable" >&2; exit 1; }
+   if [ -n "$st" ]; then
        git -C "$wt" status --short >&2
        echo "rdf: $br has uncommitted changes in its worktree" >&2; exit 1
    fi
-   if ! git -C "$wt" rebase "$base"; then
+   n="$(git rev-list --count "refs/heads/${base}..refs/heads/${br}")" || exit 1
+   [ "$n" -gt 0 ] || { echo "rdf: $br has no commits; the phase did not land on its branch" >&2; exit 1; }
+   if ! git -C "$wt" rebase "refs/heads/${base}"; then
        git -C "$wt" rebase --abort 2>/dev/null || true  # nothing to abort if the rebase never started
        echo "rdf: rebase conflict on $br" >&2; exit 1
    fi
-   git merge --ff-only "$br"
+   git merge --ff-only "refs/heads/${br}"
    ```
    This produces a clean linear history — phase commits appear in
    plan order with no merge commit artifacts. A phase that returned PASS
@@ -433,10 +435,11 @@ When one or more phases in a parallel batch fail:
    - Gate 3 (sentinel) architectural concern → recommendation: pause
    - Merge conflict → recommendation: serialize conflicting phases
    - Dispatcher not in its phase worktree, or PASS with no commits on the
-     phase branch → recommendation: pause (a retry repeats the misdispatch;
-     check where the controller was when it dispatched)
+     phase branch → recommendation: pause (check where the controller was
+     when it dispatched before retrying)
    - Uncommitted changes left in a phase worktree → recommendation: pause
-     (commit or discard them there, then re-run the merge step)
+     (inspect them there; discard and retry the phase rather than
+     committing them — a commit made now skips the phase's gates)
    - Post-batch QA failure → recommendation: pause
 
 3. Present to user with Recommendation:
