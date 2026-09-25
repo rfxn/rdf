@@ -24,7 +24,7 @@ jobs:
         run: |
           # Gather source shell files only — exclude generated adapter output
           mapfile -t FILES < <(
-            find bin/ lib/ state/ -name "*.sh" -o -name "rdf" |
+            find bin/ lib/ state/ -name "*.sh" -o -name "rdf" -o -path "state/git-hooks/pre-commit" |
             sort
           )
           # Top-level adapter scripts (not output/)

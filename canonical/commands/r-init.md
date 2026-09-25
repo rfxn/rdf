@@ -535,9 +535,6 @@ venv/
 
 # RDF working state (never contains source)
 .rdf/work-output/
-
-# Generated spec/plan state (user-local)
-docs/specs/
 ````
 
 Merge behavior: if `ignore.md` already exists, treat as user-modified

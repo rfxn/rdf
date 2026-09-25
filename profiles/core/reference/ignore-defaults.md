@@ -31,9 +31,6 @@ venv/
 
 # RDF working state (never contains source)
 .rdf/work-output/
-
-# Generated spec/plan state (user-local)
-docs/specs/
 ```
 
 ## Merge Behavior
@@ -47,8 +44,8 @@ docs/specs/
 
 ## Scope
 
-Agents read this file during setup and pass the path list to
-`grep --exclude-dir=` / `--exclude=` flags when running searches.
-No automatic tooling enforces it in 3.6 — enforcement is advisory
-and graduates to tool-level checks in 3.7 if field adoption is
-strong.
+The exclusion paths are advisory: agents read this file during setup
+and pass the path list to `grep --exclude-dir=` / `--exclude=` flags
+when running searches. `ignore.md` is also where the phase pre-commit
+hook reads `# anti-pattern-enable: <class>|all` and
+`# anti-pattern-skip: <class>` directives.

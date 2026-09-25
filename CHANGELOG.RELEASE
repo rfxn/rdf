@@ -38,6 +38,11 @@
       ignored .rdf/ (now copied to the main .rdf/work-output first), and the dispatcher's
       plan sync overwrote the committed plan, leaving the worktree dirty so git worktree
       remove refused it (only an untracked legacy plan is copied now)
+[Fix] CI lint never checked the extensionless state/git-hooks/pre-commit: the lint
+      job's shell-file find now collects it for bash -n and shellcheck -S error
+[Fix] ignore.md defaults (ignore-defaults.md and the /r-init copy) no longer seed
+      docs/specs/ as an excluded path (specs are committed artifacts); the Scope note
+      drops the stale 3.6/3.7 roadmap and names the hook's anti-pattern directives
 
 -- Changes --
 
@@ -45,3 +50,5 @@
          shebang; .bats excluded) and are off outside RDF's own checkout unless enabled
          with "# anti-pattern-enable: <class>|all" in .rdf/governance/ignore.md, where
          opt-outs are now read too
+[Change] CLAUDE.md: the pre-commit hook enforces the suppression-comment rule only on
+         /r-build phase-branch commits; elsewhere check added lines by hand

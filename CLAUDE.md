@@ -29,8 +29,9 @@ and project orchestration for any repo. Tool-agnostic by design.
 - `command cp`/`command mv`/`command rm` in project source (not bare, not `/usr/bin/`)
 - **Suppression comments (`2>/dev/null`, `|| true`) — RDF scope:** the workspace
   rule (same-line justification comment) applies to **new or modified** suppressions
-  in first-party source, and is enforced on added diff lines by
-  `state/git-hooks/pre-commit` (`suppression-no-comment` class). RDF is operator-run
+  in first-party source. `state/git-hooks/pre-commit` (`suppression-no-comment` class)
+  enforces it on added diff lines only in phase-branch commits made by `/r-build`;
+  elsewhere, check added lines by hand. RDF is operator-run
   developer tooling, not an adversarial-input-facing scanner like APF/BFD/LMD, so a
   retroactive sweep of the many self-evidently-safe pre-existing suppressions
   (`git`/`jq`/`find` probes whose empty-on-failure result is the intended value) is
