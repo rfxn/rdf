@@ -26,6 +26,9 @@ dispatch engineer, qa, uat, and reviewer subagents as needed.
 
 ### Load
 - Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`.
+- Worktree dispatch (the payload carries `PROJECT_ROOT_MAIN`): run
+  "Worktree Pre-Commit Hook Installation" steps (0)-(b) first — a fresh
+  worktree has no plan pointer until step (a) writes it.
 - Resolve plan: `plan_path="$(rdf_active_plan_path)"`. Error and stop
   if empty.
 - Read `$plan_path` — identify target phase (argument or next pending)
@@ -77,24 +80,27 @@ parallelism. Log: "Downgraded to serial-agent (parallel batch)."
 
 ### Worktree Pre-Commit Hook Installation (and active-plan sync)
 
-When dispatched into a worktree (`PARALLEL_BATCH: true` with
-`PROJECT_ROOT` set to a worktree path), confirm the location, then
-perform two installation steps before any engineer subagent is
-dispatched:
+When the payload carries `PROJECT_ROOT_MAIN` (parallel-worktree
+dispatch; `PROJECT_ROOT` is then the phase worktree), confirm the
+location, then perform two installation steps before any engineer
+subagent is dispatched. File-gated parallel dispatch (`PARALLEL_BATCH:
+true` without `PROJECT_ROOT_MAIN`) skips this section.
 
-**(0) Confirm you are in the phase worktree.** Work, commits, and the
-scope guard all depend on it; a harness-created worktree (for example
-`.claude/worktrees/agent-*` on a `worktree-agent-*` branch) is not one:
+**(0) Confirm you were launched in the phase worktree.** Your commands
+run where you were launched, so check that directory — do not `cd`
+first, and do all work from it afterwards. A harness-created worktree
+(`.claude/worktrees/agent-*` on a `worktree-agent-*` branch) or the main
+worktree fails the check. Set `N` and `PROJECT_ROOT` from the payload:
 ```bash
-cd "$PROJECT_ROOT" || exit 1
+_want="$(cd "${PROJECT_ROOT:?}" && pwd -P)" || exit 1
 _br="$(git branch --show-current)"
-if [[ -n "$(git rev-parse --show-prefix)" || "$_br" != rdf/phase-"$N"-* ]]; then
-    echo "dispatcher: $PROJECT_ROOT is not the top of an rdf/phase-$N-* worktree (branch: ${_br:-detached})" >&2
+if [[ "$(pwd -P)" != "$_want" || "$_br" != rdf/phase-"${N:?}"-* ]]; then
+    echo "dispatcher: running in $(pwd -P) on ${_br:-detached HEAD}, not at the top of $PROJECT_ROOT on rdf/phase-$N-*" >&2
     exit 1
 fi
 ```
 On failure, stop before any work and report "Phase N: FAIL — not in
-the phase worktree"; never fall back to the current directory.
+the phase worktree".
 
 **(a) Sync the active plan from main repo into worktree.**
 Worktrees check out the HEAD-committed working tree. The plan in
@@ -102,7 +108,10 @@ Worktrees check out the HEAD-committed working tree. The plan in
 automatically. Older legacy projects may still have a root `PLAN.md`
 (gitignored) that does NOT propagate — copy it only when it is not
 tracked (copying over a tracked plan leaves the worktree dirty, and
-`git worktree remove` then refuses it).
+`git worktree remove` then refuses it). `/rdf:r-build` refused to create
+the worktree if the tracked plan had uncommitted edits. Paths are
+compared physically, so a symlinked checkout still resolves; a plan
+outside the repo is pointed at directly.
 
 ```bash
 source ~/.rdf/state/rdf-bus.sh
@@ -112,12 +121,18 @@ if [[ -z "$_main_plan" ]]; then
     echo "dispatcher: main repo has no active plan; cannot proceed" >&2
     exit 1
 fi
-_rel_path="${_main_plan#"$PROJECT_ROOT_MAIN"/}"
-if ! git -C "$PROJECT_ROOT" ls-files --error-unmatch -- "$_rel_path" >/dev/null 2>&1; then  # untracked legacy plan
-    command mkdir -p "${PROJECT_ROOT}/$(command dirname "$_rel_path")"
-    command cp "$_main_plan" "${PROJECT_ROOT}/${_rel_path}"
+_main_real="$(cd "$PROJECT_ROOT_MAIN" && pwd -P)" || exit 1
+_plan_real="$(cd "$(command dirname "$_main_plan")" && pwd -P)/${_main_plan##*/}" || exit 1
+_rel_path="${_plan_real#"$_main_real"/}"
+if [[ "$_rel_path" == /* ]]; then
+    rdf_set_active_plan "$_plan_real" "$PROJECT_ROOT"
+else
+    if ! git -C "$PROJECT_ROOT" ls-files --error-unmatch -- "$_rel_path" >/dev/null 2>&1; then  # untracked legacy plan
+        command mkdir -p "${PROJECT_ROOT}/$(command dirname "$_rel_path")"
+        command cp "$_main_plan" "${PROJECT_ROOT}/${_rel_path}"
+    fi
+    rdf_set_active_plan "${PROJECT_ROOT}/${_rel_path}" "$PROJECT_ROOT"
 fi
-rdf_set_active_plan "${PROJECT_ROOT}/${_rel_path}" "$PROJECT_ROOT"
 ```
 
 This sync is one-shot at worktree creation; subsequent operator edits

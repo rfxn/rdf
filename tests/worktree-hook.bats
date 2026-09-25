@@ -336,12 +336,12 @@ _md_block() {
     ' "$1"
 }
 
-# _rbuild_step idx N cwd [extra] — run an r-build worktree-dispatch block for phase N from cwd, as the controller would
+# _rbuild_step idx N cwd [extra] — run an r-build worktree-dispatch block for phase N from cwd, pasting placeholders as the controller would
 _rbuild_step() {
     local body
     body="$(_md_block "$RDF_SRC/canonical/commands/r-build.md" '^[*][*]Worktree dispatch [(]parallel-worktree[)]:[*][*]' "$1")"
     [[ -n "$body" ]] || { echo "r-build.md worktree-dispatch block $1 not found"; return 1; }
-    body="$(printf '%s\n' "$body" | sed -e "s/{N}/$2/g" -e 's/{base-branch}/main/g')"
+    body="$(printf '%s\n' "$body" | sed -e "s/{N}/$2/g" -e "s/{base-branch}/$(git -C "$REPO" branch --show-current)/g")"
     (cd "$3" && bash -c "${body}"$'\n'"${4:-}")
 }
 
@@ -414,33 +414,105 @@ _rbuild_env() {
     [ "$(git -C "$REPO" rev-parse main)" = "$before" ]
 }
 
-# _dispatcher_step start-ere project-root [project-root-main] — run a dispatcher worktree-setup block for phase 1
+# _dispatcher_step start-ere launch-dir project-root [project-root-main] — run a dispatcher worktree-setup block for phase 1, launched in launch-dir
 _dispatcher_step() {
     local body
     body="$(_md_block "$RDF_SRC/canonical/agents/dispatcher.md" "$1" 0)"
     [[ -n "$body" ]] || { echo "dispatcher.md block after /$1/ not found"; return 1; }
-    N=1 PROJECT_ROOT="$2" PROJECT_ROOT_MAIN="${3:-}" bash -c "$body"
+    (cd "$2" && N=1 PROJECT_ROOT="$3" PROJECT_ROOT_MAIN="${4:-}" bash -c "$body")
 }
 
-@test "dispatcher location guard: phase worktree passes, a harness worktree-agent branch fails" {
+GUARD_RE='^[*][*][(]0[)] Confirm you were launched in the phase worktree'
+
+@test "dispatcher location guard checks the launch directory, not the payload path" {
     _rbuild_env
     _rbuild_step 0 1 "$REPO"
-    run _dispatcher_step '^[*][*][(]0[)] Confirm you are in the phase worktree' "$REPO/.worktrees/rdf-phase-1-$SID"
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID"
+    run _dispatcher_step "$GUARD_RE" "$wt1" "$wt1"
     [ "$status" -eq 0 ]
+    # Launched in a harness worktree or the main worktree, with the payload still naming the phase worktree.
     git -C "$REPO" worktree add -q "$REPO/.claude/worktrees/agent-x" -b worktree-agent-x HEAD
-    run _dispatcher_step '^[*][*][(]0[)] Confirm you are in the phase worktree' "$REPO/.claude/worktrees/agent-x"
+    run _dispatcher_step "$GUARD_RE" "$REPO/.claude/worktrees/agent-x" "$wt1"
     [ "$status" -eq 1 ]
     [[ "$output" == *"worktree-agent-x"* ]]
+    run _dispatcher_step "$GUARD_RE" "$REPO" "$wt1"
+    [ "$status" -eq 1 ]
+    run _dispatcher_step "$GUARD_RE" "$wt1/src" "$wt1"
+    [ "$status" -eq 1 ]
 }
 
 @test "dispatcher plan sync leaves a tracked plan alone, so the worktree stays removable" {
     _rbuild_env
     _rbuild_step 0 1 "$REPO"
     local wt1="$REPO/.worktrees/rdf-phase-1-$SID"
-    printf 'uncommitted operator edit\n' >> "$REPO/docs/plans/p.md"
-    run _dispatcher_step '^[*][*][(]a[)] Sync the active plan' "$wt1" "$REPO"
+    run _dispatcher_step '^[*][*][(]a[)] Sync the active plan' "$wt1" "$wt1" "$REPO"
     [ "$status" -eq 0 ]
     [ -z "$(git -C "$wt1" status --porcelain)" ]
     [ "$(cat "$wt1/.rdf/active-plan-$SID")" = "$wt1/docs/plans/p.md" ]
     git -C "$REPO" worktree remove "$wt1"
+}
+
+@test "dispatcher plan sync resolves a pointer written through a symlinked checkout path" {
+    _rbuild_env
+    _rbuild_step 0 1 "$REPO"
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID"
+    ln -s "$REPO" "$SANDBOX/link"
+    printf '%s\n' "$SANDBOX/link/docs/plans/p.md" > "$REPO/.rdf/active-plan-${SID}"
+    run _dispatcher_step '^[*][*][(]a[)] Sync the active plan' "$wt1" "$wt1" "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$(cat "$wt1/.rdf/active-plan-$SID")" = "$wt1/docs/plans/p.md" ]
+    [ -z "$(git -C "$wt1" status --porcelain)" ]
+}
+
+@test "r-build setup refuses a detached HEAD, an uncommitted plan edit, and a submodule" {
+    _rbuild_env
+    git -C "$REPO" checkout -q --detach
+    run _rbuild_step 0 1 "$REPO"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"detached"* ]]
+    git -C "$REPO" checkout -q main
+    printf 'uncommitted operator edit\n' >> "$REPO/docs/plans/p.md"
+    run _rbuild_step 0 1 "$REPO"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"commit the plan first"* ]]
+    [ -z "$(git -C "$REPO" branch --list 'rdf/phase-*')" ]
+    git -C "$REPO" checkout -q -- docs/plans/p.md
+    local super="$SANDBOX/super"
+    git init -q "$super"
+    _git -C "$super" -c protocol.file.allow=always submodule add -q "$REPO" app
+    run _rbuild_step 0 1 "$super/app"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not a worktree toplevel"* ]]
+    [ -z "$(git -C "$super" worktree list | sed 1d)" ]
+}
+
+@test "r-build never executes the base branch name" {
+    _rbuild_env
+    # shellcheck disable=SC2016  # the branch name is the literal payload
+    git -C "$REPO" checkout -q -b 'b$(touch${IFS}PWNED)'
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID"
+    _rbuild_step 0 1 "$REPO"
+    printf 'echo p1\n' >> "$wt1/src/a.sh"
+    git -C "$wt1" add src/a.sh
+    _git -C "$wt1" commit -q -m p1
+    run _rbuild_step 3 1 "$wt1"
+    [ ! -e "$REPO/PWNED" ]
+    [ ! -e "$wt1/PWNED" ]
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$REPO" log -1 --format=%s)" = "p1" ]
+}
+
+@test "r-build merge refuses a phase worktree with uncommitted changes" {
+    _rbuild_env
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID" before
+    _rbuild_step 0 1 "$REPO"
+    printf 'echo p1\n' >> "$wt1/src/a.sh"
+    git -C "$wt1" add src/a.sh
+    _git -C "$wt1" commit -q -m p1
+    printf 'stray\n' > "$wt1/test.log"
+    before="$(git -C "$REPO" rev-parse main)"
+    run _rbuild_step 3 1 "$REPO"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"uncommitted changes"* ]]
+    [ "$(git -C "$REPO" rev-parse main)" = "$before" ]
 }

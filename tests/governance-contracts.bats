@@ -279,7 +279,7 @@ _no_contract() {
 
 @test "r-build worktree dispatch never stacks harness worktree isolation" {
     _contract commands/r-build.md 'Never add the Agent tool.s `isolation: "worktree"`'
-    _contract agents/dispatcher.md 'Confirm you are in the phase worktree'
+    _contract agents/dispatcher.md 'Confirm you were launched in the phase worktree'
     # negation guard: no step dispatches the phase with harness isolation
     _no_contract commands/r-build.md '[Dd]ispatched with isolation'
 }

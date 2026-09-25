@@ -232,20 +232,36 @@ parallel within each batch):
 
 **Worktree dispatch (parallel-worktree):**
 1. Create task per phase in the batch
-2. Record `{base-branch}` — `git branch --show-current` in the main
-   worktree (stop if HEAD is detached); step 5 merges every phase onto it.
-   For each phase, create a git worktree. A retry (Option 2) or a resume
-   (Option 3) in the same session reuses the session id, so first clear
-   any leftover worktree and branch for this phase, logging the branch tip
-   so a failed attempt's commits stay recoverable (`git branch <name> <tip>`):
+2. For each phase, create a git worktree from the main worktree. The
+   block refuses a submodule, a detached HEAD, and a plan the worktrees
+   would not see as committed (they and the scope guard read the committed
+   copy), and records the base branch in a file so step 5 never pastes a
+   branch name into shell. A retry (Option 2) or a resume (Option 3) in the
+   same session reuses the session id, so it first clears any leftover
+   worktree and branch for this phase, keeping its result files and logging
+   the branch tip so a failed attempt's commits stay recoverable
+   (`git branch <name> <tip>`):
    ```
    source ~/.rdf/state/rdf-bus.sh && rdf_session_init
    [ -n "$RDF_SESSION_ID" ] || { echo "rdf: no session id; refusing worktree setup" >&2; exit 1; }
    root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
    cd "$root" || exit 1
+   top="$(git rev-parse --show-toplevel 2>/dev/null)"  # fails inside .git/modules (submodule) → empty
+   [ "$top" = "$(pwd -P)" ] || { echo "rdf: $root is not a worktree toplevel (submodule?); refusing worktree setup" >&2; exit 1; }
+   base="$(git branch --show-current)"
+   [ -n "$base" ] || { echo "rdf: HEAD is detached; check out the base branch first" >&2; exit 1; }
+   plan="$(rdf_active_plan_path)" || { echo "rdf: no active plan" >&2; exit 1; }
+   if [ -n "$(git status --porcelain -- "$plan" 2>/dev/null)" ]; then  # a plan outside the repo has no status
+       echo "rdf: commit the plan first; phase worktrees read the committed copy" >&2; exit 1
+   fi
+   command mkdir -p "${root}/.rdf/work-output"
+   printf '%s\n' "$base" > "${root}/.rdf/work-output/base-branch-${RDF_SESSION_ID}"
    wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
    if tip=$(git rev-parse --verify -q "refs/heads/$br"); then
        echo "removing leftover $br (tip $tip)"
+       for f in "${wt}/.rdf/work-output/phase-{N}-"*"-${RDF_SESSION_ID}.md"; do
+           [ -f "$f" ] && command cp -- "$f" "${root}/.rdf/work-output/"
+       done
        git worktree remove --force "$wt" 2>/dev/null || true  # worktree may already be gone
        git branch -D "$br"
    fi
@@ -286,7 +302,10 @@ parallel within each batch):
    next one — parallelism comes from the dispatches running in the
    background, not from simultaneous `cd`s. The `cd` also closes the
    non-deterministic-CWD class (the SDK picks an adjacent repo when CWD has
-   no `.git/`; workspace CLAUDE.md "Worktree CWD").
+   no `.git/`). After the last dispatch, return to the main worktree
+   (`cd "$root"`, `root` derived as above): progress tracking and Section 7
+   read `.rdf/work-output/` relative to it, and the running dispatchers
+   keep their launch directories.
    - Each gets the standard dispatch payload plus:
      PARALLEL_BATCH: true
      PROJECT_ROOT: {worktree path}
@@ -304,13 +323,18 @@ parallel within each batch):
    source ~/.rdf/state/rdf-bus.sh && rdf_session_init
    root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
    cd "$root" || exit 1
-   base="{base-branch}"
+   base="$(command cat "${root}/.rdf/work-output/base-branch-${RDF_SESSION_ID}")" || exit 1
    wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
-   [ "$(git branch --show-current)" = "$base" ] || { echo "rdf: main worktree is not on $base" >&2; exit 1; }
-   n="$(git rev-list --count "${base}..${br}")" || exit 1
+   [ -n "$base" ] && [ "$(git branch --show-current)" = "$base" ] \
+     || { echo "rdf: main worktree is not on the recorded base branch '$base'" >&2; exit 1; }
+   n="$(git rev-list --count "refs/heads/${base}..refs/heads/${br}")" || exit 1
    [ "$n" -gt 0 ] || { echo "rdf: $br has no commits; the phase did not land on its branch" >&2; exit 1; }
+   if [ -n "$(git -C "$wt" status --porcelain)" ]; then
+       git -C "$wt" status --short >&2
+       echo "rdf: $br has uncommitted changes in its worktree" >&2; exit 1
+   fi
    if ! git -C "$wt" rebase "$base"; then
-       git -C "$wt" rebase --abort
+       git -C "$wt" rebase --abort 2>/dev/null || true  # nothing to abort if the rebase never started
        echo "rdf: rebase conflict on $br" >&2; exit 1
    fi
    git merge --ff-only "$br"
@@ -318,8 +342,8 @@ parallel within each batch):
    This produces a clean linear history — phase commits appear in
    plan order with no merge commit artifacts. A phase that returned PASS
    with no commits on its branch committed somewhere else: treat it as a
-   FAIL, never as an empty phase. If rebase conflict: stop, report
-   conflicting phases, enter failure handling (Section 8)
+   FAIL, never as an empty phase. Any failure here stops the merge loop:
+   report it and enter failure handling (Section 8)
 6. Clean up each merged phase from the main worktree. The dispatcher's
    result files sit in the worktree's ignored `.rdf/`, which
    `git worktree remove` deletes without warning — copy them out first:
@@ -402,6 +426,11 @@ When one or more phases in a parallel batch fail:
    - Gate 3 (sentinel) MUST-FIX → recommendation: retry
    - Gate 3 (sentinel) architectural concern → recommendation: pause
    - Merge conflict → recommendation: serialize conflicting phases
+   - Dispatcher not in its phase worktree, or PASS with no commits on the
+     phase branch → recommendation: pause (a retry repeats the misdispatch;
+     check where the controller was when it dispatched)
+   - Uncommitted changes left in a phase worktree → recommendation: pause
+     (commit or discard them there, then re-run the merge step)
    - Post-batch QA failure → recommendation: pause
 
 3. Present to user with Recommendation:
