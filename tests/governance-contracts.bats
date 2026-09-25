@@ -275,6 +275,15 @@ _no_contract() {
     _no_contract commands/r-build.md '[Cc]onsistency micro-gate[^.]*(^|[^[:alnum:]_])(optional|skip(ped)?|not required|disabled)([^[:alnum:]_]|$)'
 }
 
+# ── /r-build: parallel-worktree phases run in the RDF phase worktree ──────────
+
+@test "r-build worktree dispatch never stacks harness worktree isolation" {
+    _contract commands/r-build.md 'Never add the Agent tool.s `isolation: "worktree"`'
+    _contract agents/dispatcher.md 'Confirm you are in the phase worktree'
+    # negation guard: no step dispatches the phase with harness isolation
+    _no_contract commands/r-build.md '[Dd]ispatched with isolation'
+}
+
 # ── Dispatcher: structured status writes to work-output after each phase ──────
 
 @test "dispatcher writes structured status to work-output after each phase" {

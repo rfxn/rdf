@@ -78,15 +78,31 @@ parallelism. Log: "Downgraded to serial-agent (parallel batch)."
 ### Worktree Pre-Commit Hook Installation (and active-plan sync)
 
 When dispatched into a worktree (`PARALLEL_BATCH: true` with
-`PROJECT_ROOT` set to a worktree path), perform two installation steps
-before any engineer subagent is dispatched:
+`PROJECT_ROOT` set to a worktree path), confirm the location, then
+perform two installation steps before any engineer subagent is
+dispatched:
+
+**(0) Confirm you are in the phase worktree.** Work, commits, and the
+scope guard all depend on it; a harness-created worktree (for example
+`.claude/worktrees/agent-*` on a `worktree-agent-*` branch) is not one:
+```bash
+cd "$PROJECT_ROOT" || exit 1
+_br="$(git branch --show-current)"
+if [[ -n "$(git rev-parse --show-prefix)" || "$_br" != rdf/phase-"$N"-* ]]; then
+    echo "dispatcher: $PROJECT_ROOT is not the top of an rdf/phase-$N-* worktree (branch: ${_br:-detached})" >&2
+    exit 1
+fi
+```
+On failure, stop before any work and report "Phase N: FAIL — not in
+the phase worktree"; never fall back to the current directory.
 
 **(a) Sync the active plan from main repo into worktree.**
 Worktrees check out the HEAD-committed working tree. The plan in
 `docs/plans/` is committed and thus appears in the worktree
 automatically. Older legacy projects may still have a root `PLAN.md`
-(gitignored) that does NOT propagate — copy it explicitly if the
-resolver returned a legacy path.
+(gitignored) that does NOT propagate — copy it only when it is not
+tracked (copying over a tracked plan leaves the worktree dirty, and
+`git worktree remove` then refuses it).
 
 ```bash
 source ~/.rdf/state/rdf-bus.sh
@@ -96,10 +112,11 @@ if [[ -z "$_main_plan" ]]; then
     echo "dispatcher: main repo has no active plan; cannot proceed" >&2
     exit 1
 fi
-_rel_path="${_main_plan#$PROJECT_ROOT_MAIN/}"
-command mkdir -p "${PROJECT_ROOT}/$(command dirname "$_rel_path")"
-command cp "$_main_plan" "${PROJECT_ROOT}/${_rel_path}"
-# Set the worktree-local pointer to the worktree-local copy
+_rel_path="${_main_plan#"$PROJECT_ROOT_MAIN"/}"
+if ! git -C "$PROJECT_ROOT" ls-files --error-unmatch -- "$_rel_path" >/dev/null 2>&1; then  # untracked legacy plan
+    command mkdir -p "${PROJECT_ROOT}/$(command dirname "$_rel_path")"
+    command cp "$_main_plan" "${PROJECT_ROOT}/${_rel_path}"
+fi
 rdf_set_active_plan "${PROJECT_ROOT}/${_rel_path}" "$PROJECT_ROOT"
 ```
 
@@ -129,7 +146,7 @@ The hook reads the active plan from the worktree (now synced via step
 outside the union of `**Files:**` and `**Tests-may-touch:**`. See
 `plan-schema.md` Rule 8 for the full enforcement contract.
 
-If either step fails (filesystem permission, missing source):
+If step (a) or (b) fails (filesystem permission, missing source):
 log a warning and proceed. The Post-Merge Scope Check (next
 section) still applies as a defense-in-depth backstop.
 

@@ -326,3 +326,121 @@ echo copy >> "$MARK"'
     run _git -C "$WT" commit -q -m free
     [ "$status" -eq 0 ]
 }
+
+# _md_block file start-ere idx — idx-th (0-based) fenced block after the first start-ere line, indent stripped
+_md_block() {
+    awk -v start="$2" -v want="$3" '
+        !on && $0 ~ start { on = 1; next }
+        on && /^[[:space:]]*```/ { if (inb) { inb = 0; n++; if (n > want) exit; next } inb = 1; next }
+        on && inb && n == want { sub(/^   /, ""); print }
+    ' "$1"
+}
+
+# _rbuild_step idx N cwd [extra] — run an r-build worktree-dispatch block for phase N from cwd, as the controller would
+_rbuild_step() {
+    local body
+    body="$(_md_block "$RDF_SRC/canonical/commands/r-build.md" '^[*][*]Worktree dispatch [(]parallel-worktree[)]:[*][*]' "$1")"
+    [[ -n "$body" ]] || { echo "r-build.md worktree-dispatch block $1 not found"; return 1; }
+    body="$(printf '%s\n' "$body" | sed -e "s/{N}/$2/g" -e 's/{base-branch}/main/g')"
+    (cd "$3" && bash -c "${body}"$'\n'"${4:-}")
+}
+
+# _rbuild_env — stable harness session id and a git identity for rebase
+_rbuild_env() {
+    export CLAUDE_CODE_SESSION_ID="$SID"
+    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+    printf '\n### Phase 2: other\n\n**Files:**\n- Create: `src/b.sh`\n' >> "$REPO/docs/plans/p.md"
+    _git -C "$REPO" commit -q -am "plan: phase 2"
+}
+
+@test "r-build worktree protocol: two phases dispatch, commit under the guard, merge linearly, clean up" {
+    _rbuild_env
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID" wt2="$REPO/.worktrees/rdf-phase-2-$SID"
+    _rbuild_step 0 1 "$REPO"
+    _rbuild_step 0 2 "$REPO"
+    _rbuild_step 1 1 "$REPO"
+    run git -C "$REPO" config --get "$INCLUDE_KEY"
+    [ "$output" = "rdf-hooks.inc" ]
+    # The controller's cd lands in the right worktree even from inside another phase's worktree.
+    run _rbuild_step 2 1 "$REPO" 'pwd -P'
+    [ "$status" -eq 0 ]
+    [ "$output" = "$(cd "$wt1" && pwd -P)" ]
+    run _rbuild_step 2 2 "$wt1" 'pwd -P'
+    [ "$status" -eq 0 ]
+    [ "$output" = "$(cd "$wt2" && pwd -P)" ]
+    # Dispatchers commit in their worktrees; the guard still rejects out-of-scope work.
+    printf 'x\n' > "$wt1/src/b.sh"
+    git -C "$wt1" add src/b.sh
+    run _git -C "$wt1" commit -q -m oob
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"SCOPE VIOLATION"* ]]
+    git -C "$wt1" reset -q
+    rm "$wt1/src/b.sh"
+    printf 'echo p1\n' >> "$wt1/src/a.sh"
+    git -C "$wt1" add src/a.sh
+    _git -C "$wt1" commit -q -m p1
+    printf 'echo p2\n' > "$wt2/src/b.sh"
+    git -C "$wt2" add src/b.sh
+    _git -C "$wt2" commit -q -m p2
+    mkdir -p "$wt1/.rdf/work-output" "$wt2/.rdf/work-output"
+    printf 'PASS\n' > "$wt1/.rdf/work-output/phase-1-result-$SID.md"
+    printf 'PASS\n' > "$wt2/.rdf/work-output/phase-2-result-$SID.md"
+    # Merge from wherever the controller was left (phase 2's worktree), in plan order.
+    run _rbuild_step 3 1 "$wt2"
+    [ "$status" -eq 0 ]
+    run _rbuild_step 3 2 "$wt2"
+    [ "$status" -eq 0 ]
+    run _rbuild_step 4 1 "$REPO"
+    [ "$status" -eq 0 ]
+    run _rbuild_step 4 2 "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$(git -C "$REPO" branch --show-current)" = "main" ]
+    [ "$(git -C "$REPO" log --format=%s -3 main | tr '\n' ' ')" = "p2 p1 plan: phase 2 " ]
+    [ "$(git -C "$REPO" rev-list --count --merges main)" -eq 0 ]
+    [ "$(git -C "$REPO" worktree list | wc -l)" -eq 1 ]
+    [ -z "$(git -C "$REPO" branch --list 'rdf/phase-*')" ]
+    [ -f "$REPO/.rdf/work-output/phase-1-result-$SID.md" ]
+    [ -f "$REPO/.rdf/work-output/phase-2-result-$SID.md" ]
+}
+
+@test "r-build merge refuses a phase branch with no commits (work landed elsewhere)" {
+    _rbuild_env
+    _rbuild_step 0 1 "$REPO"
+    local before
+    before="$(git -C "$REPO" rev-parse main)"
+    run _rbuild_step 3 1 "$REPO"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"has no commits"* ]]
+    [ "$(git -C "$REPO" rev-parse main)" = "$before" ]
+}
+
+# _dispatcher_step start-ere project-root [project-root-main] — run a dispatcher worktree-setup block for phase 1
+_dispatcher_step() {
+    local body
+    body="$(_md_block "$RDF_SRC/canonical/agents/dispatcher.md" "$1" 0)"
+    [[ -n "$body" ]] || { echo "dispatcher.md block after /$1/ not found"; return 1; }
+    N=1 PROJECT_ROOT="$2" PROJECT_ROOT_MAIN="${3:-}" bash -c "$body"
+}
+
+@test "dispatcher location guard: phase worktree passes, a harness worktree-agent branch fails" {
+    _rbuild_env
+    _rbuild_step 0 1 "$REPO"
+    run _dispatcher_step '^[*][*][(]0[)] Confirm you are in the phase worktree' "$REPO/.worktrees/rdf-phase-1-$SID"
+    [ "$status" -eq 0 ]
+    git -C "$REPO" worktree add -q "$REPO/.claude/worktrees/agent-x" -b worktree-agent-x HEAD
+    run _dispatcher_step '^[*][*][(]0[)] Confirm you are in the phase worktree' "$REPO/.claude/worktrees/agent-x"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"worktree-agent-x"* ]]
+}
+
+@test "dispatcher plan sync leaves a tracked plan alone, so the worktree stays removable" {
+    _rbuild_env
+    _rbuild_step 0 1 "$REPO"
+    local wt1="$REPO/.worktrees/rdf-phase-1-$SID"
+    printf 'uncommitted operator edit\n' >> "$REPO/docs/plans/p.md"
+    run _dispatcher_step '^[*][*][(]a[)] Sync the active plan' "$wt1" "$REPO"
+    [ "$status" -eq 0 ]
+    [ -z "$(git -C "$wt1" status --porcelain)" ]
+    [ "$(cat "$wt1/.rdf/active-plan-$SID")" = "$wt1/docs/plans/p.md" ]
+    git -C "$REPO" worktree remove "$wt1"
+}

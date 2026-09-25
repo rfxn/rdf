@@ -332,7 +332,7 @@ teardown() {
     _generate "$RDF_SRC" "$output_dir"
     grep -q 'RDF_SESSION_ID' "$output_dir/skills/r-build/SKILL.md"
     grep -q 'state/git-hooks/pre-commit' "$output_dir/skills/r-build/SKILL.md"
-    grep -q 'cd \.worktrees\|cd into the worktree' "$output_dir/skills/r-build/SKILL.md"
+    grep -qF 'cd "${root}/.worktrees/rdf-phase-' "$output_dir/skills/r-build/SKILL.md"
     grep -q 'build-progress-\${RDF_SESSION_ID}' "$output_dir/skills/r-build/SKILL.md"
     # explicit if/return — bats runs bodies under `set -e`, which exempts
     # `!`-negated commands, so a bare `!` never fails the test (SC2314)

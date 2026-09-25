@@ -26,6 +26,18 @@
       post-merge check list paths with -z (a newline-embedded name is always out of
       scope); the engineer dirty check and pre-commit-validate.sh use
       core.quotePath=false (non-ASCII names only)
+[Fix] /r-build parallel-worktree phases ran outside their worktree: the added isolation:
+      "worktree" forked each dispatcher from origin's default branch onto worktree-agent-*
+      (stale base, commits outside the scope guard); dispatch now starts inside the phase
+      worktree, and the dispatcher fails the phase anywhere but an rdf/phase-<N>-* top level
+[Fix] /r-build worktree merge failed for every phase after the first: `git rebase <base>
+      <branch>` cannot check out a branch held by its worktree (rc 128); it now rebases in
+      the worktree, ff-merges from the main worktree, and refuses a phase branch with no
+      commits; the controller's cd into a worktree is absolute
+[Fix] /r-build worktree cleanup deleted the dispatcher's result files with the worktree's
+      ignored .rdf/ (now copied to the main .rdf/work-output first), and the dispatcher's
+      plan sync overwrote the committed plan, leaving the worktree dirty so git worktree
+      remove refused it (only an untracked legacy plan is copied now)
 
 -- Changes --
 

@@ -232,7 +232,9 @@ parallel within each batch):
 
 **Worktree dispatch (parallel-worktree):**
 1. Create task per phase in the batch
-2. For each phase, create a git worktree. A retry (Option 2) or a resume
+2. Record `{base-branch}` — `git branch --show-current` in the main
+   worktree (stop if HEAD is detached); step 5 merges every phase onto it.
+   For each phase, create a git worktree. A retry (Option 2) or a resume
    (Option 3) in the same session reuses the session id, so first clear
    any leftover worktree and branch for this phase, logging the branch tip
    so a failed attempt's commits stay recoverable (`git branch <name> <tip>`):
@@ -240,6 +242,7 @@ parallel within each batch):
    source ~/.rdf/state/rdf-bus.sh && rdf_session_init
    [ -n "$RDF_SESSION_ID" ] || { echo "rdf: no session id; refusing worktree setup" >&2; exit 1; }
    root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
+   cd "$root" || exit 1
    wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
    if tip=$(git rev-parse --verify -q "refs/heads/$br"); then
        echo "removing leftover $br (tip $tip)"
@@ -267,47 +270,80 @@ parallel within each batch):
    (Files ∪ Tests-may-touch) at `git commit` time. See `plan-schema.md`
    Rule 8 and dispatcher.md "Worktree Pre-Commit Hook Installation".
 
-3. Before each `Task` dispatch, the controller MUST change directory
-   into the target worktree:
+3. Dispatch each phase's `rdf-dispatcher` from inside its worktree. A
+   subagent starts in the controller's current directory, fixed at launch
+   (a later `cd` does not move it), so `cd` there first — by absolute path,
+   since a relative `.worktrees/…` does not resolve once the controller
+   sits in another phase's worktree:
    ```
-   cd .worktrees/rdf-phase-{N}-${RDF_SESSION_ID}
+   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
+   root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
+   cd "${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}" || exit 1
+   [ "$(git branch --show-current)" = "rdf/phase-{N}-${RDF_SESSION_ID}" ] \
+     || { echo "rdf: not on rdf/phase-{N}-${RDF_SESSION_ID}; refusing dispatch" >&2; exit 1; }
    ```
-   The `Task` tool inherits the controller's CWD; the SDK picks an
-   adjacent repo non-deterministically when CWD has no `.git/`
-   (see workspace CLAUDE.md "Worktree CWD"). This `cd` is the
-   actual mechanism that closes the non-deterministic-CWD class.
-   For parallel dispatches in a batch, the controller serializes
-   the `cd → Task` pair per-phase (parallelism comes from the
-   `Task` calls returning before the subagent finishes, not from
-   simultaneous `cd`s).
-
-   Then dispatch N rdf-dispatcher subagents simultaneously:
+   then dispatch that phase, and repeat the `cd → dispatch` pair for the
+   next one — parallelism comes from the dispatches running in the
+   background, not from simultaneous `cd`s. The `cd` also closes the
+   non-deterministic-CWD class (the SDK picks an adjacent repo when CWD has
+   no `.git/`; workspace CLAUDE.md "Worktree CWD").
    - Each gets the standard dispatch payload plus:
      PARALLEL_BATCH: true
      PROJECT_ROOT: {worktree path}
      PROJECT_ROOT_MAIN: {main worktree toplevel}
-   - Each dispatched with isolation: "worktree"
+   - Never add the Agent tool's `isolation: "worktree"` on top: the
+     harness would make a second worktree from origin's default branch
+     (not local HEAD) on a `worktree-agent-*` branch, so the phase builds
+     on stale pushed code and commits outside the phase scope guard.
 4. Wait for all subagents in the batch to complete
-5. Merge completed worktrees in plan order:
-   For each completed phase (in plan order, N ascending):
-     git rebase {base-branch} rdf/phase-{N}-${RDF_SESSION_ID}
-   Where {base-branch} is the branch HEAD was on when worktrees were
-   created (captured at step 2 of worktree dispatch).
-     git merge --ff-only rdf/phase-{N}-${RDF_SESSION_ID}
+5. Merge completed phases in plan order (N ascending) from the main
+   worktree — a controller left in a phase worktree would merge into that
+   phase branch. Rebase inside the phase worktree: the branch is checked
+   out there, so `git rebase <base> <branch>` from the main worktree fails.
+   ```
+   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
+   root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
+   cd "$root" || exit 1
+   base="{base-branch}"
+   wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
+   [ "$(git branch --show-current)" = "$base" ] || { echo "rdf: main worktree is not on $base" >&2; exit 1; }
+   n="$(git rev-list --count "${base}..${br}")" || exit 1
+   [ "$n" -gt 0 ] || { echo "rdf: $br has no commits; the phase did not land on its branch" >&2; exit 1; }
+   if ! git -C "$wt" rebase "$base"; then
+       git -C "$wt" rebase --abort
+       echo "rdf: rebase conflict on $br" >&2; exit 1
+   fi
+   git merge --ff-only "$br"
+   ```
    This produces a clean linear history — phase commits appear in
-   plan order with no merge commit artifacts.
-   If rebase conflict: stop, report conflicting phases, enter
-   failure handling (Section 8)
-6. Clean up worktrees:
-   git worktree remove .worktrees/rdf-phase-{N}-${RDF_SESSION_ID}
-   git branch -d rdf/phase-{N}-${RDF_SESSION_ID}
+   plan order with no merge commit artifacts. A phase that returned PASS
+   with no commits on its branch committed somewhere else: treat it as a
+   FAIL, never as an empty phase. If rebase conflict: stop, report
+   conflicting phases, enter failure handling (Section 8)
+6. Clean up each merged phase from the main worktree. The dispatcher's
+   result files sit in the worktree's ignored `.rdf/`, which
+   `git worktree remove` deletes without warning — copy them out first:
+   ```
+   source ~/.rdf/state/rdf-bus.sh && rdf_session_init
+   root="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)" || exit 1
+   cd "$root" || exit 1
+   wt="${root}/.worktrees/rdf-phase-{N}-${RDF_SESSION_ID}"; br="rdf/phase-{N}-${RDF_SESSION_ID}"
+   command mkdir -p "${root}/.rdf/work-output"
+   for f in "${wt}/.rdf/work-output/phase-{N}-"*"-${RDF_SESSION_ID}.md"; do
+       [ -f "$f" ] && command cp -- "$f" "${root}/.rdf/work-output/"
+   done
+   git worktree remove "$wt" && git branch -d "$br"
+   ```
+   If `git worktree remove` refuses (modified or untracked files), show
+   `git -C "$wt" status --short` and resolve before any `--force` —
+   uncommitted work in a phase worktree is a FAIL signal, not debris.
 7. Collect results: PASS or FAIL per phase
 
 **Constraint:** Worktree dispatch MUST be invoked from a top-level
 session, not from a subagent. Subagents inherit `RDF_SESSION_ID`
 from their parent and would create colliding worktree paths.
-The `PARALLEL_BATCH` downgrade in `dispatcher.md` (lines 45-49)
-already prevents nested parallel dispatch; this is its
+The `PARALLEL_BATCH` downgrade in `dispatcher.md` ("Nested parallel
+downgrade") already prevents nested parallel dispatch; this is its
 worktree-specific explicit form.
 
 **Post-batch quality gate (worktree dispatch only):**
