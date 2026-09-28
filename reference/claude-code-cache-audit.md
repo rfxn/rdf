@@ -1,44 +1,27 @@
-# Claude Code Cache Health Audit
+Analyze my Claude Code session history for token efficiency: cache health, context discipline, tool use, and work output per token.
 
-> **One prompt. Full cache economics report. Works on any Claude Code installation.**
+RULES
+- Everything you need is on disk. No web, no pricing research, no dollar figures anywhere.
+- Do not read transcripts into context. Write one Python script that prints aggregates. Revise it only to fix a failed check.
+- Numbers and patterns only. No code, file contents, prompts, or customer data. Project names are fine.
 
-Prompt caching has a TTL. When it expires, your entire conversation context rebuilds at 12.5x the cache read rate. Most users have no visibility into this.
+DATA
+- Parse all JSONL files under ~/.claude/projects/. Main-thread analysis skips any path containing /subagents/. Parse subagent files separately and use them only for token share.
+- Group turns by the top-level sessionId field, not by file. Merge all files sharing a sessionId and sort by timestamp before computing per-session metrics.
+- One API response can span several JSONL lines carrying identical usage. Count usage once per message.id.
+- SCHEMA CHECK first: parse 3 files and confirm timestamp, sessionId, message.model, and message.usage with input_tokens, cache_creation_input_tokens, cache_read_input_tokens, output_tokens. Print one sample usage block. If the schema does not match, stop and report what you found.
 
-This prompt parses your local `~/.claude/` session transcripts and produces a structured audit of your cache hit rates, idle-gap penalties, and the exact minute your cache cliff lives.
+DEFINITIONS
+- Fresh input = input_tokens + cache_creation_input_tokens. Hit% = cache_read / (cache_read + fresh input).
+- Idle gap = time since the previous turn in the same session.
+- Rebuild = a turn with context >50k where cache_creation is >50% of its input.
+- Read-equivalent units (RE) show the relative weight of tokens: cache read x1, cache write x12.5 (5-min TTL) or x20 (1-hour TTL), uncached input x10, output x50. RE is a relative measure. Never convert it to money.
+- If message.usage.cache_creation splits writes by TTL (ephemeral_5m / ephemeral_1h), use the split. Otherwise treat writes as 5-min and say so.
+- Edits = Edit, Write, MultiEdit, NotebookEdit calls. Commits = Bash calls containing "git commit". Tool result tokens = characters / 4.
 
-## Quick Start
+OUTPUT FORMAT: Print the report inline as your reply. Do not write it to a file. Each section is a header followed by a fixed-width table or key-value block. No prose outside DIAGNOSIS and WORKING AGREEMENT. After ===== END AUDIT ===== stop.
 
-Paste the prompt below into any Claude Code session. No setup, no dependencies, no API keys. It reads your local JSONL transcripts and produces the report in ~60 seconds.
-
-## The Prompt
-
-```
-Analyze my Claude Code session history to evaluate prompt cache health.
-
-DATA LOCATION: Parse all JSONL transcript files under ~/.claude/projects/. Recurse into subdirectories but skip any path containing /subagents/. If no JSONL files are found, check if ~/.claude/sessions.db exists and report that the data may be in SQLite format instead.
-
-SESSION GROUPING: A single session can span multiple JSONL files. Group all turns by the sessionId field at the top level of each JSON line. Do NOT treat each JSONL file as a separate session. The session count in the report must reflect unique sessionId values, not file count. When computing per-session metrics (turns per session, context at session end, idle gaps between turns), merge all files sharing the same sessionId and sort their turns by timestamp before analysis.
-
-SCHEMA VERIFICATION: Before the full scan, parse the first 3 JSONL files found. Confirm that:
-- Top-level fields include "timestamp" (ISO string) and "message" (object)
-- message.usage contains cache_read_input_tokens, cache_creation_input_tokens, input_tokens
-- Print one sample usage block so I can verify the schema is correct
-If the schema does not match, stop and report what you found instead of proceeding with bad data.
-
-PRICING: Detect the model from the message.model field in the JSONL data. Apply the correct 5-minute cache tier pricing (per 1M tokens):
-- Opus (claude-opus-4-6, claude-opus-4-5):     input $5,  cache_create $6.25,  cache_read $0.50
-- Sonnet (claude-sonnet-4-6, claude-sonnet-4-5, claude-sonnet-4-*): input $3,  cache_create $3.75,  cache_read $0.30
-- Haiku (claude-haiku-4-5):                     input $1,  cache_create $1.25,  cache_read $0.10
-If the model string does not match any above, default to Sonnet pricing and flag it in the overview.
-If mixed models are present, report per-model and use a weighted blend for the summary tables.
-
-OUTPUT FORMAT: Print the report directly to the conversation as your response. Do not wrap it in a script, do not write it to a file, do not use the Read tool to display it. Render it inline as your reply text.
-
-Do not add narrative paragraphs, commentary, or interpretation between sections. Each section is a header followed by a fixed-width table or key-value block. No prose. Tables only. Save all analysis for the DIAGNOSIS section.
-
-After printing ===== END AUDIT ===== stop. Do not add callouts, notes, summaries, or commentary after the report. The report is the complete response.
-
-===== CLAUDE CODE CACHE HEALTH AUDIT =====
+===== CLAUDE CODE TOKEN EFFICIENCY AUDIT =====
 
 📊 OVERVIEW
 Metric                          Value
@@ -46,98 +29,100 @@ Metric                          Value
 Sessions analyzed               <N>
 Turns with usage data           <N>
 Date range                      <YYYY-MM-DD to YYYY-MM-DD>
-Total input tokens              <N>B
+Total tokens                    <N>M
+Fresh input / Cache read        <N>M / <N>M
+Output tokens                   <N>M
+Cache writes 5m / 1h            <N>% / <N>%
+Subagent share of RE            <N>%
 Primary model                   <model>
 
 📦 SESSION PROFILE
 Metric                          Value
 ─────────────────────────────────────────
-Avg context at end              <N>k
-Median context at end           <N>k
-P90 context at end              <N>k
-Max context at end              <N>k
-Avg turns per session           <N>
-Median turns per session        <N>
+Avg / Median context at end     <N>k / <N>k
+P90 / Max context at end        <N>k / <N>k
+Avg / Median turns per session  <N> / <N>
 Sessions >100k                  <N> (<N>%)
 Sessions >200k                  <N> (<N>%)
 Sessions >500k                  <N> (<N>%)
 
-📈 CACHE HIT RATE BY WEEK
-Week       Sessions   Turns   CacheRead   CacheCreate   FreshInput   Hit%     $/turn
-─────────────────────────────────────────────────────────────────────────────────────
-YYYY-WNN   <N>        <N>     <N>M        <N>M          <N>K         <N>%     $<N>
+📈 BY WEEK
+Week       Sessions  Turns  CacheRead  CacheWrite  FreshInput  Output  Hit%  RE/turn
+──────────────────────────────────────────────────────────────────────────────────────
+YYYY-WNN   <N>       <N>    <N>M       <N>M        <N>K        <N>K    <N>%  <N>k
 
-🧊 CACHE HIT RATE BY IDLE GAP
-Gap          Turns    AvgRead    AvgCreate    Hit%     $/turn    Verdict
-─────────────────────────────────────────────────────────────────────────
-<1m          <N>      <N>k       <N>k         <N>%     $<N>      <emoji>
-1-5m         <N>      <N>k       <N>k         <N>%     $<N>      <emoji>
-5-15m        <N>      <N>k       <N>k         <N>%     $<N>      <emoji>
-15-60m       <N>      <N>k       <N>k         <N>%     $<N>      <emoji>
-1h+          <N>      <N>k       <N>k         <N>%     $<N>      <emoji>
+🧊 BY IDLE GAP
+Gap      Turns  AvgRead  AvgWrite  Hit%  RE/turn  Verdict
+──────────────────────────────────────────────────────────
+<1m      <N>    <N>k     <N>k      <N>%  <N>k     <emoji>
+1-5m     <N>    <N>k     <N>k      <N>%  <N>k     <emoji>
+5-15m    <N>    <N>k     <N>k      <N>%  <N>k     <emoji>
+15-60m   <N>    <N>k     <N>k      <N>%  <N>k     <emoji>
+1h+      <N>    <N>k     <N>k      <N>%  <N>k     <emoji>
+Verdict: 🟢 hit% >90, 🟡 50-90, 🔴 <50
 
-Verdict column: 🟢 hit% >90, 🟡 hit% 50-90, 🔴 hit% <50
+💀 WORST REBUILDS
+Date         Project              Turn   Gap    Context  Written  Read
+──────────────────────────────────────────────────────────────────────
+MM-DD HH:MM  <name>               T<N>   <N>m   <N>k     <N>k     <N>k
+Filter: rebuilds with gap >5 min. Top 10 by tokens written.
 
-💀 WORST CACHE MISSES
-Date         Project                  Turn    Gap       Context    Created    Read
-─────────────────────────────────────────────────────────────────────────────────
-MM-DD HH:MM  <name>                   T<N>    <N>m      <N>k       <N>k       <N>k
+🔧 TOOL USE
+Tool / MCP server     Calls  Avg result  Max result  Share of result tokens
+──────────────────────────────────────────────────────────────────────────
+<name>                <N>    <N>k        <N>k        <N>%
+Top 10 by share, then:
+File re-read rate (same file, same session)        <N>%
+Tool results >20k tokens per week                  <N>
+Sessions with 3+ consecutive failing test/build    <N>%
 
-Filter: context >100k AND cache_create >50% of total AND gap >5 min. Top 10 by created.
+🛠 WORK OUTPUT
+Edits                           <N>
+Commits                         <N>
+RE per edit                     <N>k
+RE per commit                   <N>k
+
+🎯 SCORECARD
+Metric                               Mine    Target       Status
+──────────────────────────────────────────────────────────────────
+Cache hit rate                       <N>%    ≥ 95%        <status>
+Idle-gap rebuild share of RE         <N>%    ≤ 10%        <status>
+Sessions >200k context               <N>%    ≤ 20%        <status>
+File re-read rate                    <N>%    ≤ 10%        <status>
+Tool results >20k per week           <N>     ≤ 5          <status>
+Failing test/build loop sessions     <N>%    ≤ 5%         <status>
+RE per edit                          <N>k    baseline     Baseline
+RE per commit                        <N>k    baseline     Baseline
+Status: Pass, Watch (within 25% of target), Miss, Baseline
 
 🩺 DIAGNOSIS
-Metric                              Value
-─────────────────────────────────────────────
-Effective cache TTL                 <N> minutes
-Cache health                       [🟢 HEALTHY >95% / 🟡 DEGRADED 90-95% / 🔴 BROKEN <90%]
-Overall hit rate                    <N>%
-Estimated monthly idle-gap cost     $<N>
-Idle-gap cost as % of total         <N>%
+Effective cache TTL (where the cliff lands)   <N> minutes
+Cache health                                   [🟢 HEALTHY >95% / 🟡 DEGRADED 90-95% / 🔴 BROKEN <90%]
+Top 3 drivers (pattern | share of RE | fix | tradeoff):
+1. <one line>
+2. <one line>
+3. <one line>
+Waste:                <one line>
+Productive heavy use: <one line>
+Biggest risk:         <one line>
 
-→ Top recommendation:              <one sentence>
-→ Biggest risk:                     <one sentence>
+📝 WORKING AGREEMENT
+3 to 5 habits I'll adopt, one line each.
 
 ✅ VERIFICATION CHECKSUMS
-Check                                                         Result
-──────────────────────────────────────────────────────────────────────
-Weekly totals vs overview total (within 1%)                   [PASS ✓ / FAIL ✗]
-Gap bucket turns vs expected (total - 2*sessions, within 5%)  [PASS ✓ / FAIL ✗]
-Idle gap distribution (>80% of turns in <1m bucket)           [PASS ✓ / FAIL ✗]
-Zero-total turns (cache_read+create+fresh = 0)                [PASS ✓ / FAIL ✗] (<N> found)
-Weekly continuity (no missing weeks in date range)            [PASS ✓ / FAIL ✗]
-Session grouping (JSONL files vs unique sessionIds)           [PASS ✓ / FAIL ✗] (<N> files, <N> sessions)
-Worst misses turn numbers (no T1 entries unless single-turn)  [PASS ✓ / FAIL ✗]
+Check                                                          Result
+───────────────────────────────────────────────────────────────────────
+Weekly totals vs overview total (within 1%)                    [PASS ✓ / FAIL ✗]
+Gap bucket turns vs expected (total - 2*sessions, within 5%)   [PASS ✓ / FAIL ✗]
+Idle gap distribution (>80% of turns in <1m bucket)            [PASS ✓ / FAIL ✗]
+Zero-total turns (cache_read+write+fresh = 0)                  [PASS ✓ / FAIL ✗] (<N> found)
+Weekly continuity (no missing weeks in date range)             [PASS ✓ / FAIL ✗]
+Session grouping (JSONL files vs unique sessionIds)            [PASS ✓ / FAIL ✗] (<N> files, <N> sessions)
+Usage dedupe (JSONL lines vs unique message.ids)               [PASS ✓ / FAIL ✗] (<N> lines, <N> ids)
+Worst rebuilds turn numbers (no T1 unless single-turn)         [PASS ✓ / FAIL ✗]
+If any check fails, fix the root cause and rerun from scratch. Do not print a diagnosis on data that failed verification.
 
-If any check FAILs, diagnose the root cause, fix it, and rerun the full analysis from scratch. Do not print a diagnosis based on data that failed verification.
+📋 SUMMARY JSON
+{"period_start":"","period_end":"","sessions":0,"turns":0,"total_tokens":0,"fresh_input_tokens":0,"cache_read_tokens":0,"output_tokens":0,"cache_write_5m_share":0,"cache_hit_rate":0,"effective_ttl_minutes":0,"idle_rebuild_re_share":0,"re_total":0,"re_per_turn":0,"re_per_edit":0,"re_per_commit":0,"sessions_over_200k_share":0,"subagent_re_share":0,"file_reread_rate":0,"large_tool_results_per_week":0,"failing_loop_session_share":0,"model_token_share":{"opus":0,"sonnet":0,"haiku":0,"other":0},"scorecard":{"pass":0,"watch":0,"miss":0},"top_drivers":["","",""]}
 
 ===== END AUDIT =====
-```
-
-## Reading the Output
-
-| Indicator | Hit Rate | Cliff | $/turn | Meaning |
-|-----------|----------|-------|--------|---------|
-| 🟢 Healthy | >95% | 55-65 min | Stable week/week | Cache working as intended |
-| 🟡 Degraded | 90-95% | <45 min | Rising week/week | Check for version regressions or config changes |
-| 🔴 Broken | <90% | No clear cliff | >$0.40 | Cache likely not functioning, investigate |
-
-## Key Concepts
-
-**Cache TTL**: Prompt cache entries expire after a period of inactivity. Empirical measurement across 13.5B tokens shows the effective TTL is ~60 minutes. Activity refreshes the TTL, so continuous prompting keeps the cache warm indefinitely.
-
-**The Cliff**: Cache hit rate does not decay gradually. It drops from ~87% to ~3% between the 30-60 minute and 60+ minute idle windows. This is a cliff, not a curve.
-
-**Rebuild Cost**: When cache expires, the full conversation context rebuilds at cache creation pricing (12.5x read rate, same ratio across all models). A 145k session on Opus 4.6 costs ~$0.91 to rebuild vs ~$0.08 when cached.
-
-**Fixed Overhead**: Claude Code loads ~15k tokens of system prompt and tool schemas on every turn. This overhead is cached during active use but rebuilds on every cache miss, adding ~$0.09 (Opus 4.6) to every idle-gap penalty.
-
-## Workflow Recommendations
-
-1. **Do not leave sessions idle >15 minutes** without intent. Cache decay starts immediately.
-2. **Stepping away for an hour?** Run `/clear` first. You pay the full rebuild anyway. Start clean.
-3. **60-90 minute focused sessions** stay inside the cache window. No cliff, no compaction, cheapest $/turn.
-4. **Run `/context` regularly.** Know your overhead. The gap between what you think is loaded and what is actually loaded is where the silent costs live.
-
-## Attribution
-
-Analysis based on empirical measurement of 584 sessions, 104k turns, and 13.5B tokens across Claude Code v2.1.77 through v2.1.104 (Opus 4.6). Methodology and findings documented in the accompanying [LinkedIn post](https://www.linkedin.com/in/rfxn).
