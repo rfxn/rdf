@@ -1,6 +1,6 @@
-# RDF Unreleased Release Notes
+# RDF 3.9.0 Release Notes
 
-## Unreleased
+## 3.9.0
 
 -- New Features --
 
@@ -12,3 +12,10 @@
       @<name> or a sticky 'cuse <name>' picks the account and drops inherited credential
       and provider env vars; --fs maps to --fork-session; --sandbox scopes IS_SANDBOX=1 to
       cs runs; launchers survive Claude Code's Bash-tool shell snapshot
+
+-- Changes --
+
+[Change] docs/platform-triage.md: 3.9 block re-checked against Claude Code 2.1.308; per-call
+         subagent effort noted (variants kept), multi-account row added
+[Change] reference/claude-code-cache-audit.md: clarified analysis rules, data parsing and
+         output format

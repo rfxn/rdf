@@ -95,6 +95,19 @@ carried in this release:
       built-in profiles — see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Shipped in 3.9.0 — multi-account launchers
+
+Quick-plan → build → challenge review → QA + sentinel with two fix waves.
+[plan](docs/plans/2026-10-22-claude-accounts-quickplan.md).
+
+- [x] `rdf account` runs extra Claude Code accounts in their own
+      `~/.claude-<name>` config dirs that share projects, auto memory,
+      `--resume` history and config with `~/.claude` through symlinks
+- [x] `rdf shell init` emits the `claude`/`c`/`cs`/`ch`/`cuse` launchers with
+      `@account` and sticky per-shell account switching; they survive Claude
+      Code's Bash-tool shell snapshot and fail closed on any resolution error
+- [x] Platform triage 3.9 against Claude Code 2.1.308; BATS 455 → 478
+
 ## Shipped in 3.8.1 — phase scope guard
 
 Spec → plan → build → sentinel for the scope guard, then two adversarial review

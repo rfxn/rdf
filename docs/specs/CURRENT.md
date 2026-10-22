@@ -15,6 +15,21 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases — a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.9.0 — 2026-10-22
+
+ADDED: `rdf account` (`lib/cmd/account.sh`) — registry `~/.rdf/accounts` (`name<TAB>dir`,
+primary as the `@primary` marker); extra accounts get `~/.claude-<name>` (mode 700) holding
+their own login, `.claude.json`, plugins and org-managed settings, with an allowlist of
+shared entries (projects, history, paste-cache, file-history, tasks, todos, plans,
+CLAUDE.md, settings, skills, agents, commands, rules, output-styles, RDF deploy dirs)
+symlinked to `~/.claude`; links never replace an existing path.
+ADDED: `rdf shell init [--sandbox]` (`lib/cmd/shell.sh`) — bash/zsh launchers `claude`,
+`c`, `cs`, `ch`, `cuse` plus helpers `rdf_launch` / `rdf_cli`; `@name` or `cuse` selects an
+account (primary launches with `CLAUDE_CONFIG_DIR` unset), drops credential/provider env
+vars, and fails closed unless rdf reports unknown account (rc 2) for a same-named path.
+MODIFIED: `bin/rdf` dispatches `account` and `shell`; `tests/Makefile` runs
+`account.bats` and `shell.bats`.
+
 ## 3.8.1 — 2026-09-24
 
 ADDED: `rdf_phase_hook_install` / `rdf_phase_hook_uninstall` (`state/rdf-bus.sh`) —
