@@ -1,58 +1,13 @@
-# RDF 3.8.1 Release Notes
+# RDF Unreleased Release Notes
 
-## 3.8.1
+## Unreleased
 
 -- New Features --
 
-[New] rdf_phase_hook_install / rdf_phase_hook_uninstall (state/rdf-bus.sh): activate
-      the phase scope guard on rdf/phase-* branches through an includeIf "onbranch:"
-      include that chains the project's own hooks; uninstall removes the include,
-      .git/rdf-hooks.inc and .git/rdf-hooks/; needs git >= 2.23 (rc 2 below, where
-      /r-build keeps the post-merge scope check)
-
--- Bug Fixes --
-
-[Fix] phase scope guard never engaged outside RDF's own checkout: /r-build copied the
-      hook to .git/worktrees/<id>/hooks, which git never reads, and the hook found its
-      helpers only through an in-tree state/rdf-bus.sh; it now installs through
-      rdf_phase_hook_install and reads ~/.rdf/state (I-2)
-[Fix] pre-commit hook takes the session id from the phase branch name (no
-      CLAUDE_CODE_SESSION_ID needed: Codex sessions, manual commits) and checks the
-      worktree's and the main worktree's session pointers before legacy fallbacks
-[Fix] /r-build worktree dispatch payload carries PROJECT_ROOT_MAIN, which dispatcher
-      steps (a) and (b) already read
-[Fix] phase scope checks C-quoted non-ASCII, '"' and '\' paths, so declared in-scope
-      files with such names were rejected: the pre-commit hook and the dispatcher's
-      post-merge check list paths with -z (a newline-embedded name is always out of
-      scope); the engineer dirty check and pre-commit-validate.sh use
-      core.quotePath=false (non-ASCII names only)
-[Fix] /r-build parallel-worktree phases ran outside their worktree: the added isolation:
-      "worktree" forked each dispatcher from origin's default branch onto worktree-agent-*
-      (stale base, commits outside the scope guard); dispatch now starts inside the phase
-      worktree, and the dispatcher fails the phase unless it was launched at its top level
-[Fix] /r-build worktree merge failed for every phase after the first (a rebase run from the
-      main worktree cannot check out a branch held by its worktree, rc 128); it now rebases
-      in the worktree and ff-merges from main, and pauses (new Section 8 classes) on a branch
-      with no commits or a worktree with uncommitted changes; the controller cd is absolute
-[Fix] /r-build pasted the base branch name into shell, so a crafted name ran code in the
-      controller; setup now records it in a file and refuses a detached HEAD, a submodule,
-      and a plan with uncommitted edits (worktrees and their scope guard read the committed
-      copy)
-[Fix] /r-build worktree cleanup and retry deleted the dispatcher's result files with the
-      worktree's ignored .rdf/ (now copied out first); the dispatcher's plan sync no longer
-      overwrites a tracked plan (worktree left unremovable), resolves symlinked checkout
-      paths, and runs before plan resolution in a fresh worktree
-[Fix] CI lint never checked the extensionless state/git-hooks/pre-commit: the lint
-      job's shell-file find now collects it for bash -n and shellcheck -S error
-[Fix] ignore.md defaults (ignore-defaults.md and the /r-init copy) no longer seed
-      docs/specs/ as an excluded path (specs are committed artifacts); the Scope note
-      drops the stale 3.6/3.7 roadmap and names the hook's anti-pattern directives
-
--- Changes --
-
-[Change] pre-commit anti-pattern classes scan shell files only (.sh/.bash or a sh/bash
-         shebang; .bats excluded) and are off outside RDF's own checkout unless enabled
-         with "# anti-pattern-enable: <class>|all" in .rdf/governance/ignore.md, where
-         opt-outs are now read too
-[Change] CLAUDE.md: the pre-commit hook enforces the suppression-comment rule only on
-         /r-build phase-branch commits; elsewhere check added lines by hand
+[New] rdf account (add|list|link|remove|dir): run Claude Code on several accounts that
+      share projects, auto memory, --resume history and config; each extra account gets
+      ~/.claude-<name> holding its own login, .claude.json, plugins and org-managed
+      settings, with an allowlist of shared entries symlinked to ~/.claude
+[New] rdf shell init [--sandbox]: bash/zsh launchers claude, c, cs, ch and cuse; a leading
+      @<name> or a sticky 'cuse <name>' picks the account and drops inherited credential
+      env vars; --fs maps to --fork-session; --sandbox scopes IS_SANDBOX=1 to cs runs

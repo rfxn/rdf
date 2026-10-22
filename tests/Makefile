@@ -30,7 +30,8 @@ test: _bats_check
 	        $(TESTS_DIR)strip.bats $(TESTS_DIR)sync.bats \
 	        $(TESTS_DIR)bootstrap.bats $(TESTS_DIR)adapter-common.bats \
 	        $(TESTS_DIR)doc-truth.bats $(TESTS_DIR)tokens.bats \
-	        $(TESTS_DIR)worktree-hook.bats
+	        $(TESTS_DIR)worktree-hook.bats $(TESTS_DIR)account.bats \
+	        $(TESTS_DIR)shell.bats
 
 lint: _bats_check
 	shellcheck $(TESTS_DIR)adapter.bats $(TESTS_DIR)plugin-adapter.bats \
@@ -46,7 +47,8 @@ lint: _bats_check
 	           $(TESTS_DIR)strip.bats $(TESTS_DIR)sync.bats \
 	           $(TESTS_DIR)bootstrap.bats $(TESTS_DIR)adapter-common.bats \
 	           $(TESTS_DIR)doc-truth.bats $(TESTS_DIR)tokens.bats \
-	           $(TESTS_DIR)worktree-hook.bats
+	           $(TESTS_DIR)worktree-hook.bats $(TESTS_DIR)account.bats \
+	           $(TESTS_DIR)shell.bats
 
 help:
 	@echo "Usage: make -C tests [target]"

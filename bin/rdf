@@ -40,6 +40,8 @@ Commands:
   sync       Pull ~/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
   tokens     Local token usage report from Claude Code transcripts
+  account    Claude Code accounts that share ~/.claude projects and memory
+  shell      Shell launchers (c, cs, ch, cuse) with account switching
   github     GitHub Issues + Projects integration
   profile    Manage active domain profiles
   refresh    Agent-driven state file updates
@@ -62,6 +64,8 @@ case "${1:-}" in
     sync)     shift; source "${RDF_LIBDIR}/cmd/sync.sh";     cmd_sync "$@" ;;
     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
     tokens)   shift; source "${RDF_LIBDIR}/cmd/tokens.sh";   cmd_tokens "$@" ;;
+    account)  shift; source "${RDF_LIBDIR}/cmd/account.sh";  cmd_account "$@" ;;
+    shell)    shift; source "${RDF_LIBDIR}/cmd/shell.sh";    cmd_shell "$@" ;;
     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
     profile)  shift; source "${RDF_LIBDIR}/cmd/profile.sh";  cmd_profile "$@" ;;
     help|--help|-h|"") _rdf_usage ;;

@@ -86,6 +86,7 @@ path on a plain Flask project, with real output at every step.
 | `RDF_HOME` | resolved from `bin/rdf` | RDF install root (canonical/, lib/, bin/, state/) |
 | `RDF_CANONICAL` | `$RDF_HOME/canonical` | Canonical content source tree |
 | `RDF_TARGET` | `~/.claude` | Deploy target for claude-code adapter |
+| `RDF_CLAUDE_ACCOUNT` | unset | Account the `rdf shell init` launchers use when no `@name` is given (set by `cuse`) |
 | `RDF_WORKSPACE` | parent of `$RDF_HOME` | Workspace root scanned by `rdf doctor --all`. Set this when the checkout lives directly in `$HOME` (e.g. `~/rdf`) — `--all` refuses to scan a home directory |
 
 Most users do not need to override these — `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
@@ -134,6 +135,58 @@ Emergency edits (direct changes to `~/.claude/`) are permitted but must be pulle
 canonical edits  -->  rdf generate  -->  deployed (~/.claude/, ~/.gemini/, etc.)
 deployed edits  <--   rdf sync     <--   (emergency path)
 ```
+
+### Launchers and Multiple Claude Accounts
+
+`rdf shell init` prints Claude Code launchers for bash and zsh. Put the line last
+in `~/.bashrc` or `~/.zshrc`, and delete older `c`/`cs`/`ch` aliases or `claude()`
+functions (a definition after the line wins):
+
+```bash
+eval "$(rdf shell init)"     # --sandbox: cs also sets IS_SANDBOX=1 (root on a sandbox host)
+```
+
+| Launcher | Runs |
+|----------|------|
+| `claude`, `c` | `claude` |
+| `cs` | `claude --dangerously-skip-permissions` |
+| `ch` | `claude --chrome` |
+| `cuse <name>` | Use account `<name>` for launches from this shell (`cuse -` clears, `cuse` lists) |
+
+Every launcher maps `--fs` to `--fork-session` and takes a leading `@<name>` to
+pick an account for one run. `@agent-…`, uppercase names and paths that exist
+in the current directory (unless registered as an account) pass through as
+prompt text. Picking an account drops `CLAUDE_CODE_OAUTH_TOKEN`,
+`ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` so that account's login is used.
+With no account picked, the environment is left as it is.
+
+`rdf account` runs several Claude Code accounts against one set of projects, auto
+memory, `--resume` history and config. The account logged in to `~/.claude` is the
+primary. Each other account gets `~/.claude-<name>` with its own login,
+`.claude.json` (project trust, user MCP servers, onboarding), plugins and
+org-managed settings. It symlinks `projects`, `history.jsonl`, `paste-cache`,
+`file-history`, `tasks`, `todos`, `plans`, `CLAUDE.md`, `settings.json`,
+`keybindings.json`, `skills`, `agents`, `commands`, `rules`, `output-styles` and
+RDF's deployed `scripts`, `governance` and `reference` back to `~/.claude`.
+
+```bash
+rdf account add work --primary   # name the login ~/.claude already holds
+rdf account add personal         # create ~/.claude-personal
+cs @personal                     # first launch asks you to log in
+cuse personal                    # or make it sticky for this shell
+rdf account list                 # logins and link health; * = active
+```
+
+- Every account can resume any transcript and loads the auto memory of the
+  project it opens. Work from one account's org reaches the other account's
+  provider terms when you open it there.
+- The shared `settings.json` applies to every account, including
+  `remote.defaultEnvironmentId` and `enabledPlugins`. Keep `forceLoginOrgUUID` and
+  credential env vars out of it.
+- `rdf account link` adds links for entries that appear in `~/.claude` later. It
+  never replaces a path that already exists in an account dir.
+- `ch @<name>` picks the CLI account; the Chrome extension uses whichever
+  claude.ai account the browser is signed in to.
 
 ---
 
@@ -240,6 +293,8 @@ Commands:
   sync       Pull deployed edits back to canonical sources
   github     GitHub Issues + Projects integration
   migrate    Migrate project layout from .claude/ + work-output/ to .rdf/
+  account    Claude Code accounts that share ~/.claude projects and memory
+  shell      Shell launchers (c, cs, ch, cuse) with account switching
 
 Run 'rdf <command> help' for details.
 ```
@@ -257,6 +312,8 @@ Run 'rdf <command> help' for details.
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
 | `rdf migrate [--dry-run] [--all]` | Migrate project layout from `.claude/` + work-output/ to `.rdf/` |
+| `rdf account add\|list\|link\|remove\|dir` | Claude Code accounts that share `~/.claude` projects, memory and config |
+| `rdf shell init [--sandbox]` | Print bash/zsh launchers (`claude`, `c`, `cs`, `ch`, `cuse`) with `@account` switching |
 
 ### 4.5. Exit Codes
 
@@ -477,7 +534,8 @@ rdf/
 |-- lib/
 |   |-- rdf_common.sh                  # Shared helpers, profile system
 |   +-- cmd/                           # Subcommands: generate, profile, init, doctor,
-|                                      #   state, tokens, refresh, sync, github, deploy, migrate
+|                                      #   state, tokens, refresh, sync, github, deploy, migrate,
+|                                      #   account, shell
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
 |   |-- commands/                      # 37 commands (/r- namespace)
