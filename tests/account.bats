@@ -109,12 +109,44 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [[ "$output" == *"unknown account: nope (registered: work personal)"* ]]
 }
 
+@test "primary is a registry marker, independent of how HOME is spelled" {
+    _rdf account add work --primary
+    [ "$(grep -c "^work$(printf '\t')@primary$" "${HOME}/.rdf/accounts")" = "1" ]
+    HOME="${HOME}//" run _rdf account dir work
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+    HOME="$(dirname "$HOME")/./$(basename "$HOME")" run _rdf account dir work
+    [ "$output" = "" ]
+}
+
+@test "registry: hand edits without a final newline and malformed rows are handled" {
+    mkdir -p "${HOME}/.rdf"
+    printf '# hand edited\nbroken\t\nrel\tnot/absolute\nwork\t@primary' > "${HOME}/.rdf/accounts"
+    [ -z "$(_rdf account dir work 2>/dev/null)" ]  # stdout only; malformed-row warnings go to stderr
+    run _rdf account dir broken
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"skipping malformed row"* ]]
+    [[ "$output" == *"unknown account: broken"* ]]
+    run _rdf account add personal
+    [ "$status" -eq 0 ]
+    [ "$(_rdf account dir personal 2>/dev/null)" = "${HOME}/.claude-personal" ]  # stdout only
+    [ -z "$(_rdf account dir work 2>/dev/null)" ]  # stdout only
+}
+
+@test "dir fails when an account's config dir was deleted" {
+    _rdf account add personal
+    rm -rf "${HOME}/.claude-personal"
+    run _rdf account dir personal
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"config dir missing"* ]]
+}
+
 @test "add, remove, re-add keeps the config dir and its login" {
     _rdf account add personal
     printf '{}\n' > "${HOME}/.claude-personal/.credentials.json"
     run _rdf account remove personal
     [ "$status" -eq 0 ]
-    [[ "$output" == *"config dir kept: ${HOME}/.claude-personal"* ]]
+    [[ "$output" == *"config dir kept: ~/.claude-personal"* ]]
     [ -d "${HOME}/.claude-personal" ]
     [ -L "${HOME}/.claude-personal/projects" ]
     [ "$(grep -vc '^#' "${HOME}/.rdf/accounts" || true)" = "0" ]  # grep -c exits 1 on zero
@@ -127,7 +159,7 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
 }
 
 @test "add rejects bad names, duplicates, a second primary and a missing ~/.claude" {
-    for bad in "../x" "A" "a/b" "$(printf 'a%.0s' {1..33})"; do
+    for bad in "../x" "A" "a/b" "agent-ci" "$(printf 'a%.0s' {1..33})"; do
         run _rdf account add "$bad"
         [ "$status" -ne 0 ]
         [[ "$output" == *"invalid account name"* ]]

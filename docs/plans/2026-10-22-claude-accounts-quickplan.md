@@ -164,7 +164,23 @@ Rejected as false positive: alias-collision test cannot fail (it runs with
 Simplicity budget: CLI-only subcommands, no skill or agent context cost.
 Pre-ship double-check: Claude Code's Bash-tool shell snapshot keeps functions, aliases
 and options but not variables, so the rdf path and `--sandbox` choice are written into
-function bodies (`_rdf_bin`, `cs`); a test sources a `declare -f` dump in a clean env.
+function bodies (`rdf_cli`, `cs`).
+
+Release gates (3.9.0): QA PASS. Sentinel MUST-FIX ×2, both fixed: the snapshot also drops
+`_`-prefixed functions (`grep -vE '^_[^_]'` in 2.1.308), so helpers are `rdf_launch` /
+`rdf_cli` and the test applies that exact filter; `agent-*` account names are rejected.
+SHOULD-FIX applied: picking an account also drops `CLAUDE_CODE_OAUTH_REFRESH_TOKEN`,
+`ANTHROPIC_PROFILE` and the Bedrock/Vertex/Foundry switches; the primary is a registry
+marker (`@primary`), not a `$HOME`-relative path; the registry tolerates a missing final
+newline and skips malformed rows; `dir` fails on a deleted account dir. INFO applied:
+exact ASCII-list `@name` matching (no locale ranges or classes).
+Re-review: MUST-FIX — rc 1 is every `rdf_die`, so "rc 1 = not an account" let a deleted
+account dir plus a same-named cwd path launch the default account. Unknown account now
+exits 2 (README: invalid usage) and only rc 2 passes an `@path` through; everything else
+fails closed (test added). INFO applied: `ANTHROPIC_BASE_URL` is dropped on a pick so the
+picked login is not routed to an exported gateway. Reviewer advised avoiding 2 (bash's
+syntax-error code); kept because 2 is RDF's documented invalid-usage code and CI's
+`bash -n` gate keeps syntax errors from shipping.
 
 ## Not verified by this plan
 

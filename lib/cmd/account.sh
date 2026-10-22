@@ -8,6 +8,8 @@
 _ACCOUNT_HOME="${HOME%/}"
 _ACCOUNT_REGISTRY="${_ACCOUNT_HOME}/.rdf/accounts"
 _ACCOUNT_PRIMARY_DIR="${_ACCOUNT_HOME}/.claude"
+# The primary row stores a marker, not a path: it always launches with CLAUDE_CONFIG_DIR unset.
+_ACCOUNT_PRIMARY_MARK="@primary"
 _ACCOUNT_NAME_RE='^[a-z0-9][a-z0-9_-]{0,31}$'
 # Login, .claude.json, org remote-settings/policy-limits and plugins stay per account.
 _ACCOUNT_SHARED=(projects history.jsonl paste-cache file-history tasks todos plans CLAUDE.md
@@ -37,17 +39,21 @@ Examples:
 USAGE
 }
 
-# _account_entries — registry rows as name<TAB>dir, comments skipped
+# _account_entries — valid registry rows as name<TAB>dir; tolerates a missing final newline
 _account_entries() {
     [[ -f "$_ACCOUNT_REGISTRY" ]] || return 0
     local name dir
-    while IFS=$'\t' read -r name dir; do
+    while IFS=$'\t' read -r name dir || [[ -n "$name" ]]; do
         [[ -z "$name" || "$name" == \#* ]] && continue
-        printf '%s\t%s\n' "$name" "$dir"
+        case "$dir" in
+            *$'\t'*) rdf_warn "skipping malformed row in ${_ACCOUNT_REGISTRY}: ${name}" ;;
+            "$_ACCOUNT_PRIMARY_MARK"|/*) printf '%s\t%s\n' "$name" "$dir" ;;
+            *) rdf_warn "skipping malformed row in ${_ACCOUNT_REGISTRY}: ${name}" ;;
+        esac
     done < "$_ACCOUNT_REGISTRY"
 }
 
-# _account_lookup NAME — print NAME's dir; 1 if unregistered
+# _account_lookup NAME — print NAME's dir (or the primary marker); 1 if unregistered
 _account_lookup() {
     local name dir
     while IFS=$'\t' read -r name dir; do
@@ -59,7 +65,7 @@ _account_lookup() {
     return 1
 }
 
-# _account_name_for_dir DIR — print the account registered at DIR; 1 if none
+# _account_name_for_dir DIR — print the account registered at DIR (or the marker); 1 if none
 _account_name_for_dir() {
     local name dir
     while IFS=$'\t' read -r name dir; do
@@ -71,12 +77,23 @@ _account_name_for_dir() {
     return 1
 }
 
+# _account_unknown NAME — exit 2 (invalid usage); the launchers treat only rc 2 as "not an account"
 _account_unknown() {
     local names="" name dir
     while IFS=$'\t' read -r name dir; do
         names="${names:+${names} }${name}"
     done < <(_account_entries)
-    rdf_die "unknown account: $1 (registered: ${names:-none})"
+    echo "rdf: error: unknown account: $1 (registered: ${names:-none})" >&2
+    exit 2
+}
+
+# _account_display DIR — registry dir as shown to the user
+_account_display() {
+    case "$1" in
+        "$_ACCOUNT_PRIMARY_MARK") printf '~%s\n' "/.claude" ;;
+        "$_ACCOUNT_HOME"/*) printf '~%s\n' "${1#"$_ACCOUNT_HOME"}" ;;
+        *) printf '%s\n' "$1" ;;
+    esac
 }
 
 # _account_link_dir NAME DIR — link each shared entry present in ~/.claude; never replaces a path
@@ -125,7 +142,7 @@ _account_linked_count() {
 # _account_login DIR — "email (org)" from the account's .claude.json, or "not logged in"
 _account_login() {
     local conf="${1}/.claude.json" login=""
-    [[ "$1" == "$_ACCOUNT_PRIMARY_DIR" ]] && conf="${_ACCOUNT_HOME}/.claude.json"
+    [[ "$1" != "$_ACCOUNT_PRIMARY_MARK" ]] || conf="${_ACCOUNT_HOME}/.claude.json"
     if [[ -f "$conf" ]]; then
         login="$(jq -r '.oauthAccount // empty
             | .emailAddress + (if .organizationName then " (" + .organizationName + ")" else "" end)' \
@@ -146,16 +163,17 @@ _account_add() {
     done
     [[ -n "$name" ]] || rdf_die "add requires <name> — run 'rdf account help'"
     [[ "$name" =~ $_ACCOUNT_NAME_RE ]] || rdf_die "invalid account name: ${name} (a-z, 0-9, _ and -; 32 max)"
+    [[ "$name" != agent-* ]] || rdf_die "invalid account name: ${name} (@agent-* mentions a Claude Code subagent)"
     if _account_lookup "$name" >/dev/null; then
         rdf_die "account already registered: ${name}"
     fi
 
     if [[ "$primary" -eq 1 ]]; then
-        dir="$_ACCOUNT_PRIMARY_DIR"
-        [[ -d "$dir" ]] || rdf_die "${dir} not found — run claude once and log in first"
-        if existing="$(_account_name_for_dir "$dir")"; then
-            rdf_die "${dir} is already registered as: ${existing}"
+        [[ -d "$_ACCOUNT_PRIMARY_DIR" ]] || rdf_die "${_ACCOUNT_PRIMARY_DIR} not found — run claude once and log in first"
+        if existing="$(_account_name_for_dir "$_ACCOUNT_PRIMARY_MARK")"; then
+            rdf_die "${_ACCOUNT_PRIMARY_DIR} is already registered as: ${existing}"
         fi
+        dir="$_ACCOUNT_PRIMARY_MARK"
     else
         dir="${_ACCOUNT_HOME}/.claude-${name}"
         command mkdir -p "$dir"
@@ -164,11 +182,13 @@ _account_add() {
     fi
 
     command mkdir -p "$(command dirname "$_ACCOUNT_REGISTRY")"
-    if [[ ! -f "$_ACCOUNT_REGISTRY" ]]; then
+    if [[ ! -s "$_ACCOUNT_REGISTRY" ]]; then
         printf '%s\n' "# RDF Claude Code accounts — managed by 'rdf account'" > "$_ACCOUNT_REGISTRY"
+    elif [[ -n "$(command tail -c 1 "$_ACCOUNT_REGISTRY")" ]]; then
+        printf '\n' >> "$_ACCOUNT_REGISTRY"
     fi
     printf '%s\t%s\n' "$name" "$dir" >> "$_ACCOUNT_REGISTRY"
-    rdf_log "registered ${name}: ${dir}"
+    rdf_log "registered ${name}: $(_account_display "$dir")"
     if [[ "$primary" -eq 0 ]]; then
         rdf_log "log in on first launch: c @${name}"
     fi
@@ -178,42 +198,40 @@ _account_link() {
     local name dir
     if [[ -n "${1:-}" ]]; then
         dir="$(_account_lookup "$1")" || _account_unknown "$1"
-        [[ "$dir" != "$_ACCOUNT_PRIMARY_DIR" ]] || rdf_die "$1 is the primary account; nothing to link"
+        [[ "$dir" != "$_ACCOUNT_PRIMARY_MARK" ]] || rdf_die "$1 is the primary account; nothing to link"
         _account_link_dir "$1" "$dir"
         return 0
     fi
     while IFS=$'\t' read -r name dir; do
-        [[ "$dir" == "$_ACCOUNT_PRIMARY_DIR" ]] && continue
+        [[ "$dir" == "$_ACCOUNT_PRIMARY_MARK" ]] && continue
         _account_link_dir "$name" "$dir"
     done < <(_account_entries)
 }
 
 _account_list() {
     rdf_require_bin jq
-    local name dir active shown mark shared
-    if [[ -z "$(_account_entries)" ]]; then
+    local entries name dir mark shared active_dir
+    entries="$(_account_entries)"
+    if [[ -z "$entries" ]]; then
         echo "No accounts registered. Start with: rdf account add <name> --primary"
         return 0
     fi
-    active="${RDF_CLAUDE_ACCOUNT:-}"
-    if [[ -z "$active" ]]; then
-        active="$(_account_name_for_dir "${CLAUDE_CONFIG_DIR:-$_ACCOUNT_PRIMARY_DIR}")" || active=""
-    fi
+    active_dir="${CLAUDE_CONFIG_DIR:-$_ACCOUNT_PRIMARY_MARK}"
     printf '  %-14s %-24s %-12s %s\n' "ACCOUNT" "DIR" "SHARED" "LOGIN"
     while IFS=$'\t' read -r name dir; do
         mark=" "
-        [[ "$name" == "$active" ]] && mark="*"
-        shown="$dir"
-        case "$dir" in
-            "$_ACCOUNT_HOME"/*) shown="~${dir#"$_ACCOUNT_HOME"}" ;;
-        esac
-        if [[ "$dir" == "$_ACCOUNT_PRIMARY_DIR" ]]; then
+        if [[ -n "${RDF_CLAUDE_ACCOUNT:-}" ]]; then
+            [[ "$name" != "$RDF_CLAUDE_ACCOUNT" ]] || mark="*"
+        elif [[ "$dir" == "${active_dir%/}" ]]; then
+            mark="*"
+        fi
+        if [[ "$dir" == "$_ACCOUNT_PRIMARY_MARK" ]]; then
             shared="primary"
         else
             shared="$(_account_linked_count "$dir")"
         fi
-        printf '%s %-14s %-24s %-12s %s\n' "$mark" "$name" "$shown" "$shared" "$(_account_login "$dir")"
-    done < <(_account_entries)
+        printf '%s %-14s %-24s %-12s %s\n' "$mark" "$name" "$(_account_display "$dir")" "$shared" "$(_account_login "$dir")"
+    done <<< "$entries"
 }
 
 _account_remove() {
@@ -223,14 +241,18 @@ _account_remove() {
     tmp="$(command mktemp "${_ACCOUNT_REGISTRY}.XXXXXX")"
     command awk -F'\t' -v n="$name" '$1 != n' "$_ACCOUNT_REGISTRY" > "$tmp"
     command mv "$tmp" "$_ACCOUNT_REGISTRY"
-    rdf_log "unregistered ${name}; config dir kept: ${dir}"
+    rdf_log "unregistered ${name}; config dir kept: $(_account_display "$dir")"
 }
 
 _account_dir() {
     local dir
     [[ -n "${1:-}" ]] || rdf_die "dir requires <name> — run 'rdf account help'"
     dir="$(_account_lookup "$1")" || _account_unknown "$1"
-    [[ "$dir" != "$_ACCOUNT_PRIMARY_DIR" ]] || dir=""
+    if [[ "$dir" == "$_ACCOUNT_PRIMARY_MARK" ]]; then
+        printf '\n'
+        return 0
+    fi
+    [[ -d "$dir" ]] || rdf_die "$1: config dir missing: ${dir} — run 'rdf account remove $1' and add it again"
     printf '%s\n' "$dir"
 }
 

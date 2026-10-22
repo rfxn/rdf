@@ -10,7 +10,8 @@
       settings, with an allowlist of shared entries symlinked to ~/.claude
 [New] rdf shell init [--sandbox]: bash/zsh launchers claude, c, cs, ch and cuse; a leading
       @<name> or a sticky 'cuse <name>' picks the account and drops inherited credential
-      env vars; --fs maps to --fork-session; --sandbox scopes IS_SANDBOX=1 to cs runs
+      and provider env vars; --fs maps to --fork-session; --sandbox scopes IS_SANDBOX=1 to
+      cs runs; launchers survive Claude Code's Bash-tool shell snapshot
 
 ## 3.8.1
 

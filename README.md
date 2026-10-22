@@ -156,9 +156,10 @@ eval "$(rdf shell init)"     # --sandbox: cs also sets IS_SANDBOX=1 (root on a s
 Every launcher maps `--fs` to `--fork-session` and takes a leading `@<name>` to
 pick an account for one run. `@agent-…`, uppercase names and paths that exist
 in the current directory (unless registered as an account) pass through as
-prompt text. Picking an account drops `CLAUDE_CODE_OAUTH_TOKEN`,
-`ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` so that account's login is used.
-With no account picked, the environment is left as it is.
+prompt text. Picking an account drops inherited credential and provider
+variables (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`,
+`CLAUDE_CODE_USE_BEDROCK` and the others listed in `rdf shell help`) so that
+account's login is used against Anthropic. With no account picked, the environment is left as it is.
 
 `rdf account` runs several Claude Code accounts against one set of projects, auto
 memory, `--resume` history and config. The account logged in to `~/.claude` is the
@@ -181,8 +182,8 @@ rdf account list                 # logins and link health; * = active
   project it opens. Work from one account's org reaches the other account's
   provider terms when you open it there.
 - The shared `settings.json` applies to every account, including
-  `remote.defaultEnvironmentId` and `enabledPlugins`. Keep `forceLoginOrgUUID` and
-  credential env vars out of it.
+  `remote.defaultEnvironmentId` and `enabledPlugins`. Keep `forceLoginOrgUUID`,
+  `apiKeyHelper` and credential env vars out of it.
 - `rdf account link` adds links for entries that appear in `~/.claude` later. It
   never replaces a path that already exists in an account dir.
 - `ch @<name>` picks the CLI account; the Chrome extension uses whichever

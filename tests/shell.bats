@@ -46,25 +46,40 @@ _sh() { bash -c 'eval "$(bash "$RDF_SRC/bin/rdf" shell init $1)"; '"$1" _ "${2:-
     [ "$status" -ne 0 ]
 }
 
-@test "picking an account drops inherited credential env vars; no pick keeps them" {
+@test "picking an account drops inherited credential and provider env vars; no pick keeps them" {
     cat > "${HOME}/bin/claude" <<'STUB'
 #!/usr/bin/env bash
-printf '%s %s %s\n' "${CLAUDE_CODE_OAUTH_TOKEN-unset}" "${ANTHROPIC_API_KEY-unset}" "${ANTHROPIC_AUTH_TOKEN-unset}"
+env | grep -cE '^(CLAUDE_CODE_OAUTH_|ANTHROPIC_(API_KEY|AUTH_TOKEN|PROFILE|BASE_URL)=|CLAUDE_CODE_USE_)' || true  # count only
 STUB
-    run _sh 'export CLAUDE_CODE_OAUTH_TOKEN=t ANTHROPIC_API_KEY=k ANTHROPIC_AUTH_TOKEN=a; c @personal; c @work; c'
-    [ "${lines[0]}" = "unset unset unset" ]
-    [ "${lines[1]}" = "unset unset unset" ]
-    [ "${lines[2]}" = "t k a" ]
+    run _sh 'export CLAUDE_CODE_OAUTH_TOKEN=t CLAUDE_CODE_OAUTH_REFRESH_TOKEN=r ANTHROPIC_API_KEY=k \
+        ANTHROPIC_AUTH_TOKEN=a ANTHROPIC_PROFILE=p ANTHROPIC_BASE_URL=u CLAUDE_CODE_USE_BEDROCK=1 \
+        CLAUDE_CODE_USE_VERTEX=1 CLAUDE_CODE_USE_FOUNDRY=1; c @personal; c @work; c'
+    [ "${lines[0]}" = "0" ]
+    [ "${lines[1]}" = "0" ]
+    [ "${lines[2]}" = "9" ]
 }
 
-@test "no account picked makes no rdf call" {
-    run _sh 'function _rdf_bin { false; }; c -p hi; c @personal; echo "rc=$?"'
+@test "no account picked makes no rdf call; a failing rdf never falls back to the default account" {
+    mkdir -p "${HOME}/work/personal"
+    run _sh 'function rdf_cli { return 127; }; c -p hi; cd "$HOME/work" || exit 1; c @personal; echo "rc=$?"
+function rdf_cli { return 1; }; c @personal; echo "rc=$?"'
     [ "${lines[0]}" = "CFG=unset ACCT=unset SANDBOX=unset ARGS=-p|hi|" ]
-    [ "${lines[1]}" = "rc=1" ]
+    [ "${lines[1]}" = "rc=127" ]
+    [ "${lines[2]}" = "rc=1" ]
 }
 
-@test "launchers work from a functions-only snapshot (Claude Code Bash tool)" {
-    bash -c 'eval "$(bash "$RDF_SRC/bin/rdf" shell init --sandbox)"; declare -f' > "${HOME}/fns.sh"
+@test "a registered account with a deleted dir fails closed even when a same-named path exists" {
+    mkdir -p "${HOME}/work/personal"
+    rm -rf "$P"
+    run _sh 'cd "$HOME/work" || exit 1; cuse work; cs @personal; echo "rc=$?"'
+    [[ "$output" == *"config dir missing"* ]]
+    [[ "$output" != *"ARGS="* ]]
+    [[ "$output" == *"rc=1"* ]]
+}
+
+@test "launchers survive Claude Code's Bash-tool snapshot (functions only, _-prefixed dropped)" {
+    bash -c 'eval "$(bash "$RDF_SRC/bin/rdf" shell init --sandbox)"
+for f in $(declare -F | cut -d" " -f3 | grep -vE "^_[^_]"); do declare -f "$f"; done' > "${HOME}/fns.sh"
     run env -i HOME="$HOME" PATH="$PATH" RDF_CLAUDE_ACCOUNT=personal bash -c 'source "$HOME/fns.sh"; cs; c @work'
     [ "${lines[0]}" = "CFG=${P} ACCT=personal SANDBOX=1 ARGS=--dangerously-skip-permissions|" ]
     [ "${lines[1]}" = "CFG=unset ACCT=work SANDBOX=unset ARGS=" ]
@@ -89,7 +104,7 @@ STUB
     run _sh 'cs @nope; echo "rc=$?"'
     [[ "$output" == *"unknown account: nope"* ]]
     [[ "$output" != *"ARGS="* ]]
-    [[ "$output" == *"rc=1"* ]]
+    [[ "$output" == *"rc=2"* ]]
 }
 
 @test "@ mentions that are not accounts pass through as prompt text" {
