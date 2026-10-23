@@ -201,7 +201,7 @@ _no_contract() {
 @test "r-ship preflight carries the platform-triage line (1d)" {
     _contract commands/r-ship.md '^### 1d\. Platform Triage'
     _contract commands/r-ship.md 'docs/platform-triage\.md'
-    _contract commands/r-ship.md 'skipped — patch release'
+    _contract commands/r-ship.md 'skipped: patch release'
     _contract commands/r-ship.md 'platform triage missing for'
 }
 
@@ -215,7 +215,7 @@ _no_contract() {
     next=$((minor + 1))
     want1="${major}.${minor}"
     want2="${major}.${next}"
-    top="$(grep -m1 -E '^## [0-9]+\.[0-9]+ — ' "$ledger" | sed -E 's/^## ([0-9]+\.[0-9]+) — .*/\1/')"
+    top="$(grep -m1 -E '^## [0-9]+\.[0-9]+ \(' "$ledger" | sed -E 's/^## ([0-9]+\.[0-9]+) \(.*/\1/')"
     [ "$top" = "$want1" ] || [ "$top" = "$want2" ]
 }
 

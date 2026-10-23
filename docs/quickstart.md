@@ -3,11 +3,11 @@ title: Quickstart
 nav_order: 2
 ---
 
-# Quickstart — RDF on Your Repo in 5 Minutes
+# Quickstart: RDF on Your Repo in 5 Minutes
 
 No rfxn context required. You need `git`, `bash` 3.2+ (macOS system bash
-works — CI-verified), `jq`, and an AI
-coding runtime — Claude Code, Codex, or Antigravity CLI (Gemini CLI is
+works, CI-verified), `jq`, and an AI
+coding runtime: Claude Code, Codex, or Antigravity CLI (Gemini CLI is
 supported as a legacy tier). Examples below use Claude Code.
 
 ## 1. Install RDF (once per machine)
@@ -22,7 +22,7 @@ Verify:
 
 ```bash
 bin/rdf doctor
-# expect: 0 FAIL — WARNs are fine on a fresh install
+# expect: 0 FAIL (WARNs are fine on a fresh install)
 ```
 
 **Prefer a one-command install?** RDF is also a Claude Code plugin:
@@ -40,7 +40,7 @@ deploy below is the mode that needs a manual merge of
 
 ## 2. Initialize your project
 
-Point `rdf init` at any **existing** project directory — it fails with
+Point `rdf init` at any **existing** project directory; it fails with
 `directory not found` if the path does not exist, so clone any small repo
 or use a project you already have (the transcript below is a two-file Flask
 app). It auto-detects the stack and scaffolds governance:
@@ -95,7 +95,7 @@ work, warnings. From there the pipeline is four commands:
 /r-ship     preflight -> verify -> release
 ```
 
-Small change? Skip the pipeline — governance and quality gates apply to
+Small change? Skip the pipeline; governance and quality gates apply to
 normal sessions too. Run `/r-verify` for a QA pass or `/r-review` for an
 adversarial review of any diff.
 
@@ -105,11 +105,44 @@ adversarial review of any diff.
 bin/rdf doctor ~/projects/my-app   # convention drift, stale state, sync health
 ```
 
+## 5. Optional: launchers and several Claude accounts
+
+`rdf shell init` prints short Claude Code launchers for bash and zsh. Add this
+line at the end of `~/.bashrc` or `~/.zshrc`:
+
+```bash
+eval "$(~/rdf/bin/rdf shell init)"
+```
+
+| Launcher | Runs |
+|----------|------|
+| `c` | `claude` |
+| `cs` | `claude --dangerously-skip-permissions` |
+| `ch` | `claude --chrome` |
+
+Every launcher maps `--fs` to `--fork-session`. If you use more than one
+Claude account (work and personal, say), register them once. They share
+projects, auto memory, `--resume` history and settings, and each keeps its
+own login:
+
+```bash
+bin/rdf account add work --primary   # the login ~/.claude already holds
+bin/rdf account add personal         # creates ~/.claude-personal
+cs @personal                         # first launch asks you to log in
+bin/rdf account default personal     # launches without @name now use personal
+bin/rdf account list                 # logins and link health
+```
+
+`cuse personal` makes an account sticky for the current shell instead. To
+change which login plain `claude`, IDE extensions and scripts use, quit every
+Claude Code session and run `bin/rdf account primary personal` (preview it
+with `--dry-run`; Linux only).
+
 ## Where next
 
-- [README — full command reference](https://github.com/rfxn/rdf#4-usage)
-- [Demo walkthrough — a real production change end-to-end](demo-walkthrough.md)
+- [README: full command reference](https://github.com/rfxn/rdf#4-usage)
+- [Demo walkthrough: a real production change end-to-end](demo-walkthrough.md)
 - [ROADMAP](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
 
-Something break in the first five minutes? That's a bug —
+Something break in the first five minutes? That's a bug:
 [open an issue](https://github.com/rfxn/rdf/issues/new/choose).

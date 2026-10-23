@@ -1,4 +1,4 @@
-# RDF -- rfxn Development Framework
+# RDF: rfxn Development Framework
 
 [![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](LICENSE)
@@ -8,17 +8,17 @@
 
 **Governance-driven AI development for teams that ship to production.**
 
-RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Codex, Antigravity CLI — plus Gemini CLI legacy), encoding project conventions, quality gates, and domain expertise into typed agent personas -- so the AI writes code that actually follows your rules.
+RDF is a convention governance layer for AI coding agents. It sits between the human and the AI runtime (Claude Code, Codex, Antigravity CLI, plus Gemini CLI legacy), encoding project conventions, quality gates, and domain expertise into typed agent personas, so the AI writes code that actually follows your rules.
 
-> **Drop it on any repo.** `/r-init` auto-detects your stack and scaffolds governance, quality gates, and typed agent personas -- no rfxn context required. Battle-tested on production security tooling (APF, LMD, BFD), built to generalize. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context-window management. *Issues and PRs welcome -- support is best-effort and community-driven.* **[Quickstart: your repo in 5 minutes ->](docs/quickstart.md)**
+> **Drop it on any repo.** `/r-init` auto-detects your stack and scaffolds governance, quality gates, and typed agent personas; no rfxn context required. Battle-tested on production security tooling (APF, LMD, BFD), built to generalize. The value is the pattern: governance-driven agents, adversarial quality gates, convention inheritance, and context-window management. *Issues and PRs welcome; support is best-effort and community-driven.* **[Quickstart: your repo in 5 minutes ->](docs/quickstart.md)**
 
 ---
 
 <p align="center">
-  <img src="assets/demo.gif" alt="Real session: clone, generate, deploy, init a Flask project, doctor — 0 FAIL" width="100%"/>
+  <img src="assets/demo.gif" alt="Real session: clone, generate, deploy, init a Flask project, doctor: 0 FAIL" width="100%"/>
 </p>
 
-*Real recorded session: install RDF, initialize a plain Flask project, verify health — 42 seconds, no edits.*
+*Real recorded session: install RDF, initialize a plain Flask project, verify health in 42 seconds, no edits.*
 
 ---
 
@@ -28,34 +28,34 @@ RDF is a convention governance layer for AI coding agents. It sits between the h
   <img src="assets/pipeline.svg" alt="RDF Pipeline: spec -> plan -> build -> ship" width="100%"/>
 </p>
 
-Six universal agents handle every project. Their behavior is shaped by governance files initialized per-project -- not baked into prompts. A QA agent reviewing a bash firewall tool and a QA agent reviewing a Python pipeline follow different rules because their governance files are different, not because they are different agents.
+Six universal agents handle every project. Their behavior is shaped by governance files initialized per-project, not baked into prompts. A QA agent reviewing a bash firewall tool and a QA agent reviewing a Python pipeline follow different rules because their governance files are different, not because they are different agents.
 
 ---
 
 ## 2. Quick Start
 
 ```bash
-# ── Option A: plugin install (consumer — commands namespaced /rdf:r-*) ──
+# ── Option A: plugin install (consumer, commands namespaced /rdf:r-*) ──
 #   In Claude Code:
 #     /plugin marketplace add rfxn/rdf
 #     /plugin install rdf@rdf
 #   Bootstrap: a SessionStart hook delivers the ~/.rdf/state/ helpers on
-#     install — 10 state-backed commands (r-spec/r-plan/r-build/r-ship/
+#     install; 10 state-backed commands (r-spec/r-plan/r-build/r-ship/
 #     r-status/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) run
-#     degraded only before the first session restart after install — see
+#     degraded only before the first session restart after install; see
 #     docs/multi-tool-parity.md.
-#   Hooks auto-register on this path — plugin.json declares them; no manual
+#   Hooks auto-register on this path (plugin.json declares them); no manual
 #     merge. Hooks + status line need jq on PATH. (Only the symlink deploy
 #     below requires the manual hooks.json merge.)
 
-# ── Option B: symlink deploy (contributor/power mode — bare /r-*) ──
+# ── Option B: symlink deploy (contributor/power mode, bare /r-*) ──
 # 1. Clone
 git clone https://github.com/rfxn/rdf.git && cd rdf
 
 # 2. Generate adapter output for your AI tool
 bin/rdf generate claude-code          # or: claude-plugin, codex, antigravity, agent-skills, agents-md, gemini-cli (legacy), all
 
-# 3. Deploy (symlinks -- regeneration auto-updates)
+# 3. Deploy (symlinks, so regeneration auto-updates)
 bin/rdf deploy claude-code            # or: bin/rdf deploy gemini-cli
 
 # 4. Go to your project
@@ -63,7 +63,7 @@ cd /path/to/your/project
 ```
 
 Then, inside your agent session (Claude Code prompt, not the shell), run
-`/r-init` — it auto-detects the project type and suggests profiles.
+`/r-init`; it auto-detects the project type and suggests profiles.
 
 That's it. Your AI agent now has project-specific governance, quality gates, and domain expertise.
 
@@ -87,9 +87,9 @@ path on a plain Flask project, with real output at every step.
 | `RDF_CANONICAL` | `$RDF_HOME/canonical` | Canonical content source tree |
 | `RDF_TARGET` | `~/.claude` | Deploy target for claude-code adapter |
 | `RDF_CLAUDE_ACCOUNT` | unset | Account the `rdf shell init` launchers use when no `@name` is given (set by `cuse`; overrides `rdf account default`) |
-| `RDF_WORKSPACE` | parent of `$RDF_HOME` | Workspace root scanned by `rdf doctor --all`. Set this when the checkout lives directly in `$HOME` (e.g. `~/rdf`) — `--all` refuses to scan a home directory |
+| `RDF_WORKSPACE` | parent of `$RDF_HOME` | Workspace root scanned by `rdf doctor --all`. Set this when the checkout lives directly in `$HOME` (e.g. `~/rdf`); `--all` refuses to scan a home directory |
 
-Most users do not need to override these — `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
+Most users do not need to override these; `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
 
 ### Per-Project Setup
 
@@ -97,7 +97,7 @@ Most users do not need to override these — `bin/rdf` resolves paths from its o
 cd /path/to/project
 ```
 
-Then, from your agent session: `/r-init` — auto-detects profiles and
+Then, from your agent session: `/r-init` auto-detects profiles and
 generates governance.
 
 `rdf init` creates (inside the target project):
@@ -178,6 +178,7 @@ cs @personal                     # first launch asks you to log in
 cuse personal                    # or make it sticky for this shell
 rdf account default personal     # or for every launch without @name/cuse ('-' clears)
 rdf account list                 # logins and link health; * = active
+rdf account primary personal --dry-run   # preview making personal the ~/.claude login
 ```
 
 - Every account can resume any transcript and loads the auto memory of the
@@ -207,16 +208,16 @@ rdf account list                 # logins and link health; * = active
 | Command | Purpose |
 |---------|---------|
 | `/r-init` | Initialize governance for a new or existing project |
-| `/r-start` | Session initialization -- reload context, display project health |
-| `/r-save` | End-of-session state sync -- PLAN.md, MEMORY.md, session log |
+| `/r-start` | Session initialization: reload context, display project health |
+| `/r-save` | End-of-session state sync: PLAN.md, MEMORY.md, session log |
 | `/r-mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
-| `/r-status` | Project health dashboard -- pipeline position, plan progress, warnings |
+| `/r-status` | Project health dashboard: pipeline position, plan progress, warnings |
 | `/r-refresh` | Re-scan codebase and update governance files |
 | `/r-sync` | Pull emergency edits from deployed location back to canonical |
 | `/r-context-audit` | Measure Claude Code context overhead; scored report + drift detection |
 
 **Context cost.** RDF's default deploy adds ~0.1K always-loaded tokens per
-session -- just the lessons index injected at session start (hard-capped at
+session: just the lessons index injected at session start (hard-capped at
 400 bytes); governance is read on demand, so it costs nothing until an agent
 needs it, and `hooks.json` is runtime config that never enters model context.
 Figures are a `bytes/4` estimate from `rdf/state/rdf-overhead.sh`, guarded
@@ -233,16 +234,16 @@ the Claude Code transcripts already on your machine: usage deduplicated by
 message id (one API turn is logged once per content block), list-price cost,
 and breakdowns by cost class, model, agent, context depth, subagent boot cost,
 and effort. `--session <id> --summary` is what `/r-save` records per session;
-`/r-start` shows it. Prices are embedded estimates -- nothing is sent anywhere.
+`/r-start` shows it. Prices are embedded estimates; nothing is sent anywhere.
 
-Scoped language rules load only when a matching file is read -- they add nothing
+Scoped language rules load only when a matching file is read; they add nothing
 to the always-loaded figures. Opt into either variant with a deploy flag:
 `bin/rdf deploy --rules claude-code` (scoped governance alongside the default
 symlinks) or `bin/rdf deploy --lite claude-code` (rdf-lite: condensed governance,
 lifecycle commands only, hooks skipped).
 
 **Scale-adaptive ceremony.** The pipeline scales to the task: pick a tier at
-`/r-spec` or `/r-plan` entry — `--full` (default, unchanged), `--quick`
+`/r-spec` or `/r-plan` entry: `--full` (default, unchanged), `--quick`
 (condensed single-artifact plan, lighter gates), or `--bugfix`
 (failing-test-first, minimal gates). A 5-line fix is just `/r-plan --bugfix`.
 Tiers only remove ceremony, never safety: security-sensitive changes keep the
@@ -252,19 +253,19 @@ full security review regardless of tier. See `canonical/reference/tiers.md`.
 
 | Command | Dispatches | Purpose |
 |---------|-----------|---------|
-| `/r-spec` | -- | Design: discover -> brainstorm -> write spec -> challenge review |
+| `/r-spec` | none | Design: discover -> brainstorm -> write spec -> challenge review |
 | `/r-plan` | reviewer | Plan: read spec -> decompose into PLAN.md -> challenge review |
 | `/r-build [N\|--parallel]` | dispatcher | Execute: TDD cycle per phase with quality gates, parallel batch dispatch |
 | `/r-verify` | qa | QA verification against diff or scope |
 | `/r-test` | uat | User acceptance testing from end-user persona |
 | `/r-review` | reviewer | Adversarial review in challenge or sentinel mode |
-| `/r-review-answer` | -- | Route review findings to FIX/REBUT/DEFER with audit-trail artifact |
-| `/r-verify-claim` | -- | Falsifiable claim verification (5 classes) — invoked by reviewer on MUST-FIX assertions |
+| `/r-review-answer` | none | Route review findings to FIX/REBUT/DEFER with audit-trail artifact |
+| `/r-verify-claim` | none | Falsifiable claim verification (5 classes), invoked by reviewer on MUST-FIX assertions |
 | `/r-audit` | 3x reviewer + qa | Full codebase audit across all domains |
 | `/r-audit-slop` | 3x engineer + sentinel | Discovery-first AI slop audit with FP calibration |
 | `/r-ship` | qa + reviewer | Release: preflight -> verify -> prep -> publish -> report |
-| `/r-vpe` | -- | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
-| `/r-tasks` | -- | Read-only task list status -- check progress of long-running commands |
+| `/r-vpe` | none | Optional end-to-end pipeline orchestrator (spec->plan->build->ship) |
+| `/r-tasks` | none | Read-only task list status: check progress of long-running commands |
 
 ### 4.3. Utility Commands (16)
 
@@ -316,7 +317,7 @@ Run 'rdf <command> help' for details.
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
 | `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
 | `rdf doctor [--scope] [--all]` | 15 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness |
-| `rdf state [<path>]` | JSON snapshot in <1s -- no LLM calls |
+| `rdf state [<path>]` | JSON snapshot in <1s, no LLM calls |
 | `rdf tokens [--days N] [--session ID] [--json]` | Local token usage report from Claude Code transcripts (deduplicated, list-price estimate) |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
@@ -330,11 +331,11 @@ Run 'rdf <command> help' for details.
 | Exit Code | Meaning |
 |-----------|---------|
 | 0 | Success |
-| 1 | Generic error — command failed, check failed, or FAIL findings reported |
-| 2 | Invalid usage — bad arguments or unrecognized subcommand |
-| 3 | Missing dependency — required binary (git, jq, sha256sum, etc.) not in PATH |
-| 4 | File I/O error — expected file or directory not found / not readable |
-| 5 | Drift or sync conflict — `rdf doctor` found divergence that requires user action |
+| 1 | Generic error: command failed, check failed, or FAIL findings reported |
+| 2 | Invalid usage: bad arguments or unrecognized subcommand |
+| 3 | Missing dependency: required binary (git, jq, sha256sum, etc.) not in PATH |
+| 4 | File I/O error: expected file or directory not found / not readable |
+| 5 | Drift or sync conflict: `rdf doctor` found divergence that requires user action |
 
 Run `rdf <command> help` for per-command exit semantics.
 
@@ -344,7 +345,7 @@ Run `rdf <command> help` for per-command exit semantics.
 
 ### Governance as Code
 
-Every project gets its own governance files -- conventions, verification checks, anti-patterns, and constraints -- generated from profiles matched to the codebase. The AI reads these before every task. No more re-explaining your rules each session.
+Every project gets its own governance files (conventions, verification checks, anti-patterns, and constraints) generated from profiles matched to the codebase. The AI reads these before every task. No more re-explaining your rules each session.
 
 ### Multi-Adapter Delivery
 
@@ -369,7 +370,7 @@ bin/rdf generate all                  # builds all five adapters in one pass
 #### First-class multi-tool
 
 Claude Code, Codex, and **Antigravity CLI** are first-class citizens: all
-three get intent-triggered commands — Claude Code via `description:`
+three get intent-triggered commands: Claude Code via `description:`
 frontmatter on every generated command, Codex and Antigravity via the shared
 `.agents/skills/` SKILL.md surface (`rdf generate agent-skills`, or
 `rdf generate antigravity` for skills + AGENTS.md in one pass). The
@@ -377,7 +378,7 @@ frontmatter on every generated command, Codex and Antigravity via the shared
 users (Gemini CLI stopped serving free/Pro/Ultra tiers on 2026-06-18;
 Antigravity CLI is its successor and converts the generated TOML on import).
 The shared `.agents/skills/` surface is bounded to the 10 lifecycle commands
-(not all 37) — the parity doc lists them.
+(not all 37); the parity doc lists them.
 Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
 
 ### Profiles + Modes
@@ -386,7 +387,7 @@ Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
   <img src="assets/profiles-modes.svg" alt="Profiles (what you work with) x Modes (what you work on)" width="100%"/>
 </p>
 
-**Profiles** are the codebase's DNA -- auto-detected from project structure, permanent, seeded at `rdf init` time. Thirteen full profiles (`profiles/registry.json`) provide governance templates and reference docs; `rdf-lite` is a condensed deploy variant, not a registered profile. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
+**Profiles** are the codebase's DNA: auto-detected from project structure, permanent, seeded at `rdf init` time. Thirteen full profiles (`profiles/registry.json`) provide governance templates and reference docs; `rdf-lite` is a condensed deploy variant, not a registered profile. Multiple profiles stack automatically for multi-domain projects (`rdf init --type rust,infrastructure`).
 
 **Full profiles** (13 in `profiles/registry.json`; most ship 3-4 reference docs):
 
@@ -403,17 +404,17 @@ Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
 | **perl** | strict/warnings, three-arg open, regex security, taint mode | Regex DoS, taint bypass, injection via open() | 3 |
 | **php** | strict_types, PSR, parameterized queries, Laravel/Symfony | SQL injection, deserialization, SSRF, CSRF | 3 |
 | **infrastructure** | Terraform, Kubernetes, Ansible, secrets, CI/CD | State file exposure, secret sprawl, RBAC drift | 3 |
-| **node** | Module-system discipline, async patterns, npm hygiene | -- (governance-template only) | 0 |
-| **rfxn-workspace** | R-fx Networks org overlay -- opt-in only, never auto-detected | Shared-library release workflow, consumer verification | 1 |
+| **node** | Module-system discipline, async patterns, npm hygiene | none (governance-template only) | 0 |
+| **rfxn-workspace** | R-fx Networks org overlay, opt-in only, never auto-detected | Shared-library release workflow, consumer verification | 1 |
 
 `rdf-lite` (`profiles/lite/`) is a condensed deploy source for the six
 lifecycle commands, not a registered profile.
 
-**Modes** are session-scoped overlays -- they change how agents think without modifying governance files. Seven modes cover different workflows: `development` (default), `security`, `performance`, `migration`, `refactoring`, `debugging`, `documentation`.
+**Modes** are session-scoped overlays: they change how agents think without modifying governance files. Seven modes cover different workflows: `development` (default), `security`, `performance`, `migration`, `refactoring`, `debugging`, `documentation`.
 
 ### Concurrent Session Safety
 
-RDF is designed to be run in parallel against the same repository — different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session has its own `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7; inherited by all subagents; `claude --resume <id>` keeps it, so resume into a second concurrent terminal with `--fork-session`), and all transient handoff files are scoped by it:
+RDF is designed to be run in parallel against the same repository: different milestones in different terminals, partial work mid-flight in one session while another ships unrelated changes. As of 3.1.0 (Wave A), every session has its own `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7; inherited by all subagents; `claude --resume <id>` keeps it, so resume into a second concurrent terminal with `--fork-session`), and all transient handoff files are scoped by it:
 
 ```
 .rdf/work-output/
@@ -444,7 +445,7 @@ The dispatcher auto-derives verification depth from phase content:
 | G3 | Reviewer sentinel (rdf-reviewer) | scope:cross-cutting or scope:sensitive |
 | G4 | UAT (rdf-uat) | User-facing changes |
 
-The reviewer runs adversarial passes — 2-pass lite (anti-slop, regression) or 3-pass full (adds security). Security findings are **MUST-FIX** in security mode.
+The reviewer runs adversarial passes: 2-pass lite (anti-slop, regression) or 3-pass full (adds security). Security findings are **MUST-FIX** in security mode.
 
 ---
 
@@ -478,17 +479,17 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | **rdf-engineer** | opus · xhigh | Implementation via governance protocol | Full read/write |
 | **rdf-engineer-focused** | opus · medium | Variant of rdf-engineer for `scope:docs`/`scope:focused` phases; failures escalate to rdf-engineer | Full read/write |
 | **rdf-qa** | opus · medium | Verification gate (read-only) | Read + execute |
-| **rdf-reviewer** | opus · xhigh | Adversarial review -- sentinel (read-only) | Read + execute |
+| **rdf-reviewer** | opus · xhigh | Adversarial review: sentinel (read-only) | Read + execute |
 | **rdf-reviewer-challenge** | opus · high | Variant of rdf-reviewer for challenge (pre-implementation) review | Read + execute |
 | **rdf-uat** | opus · medium | User acceptance from end-user persona (read-only) | Read + execute |
 
-*Routing lives in `adapters/claude-code/agent-meta.json` (`model`, `effort`, `variants`). Variants are generated from the base agent's canonical body -- the Agent tool cannot pass effort per call, so each effort level is its own agent. `CLAUDE_CODE_EFFORT_LEVEL` overrides every agent's effort; prefer `/effort`, which saves a level per model. Spec and plan sessions are tuned for `claude --model fable --effort high`, builds for `claude --model opus`. No Fable access? Set the planner's `"model"` to `"opus"` and regenerate. `/r-util-claudemd-review` deliberately fans out to Sonnet for bulk transcript reading.*
+*Routing lives in `adapters/claude-code/agent-meta.json` (`model`, `effort`, `variants`). Variants are generated from the base agent's canonical body; the Agent tool cannot pass effort per call, so each effort level is its own agent. `CLAUDE_CODE_EFFORT_LEVEL` overrides every agent's effort; prefer `/effort`, which saves a level per model. Spec and plan sessions are tuned for `claude --model fable --effort high`, builds for `claude --model opus`. No Fable access? Set the planner's `"model"` to `"opus"` and regenerate. `/r-util-claudemd-review` deliberately fans out to Sonnet for bulk transcript reading.*
 
 ### Scripts (16)
 
 | Script | Purpose |
 |--------|---------|
-| context-bar.sh | Status line -- project, branch, phase, model |
+| context-bar.sh | Status line: project, branch, phase, model |
 | clone-conversation.sh | Fork current conversation to new session |
 | half-clone-conversation.sh | Fork recent half of conversation |
 | check-context.sh | Context window utilization check |
@@ -496,14 +497,14 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | color-preview.sh | Terminal color palette preview |
 | test-half-clone.sh | Test harness for half-clone |
 | subagent-stop.sh | Capture agent completion events |
-| precompact-snapshot.sh | PreCompact hook -- snapshot session state before compaction |
-| session-start-context.sh | SessionStart(compact) hook -- re-inject pre-compaction handoff |
-| session-start-inject.sh | SessionStart hook -- inject the lessons ID-index |
-| session-end-capture.sh | SessionEnd hook -- git snapshot to the session journal |
+| precompact-snapshot.sh | PreCompact hook: snapshot session state before compaction |
+| session-start-context.sh | SessionStart(compact) hook: re-inject pre-compaction handoff |
+| session-start-inject.sh | SessionStart hook: inject the lessons ID-index |
+| session-end-capture.sh | SessionEnd hook: git snapshot to the session journal |
 | pre-commit-validate.sh | Pre-commit lint + anti-pattern greps |
 | post-edit-lint.sh | Post-edit shellcheck on modified files |
 | comment-metrics.sh | Per-file comment cruft metrics for shell source |
-| state-bootstrap.sh | SessionStart hook -- deliver ~/.rdf/state helpers on plugin installs |
+| state-bootstrap.sh | SessionStart hook: deliver ~/.rdf/state helpers on plugin installs |
 
 ---
 
@@ -555,20 +556,20 @@ rdf/
 |   |-- registry.json                  # Machine-readable profile catalog (13 profiles)
 |   |-- registry.md                    # Human-readable profile catalog
 |   |-- detection-rules.md            # Auto-detection signals per profile
-|   |-- core/                          # Always active -- commit protocol, security hygiene
-|   |-- shell/                         # Bash/shell -- quoting, portability, BATS
-|   |-- python/                        # Python -- typing, pytest, packaging
-|   |-- frontend/                      # Web -- a11y, performance, CSS methodology
-|   |-- database/                      # DB -- schema, migrations, engine-specific refs
-|   |-- go/                            # Go -- concurrency, error handling, modules
-|   |-- rust/                          # Rust -- ownership, unsafe, cargo
-|   |-- typescript/                    # TypeScript -- strict, Node.js, async
-|   |-- perl/                          # Perl -- strict/warnings, taint mode
-|   |-- php/                           # PHP -- strict_types, PSR
+|   |-- core/                          # Always active: commit protocol, security hygiene
+|   |-- shell/                         # Bash/shell: quoting, portability, BATS
+|   |-- python/                        # Python: typing, pytest, packaging
+|   |-- frontend/                      # Web: a11y, performance, CSS methodology
+|   |-- database/                      # DB: schema, migrations, engine-specific refs
+|   |-- go/                            # Go: concurrency, error handling, modules
+|   |-- rust/                          # Rust: ownership, unsafe, cargo
+|   |-- typescript/                    # TypeScript: strict, Node.js, async
+|   |-- perl/                          # Perl: strict/warnings, taint mode
+|   |-- php/                           # PHP: strict_types, PSR
 |   |-- infrastructure/                # Terraform, K8s, Ansible
-|   |-- node/                          # Node.js -- module discipline, async, npm hygiene
+|   |-- node/                          # Node.js: module discipline, async, npm hygiene
 |   |-- rfxn-workspace/                # R-fx Networks org overlay (opt-in only)
-|   +-- lite/                          # rdf-lite deploy source -- not a registered profile
+|   +-- lite/                          # rdf-lite deploy source, not a registered profile
 |-- modes/
 |   |-- development/                   # Default TDD workflow
 |   |-- security-assessment/           # Threat-model-first assessment
@@ -597,13 +598,13 @@ rdf/
 
 RDF governs development of security infrastructure deployed across ~350,000 active servers:
 
-- **APF** (Advanced Policy Firewall) -- network access control and rate limiting
-- **LMD** (Linux Malware Detect) -- filesystem malware scanning with daily signature updates
-- **BFD** (Brute Force Detection) -- real-time authentication attack detection
+- **APF** (Advanced Policy Firewall): network access control and rate limiting
+- **LMD** (Linux Malware Detect): filesystem malware scanning with daily signature updates
+- **BFD** (Brute Force Detection): real-time authentication attack detection
 
 Daily check-ins from government (NIST, NOAA, NIH), defense (NATO CCDCOE), universities (Stanford, Harvard), telecom (Deutsche Telekom, Vodafone, Telefonica), and infrastructure providers (AWS, Hetzner, OVHcloud, DigitalOcean) across cPanel, Plesk, and bare-metal environments.
 
-**What goes wrong when code is wrong:** A false positive in LMD quarantines legitimate files on every server that pulls the update. A regression in APF rule parsing locks administrators out of their own servers. A threshold change in BFD floods block lists or stops detecting real attacks. These are security tools -- a regression changes the security posture of hundreds of thousands of machines.
+**What goes wrong when code is wrong:** A false positive in LMD quarantines legitimate files on every server that pulls the update. A regression in APF rule parsing locks administrators out of their own servers. A threshold change in BFD floods block lists or stops detecting real attacks. These are security tools; a regression changes the security posture of hundreds of thousands of machines.
 
 ### Measured usage (2026-03 → 2026-07, derived from session logs + git history)
 
@@ -613,10 +614,10 @@ Daily check-ins from government (NIST, NOAA, NIH), defense (NATO CCDCOE), univer
 | Governed work sessions logged | 518 across 30+ projects (~17 weeks, ~4.3/day sustained) |
 | Commits landed portfolio-wide | 2,513 (git-verified; ~4 per committing session) |
 | BATS test cases across governed repos | 6,871 (13 repos, all CI-runnable) |
-| Major releases shipped under governance | LMD 2.0, APF 2.0, BFD 2.0 — plus 26 RDF releases in 18 weeks |
-| Design artifacts committed | 25 specs, 22 implementation plans — designed in the open |
+| Major releases shipped under governance | LMD 2.0, APF 2.0, BFD 2.0, plus 26 RDF releases in 18 weeks |
+| Design artifacts committed | 25 specs, 22 implementation plans, designed in the open |
 
-One operator, thirty-plus projects, sustained multi-month cadence — with
+One operator, thirty-plus projects, sustained multi-month cadence, with
 every release backed by committed specs, adversarial review, and a test
 suite that runs in CI. That is the throughput the governance layer exists
 to make safe.
@@ -648,7 +649,7 @@ All projects share: batsman test infrastructure, parent CLAUDE.md conventions, R
 
 **Convention inheritance beats documentation.** Projects inherit conventions from profiles and parent governance files. The AI reads them automatically. No one needs to remember to brief the model on project rules.
 
-**Trust is earned with evidence, not claims.** Every quality gate requires specific evidence -- grep output, test results, commit hashes. "I checked and it's fine" is not acceptable.
+**Trust is earned with evidence, not claims.** Every quality gate requires specific evidence: grep output, test results, commit hashes. "I checked and it's fine" is not acceptable.
 
 ---
 
@@ -741,6 +742,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents -- 37 commands -- 16 scripts -- 13 profiles -- 5 adapters -- 7 modes**
+**6 agents · 37 commands · 16 scripts · 13 profiles · 5 adapters · 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

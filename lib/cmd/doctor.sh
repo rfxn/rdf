@@ -1108,7 +1108,7 @@ _check_doc_stats() {
         _doc_stat_cmp "docs/index.md" "modes"    "$idx_modes"    "$modes"
     fi
 
-    # README.md footer banner: "**A agents -- B commands -- C scripts -- D profiles -- E adapters -- F modes**"
+    # README.md footer banner: "**A agents · B commands · C scripts · D profiles · E adapters · F modes**"
     local rdme="${path}/README.md"
     if [[ -f "$rdme" ]]; then
         local fline rd_ag="" rd_cmd="" rd_scr="" rd_prof="" rd_adp="" rd_mod=""

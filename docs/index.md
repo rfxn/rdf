@@ -4,7 +4,7 @@ nav_order: 1
 permalink: /
 ---
 
-# RDF — rfxn Development Framework
+# RDF: rfxn Development Framework
 {: .fs-8 }
 
 **Governance-driven AI development for teams that ship to production.**
@@ -13,7 +13,7 @@ permalink: /
 RDF is a convention governance layer for AI coding agents. It sits
 between you and the AI runtime (Claude Code, Codex, Antigravity CLI),
 encoding project conventions, quality gates, and domain expertise into
-typed agent personas — so the AI writes code that actually follows your
+typed agent personas, so the AI writes code that actually follows your
 rules.
 
 [![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
@@ -22,14 +22,14 @@ rules.
 
 **6 agents · 37 commands · 13 profiles · 5 adapters · 7 modes**
 
-[Quickstart — 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
+[Quickstart: 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
 [View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }
 
 ---
 
-![Real recorded session: clone, generate, deploy, init a Flask project, doctor — 0 FAIL](assets/demo.gif)
+![Real recorded session: clone, generate, deploy, init a Flask project, doctor: 0 FAIL](assets/demo.gif)
 
-*Real recorded session — install RDF, initialize a plain Flask project,
+*Real recorded session: install RDF, initialize a plain Flask project,
 verify health. 42 seconds, no edits, ends at `0 FAIL`.*
 
 ## Install
@@ -64,21 +64,27 @@ Context cost is published and CI-guarded: the default deploy adds ~0.1K
 always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
 `rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).
 
+**More than one Claude account?** `rdf shell init` adds `c`/`cs`/`ch`
+launchers, and `rdf account` runs work and personal logins against the same
+projects, memory and `--resume` history. Pick one per launch with
+`cs @personal`, set a default, or move which login `~/.claude` holds. See
+[Quickstart, step 5](quickstart).
+
 ## The pipeline
 
 ![RDF Pipeline: spec, plan, build, ship](assets/pipeline.svg)
 
-Four commands take a change from idea to release — `/r-spec` (research +
+Four commands take a change from idea to release: `/r-spec` (research +
 adversarial design review), `/r-plan` (execution-grade decomposition),
 `/r-build` (TDD with quality gates), `/r-ship` (preflight → publish).
-Small change? Skip the pipeline — governance applies to normal sessions
+Small change? Skip the pipeline; governance applies to normal sessions
 too.
 
 ## Why RDF
 
 | Principle | What it means |
 |-----------|---------------|
-| **Governance as code** | Conventions live in versioned files the AI reads every session — not in your head or a wiki |
+| **Governance as code** | Conventions live in versioned files the AI reads every session, not in your head or a wiki |
 | **Adversarial quality gates** | Reviewer agents challenge specs before implementation and audit code after it, with scope-derived depth |
 | **Convention inheritance** | project → workspace → profile → core layering (most specific wins); one edit propagates everywhere |
 | **Multi-adapter** | Author governance once; deploy to Claude Code (symlink or plugin), Codex, Antigravity CLI, Gemini CLI (legacy), or plain AGENTS.md |
@@ -91,19 +97,19 @@ RDF governs the development of security tooling running on
 
 - **518 governed sessions** across 30+ projects at a sustained
   **~4.3 sessions/day**, landing **2,513 git-verified commits**
-- **Three major releases shipped under governance** — LMD 2.0, APF 2.0,
-  BFD 2.0 — plus **26 RDF releases in 18 weeks**
+- **Three major releases shipped under governance** (LMD 2.0, APF 2.0,
+  BFD 2.0), plus **26 RDF releases in 18 weeks**
 - **6,871 BATS tests** across 13 governed repos, all CI-runnable
 - Every release backed by committed design specs (25) and implementation
-  plans (22) — we design in the open:
+  plans (22); we design in the open:
   [spec archive](https://github.com/rfxn/rdf/tree/main/docs/specs)
 
 ## Docs
 
-- **[Quickstart — your repo in 5 minutes](quickstart)**
-- [Demo walkthrough — a real production change, spec to ship](demo-walkthrough)
-- [Multi-tool parity — Claude Code, Codex, Antigravity (+ Gemini legacy)](multi-tool-parity)
-- [Memory & context — RDF alongside native auto-memory](memory-context)
+- **[Quickstart: your repo in 5 minutes](quickstart)**
+- [Demo walkthrough: a real production change, spec to ship](demo-walkthrough)
+- [Multi-tool parity: Claude Code, Codex, Antigravity (+ Gemini legacy)](multi-tool-parity)
+- [Memory & context: RDF alongside native auto-memory](memory-context)
 - [Full command reference (README)](https://github.com/rfxn/rdf#4-usage)
 - [Roadmap](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
 

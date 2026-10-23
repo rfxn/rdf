@@ -27,6 +27,6 @@ body:
     id: proposal
     attributes:
       label: Proposed approach
-      description: Optional — how you'd solve it. Note that RDF favors simplicity; see the simplicity-budget doctrine before proposing new orchestration.
+      description: Optional: how you'd solve it. Note that RDF favors simplicity; see the simplicity-budget doctrine before proposing new orchestration.
     validations:
       required: false

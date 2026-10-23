@@ -23,3 +23,9 @@
       at the plugin root is not loaded as project context (RDF's repo root is the plugin
       root), and --strict made that fatal; the step now reads the --json report and fails
       on any error or any other warning
+
+-- Changes --
+
+[Change] docs: the quickstart covers the shell launchers and multiple accounts and the Pages
+         home points to it; em dashes swept from the docs, changelog and release names;
+         /r-ship and the triage ledger use "## X.Y (date)" headers

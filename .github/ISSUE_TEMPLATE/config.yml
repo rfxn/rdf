@@ -5,4 +5,4 @@ contact_links:
     about: Ask questions, share setups, and discuss ideas before opening an issue
   - name: Security reports (private)
     url: https://github.com/rfxn/rdf/blob/main/SECURITY.md
-    about: Do not open public issues for vulnerabilities — see the security policy
+    about: Do not open public issues for vulnerabilities; see the security policy

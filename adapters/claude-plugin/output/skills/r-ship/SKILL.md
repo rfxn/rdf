@@ -10,11 +10,11 @@ release artifacts, and publishes a PR.
 
 ## Arguments
 
-$ARGUMENTS — optional, any order:
+$ARGUMENTS (optional, any order):
 
 - base branch override (default: auto-detect via
   `git symbolic-ref refs/remotes/origin/HEAD` or fall back to `main`)
-- `--version X.Y.Z` — the version this run ships. When absent, Setup prompts
+- `--version X.Y.Z`: the version this run ships. When absent, Setup prompts
   for it (see *Target version* below)
 
 ## Setup
@@ -43,7 +43,7 @@ read the target from there, so a resumed session gates the same release.
 ## Resume Detection
 
 Source `~/.rdf/state/rdf-bus.sh` and call `rdf_session_init`. If the helper is
-absent (helpers not yet bootstrapped — fresh plugin install before its first
+absent (helpers not yet bootstrapped: fresh plugin install before its first
 session restart), skip resume detection and proceed without session-scoped
 progress; restart the session (plugin) or run `rdf deploy claude-code`
 (checkout) to deliver them. Then look for
@@ -64,18 +64,18 @@ After each stage completes, write state to `.rdf/work-output/ship-progress-${RDF
 STAGE: {preflight|verify|prep|publish|report}
 STATUS: {complete|in-progress}
 PR_URL: {if created}
-VERSION: {target release version — resolved at Setup}
+VERSION: {target release version, resolved at Setup}
 ```
 
 ## Stage 1: Preflight
 
 Run all four checks and display results as a task list. Each check
-is pass/fail — a checked box means the gate passed.
+is pass/fail: a checked box means the gate passed.
 
 ### 1a. Plan Completion Check
 - Source `~/.rdf/state/rdf-bus.sh`; `rdf_session_init`. Resolve the active
   plan: `plan_path="$(rdf_active_plan_path)"`.
-- Read `$plan_path` — verify ALL phases are marked complete.
+- Read `$plan_path`: verify ALL phases are marked complete.
 - If any phases are incomplete, report which ones and STOP.
 - If no active plan resolves, skip this check (ad-hoc release).
 
@@ -95,24 +95,24 @@ is pass/fail — a checked box means the gate passed.
 ### 1d. Platform Triage
 
 Per-minor gate (D4, `docs/specs/2026-09-02-platform-alignment-spike-design.md`
-§6) — a minor release must not ship without a current platform re-triage
+§6): a minor release must not ship without a current platform re-triage
 verdict; patch releases are unaffected.
 
 - Split the **target version** from Setup (the progress file's `VERSION:`
-  field) into `MAJOR.MINOR.PATCH`. Do not read the on-disk `VERSION` here —
+  field) into `MAJOR.MINOR.PATCH`. Do not read the on-disk `VERSION` here;
   Stage 3 has not bumped it yet, so it names the previous release and would
   gate the wrong one.
-- If the target is `unknown`, mark `[x]` with *(skipped — no target version)*
+- If the target is `unknown`, mark `[x]` with *(skipped: no target version)*
   and skip the remaining steps below.
 - If `PATCH` is non-zero the gate does not apply: mark
-  `[x] **Platform triage**: *(skipped — patch release X.Y.Z)*` and skip the
+  `[x] **Platform triage**: *(skipped: patch release X.Y.Z)*` and skip the
   remaining steps below.
 - Otherwise grep `docs/platform-triage.md` for a block matching
-  `^## <MAJOR.MINOR> — `:
+  `^## <MAJOR.MINOR> \(`:
   - Present: `[x] **Platform triage**: \`<MAJOR.MINOR>\` ledger current`.
-  - Absent: `[ ] **Platform triage**: no \`## <MAJOR.MINOR> — <date>\` block
+  - Absent: `[ ] **Platform triage**: no \`## <MAJOR.MINOR> (<date>)\` block
     in \`docs/platform-triage.md\`` and
-    `> **Blocked** — preflight failed: platform triage missing for
+    `> **Blocked** (preflight failed): platform triage missing for
     <MAJOR.MINOR>`.
 
 ### Preflight Display
@@ -120,20 +120,20 @@ verdict; patch releases are unaffected.
 Present results as a task list with inline code for values:
 
 ```
-### Preflight — target `3.7.0`
+### Preflight: target `3.7.0`
 - [x] **Plan**: all phases complete (`12`/`12`)
 - [x] **Working tree**: clean
-- [ ] **Branch**: on `main` — *expected a feature/release branch*
+- [ ] **Branch**: on `main` (*expected a feature/release branch*)
 - [x] **Platform triage**: `3.7` ledger current
 ```
 
 A patch target renders the last line as
-`- [x] **Platform triage**: *(skipped — patch release 3.7.1)*`.
+`- [x] **Platform triage**: *(skipped: patch release 3.7.1)*`.
 
 If a check fails, use an unchecked box and add an italic reason.
 If a check is skipped, use a checked box with *(skipped)* annotation.
 
-> **Blocked** — preflight failed: {reason}
+> **Blocked** (preflight failed): {reason}
 
 Use a blockquote for any blocker that halts the workflow.
 
@@ -163,18 +163,18 @@ Dispatch reviewer subagent in sentinel mode with:
 
 ### Gate Display
 
-Present gate results as a task list — checked = passed, unchecked =
+Present gate results as a task list: checked = passed, unchecked =
 failed or pending:
 
 ```
 ### Verification Gates
-- [x] **QA**: *PASS* — `672` tests, `0` failures
-- [ ] **Reviewer**: *MUST-FIX* — 2 findings (1 security, 1 regression)
+- [x] **QA**: *PASS*, `672` tests, `0` failures
+- [ ] **Reviewer**: *MUST-FIX*, 2 findings (1 security, 1 regression)
 ```
 
 If a gate fails, show the findings immediately below in a blockquote:
 
-> **QA Gate Failed** — 3 test failures
+> **QA Gate Failed**: 3 test failures
 > - `test/core.bats` line 42: expected `0`, got `1`
 > - `test/trust.bats` line 118: timeout after 30s
 > - `test/cli.bats` line 55: missing output line
@@ -200,7 +200,7 @@ Ask user to fix or explicitly override.
 - Grep for version strings across the codebase (VERSION file,
   package.json, setup.py, Cargo.toml, etc.)
 - Verify all version references are consistent
-- Verify the on-disk version now equals the target recorded at Setup — this is
+- Verify the on-disk version now equals the target recorded at Setup; this is
   what proves Stage 1d gated the release actually being shipped
 - If mismatches found, report and ask user to fix
 
@@ -213,7 +213,7 @@ Ask user to fix or explicitly override.
 
 Fold this release's outcome into the maintained current-state spec. **Skipped
 when `rdf_active_tier` is `bugfix`** (a defect fix does not change the
-architecture) and when the plan File Map cannot be parsed (degrade — never
+architecture) and when the plan File Map cannot be parsed (degrade, never
 block the release).
 
 1. `source ~/.rdf/state/rdf-bus.sh; tier="$(rdf_active_tier)"`. If `bugfix`, skip.
@@ -222,9 +222,9 @@ block the release).
    Map (New→ADDED, Modified→MODIFIED, Deleted→REMOVED) plus the changelog
    entries from Stage 3a (one-line summaries). If the File Map cannot be
    parsed, emit a notice and skip.
-4. Present the delta to the user for approval (a few bullets — keep it light,
+4. Present the delta to the user for approval (a few bullets; keep it light,
    this is cheap, not ceremony).
-5. On approval, prepend a `## <version> — <date>` block to CURRENT.md and
+5. On approval, prepend a `## <version> (<date>)` block to CURRENT.md and
    stage it with the release commit (amend Stage 3d's commit or a follow-up).
 
 OpenSpec precedent; this must stay lightweight, never ceremony.
@@ -249,15 +249,15 @@ Present release prep results as a task list:
 
 ```
 ### Release Prep
-- [x] **Changelog**: updated — `12` entries added to `CHANGELOG`
-- [x] **Attribution scrub**: clean — no AI references found
-- [ ] **Version strings**: *mismatch* — `VERSION` says `2.0.2`, `setup.py` says `2.0.1`
+- [x] **Changelog**: updated, `12` entries added to `CHANGELOG`
+- [x] **Attribution scrub**: clean, no AI references found
+- [ ] **Version strings**: *mismatch*: `VERSION` says `2.0.2`, `setup.py` says `2.0.1`
 - [x] **Commit**: `a1b2c3d` pushed to `origin/2.0.2`
 ```
 
 If version mismatches are found, use a blockquote:
 
-> **Version Mismatch** — resolve before proceeding
+> **Version Mismatch**: resolve before proceeding
 > - `files/apf`: `VERSION="2.0.2"`
 > - `setup.py`: `version="2.0.1"`
 
@@ -279,7 +279,7 @@ If version mismatches are found, use a blockquote:
 
 ### 4c. User Confirmation
 - Present final summary and ask user to confirm merge readiness
-- Do NOT auto-merge — the user decides
+- Do NOT auto-merge; the user decides
 
 ### Publish Display
 
@@ -307,7 +307,7 @@ When CI completes, collapse into a single line in the final report.
 ## Stage 5: Final Report
 
 Present a structured summary using tables, task lists, and
-blockquotes. This is the final output the user sees — it must be
+blockquotes. This is the final output the user sees; it must be
 scannable at a glance.
 
 ```
@@ -321,45 +321,45 @@ scannable at a glance.
 ---
 
 ### Verification Gates
-- [x] **QA**: *PASS* — `{test_count}` tests, `{fail_count}` failures
-- [x] **Reviewer**: *APPROVE* — {summary}
+- [x] **QA**: *PASS*, `{test_count}` tests, `{fail_count}` failures
+- [x] **Reviewer**: *APPROVE* ({summary})
 
 ### Release Prep
-- [x] **Changelog**: updated — `{entry_count}` entries
+- [x] **Changelog**: updated, `{entry_count}` entries
 - [x] **Attribution scrub**: clean
 - [x] **Version strings**: consistent (`{version}`)
 - [x] **Commit**: `{hash}` pushed to `origin/{branch}`
 
 ### CI
-- [x] **Status**: *pass* — all checks green
+- [x] **Status**: *pass*, all checks green
 
 ---
 
 ### Verdict
-**READY TO MERGE** — all gates passed, PR awaiting review
+**READY TO MERGE**: all gates passed, PR awaiting review
 ```
 
-**Verdict styling** — use bold for the verdict keyword and a brief
+**Verdict styling**: use bold for the verdict keyword and a brief
 reason. Three possible verdicts:
 
-- **READY TO MERGE** — all gates passed, no action needed
-- **ACTION NEEDED** — non-blocking findings or overridden gates
-- **BLOCKED** — unresolved gate failures
+- **READY TO MERGE**: all gates passed, no action needed
+- **ACTION NEEDED**: non-blocking findings or overridden gates
+- **BLOCKED**: unresolved gate failures
 
 When the verdict is not READY TO MERGE, use a blockquote to
 highlight what needs attention:
 
-> **ACTION NEEDED** — reviewer flagged 1 concern (overridden by user)
+> **ACTION NEEDED**: reviewer flagged 1 concern (overridden by user)
 
 When the verdict is BLOCKED, list the blockers:
 
-> **BLOCKED** — cannot merge
-> - QA gate: *FAIL* — 3 test failures
+> **BLOCKED**: cannot merge
+> - QA gate: *FAIL*, 3 test failures
 > - Version strings: *mismatch* in `setup.py`
 
 After presenting the final report, output the completion handoff:
 
-> **Released** — PR `{url}`
+> **Released**: PR `{url}`
 > Merge when CI passes. Pipeline complete.
 
 Delete `.rdf/work-output/ship-progress-${RDF_SESSION_ID}.md` after successful completion.
@@ -383,19 +383,19 @@ Follow these consistently across every stage.
 HTML tags, `<details>`, ANSI color codes, Mermaid diagrams, footnotes.
 
 **Conventions:**
-- Task lists give instant pass/fail state — checked = passed,
+- Task lists give instant pass/fail state: checked = passed,
   unchecked = failed or pending
-- Blockquotes draw the eye to blockers — use for anything that
+- Blockquotes draw the eye to blockers; use them for anything that
   halts the workflow or needs user action
-- Inline code makes values scannable — always wrap versions,
+- Inline code makes values scannable; always wrap versions,
   hashes, branch names, paths, and commands
-- Bold labels on the left, values on the right — consistent
+- Bold labels on the left, values on the right, consistent
   across task lists and tables
-- Italic for status keywords only — keeps them visually distinct
+- Italic for status keywords only, to keep them visually distinct
   from labels and values
 
 ## Constraints
-- Never auto-merge — user must confirm
+- Never auto-merge; the user must confirm
 - Never force-push
 - Always show verification results before creating PR
 - If governance/verification.md is missing, warn but proceed with

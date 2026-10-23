@@ -154,10 +154,10 @@ The `basename` of the current working directory.
 Only shown when cwd is inside a git repository with a branch checked out.
 Composed of branch name and a status string.
 
-**Pending count** — tracked changes only (staged + unstaged modified/deleted).
+**Pending count**: tracked changes only (staged + unstaged modified/deleted).
 Untracked files are excluded. Uses `git status --porcelain -uno`.
 
-**Sync status** — compares HEAD against the current branch's upstream tracking
+**Sync status**: compares HEAD against the current branch's upstream tracking
 ref. Sync time is derived from the remote tracking ref's reflog (last push/fetch
 for that specific branch), not the global `FETCH_HEAD`.
 
@@ -210,7 +210,7 @@ of the pipe-delimited cache file).
 A 10-character block gauge followed by percentage and capacity.
 
 ```
-██████████ 100%/200k          (full — context exhausted)
+██████████ 100%/200k          (full: context exhausted)
 ████████▄░ 85%/200k           (alert: red percentage)
 ██████░░░░ 62%/200k           (warn: yellow percentage)
 ██▄░░░░░░░ 23%/1000k          (normal: gray percentage)
@@ -236,7 +236,7 @@ Cache efficiency and economics in one compact group.
 ```
 
 **Cache hit %** = `cache_read / (cache_read + cache_create + uncached_input)`.
-Higher is better — means more prompt cache reuse.
+Higher is better: it means more prompt cache reuse.
 
 **Session cost** = cumulative `$.cost.total_cost_usd` from the JSON input.
 
@@ -340,8 +340,8 @@ Enable in Claude Code `settings.json`:
 
 ### External Dependencies
 
-- `jq` — JSON parsing (transcript, input)
-- `git` — branch and sync status
-- `md5sum` — cost history file keying
-- `awk` — cost rate calculation
-- `stat` — (removed in latest version; reflog used instead)
+- `jq`: JSON parsing (transcript, input)
+- `git`: branch and sync status
+- `md5sum`: cost history file keying
+- `awk`: cost rate calculation
+- `stat`: removed in the latest version (reflog used instead)

@@ -5,12 +5,12 @@
 ## 1. Organization Chart
 
 ```
-RDF — UNIVERSAL AGENT WORKFORCE
+RDF: UNIVERSAL AGENT WORKFORCE
 ════════════════════════════════════════════════════════════════════
 
 USER
  │
- ├─► /r-start    (self-contained)     Session Init — loads context,
+ ├─► /r-start    (self-contained)     Session Init: loads context,
  │                                     scans state; dispatches nothing
  │
  ├─► /r-plan     (planner inline,      Research & Planning
@@ -18,7 +18,7 @@ USER
  │                Fable session        review before presenting for approval
  │                advised; direct
  │                dispatch available)
- │                └─► reviewer         Challenge Mode — pre-impl (opus·high)
+ │                └─► reviewer         Challenge Mode: pre-impl (opus·high)
  │
  ├─► /r-build ─► dispatcher  (opus)   Plan Execution
  │                │                    Phase orchestration, quality gates
@@ -26,14 +26,14 @@ USER
  │                ├─► engineer  (opus)  Universal Implementation (xhigh; focused variant medium)
  │                │                    TDD, governance-driven protocol
  │                │
- │                ├─► qa  (opus)       Verification Gate — read-only
+ │                ├─► qa  (opus)       Verification Gate (read-only)
  │                │                    Lint, tests, anti-patterns
  │                │
- │                ├─► reviewer         Adversarial Review — read-only
+ │                ├─► reviewer         Adversarial Review (read-only)
  │                │                    Challenge mode (pre-impl, opus·high)
  │                │                    Sentinel mode (post-impl, opus·xhigh, 2-3 pass)
  │                │
- │                └─► uat  (opus)     User Acceptance — read-only
+ │                └─► uat  (opus)     User Acceptance (read-only)
  │                                    End-user persona, real scenarios
  │
  └─► /r-audit ──► reviewer(×3) + qa   Full Codebase Audit
@@ -103,13 +103,13 @@ Dispatched by the dispatcher for plan phase execution.
 ### qa (opus · medium)
 
 Verification gate. Reads governance files for project-specific checks
-(lint commands, test commands, anti-pattern patterns). Read-only -- cannot
+(lint commands, test commands, anti-pattern patterns). Read-only; cannot
 modify source files. Dispatched by dispatcher or invoked via `/r-verify`.
 
 ### uat (opus · medium)
 
 User acceptance testing. Runs real-world scenarios from an end-user
-persona. Read-only -- cannot modify source files. Dispatched by
+persona. Read-only; cannot modify source files. Dispatched by
 dispatcher or invoked via `/r-test`.
 
 ### reviewer (opus · xhigh sentinel / high challenge variant)
@@ -122,7 +122,7 @@ Adversarial reviewer with two modes:
 - **Sentinel mode** (post-impl): 2-pass lite (anti-slop, regression) or
   3-pass full (adds security) code review.
 
-Read-only -- cannot modify source files. Dispatched by planner,
+Read-only; cannot modify source files. Dispatched by planner,
 dispatcher, or invoked via `/r-review`.
 
 ---
@@ -133,27 +133,27 @@ dispatcher, or invoked via `/r-review`.
 
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
-| r-init | /r-init | -- | Governance initialization |
-| r-start | /r-start | -- | Session initialization |
-| r-save | /r-save | -- | Session state sync |
+| r-init | /r-init | none | Governance initialization |
+| r-start | /r-start | none | Session initialization |
+| r-save | /r-save | none | Session state sync |
 | r-plan | /r-plan | reviewer | Planning workflow (planner runs inline) |
 | r-spec | /r-spec | reviewer | Specification authoring |
-| r-mode | /r-mode | -- | Switch operational mode |
-| r-status | /r-status | -- | Project health dashboard |
-| r-tasks | /r-tasks | -- | Task list status |
-| r-refresh | /r-refresh | -- | Governance refresh |
-| r-sync | /r-sync | -- | Canonical source sync |
-| r-context-audit | /r-context-audit | -- | Context-window overhead audit |
+| r-mode | /r-mode | none | Switch operational mode |
+| r-status | /r-status | none | Project health dashboard |
+| r-tasks | /r-tasks | none | Task list status |
+| r-refresh | /r-refresh | none | Governance refresh |
+| r-sync | /r-sync | none | Canonical source sync |
+| r-context-audit | /r-context-audit | none | Context-window overhead audit |
 | r-audit | /r-audit | reviewer, qa | Full codebase audit |
 | r-audit-slop | /r-audit-slop | engineer, reviewer | Discovery-first AI slop audit (engineer x3, reviewer sentinel) |
 | r-ship | /r-ship | qa, reviewer | Release workflow |
 | r-build | /r-build | dispatcher, qa | Execute plan phase |
-| r-vpe | /r-vpe | -- | Pipeline orchestrator |
+| r-vpe | /r-vpe | none | Pipeline orchestrator |
 | r-verify | /r-verify | qa | QA verification |
-| r-verify-claim | /r-verify-claim | -- | Falsifiable claim verification (5 classes) |
+| r-verify-claim | /r-verify-claim | none | Falsifiable claim verification (5 classes) |
 | r-test | /r-test | uat | UAT acceptance |
 | r-review | /r-review | reviewer | Adversarial review |
-| r-review-answer | /r-review-answer | -- | Route review findings (FIX/REBUT/DEFER) |
+| r-review-answer | /r-review-answer | none | Route review findings (FIX/REBUT/DEFER) |
 
 ### Utility Commands (16)
 

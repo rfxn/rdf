@@ -1,46 +1,46 @@
-# RDF — Current-State Spec (living)
+# RDF Current-State Spec (living)
 
 The maintained current-state view of RDF's architecture. Unlike the dated
-`docs/specs/*.md` design records — each a point-in-time proposal that stays
-frozen as a historical archive — this file tracks what RDF *is* right now.
+`docs/specs/*.md` design records (each a point-in-time proposal that stays
+frozen as a historical archive), this file tracks what RDF *is* right now.
 
 ## How this file works
 
 `/r-ship` Stage 3e folds each shipped plan's outcome into this file as a dated
-delta block (`## <version> — <date>`) with ADDED / MODIFIED / REMOVED lines
+delta block (`## <version> (<date>)`) with ADDED / MODIFIED / REMOVED lines
 derived from the plan File Map (New→ADDED, Modified→MODIFIED, Deleted→REMOVED)
 and the changelog. The newest block is prepended at the top, so reading
 top-to-bottom gives the reverse-chronological history of what changed. The fold
 is user-approved and lightweight (a few bullets), and is skipped for
-`bugfix`-tier releases — a defect fix does not change the architecture. The
+`bugfix`-tier releases, since a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
-## 3.9.0 — 2026-10-22
+## 3.9.0 (2026-10-22)
 
-ADDED: `rdf account` (`lib/cmd/account.sh`) — registry `~/.rdf/accounts` (`name<TAB>dir`,
+ADDED: `rdf account` (`lib/cmd/account.sh`): registry `~/.rdf/accounts` (`name<TAB>dir`,
 primary as the `@primary` marker); extra accounts get `~/.claude-<name>` (mode 700) holding
 their own login, `.claude.json`, plugins and org-managed settings, with an allowlist of
 shared entries (projects, history, paste-cache, file-history, tasks, todos, plans,
 CLAUDE.md, settings, skills, agents, commands, rules, output-styles, RDF deploy dirs)
 symlinked to `~/.claude`; links never replace an existing path.
-ADDED: `rdf shell init [--sandbox]` (`lib/cmd/shell.sh`) — bash/zsh launchers `claude`,
+ADDED: `rdf shell init [--sandbox]` (`lib/cmd/shell.sh`): bash/zsh launchers `claude`,
 `c`, `cs`, `ch`, `cuse` plus helpers `rdf_launch` / `rdf_cli`; `@name` or `cuse` selects an
 account (primary launches with `CLAUDE_CONFIG_DIR` unset), drops credential/provider env
 vars, and fails closed unless rdf reports unknown account (rc 2) for a same-named path.
 MODIFIED: `bin/rdf` dispatches `account` and `shell`; `tests/Makefile` runs
 `account.bats` and `shell.bats`.
 
-## 3.8.1 — 2026-09-24
+## 3.8.1 (2026-09-24)
 
-ADDED: `rdf_phase_hook_install` / `rdf_phase_hook_uninstall` (`state/rdf-bus.sh`) —
+ADDED: `rdf_phase_hook_install` / `rdf_phase_hook_uninstall` (`state/rdf-bus.sh`):
 per-repo activation of the phase scope guard: `includeIf "onbranch:rdf/phase-**"` →
 `rdf-hooks.inc` → `core.hooksPath=<git-common-dir>/rdf-hooks`, with a static
 passthrough that chains the project's own hooks (git ≥ 2.23).
-MODIFIED: `state/git-hooks/pre-commit` runs in any project — session id from the
+MODIFIED: `state/git-hooks/pre-commit` runs in any project: session id from the
 phase branch name, worktree and main-root plan pointers, NUL-safe path lists;
 anti-pattern classes scan shell files only and are opt-in outside RDF via
 `# anti-pattern-enable:` in `.rdf/governance/ignore.md`.
-MODIFIED: `/r-build` parallel-worktree dispatch — dispatchers launch inside each phase
+MODIFIED: `/r-build` parallel-worktree dispatch: dispatchers launch inside each phase
 worktree (no harness `isolation`) and fail the phase anywhere else; setup records the
 base branch in `.rdf/work-output/base-branch-<SID>` and refuses a detached HEAD, a
 submodule, or an uncommitted plan; merge rebases inside the worktree and ff-merges by
@@ -48,17 +48,17 @@ submodule, or an uncommitted plan; merge rebases inside the worktree and ff-merg
 MODIFIED: CI lints `state/git-hooks/pre-commit`; `ignore-defaults.md` no longer
 excludes `docs/specs/`.
 
-## 3.8.0 — 2026-09-24
+## 3.8.0 (2026-09-24)
 
-ADDED: role-based model + effort routing — `adapters/claude-code/agent-meta.json`
+ADDED: role-based model + effort routing: `adapters/claude-code/agent-meta.json`
 `model`/`effort`/`variants` (planner fable·high; dispatcher opus·high; engineer,
 reviewer opus·xhigh; qa, uat opus·medium; variants `rdf-engineer-focused` medium,
 `rdf-reviewer-challenge` high), validated by `rdf_agent_routing_errors`
 (`lib/rdf_common.sh`) and emitted by `adp_agent_frontmatter`/`adp_emit_agents`.
-ADDED: `rdf tokens` (`state/rdf-tokens.sh`, `lib/cmd/tokens.sh`) — local token and
+ADDED: `rdf tokens` (`state/rdf-tokens.sh`, `lib/cmd/tokens.sh`): local token and
 list-price cost report from Claude Code transcripts (message.id dedup, jq 1.5 floor);
 `/r-save` records a per-session `tokens` summary and `/r-start` shows its cost.
-ADDED: `rdf doctor --scope harness` (15th scope) — Opus 5.5 effort pin,
+ADDED: `rdf doctor --scope harness` (15th scope): Opus 5.5 effort pin,
 `CLAUDE_CODE_EFFORT_LEVEL` flattening, Bash output limit; `catalogs` validates
 routing, `sync` counts exclude variants, `--json` output is escaped.
 MODIFIED: canonical text dispatches by agent name (no per-call `model:`);
@@ -75,22 +75,22 @@ privacy, framework and session-safety references; `docs/platform-triage.md`
 REMOVED: per-call `model: "sonnet"` dispatch directives from canonical agents and
 commands.
 
-## 3.7.0 — 2026-09-02
+## 3.7.0 (2026-09-02)
 
-ADDED: `lib/adapter_common.sh` — shared `adp_*` emitters (agents, skills,
+ADDED: `lib/adapter_common.sh`: shared `adp_*` emitters (agents, skills,
 scripts, reference, hash sidecars, atomic staging) used by the claude-code,
 claude-plugin, and agent-skills adapters; byte-identity fixture-tested.
-ADDED: skills-native Claude Code output — `adapters/claude-code/output/skills/
+ADDED: skills-native Claude Code output: `adapters/claude-code/output/skills/
 <name>/SKILL.md` (+ `SKILL.md.rdf-hash`) and the plugin `skills/` tree; plugin.json
 declares `skills` (no `commands`); `rdf deploy claude-code` owns per-skill
 `~/.claude/skills/<name>` symlinks plus `skills/reference`, prunes stale
 RDF-owned links, and removes the legacy `~/.claude/commands` symlink it created.
-ADDED: AGENTS.md composer (`adapters/agents-md/adapter.sh` `amd_compose`) —
+ADDED: AGENTS.md composer (`adapters/agents-md/adapter.sh` `amd_compose`):
 project-scoped AGENTS.md from the target repo's CLAUDE.md; `rdf generate|deploy
 codex|antigravity` = agent-skills + agents-md composite; `--project-root`
 accepted in any position.
 ADDED: `rdf init --tools claude-code|agent-skills|agents-md|codex|antigravity`.
-ADDED: `rdf doctor --scope doc-truth` (14th scope) — counts, test wiring,
+ADDED: `rdf doctor --scope doc-truth` (14th scope): counts, test wiring,
 WORKFORCE dispatch claims, CONTRIBUTING CI claims, README/RDF.md tree paths.
 ADDED: `docs/platform-triage.md` ledger + `/r-ship` Setup target version
 (`--version`) and preflight 1d (minor-only platform-triage gate); governance
@@ -98,7 +98,7 @@ contracts gain negation guards and structural assertions; `tests/adapter-common.
 `tests/doc-truth.bats`; CI lints `tests/*.bats` and smokes `rdf init` on
 macOS bash 3.2; `RDF_WORKSPACE` override for `doctor --all`.
 MODIFIED: `lib/cmd/{deploy,doctor,sync,init,generate}.sh`, `state/{rdf-overhead,
-context-audit}.sh` — skills layout, fail-closed consumers, bash-3.2 floor
+context-audit}.sh`: skills layout, fail-closed consumers, bash-3.2 floor
 restored (empty-array expansions), pipefail-safe detection, untracked-source
 profile detection, `.agents/` in the managed exclude list.
 MODIFIED: docs describe the skills layout; `CLAUDE.md` inheritance line generic;
@@ -108,65 +108,65 @@ REMOVED: `adapters/codex/` (bespoke adapter; empty governance section since
 2026-03), `adapters/agents-md/sections.json`, `adapters/claude-code/
 command-meta-v3.json`, `command-map-v3.md`; flat `commands/` output.
 
-## 3.6.5 — 2026-08-18
+## 3.6.5 (2026-08-18)
 
-ADDED: `profiles/rfxn-workspace/` — opt-in org overlay (`detect: []`, never
+ADDED: `profiles/rfxn-workspace/`: opt-in org overlay (`detect: []`, never
 auto-detected) housing `reference/cross-project.md` and
 `scripts/comment-snapshot.sh` (both moved out of the generic core); overlay
 pattern per ESLint shareable-configs / Renovate presets / Spec Kit precedent.
-ADDED: `profiles/node/` — plain-JS governance; `_detect_profiles` gains a
+ADDED: `profiles/node/`: plain-JS governance; `_detect_profiles` gains a
 node branch (package.json sole gate, suppressed when typescript matches;
 counts as a language, so Dockerfile now co-activates infrastructure).
-ADDED: `canonical/reference/` ships as a first-class adapter artifact —
+ADDED: `canonical/reference/` ships as a first-class adapter artifact:
 `cc_generate_reference` (hash sidecars) / `cpl_generate_reference` /
 agent-skills reference dir; `rdf deploy claude-code` symlinks
 `~/.claude/reference`; doctor content-drift + sync loops cover it (sync also
 gained the pre-existing missing `governance` target).
-ADDED: `tests/derfxn.bats` — 13-test de-rfxn regression suite including a
+ADDED: `tests/derfxn.bats`: 13-test de-rfxn regression suite including a
 canonical org-identifier allowlist guard; suite 246 → 262.
-MODIFIED: `canonical/scripts/subagent-stop.sh` — hardcoded workspace fallback
+MODIFIED: `canonical/scripts/subagent-stop.sh`: hardcoded workspace fallback
 replaced by `./.rdf` → `~/.rdf/agent-feed.log` (HOME-guarded, 100 KB
 size-capped, mktemp-staged rotation).
-MODIFIED: `lib/cmd/deploy.sh` — exits 1 when any item is skipped; usage
+MODIFIED: `lib/cmd/deploy.sh`: exits 1 when any item is skipped; usage
 carries the real hooks.json jq-merge how-to (mktemp-staged) and the exit
 contract; hooks.json notice is exit-neutral.
-MODIFIED: `lib/cmd/init.sh` — companion files de-rfxn'd (contact via
+MODIFIED: `lib/cmd/init.sh`: companion files de-rfxn'd (contact via
 repo-local git identity with private-vulnerability-reporting fallback,
 license detected from LICENSE head, org/repo-URL from the actual remote).
-MODIFIED: docs made truthful — README (`--tools`, `/r-init` fences, scripts
+MODIFIED: docs made truthful: README (`--tools`, `/r-init` fences, scripts
 table), quickstart (bash 3.2+ floor, absolute Pages links), CLAUDE.md floor
 wording, doc-stats counts (16 scripts / 13 profiles).
 REMOVED: `profiles/core/reference/cross-project.md`,
 `canonical/scripts/comment-snapshot.sh` (both relocated into the org
 overlay; no rfxn content remains in what `rdf init`/adapters deliver).
 
-## 3.6.4 — 2026-08-18
+## 3.6.4 (2026-08-18)
 
-ADDED: `canonical/scripts/state-bootstrap.sh` — SessionStart hook delivering
+ADDED: `canonical/scripts/state-bootstrap.sh`: SessionStart hook delivering
 `~/.rdf/state` helpers on plugin installs (version-stamped, no-op on checkout
 installs); the full pipeline now runs on the plugin tier.
-ADDED: `rdf_strip_frontmatter` + `rdf_require_agent_meta` in `lib/rdf_common.sh`
-— single frontmatter-strip implementation (sync + doctor) and a generate
+ADDED: `rdf_strip_frontmatter` + `rdf_require_agent_meta` in `lib/rdf_common.sh`:
+a single frontmatter-strip implementation (sync + doctor) and a generate
 preflight that fails when an agent is missing from `agent-meta.json`.
 ADDED: doctor scopes `catalogs` and `state-helpers` (11 → 13 checks).
 ADDED: `tests/strip.bats`, `tests/sync.bats`, `tests/bootstrap.bats` (BATS
 222 → 246).
-MODIFIED: state-helper delivery inverted — `rdf deploy claude-code` owns
+MODIFIED: state-helper delivery inverted: `rdf deploy claude-code` owns
 `~/.rdf/state` as glob-driven per-file symlinks (auto-migrating byte-identical
 legacy copies; stamps retired on ownership); `rdf generate` no longer writes
 under `$HOME`; `rdf-overhead.sh` resolves checkout-shaped plugin roots via the
 `.rdf-source` stamp.
-MODIFIED: `rdf sync` agents path guarded (head-1 + empty-body) — the
+MODIFIED: `rdf sync` agents path guarded (head-1 + empty-body); the
 frontmatter-less truncation data-loss path is closed.
 MODIFIED: plugin-tier wording in 9 lifecycle commands and
-README/quickstart/index — hooks auto-register via `plugin.json`; degraded mode
+README/quickstart/index: hooks auto-register via `plugin.json`; degraded mode
 applies only before the first post-install session restart.
 REMOVED: `_generate_deploy_state_helpers` (generate-side copy delivery) and
 sync's count-based `_strip_frontmatter`.
 
-## 3.6.0 — 2026-07-15
+## 3.6.0 (2026-07-15)
 
-ADDED: `agent-skills` adapter — emits the shared `.agents/skills/<cmd>/SKILL.md`
+ADDED: `agent-skills` adapter: emits the shared `.agents/skills/<cmd>/SKILL.md`
 surface (Codex + Antigravity) from `adapters/agent-skills/skill-meta.json`, one
 SKILL.md per lifecycle command; `rdf generate agent-skills`.
 ADDED: `antigravity` composite generate target (skills + `AGENTS.md`) and an
@@ -175,29 +175,29 @@ ADDED: Claude Code intent-trigger `description:` frontmatter on every generated
 command (shared skill-meta trigger, first-sentence fallback); `rdf sync` and
 `rdf doctor` strip the leading frontmatter block on the reverse flow so canonical
 stays frontmatter-free.
-ADDED: `docs/multi-tool-parity.md` — first-class trio (Claude Code, Codex,
+ADDED: `docs/multi-tool-parity.md`: first-class trio (Claude Code, Codex,
 Antigravity CLI) plus frozen legacy Gemini CLI feature matrix; deploy/sync
 install-surface BATS coverage (`tests/deploy.bats`).
-MODIFIED: `gemini-cli` recast as a frozen legacy tier — command TOML now emits
+MODIFIED: `gemini-cli` recast as a frozen legacy tier: command TOML now emits
 `'''`-literal prompt bodies (strict-parse escaping fix), otherwise unchanged.
-MODIFIED: `README.md`, `RDF.md`, `docs/_config.yml` — trio framing.
+MODIFIED: `README.md`, `RDF.md`, `docs/_config.yml`: trio framing.
 
-## 3.5.0 — 2026-07-15
+## 3.5.0 (2026-07-15)
 
-ADDED: task-class tiers (`full`/`quick-plan`/`bugfix`) — `reference/tiers.md`,
+ADDED: task-class tiers (`full`/`quick-plan`/`bugfix`): `reference/tiers.md`,
 rdf-bus tier pointer helpers, plan-schema Rule 10 `**Tier:**` marker; the
 dispatcher applies `max(security_floor, min(scope_gate, tier_cap))` so tiers
 only remove ceremony, never the security pass.
 ADDED: `/r-spec` Phase 1.5 Clarify de-ambiguation micro-gate (skipped for
 bugfix); `/r-plan` quick-plan and bugfix condensed paths.
-ADDED: `state/rdf-consistency.sh` — spec↔plan↔tasks structural check wired
+ADDED: `state/rdf-consistency.sh`: spec↔plan↔tasks structural check wired
 into `/r-build` Section 1 (`--warn-only` escape hatch; legacy plans without a
 `**Tier:**` marker are downgraded to warnings).
-ADDED: this file — `/r-ship` Stage 3e living-spec fold.
+ADDED: this file: `/r-ship` Stage 3e living-spec fold.
 MODIFIED: `r-spec.md`, `r-plan.md`, `r-build.md`, `r-ship.md`,
 `agents/dispatcher.md`, `state/rdf-bus.sh`, `reference/plan-schema.md`.
 
-## 3.4.0 — baseline
+## 3.4.0 (baseline)
 
 **Lifecycle verbs (4):** `/r-spec` (design), `/r-plan` (decompose), `/r-build`
 (dispatch + gates), `/r-ship` (release).
@@ -205,7 +205,7 @@ MODIFIED: `r-spec.md`, `r-plan.md`, `r-build.md`, `r-ship.md`,
 **Agents (6):** `dispatcher`, `planner`, `engineer`, `qa`, `reviewer`, `uat`.
 
 **Adapters (6):** `claude-code`, `claude-plugin`, `codex`, `gemini-cli`,
-`agents-md`, `agent-skills` — each generated from tool-agnostic `canonical/`
+`agents-md`, `agent-skills`, each generated from tool-agnostic `canonical/`
 content.
 
 **State:** `state/rdf-bus.sh` is the session bus (active-plan pointer + tier

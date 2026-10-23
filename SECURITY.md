@@ -3,8 +3,8 @@
 ## Supported Versions
 
 Only the latest tagged release receives security fixes. RDF is a
-development-time governance framework — it runs on developer machines,
-not production servers — but its shell tooling executes with your user
+development-time governance framework (it runs on developer machines,
+not production servers), but its shell tooling executes with your user
 privileges, so we treat command injection, unsafe temp-file handling,
 and path-traversal issues as security bugs.
 
@@ -29,7 +29,7 @@ unless you request otherwise.
 
 ## Scope Notes
 
-- RDF agents and commands are prompt content, not executable code — but
+- RDF agents and commands are prompt content, not executable code, but
   the `bin/`, `lib/`, and `state/` shell tooling is in scope.
 - Third-party AI runtimes (Claude Code, Codex, Antigravity CLI, and Gemini CLI as a
   legacy tier) are out of scope; report those to their vendors.

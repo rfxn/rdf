@@ -1,4 +1,4 @@
-# RDF -- rfxn Development Framework
+# RDF: rfxn Development Framework
 
 ## Overview
 
@@ -21,7 +21,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 - **Canonical-first, adapter-delivered:** All convention content, agent prompts,
   and governance docs live as tool-agnostic markdown in `canonical/`. Tool-specific
   adapters generate deployment artifacts from canonical sources. Development happens
-  in `canonical/` -- deployed copies are generated output, not editable originals.
+  in `canonical/`; deployed copies are generated output, not editable originals.
 - **RDF is authoritative:** The repo is the source of truth. `~/.claude/`
   (`agents/`, `skills/<name>/SKILL.md` per command, `scripts/`, `reference/`)
   and other tool-specific directories are deployment targets populated by
@@ -62,7 +62,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   PreCompact (a prompt hook + the `precompact-snapshot.sh` command),
   SessionStart (the `matcher:"compact"` context-restore entry plus a matcher-less
   read-only `session-start-inject.sh` lessons ID-index injection), and SessionEnd
-  (`session-end-capture.sh` — an inline git snapshot appended to the session
+  (`session-end-capture.sh`, an inline git snapshot appended to the session
   journal).
   `cc_generate_rules()` emits context-scoped governance into `output/rules/`
   (core unscoped so it survives compaction; language rules `paths:`-scoped and
@@ -80,7 +80,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 
 | Agent | CC Name | Model | Role |
 |-------|---------|-------|------|
-| planner | rdf-planner | fable · high | Research, specs, implementation plans — runs inline in `/r-spec` and `/r-plan`; direct dispatch also available |
+| planner | rdf-planner | fable · high | Research, specs, implementation plans; runs inline in `/r-spec` and `/r-plan`; direct dispatch also available |
 | dispatcher | rdf-dispatcher | opus · high | Plan execution orchestrator |
 | engineer | rdf-engineer, rdf-engineer-focused | opus · xhigh / medium | Universal implementation (focused variant for docs/focused phases) |
 | qa | rdf-qa | opus · medium | Verification gate |
@@ -164,7 +164,7 @@ rdf/                                 # Repository root
 |   |-- infrastructure/              # Infrastructure
 |   |-- node/                        # Node.js (plain JavaScript) projects
 |   |-- rfxn-workspace/              # R-fx Networks org overlay (opt-in only)
-|   +-- lite/                        # rdf-lite deploy source -- NOT a registered profile
+|   +-- lite/                        # rdf-lite deploy source, NOT a registered profile
 |
 |-- modes/
 |   |-- development/                 # Standard development (default)

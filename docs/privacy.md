@@ -27,9 +27,9 @@ Claude Code transcripts already stored on your machine under
 
 All state RDF creates stays local to your machine:
 
-- `~/.rdf/` — session logs, insights, and lessons-learned you generate
-- `.rdf/` inside your projects — governance files, work output, memory
-- `~/.claude/` (or equivalent) — deployed adapter content
+- `~/.rdf/`: session logs, insights, and lessons-learned you generate
+- `.rdf/` inside your projects: governance files, work output, memory
+- `~/.claude/` (or equivalent): deployed adapter content
 
 These files are yours. Deleting them removes everything RDF knows.
 
@@ -38,7 +38,7 @@ These files are yours. Deleting them removes everything RDF knows.
 RDF is governance content executed *by* an AI runtime you choose (Claude
 Code, Codex, Antigravity CLI, and Gemini CLI as a legacy tier). Your
 prompts, code, and RDF's governance text
-are processed by that runtime under its own privacy policy — for Claude
+are processed by that runtime under its own privacy policy. For Claude
 Code, see [Anthropic's privacy policy](https://www.anthropic.com/legal/privacy).
 RDF does not add any data flow beyond what your chosen runtime already
 does.
@@ -53,7 +53,7 @@ RDF never proxies, stores, or observes them remotely.
 ## Changes
 
 Changes to this policy are made by commit to
-[the RDF repository](https://github.com/rfxn/rdf) — the git history is
+[the RDF repository](https://github.com/rfxn/rdf); the git history is
 the changelog.
 
 ## Contact

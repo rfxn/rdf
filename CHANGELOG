@@ -24,6 +24,12 @@
       root), and --strict made that fatal; the step now reads the --json report and fails
       on any error or any other warning
 
+-- Changes --
+
+[Change] docs: the quickstart covers the shell launchers and multiple accounts and the Pages
+         home points to it; em dashes swept from the docs, changelog and release names;
+         /r-ship and the triage ledger use "## X.Y (date)" headers
+
 ## 3.9.0
 
 -- New Features --
@@ -157,7 +163,7 @@
       rdf deploy owns per-skill ~/.claude/skills/<name> symlinks (+ the shared
       skills/reference tree) with stale-link pruning and removes the legacy
       ~/.claude/commands symlink it created
-[New] lib/adapter_common.sh — adp_* emitters (agents, skills, scripts,
+[New] lib/adapter_common.sh: adp_* emitters (agents, skills, scripts,
       reference, hash sidecars, atomic staging) shared by the claude-code,
       claude-plugin, and agent-skills adapters; byte-identity fixture-tested
 [New] AGENTS.md composer: rdf generate agents-md [--project-root P] builds a
@@ -173,7 +179,7 @@
       tests/Makefile; WORKFORCE.md dispatch claims vs canonical command bodies
       (verb-anchored, code blocks skipped); CONTRIBUTING CI claims vs ci.yml;
       README/RDF.md directory-tree paths exist on disk (globs rejected)
-[New] docs/platform-triage.md — per-minor re-triage ledger of native Claude
+[New] docs/platform-triage.md: per-minor re-triage ledger of native Claude
       Code capabilities vs RDF mechanisms (first block 3.7: keep the dispatcher
       over experimental Agent Teams); /r-ship resolves the target version at
       Setup (--version X.Y.Z or prompt) and preflight 1d blocks a minor release
@@ -184,7 +190,7 @@
       tests/doc-truth.bats; CI lints tests/*.bats at error severity and smokes
       rdf init under macOS system bash 3.2
 [New] RDF_WORKSPACE env override for the doctor --all workspace root
-[New] docs/specs/2026-09-02-platform-alignment-spike-design.md — D1-D5 verdicts
+[New] docs/specs/2026-09-02-platform-alignment-spike-design.md: D1-D5 verdicts
       (Workflow-backed /r-build gated behind A/B evidence, local trigger-eval
       harness, contract hardening, per-minor triage gate, OWASP AST10 posture)
       + docs/specs/support/rdf-build-workflow.prototype.js (unwired artifact)
@@ -196,7 +202,7 @@
       plugin adapter
 [Fix] profile detection sees untracked, non-ignored sources (git ls-files
       --others) for every language incl. TypeScript, and no longer races git
-      against grep -q under pipefail — a repo initialised before its first
+      against grep -q under pipefail; a repo initialised before its first
       commit no longer detects as minimal
 [Fix] rdf deploy help: the hooks.json merge how-to failed on a fresh Claude
       Code HOME (jq "object and null cannot be multiplied", exit 2); it now
@@ -216,7 +222,7 @@
 [Fix] generated CONTRIBUTING.md claimed bash -n/shellcheck/BATS for every
       stack; standards and test command follow the detected profiles
 [Fix] codex adapter emitted an empty "## Project Governance" section since
-      2026-03 (read a file that no longer existed) and a stale o4-mini config —
+      2026-03 (read a file that no longer existed) and a stale o4-mini config;
       retired in favour of the composite
 [Fix] self AGENTS.md carried rfxn/CentOS text and the checkout directory name;
       it is now composed from CLAUDE.md, names the main repo (stable across
@@ -237,7 +243,7 @@
       canonical content; RDF_LIBDIR honours a pre-set value
 [Fix] governance contracts: bare "! grep" guards were inert under BATS set -e
       (negated commands are exempt) and order-anchor && chains were inert
-      mid-body — rewritten as explicit branches; GNU-only \b replaced with
+      mid-body; rewritten as explicit branches; GNU-only \b replaced with
       portable ERE boundaries
 [Fix] docs/multi-tool-parity.md no longer claims there is no rdf deploy
       antigravity target or that per-project AGENTS.md is unimplemented;
@@ -263,19 +269,19 @@
          dispatcher); Workflow-backed /r-build and the trigger-eval harness
          queued for the next minor
 [Change] rollback to 3.6.5 leaves ~/.claude/skills/r-* symlinks dangling (the
-         3.6.5 deploy has no prune) — remove with: rm ~/.claude/skills/r-*
+         3.6.5 deploy has no prune); remove with: rm ~/.claude/skills/r-*
          (and ~/.claude/skills/reference)
 
 ## 3.6.5
 
 -- New Features --
 
-[New] rfxn-workspace profile — opt-in org overlay (detect: []) housing
+[New] rfxn-workspace profile: opt-in org overlay (detect: []) housing
       cross-project.md and comment-snapshot.sh; core stays generic
 [New] node profile: plain package.json projects no longer detect as
       minimal (package.json sole gate; suppressed when typescript matches)
 [New] canonical/reference/ ships in claude-code (hash sidecars), plugin,
-      and agent-skills outputs; deploy symlinks ~/.claude/reference —
+      and agent-skills outputs; deploy symlinks ~/.claude/reference;
       24 ../reference/*.md links now resolve in installs
 [New] doctor: content-drift covers reference/*.md; sync completeness loop
       gains reference + governance
@@ -284,7 +290,7 @@
 
 -- Bug Fixes --
 
-[Fix] subagent-stop.sh hardcoded /root/admin/work/proj fallback removed —
+[Fix] subagent-stop.sh hardcoded /root/admin/work/proj fallback removed;
       plugin users on other machines no longer get permission-denied
       stderr per subagent stop; fallback is ./.rdf -> ~/.rdf/agent-feed.log
       (new machine-global sink, size-capped at 100 KB / last 1000 lines)
@@ -299,7 +305,7 @@
 
 -- Changes --
 
-[Change] rdf deploy exits 1 when any item is skipped — established
+[Change] rdf deploy exits 1 when any item is skipped; established
          ~/.claude setups get a loud partial-deploy signal instead of a
          silent exit-0 half-install
 [Change] rfxn-machine migration is two-step: (1) 'rdf profile install
@@ -307,7 +313,7 @@
          claude-code' restores org governance at the machine level;
          (2) per-project org reference (cross-project.md + the
          Cross-Project Coordination CLAUDE.md section) needs 'rdf init
-         <path> --type <existing>,rfxn-workspace' per repo — /r-refresh
+         <path> --type <existing>,rfxn-workspace' per repo; /r-refresh
          alone regenerates from the clean core set and drops it
 
 ## 3.6.4
@@ -315,22 +321,22 @@
 -- New Features --
 
 [New] SessionStart state-bootstrap delivers ~/.rdf/state on plugin installs
-      (version-stamped) — the full pipeline now runs on the plugin tier
+      (version-stamped); the full pipeline now runs on the plugin tier
 [New] doctor scopes: catalogs (agent/skill-meta integrity), state-helpers
-      (stale-copy FAIL) — 13 checks
+      (stale-copy FAIL); 13 checks
 [New] tests: strip/sync/bootstrap suites + deploy/doctor coverage (222 → 246)
 
 -- Bug Fixes --
 
 [Fix] rdf sync could truncate canonical agents to empty when the deployed
-      copy had no frontmatter — agents loop now guards like the commands loop
+      copy had no frontmatter; agents loop now guards like the commands loop
 
 -- Changes --
 
 [Change] one shared frontmatter-strip (rdf_strip_frontmatter) for sync +
          doctor; generation fails when agent-meta.json misses an agent
 [Change] upgrade note: run 'rdf deploy claude-code' once after updating a
-         checkout install — generate no longer refreshes ~/.rdf/state; add
+         checkout install; generate no longer refreshes ~/.rdf/state; add
          --force if your deployed copies differ from source (backed up first)
 [Change] state-helper delivery moved from generate (copy) to deploy
          (per-file symlinks, auto-migrating identical legacy copies);
@@ -342,7 +348,7 @@
 
 [Fix] plugin-tier honesty: plugin-only installs (/plugin install rdf@rdf)
       never receive the ~/.rdf/state helpers, so 10 state-backed commands
-      ran degraded with no disclosure — README Option A, quickstart, docs
+      ran degraded with no disclosure; README Option A, quickstart, docs
       index, and the parity doc now say so, and 9 canonical commands gain
       graceful-absence guards at first helper use (3.6.2's state-helper fix
       is hereby scoped: it applies to the symlink deploy path; plugin
@@ -358,7 +364,7 @@
 [Fix] production-context stat re-derived from git: "19 RDF releases in 19
       weeks" → 26 releases in 18 weeks (README + docs index)
 [Fix] quickstart truthfulness: rdf init requires an existing project dir
-      (documented); hooks.json is never auto-installed — the manual-merge
+      (documented); hooks.json is never auto-installed; the manual-merge
       step is now documented in README/index/quickstart (jq was not the
       real gate); demo-walkthrough artifact names session-scoped;
       index.md inheritance order matches README; RDF.md risk row labeled
@@ -367,7 +373,7 @@
 -- Changes --
 
 [Change] ROADMAP: deferred claude-plugin state-helper parity (plugin
-         SessionStart hook + plugin-parity BATS suite — designed fix for a
+         SessionStart hook + plugin-parity BATS suite: designed fix for a
          seam that has broken three times via spot-fixes)
 [Change] tests 220 → 222 (rdf-overhead deployed-copy resolution cases)
 
@@ -377,7 +383,7 @@
 
 [Fix] systemic state-helper paths: canonical commands/agents referenced
       state/rdf-bus.sh, rdf-consistency.sh, rdf-lessons.sh by bare relative
-      paths that resolve only inside the RDF checkout — session-ID/tier/plan
+      paths that resolve only inside the RDF checkout; session-ID/tier/plan
       machinery silently failed in every consuming project; all references
       now use the deployed ~/.rdf/state/ location, and r-context-audit's
       workspace-relative rdf/state/ paths are fixed the same way
@@ -412,10 +418,10 @@
 -- Bug Fixes --
 
 [Fix] codex adapter: generated AGENTS.md carried a fabricated RDF-2.0 command
-      catalog (mgr, sys-*, audit-* — none exist); catalog now derived from
+      catalog (mgr, sys-*, audit-*; none exist); catalog now derived from
       canonical/commands/*.md with a glob-derived regression test
 [Fix] claude-plugin: command output now carries the intent-trigger
-      description: frontmatter — the 3.6.0 headline was previously true only
+      description: frontmatter; the 3.6.0 headline was previously true only
       on the symlink-deploy path, not plugin install
 [Fix] reviewer pass-structure docs: "4 adversarial passes ... performance"
       corrected to the real 2-pass lite / 3-pass full ladder across README,
@@ -444,16 +450,16 @@
 
 [New] agent-skills adapter: emits .agents/skills/<cmd>/SKILL.md (AAIF-compliant
       name + intent-trigger description, first-sentence fallback) for a bounded
-      lifecycle+utility set — the ONE shared workspace surface Codex and
+      lifecycle+utility set: the ONE shared workspace surface Codex and
       Antigravity CLI both read; rdf generate agent-skills + antigravity
       (composite: skills + AGENTS.md); rdf deploy agent-skills workspace
       symlink (--project-root)
 [New] claude-code: intent-trigger description: frontmatter prepended to every
       generated command (shared skill-meta trigger); canonical commands stay
-      frontmatter-free — enforced by a new governance contract test
+      frontmatter-free, enforced by a new governance contract test
 [New] agents-md: AGENTS.md references .agents/skills/ for Codex/Antigravity
       skill discovery
-[New] tests: deploy/sync BATS coverage (deploy.bats — closes audit M6
+[New] tests: deploy/sync BATS coverage (deploy.bats: closes audit M6
       install-surface gap), agent-skills.bats, doctor content-drift regression
 [New] docs/multi-tool-parity.md: first-class trio (Claude Code, Codex,
       Antigravity CLI) + frozen gemini-cli legacy matrix; {{args}} lossy edge;
@@ -462,7 +468,7 @@
 -- Bug Fixes --
 
 [Fix] gemini-cli (legacy tier): command prompts emitted as TOML ''' literal
-      strings — 15/37 generated .toml files failed strict TOML parsing on
+      strings; 15/37 generated .toml files failed strict TOML parsing on
       canonical backslashes; {{args}} lossy-edge NOTE for $ARGUMENTS commands
 [Fix] doctor content-drift: _hash_deployed_body strips only a LEADING
       frontmatter block (body --- horizontal rules preserved) so
@@ -485,7 +491,7 @@
 
 [Fix] rdf-consistency: legacy plans lacking a **Tier:** preamble marker now
       downgrade File-Map coverage breaks from block (exit 2) to warning (exit
-      1) with a one-line notice; marker-bearing plans keep strict exit-2 —
+      1) with a one-line notice; marker-bearing plans keep strict exit-2;
       4 of 8 committed pre-3.5 plans no longer hard-block the gate
 [Fix] rdf-consistency: File-Map rows packing multiple paths into one cell
       register every path (path column only), clearing false "Phase file X is
@@ -495,7 +501,7 @@
       wrong target" WARNs for correctly-configured projects (pre-existing
       since 3.0)
 [Fix] docs/memory-context.md: resolve the self-contradiction on native-memory
-      writes — MEMORY.md is the one deliberate exception via the .rdf/memory
+      writes: MEMORY.md is the one deliberate exception via the .rdf/memory
       symlink; README footer scripts count 12→16; docs/specs/CURRENT.md 3.5.0
       fold backfilled; 3.4 plan File Map completed (tests/Makefile);
       governance-contracts.bats SC2016 header disable restores lint baseline
@@ -505,7 +511,7 @@
 [Change] doctor doc-stats: verify README.md footer banner (all six counts) and
          WORKFORCE.md primitives line (A/B/C vs live + D == A+B+C) against
          live filesystem counts, incl. a new scripts count from
-         canonical/scripts/*.sh — the drift class QA found is now guarded
+         canonical/scripts/*.sh; the drift class QA found is now guarded
 
 ## 3.5.0
 
@@ -515,18 +521,18 @@
       source of truth (definitions, heuristic signals, min(scope_gate,
       tier_cap) gate caps, security floor); rdf-bus.sh
       rdf_set_active_tier/rdf_active_tier/rdf_clear_active_tier session pointer
-      parallel to active-plan — a resolved plan **Tier:** marker is
+      parallel to active-plan; a resolved plan **Tier:** marker is
       authoritative; defaults to full everywhere (legacy plans unchanged);
       plan-schema Rule 10 optional **Tier:** preamble marker
 [New] /r-spec tier selection (--full/--quick/--bugfix, heuristic suggestion the
-      user confirms, bare Enter → full; first setter — /r-plan inherits) and
+      user confirms, bare Enter → full; first setter: /r-plan inherits) and
       Phase 1.5 Clarify de-ambiguation micro-gate before Brainstorm (<=5
       targeted questions, scaled by tier, skipped for bugfix)
 [New] /r-plan tier flow: stamps **Tier:** into the plan preamble; quick-plan
       condensed single-artifact path (-quickplan.md); bugfix failing-test-first
       <=2-phase path (schema-only validation, sentinel-lite at build time)
 [New] /r-build consistency micro-gate: state/rdf-consistency.sh cross-checks
-      spec↔plan↔tasks — File-Map↔phase coverage (multi-path Files parse, Phase
+      spec↔plan↔tasks: File-Map↔phase coverage (multi-path Files parse, Phase
       0 counted) and phase count are structural blocks (exit 2); spec-goal /
       **Goals:** field / tier-size coverage warn (exit 1); --warn-only
       downgrades a block with a stated reason
@@ -541,7 +547,7 @@
          quick-plan caps Gate 3 at sentinel-lite and skips the end-of-plan
          sentinel; bugfix runs Gate 1 + regression-only sentinel-lite; full
          unchanged; the cap only lowers gates and never below the security
-         floor — scope:sensitive or a security-indicator file keeps Gate 2 +
+         floor: scope:sensitive or a security-indicator file keeps Gate 2 +
          sentinel-full regardless of tier
 [Change] governance-contracts grew 4 tier/clarify/living-spec contracts;
          tests/scale-ceremony.bats (11 tests) covers the tier + consistency
@@ -551,26 +557,26 @@
 
 -- New Features --
 
-[New] session-end-capture.sh — SessionEnd command hook: inline git-only snapshot
+[New] session-end-capture.sh: SessionEnd command hook: inline git-only snapshot
       appended to .rdf/work-output/session-log.jsonl (the journal /r-start
       reads) plus a session-end-<id>.json cache for /r-save; records sessions
       that never run /r-save; no model work, always exits 0, no-op outside a
       git repo, jq-optional, session_id sanitized (stdin discriminator is
-      `reason` per platform docs — spec's `trigger` corrected)
+      `reason` per platform docs; spec's `trigger` corrected)
 [New] hooks.json matcher-less SessionEnd entry (5s timeout) composed on top of
       the 3.3.x PreCompact/SessionStart-compact entries (left byte-identical);
       memory-context.bats (4 tests) covers append, non-git no-op, jq-absent
       degrade, path-traversal sanitization
-[New] state/rdf-lessons.sh index — assigns stable [<Cat><ordinal>] IDs to
+[New] state/rdf-lessons.sh index: assigns stable [<Cat><ordinal>] IDs to
       lessons-learned.md bullets (<!-- id:X --> markers, idempotent backfill)
       and writes a <=400-byte ~/.rdf/lessons-index.md; single-writer flock
       guard, POSIX-portable sed, jq-independent; scan subcommand stubbed for
       the consolidation phase
-[New] session-start-inject.sh — read-only SessionStart hook injecting the
+[New] session-start-inject.sh: read-only SessionStart hook injecting the
       lessons ID-index as additionalContext; skips resume, re-injects on
       compact (intended), 400B cap bounds per-spawn cost, no-op without
       jq/index; second matcher-less SessionStart hooks.json entry (5s)
-[New] state/rdf-overhead.sh — measure RDF's always-loaded context overhead into
+[New] state/rdf-overhead.sh: measure RDF's always-loaded context overhead into
       default / --rules / lite figures (bytes/4 estimate); hooks.json reported
       only under excluded (runtime config, never model context); scoped
       language rules counted dormant; jq-independent; tests/overhead.bats
@@ -580,18 +586,18 @@
       block derived from registry.json detect globs, core stays unscoped so it
       survives compaction (spec §4.3); rules-deploy.bats (6 tests) guards the
       rules generation surface
-[New] docs/memory-context.md — native-memory vs RDF division of labor (spec
+[New] docs/memory-context.md: native-memory vs RDF division of labor (spec
       §4.5): native owns conversational memory + MEMORY.md loading, RDF owns
       the delta (lessons, insights, governance, session journal); RDF writes
       nothing into ~/.claude/projects/<slug>/memory/
-[New] rdf-lite minimal deploy variant — rdf generate claude-code --lite emits
+[New] rdf-lite minimal deploy variant: rdf generate claude-code --lite emits
       condensed core governance (profiles/lite/governance-lite.md, ~574 tokens)
       as rules/core.md, ships only the lifecycle command set, skips hooks;
       always-loaded footprint ~674 tokens, under the 1000-token budget;
       default (non-lite) generation byte-identical; rdf-lite.bats (6 tests);
       doctor doc-stats excludes profiles/lite (deploy source, not a governance
       profile)
-[New] rdf-lessons.sh scan — deterministic token-Jaccard dedup (>=50%) plus an
+[New] rdf-lessons.sh scan: deterministic token-Jaccard dedup (>=50%) plus an
       order-independent opposing-polarity contradiction heuristic ([25,50%));
       flags only, never mutates, jq-optional; governance contract added:
       consolidation NEVER auto-resolves a contradiction (anti-crystallization);
@@ -606,7 +612,7 @@
 [Change] README/docs publish all three measured context figures: default deploy
          ~0.1K tokens, opt-in --rules ~2.1K, rdf-lite ~0.7K (674, bytes/4);
          hooks.json (478) reported only under excluded, never model context
-[Change] doc surface refreshed for the 3.4 feature set — RDF.md architecture
+[Change] doc surface refreshed for the 3.4 feature set: RDF.md architecture
          (hooks across PreCompact/SessionStart/SessionEnd, rules/ generation,
          --rules/--lite, rdf-lessons.sh/rdf-overhead.sh), r-context-audit runs
          rdf-overhead.sh, ROADMAP marks T3/auto-memory/context-cost/rdf-lite
@@ -616,23 +622,23 @@
          selection rule (else newest unconsumed session-end-*.json, renamed
          *.consumed on hit) and skips the rdf-state --full re-run on a hit;
          reads .diff_categories for the diff summary
-[Change] /r-save §3/§8 and /r-start auto-act on thresholds — MEMORY.md >=180
+[Change] /r-save §3/§8 and /r-start auto-act on thresholds: MEMORY.md >=180
          auto-runs the /r-util-mem-compact preview and surfaces the proposed
          reduction; context >60% renders a fresh-session/half-clone directive
          instead of a passive warning; /r-start surfaces the indexed-lessons
          count
 [Change] deploy: opt-in rules/ symlink via --rules (rdf deploy / rdf generate
-         --deploy --rules); default off — no behavior change for existing
+         --deploy --rules); default off; no behavior change for existing
          symlink users
 
 ## 3.3.1
 
 -- New Features --
 
-[New] rdf doctor [doc-stats] — verify WORKFORCE.md/RDF.md/docs/index.md
+[New] rdf doctor [doc-stats]: verify WORKFORCE.md/RDF.md/docs/index.md
       inventory counts against live filesystem counts; mismatch is a FAIL so
       count drift cannot ship (doctor runs pre-push and in CI)
-[New] rdf doctor [deps] — non-fatal WARN when jq is absent, with install
+[New] rdf doctor [deps]: non-fatal WARN when jq is absent, with install
       remediation; rdf deploy and rdf init emit the same early jq preflight
 [New] compaction handoff square: PreCompact command hook (precompact-snapshot.sh)
       snapshots session state (trigger, cwd, git branch/HEAD/dirty count, active
@@ -641,21 +647,21 @@
 [New] SessionStart(source:compact) hook (session-start-context.sh) re-injects
       the pre-compaction snapshot as context, renames it .consumed for
       idempotence; both scripts degrade gracefully without jq
-[New] hooks-handoff.bats — 14 tests: snapshot fields, 40-line ceiling, exit-0 on
+[New] hooks-handoff.bats: 14 tests: snapshot fields, 40-line ceiling, exit-0 on
       garbage/empty stdin, session_id path-traversal sanitization, 7-day prune,
       .consumed idempotence, jq-absent fallback
-[New] doctor.bats — 4 tests: doc-stats drift FAIL fires, live-repo pass, non-RDF
+[New] doctor.bats: 4 tests: doc-stats drift FAIL fires, live-repo pass, non-RDF
       no-op, deps jq OK/WARN paths
 
 -- Bug Fixes --
 
-[Fix] WORKFORCE.md, RDF.md — command-inventory drift: lifecycle header 20→21,
+[Fix] WORKFORCE.md, RDF.md: command-inventory drift: lifecycle header 20→21,
       utility header 15→16 (added r-review-answer and r-util-claudemd-review
       table rows); RDF.md tree comment 15→16 utility (missed by 932ed6a)
 
 -- Changes --
 
-[Change] RDF.md — plugin marketplace no longer out-of-scope: claude-plugin
+[Change] RDF.md: plugin marketplace no longer out-of-scope: claude-plugin
          adapter + repo-as-marketplace shipped in 3.3.0, only community-
          marketplace submission remains deferred; add Claude Plugin to the
          in-scope adapters list
@@ -666,7 +672,7 @@
       runs plans through the dispatcher agent and RDF's 2026-04-21 harness
       research rejected Agent Teams as tool-locked (the JSON registries these
       consumed were already removed)
-[Remove] lib/rdf_common.sh rdf_profile_includes() — an unconditional `return 0`
+[Remove] lib/rdf_common.sh rdf_profile_includes(): an unconditional `return 0`
       stub since v3 dropped profile.json filtering; also dropped its one live
       caller (the cc_generate_scripts profile gate in the claude-code adapter),
       which never fired, so all scripts still generate unchanged
@@ -676,7 +682,7 @@
 [Remove] profiles/registry.md "Starter Profiles" tombstone section (all profiles
       were promoted to the full tier)
 [Remove] RDF.md teams-meta.json / dispatch.sh tree entries and the "Agent Teams
-      API instability" risk row — they documented the now-retired architecture
+      API instability" risk row; they documented the now-retired architecture
 
 ## 3.3.0
 
@@ -689,19 +695,19 @@
       add rfxn/rdf` + `/plugin install rdf@rdf` work with no build step
 [New] install-mode detection: `rdf doctor` reports symlink vs plugin install and
       `rdf deploy` warns when both coexist (dual-install drift)
-[New] CI plugin job — generate, content-drift check, and strict marketplace
+[New] CI plugin job: generate, content-drift check, and strict marketplace
       validation on every push
 [New] LICENSE (GNU GPL v2), community health files (CODE_OF_CONDUCT, CONTRIBUTING,
       SECURITY), and a public ROADMAP.md
 [New] GitHub Pages landing, 5-minute quickstart, recorded demo in the README first
       fold, social-preview card, and a privacy-policy page for verified plugin
       status
-[New] tests/state-injection.bats and tests/cmd-migrate-init.bats — regression
+[New] tests/state-injection.bats and tests/cmd-migrate-init.bats: regression
       coverage for state-script code injection and the migrate/init upgrade paths
 
 -- Bug Fixes --
 
-[Fix] SECURITY: state/context-audit.sh code injection → RCE — a git commit message
+[Fix] SECURITY: state/context-audit.sh code injection → RCE: a git commit message
       containing ''' broke out of the json.loads('''...''') triple-quoted python
       string, so /r-context-audit crawling any workspace repo executed
       attacker-controlled code; state JSON now flows to python via stdin/argv and
@@ -714,31 +720,31 @@
 
 -- Changes --
 
-[Change] canonical/scripts/context-bar.sh — parse the hook input JSON once (five jq
+[Change] canonical/scripts/context-bar.sh: parse the hook input JSON once (five jq
          calls → one) and the transcript once for token totals and turn count (was
          two slurps sharing a filter); output is byte-identical, cutting per-tick
          subprocesses on the statusline hot path
-[Change] state/git-hooks/pre-commit — batch the anti-pattern scan: prefilter
+[Change] state/git-hooks/pre-commit: batch the anti-pattern scan: prefilter
          #-suppressed lines once per file, then one grep per class instead of an
          echo|grep per added line per class; findings are byte-identical
 [Change] command-prefix bare coreutils in first-party source (lib/cmd/deploy.sh,
          the claude-code/codex/gemini-cli adapters, post-edit-lint.sh,
          pre-commit-validate.sh) for el6 PATH portability
-[Change] CLAUDE.md — scope the suppression-comment rule to new/modified
+[Change] CLAUDE.md: scope the suppression-comment rule to new/modified
          suppressions (enforced by pre-commit on added lines); note the
          vendored-script advisory boundary
-[Change] README and docs — reposition for broad public adoption, correct the
+[Change] README and docs: reposition for broad public adoption, correct the
          command inventory, add measured-impact stats, and rebuild the Pages site
 
 ## 3.2.1
 
 -- Changes --
 
-[Change] tests/governance-contracts.bats — the reviewer challenge/sentinel
+[Change] tests/governance-contracts.bats: the reviewer challenge/sentinel
          contract anchors to the mode headers (^### Challenge Mode / ^### Sentinel
          Mode) instead of bare prose mentions, so it bites if a mode section is
          gutted or renamed (post-3.2.0 review follow-up)
-[Change] state/context-audit.sh — find -printf capability probe targets /dev/null
+[Change] state/context-audit.sh: find -printf capability probe targets /dev/null
          (target-independent, avoids a false BSD-branch selection); GNU and BSD
          byte-sum branches use the same ! -type d predicate as the file count
 
@@ -746,14 +752,14 @@
 
 -- New Features --
 
-[New] tests/governance-contracts.bats — behavioral-contract eval harness: 13
+[New] tests/governance-contracts.bats: behavioral-contract eval harness: 13
       contracts assert the evidence-discipline chain (engineer, dispatcher, qa,
       reviewer, /r-review-answer, /r-verify-claim, orchestration default) still
       lives in canonical source, so a prompt edit that silently drops a contract
       fails CI instead of shipping; closes the eval-driven-development gap
-[New] lib/rdf_common.sh: rdf_hash_stdin — portable digest resolver (sha256sum →
+[New] lib/rdf_common.sh: rdf_hash_stdin: portable digest resolver (sha256sum →
       shasum -a 256 → sha1sum); adapter.sh and doctor.sh route hashing through it
-[New] canonical/reference/simplicity-budget.md — earn-the-surface rule and
+[New] canonical/reference/simplicity-budget.md: earn-the-surface rule and
       when-NOT-to-orchestrate doctrine (serial default; parallel fan-out is a
       ~15x bet reserved for provably breadth-first work)
 
@@ -767,18 +773,18 @@
 
 -- Changes --
 
-[Change] canonical/agents/dispatcher.md — Execute defaults to the least
+[Change] canonical/agents/dispatcher.md: Execute defaults to the least
          machinery; parallel only for provably-independent phases
-[Change] canonical/agents/reviewer.md — challenge-mode check 3: a plan adding a
+[Change] canonical/agents/reviewer.md: challenge-mode check 3: a plan adding a
          command/agent/mode/profile/gate/rule must state the behavior it changes
-[Change] CLAUDE.md.ref (+ regenerated AGENTS.md) — Scope Discipline gains the
+[Change] CLAUDE.md.ref (+ regenerated AGENTS.md): Scope Discipline gains the
          earn-the-surface rule
 
 ## 3.1.4
 
 -- New Features --
 
-[New] canonical/commands/r-review-answer.md — route each sentinel/challenge
+[New] canonical/commands/r-review-answer.md: route each sentinel/challenge
       finding to a structured FIX / REBUT / DEFER response and write a
       .rdf/work-output/sentinel-N-answer artifact; advisory only (no merge
       gate); reuses /r-verify-claim for evidence and flags unanswered MUST-FIX
@@ -786,11 +792,11 @@
 
 -- Changes --
 
-[Change] canonical/commands/r-spec.md §2.2 Step A — research now probes
+[Change] canonical/commands/r-spec.md §2.2 Step A: research now probes
          external/runtime unknowns (binary paths, protocol/auth shapes,
          install-environment footprints) via one-liners or /r-verify-claim,
          folding results into the spec as facts rather than assumptions
-[Change] canonical/reference/framework.md, canonical/commands/r-review.md —
+[Change] canonical/reference/framework.md, canonical/commands/r-review.md:
          document the sentinel-N-answer artifact and point /r-review at
          /r-review-answer
 
@@ -798,7 +804,7 @@
 
 -- New Features --
 
-[New] lib/rdf_common.sh — rdf_canonical_path portable symlink-resolving path
+[New] lib/rdf_common.sh: rdf_canonical_path portable symlink-resolving path
       helper (readlink -f → realpath → cd -P fallback); doctor.sh adopts it
       in place of a bare readlink -f
 [New] tests/portability.bats plus rdf_uuidv7 portability cases in
@@ -807,25 +813,25 @@
 
 -- Bug Fixes --
 
-[Fix] bin/rdf — resolve RDF_HOME through PATH symlinks via a depth-bounded
+[Fix] bin/rdf: resolve RDF_HOME through PATH symlinks via a depth-bounded
       BASH_SOURCE loop (bash 3.2-safe, no readlink -f); fixes deterministic
       startup ENOENT on macOS/Homebrew and /usr/local scattered layouts
       (contributed by ggwicz)
-[Fix] state/rdf-bus.sh — rdf_uuidv7 portable millisecond cascade
+[Fix] state/rdf-bus.sh: rdf_uuidv7 portable millisecond cascade
       (EPOCHREALTIME → date +%s%N when numeric → date +%s + RANDOM); no
       longer aborts under set -e on BSD/older macOS where date +%s%N is
       non-numeric
-[Fix] .github/workflows/ci.yml — remove the job-level hashFiles() guard on the
+[Fix] .github/workflows/ci.yml: remove the job-level hashFiles() guard on the
       tests job; job-level if is evaluated before checkout, which GitHub
-      rejects as a workflow-file error — CI had failed at startup (0 jobs) on
+      rejects as a workflow-file error; CI had failed at startup (0 jobs) on
       every run since it was introduced in 3.0.5
-[Fix] tests/adapter.bats — post-generate doctor test now scopes to
+[Fix] tests/adapter.bats: post-generate doctor test now scopes to
       content-drift; full doctor's sync/github/memory checks FAIL in a clean
       CI checkout and would have failed the now-running suite
 
 -- Changes --
 
-[Change] lib/cmd/refresh.sh, state/rotate-work-output.sh — guard the
+[Change] lib/cmd/refresh.sh, state/rotate-work-output.sh: guard the
          rdf-bus.sh source and fail with an actionable message instead of a
          raw ENOENT when the bus helper is absent
 
@@ -833,39 +839,39 @@
 
 -- New Features --
 
-[New] state/rdf-bus.sh — rdf_active_plan_path / rdf_set_active_plan /
+[New] state/rdf-bus.sh: rdf_active_plan_path / rdf_set_active_plan /
       rdf_clear_active_plan resolver with three-tier fallback (session
       pointer → un-suffixed pointer → root PLAN.md legacy); all plan
       consumers route through the resolver
 
 -- Changes --
 
-[Change] /r-plan — plans now write to docs/plans/{date}-{topic}-plan.md
+[Change] /r-plan: plans now write to docs/plans/{date}-{topic}-plan.md
       and are committed mandatorily at creation; root PLAN.md no longer
       the active slot; new --resume <path> form for fresh-checkout
       takeover
-[Change] canonical/{commands,agents,reference}/* — 13 files updated to
+[Change] canonical/{commands,agents,reference}/*: 13 files updated to
       route through rdf_active_plan_path; dispatcher worktree sync
       copies resolver result to worktree-local path and sets a
       worktree-local pointer; status markers in framework.md clarified
       to live in .rdf/work-output/, not in plan body
-[Change] lib/cmd/generate.sh — deploys rdf-bus.sh to ~/.rdf/state/
+[Change] lib/cmd/generate.sh: deploys rdf-bus.sh to ~/.rdf/state/
       alongside other state helpers so consumers running outside this
       repo can resolve the helper
 [Change] lib/cmd/refresh.sh, state/rotate-work-output.sh,
-      state/git-hooks/pre-commit — resolver wiring with context-appropriate
+      state/git-hooks/pre-commit: resolver wiring with context-appropriate
       source paths (RDF_STATE_DIR for refresh.sh, sibling path for the
       deployed rotate-work-output.sh, ancestor walk anchored on
       state/rdf-bus.sh for the worktree hook)
 
 -- Bug Fixes --
 
-[Fix] plan loss between sessions — root PLAN.md being gitignored and
+[Fix] plan loss between sessions: root PLAN.md being gitignored and
       single-slot caused plans created in one session to be silently
       overwritten by the next session's /r-plan; canonical plans now
       committed at creation prevent this class of loss
 [Remove] stale tracked PLAN.md snapshot from commit 6308d6d (3.0.3 gate
-      simplification plan, abandoned and never updated) — untracked
+      simplification plan, abandoned and never updated): untracked
       via git rm --cached; file retained on disk as legacy fallback
 
 **Operator note:** Existing clones may have `docs/` blanket-ignored in
@@ -874,10 +880,10 @@ plans into `docs/plans/`, remove that line: `sed -i '/^docs\/$/d'
 .git/info/exclude`. Verify with `git check-ignore docs/plans/test.md`
 (expect exit 1).
 
-## 3.1.1 — Reviewer ROI Improvements
+## 3.1.1: Reviewer ROI Improvements
 
 [New] plan-schema.md Rule 9: phase test-count self-consistency check.
-  Conditional — fires only when the phase asserts a count. Counter sums
+  Conditional: fires only when the phase asserts a count. Counter sums
   `@test` blocks, `# expect:` lines, and heredoc counts. Mismatch emits
   failure message; passes silently when no count assertion present.
   Three-call-site enforcement parity with Rule 8.
@@ -885,7 +891,7 @@ plans into `docs/plans/`, remove that line: `sed -i '/^docs\/$/d'
   referenced in the plan, planner reads the helper's body in source,
   extracts expected-rc per call-site (case-statement / return-tuple /
   switch parse), and pastes a table into the plan preamble. Inline grep
-  instructions — no separate skill file. Short-circuits when no
+  instructions; no separate skill file. Short-circuits when no
   caller-helper-fns appear in the plan.
 [Change] reviewer.md Challenge Mode: references Rule 9 + verifies
   "RC Contract Evidence" section presence.
@@ -907,15 +913,15 @@ plans into `docs/plans/`, remove that line: `sed -i '/^docs\/$/d'
   `/tmp` PID/RANDOM races, `2>/dev/null` / `|| true` without same-line `#`,
   tombstone phrases, `local var=$(...)` rc-mask. Same-line `#` suppresses;
   `governance/ignore.md` `# anti-pattern-skip: <class>` opts-out per class.
-[New] tests/pre-commit-anti-patterns.bats — 5 BATS tests for hook extension.
-[New] tests/fixtures/pre-commit-anti-patterns/clean.sh — passes all patterns.
-[New] tests/fixtures/pre-commit-anti-patterns/dirty.sh — triggers each pattern.
+[New] tests/pre-commit-anti-patterns.bats: 5 BATS tests for hook extension.
+[New] tests/fixtures/pre-commit-anti-patterns/clean.sh: passes all patterns.
+[New] tests/fixtures/pre-commit-anti-patterns/dirty.sh: triggers each pattern.
 [New] engineer.md Setup step 7: boundary-guard sweep on cross-cutting/sensitive
   phases. Greps schema directories for input fields lacking
   `pattern`/`enum`/`format` constraints; cross-references call-site sinks
   (filesystem path, shell command, JSONL append); pastes result table into
   EVIDENCE. Short-circuits with INFO marker when no schema files in scope.
-[New] canonical/commands/r-util-claudemd-review.md — CLAUDE.md
+[New] canonical/commands/r-util-claudemd-review.md: CLAUDE.md
   conversation-driven review. Adapted from ykdojo/claude-code-tips
   review-claudemd. Adds RDF discipline filters (D1–D4): no prose/narrative,
   no memory-bound state, no framework default restatement, no tone/sentiment.
@@ -926,7 +932,7 @@ plans into `docs/plans/`, remove that line: `sed -i '/^docs\/$/d'
   prior 3-pass behavior); pre-commit hook anti-pattern patterns opt-in per
   project via `governance/ignore.md`.
 
-## 3.1.0 — Concurrent Sessions Wave A (Stop the Bleeding)
+## 3.1.0: Concurrent Sessions Wave A (Stop the Bleeding)
 
 Foundation for multi-session safety. Establishes session identity, scoped
 state filenames, structurally-enforced worktree boundary (pre-commit hook
@@ -936,32 +942,32 @@ incidents observed in blacklight (M6–M13); validated against active running
 session feedback (M13 dispatch, 5/5 prose-instruction violations).
 See docs/specs/2026-04-25-concurrent-sessions-design.md.
 
-[New] state/rdf-bus.sh — helper library: rdf_session_init (UUIDv7),
+[New] state/rdf-bus.sh: helper library: rdf_session_init (UUIDv7),
   rdf_scoped_filename, rdf_session_short, rdf_parse_phase_scope
-[New] state/git-hooks/pre-commit — worktree pre-commit hook physically
+[New] state/git-hooks/pre-commit: worktree pre-commit hook physically
   rejecting out-of-scope commits before they land (P8 layer 1 enforcement)
-[New] tests/rdf-bus.bats — 10 unit + integration tests
-[New] framework.md — Session Identity subsection documenting RDF_SESSION_ID;
+[New] tests/rdf-bus.bats: 10 unit + integration tests
+[New] framework.md: Session Identity subsection documenting RDF_SESSION_ID;
   Category 2 + Category 3 transient-state tables now use session-suffixed names
-[New] plan-schema.md Rule 8 — Tests-may-touch scope-flex zone with per-file
+[New] plan-schema.md Rule 8: Tests-may-touch scope-flex zone with per-file
   (≤30 lines) and global (≤3 files) ceilings
-[New] dispatcher.md — Worktree Pre-Commit Hook Installation step + Post-Merge
+[New] dispatcher.md: Worktree Pre-Commit Hook Installation step + Post-Merge
   Scope Check (defense-in-depth backstop, addresses 75% leak rate from M11 B3)
-[New] engineer.md — Pre-aggregation Precondition: git status --porcelain
+[New] engineer.md: Pre-aggregation Precondition: git status --porcelain
   before any aggregation/build step; honors Tests-may-touch zone (M10 P4 fix)
-[New] r-build.md §6b — pre-commit hook installation step after git worktree add;
+[New] r-build.md §6b: pre-commit hook installation step after git worktree add;
   explicit controller `cd` into worktree before each Task dispatch (the actual
-  mechanism per workspace CLAUDE.md "Worktree CWD" note — closes non-deterministic
+  mechanism per workspace CLAUDE.md "Worktree CWD" note; closes non-deterministic
   CWD class; `Task` tool does not accept a cwd parameter);
   nested-invocation constraint note; build-progress.md writes scoped to ${RDF_SESSION_ID}
-[New] tests/adapter.bats — regression test verifying regenerated dispatcher
+[New] tests/adapter.bats: regression test verifying regenerated dispatcher
   surfaces RDF_SESSION_ID, rdf_scoped_filename, hook installation, scope check,
   Tests-may-touch
-[Change] dispatcher.md, qa.md — phase-N-result and phase-N-status paths now
+[Change] dispatcher.md, qa.md: phase-N-result and phase-N-status paths now
   scoped via rdf_scoped_filename (was un-suffixed; collided across sessions)
-[Change] r-build.md §6b — worktree path and branch use full RDF_SESSION_ID
+[Change] r-build.md §6b: worktree path and branch use full RDF_SESSION_ID
   UUIDv7 (was 8-char ad-hoc hex)
-[Change] r-vpe.md, r-spec.md, r-ship.md — vpe-progress.md, spec-progress.md,
+[Change] r-vpe.md, r-spec.md, r-ship.md: vpe-progress.md, spec-progress.md,
   ship-progress.md write paths now scoped with ${RDF_SESSION_ID}; resume
   protocols look for scoped form first, prompt to import legacy un-suffixed
   file if present
@@ -971,61 +977,61 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 ### Context-Efficient Reads (AST primitives + audit wiring)
 
 [New] canonical/commands/r-util-code-map.md: structural map of source files with per-symbol line ranges; language dispatch covering Python (ast), shell (awk), TypeScript/JavaScript (ctags/grep), Go, Rust, C/C++ (ctags), Ruby, with tree-sitter preferred when present; configurable threshold via governance/conventions.md (code-map-threshold, default 500); symbol-filter mode; uniform output shape so downstream skills can parse it
-[Change] canonical/commands/r-audit.md Stage 1c: baseline pattern scan via /r-util-code-scan all; report written to .rdf/work-output/audit-baseline-patterns.md and threaded to Stage 2a subagent as extra context — UNTRACKED hits promoted to formal findings, TRACKED hits passthrough
-[Change] canonical/commands/r-audit.md Stage 2a: reviewer dispatch gains large-file discipline directive — /r-util-code-map before reading any source file over 500 lines
+[Change] canonical/commands/r-audit.md Stage 1c: baseline pattern scan via /r-util-code-scan all; report written to .rdf/work-output/audit-baseline-patterns.md and threaded to Stage 2a subagent as extra context; UNTRACKED hits promoted to formal findings, TRACKED hits passthrough
+[Change] canonical/commands/r-audit.md Stage 2a: reviewer dispatch gains large-file discipline directive: /r-util-code-map before reading any source file over 500 lines
 [Change] canonical/commands/r-audit.md --quick mode: replaces ad-hoc anti-pattern grep with canonical /r-util-code-scan all call; baseline output folded directly into lightweight AUDIT.md
 [New] canonical/commands/r-refresh.md Stage 1d: anti-pattern drift delta via /r-util-code-scan all counts-only output; snapshot at .rdf/governance/.scan-baseline.json; skipped for state/github scopes; first-run behavior creates baseline without delta
-[Change] canonical/commands/r-refresh.md Stage 6c: Drift Detection block now carries one-line anti-pattern drift summary (sign-prefixed deltas per changed class); no per-file findings table in refresh output — users directed to /r-util-code-scan <class> for detail
+[Change] canonical/commands/r-refresh.md Stage 6c: Drift Detection block now carries one-line anti-pattern drift summary (sign-prefixed deltas per changed class); no per-file findings table in refresh output; users directed to /r-util-code-scan <class> for detail
 [Change] README.md: utility command count 14 → 15; added /r-util-code-map row; totals updated (34 → 35 commands)
 [Change] RDF.md: command counts (34 → 35, 14 utility → 15 utility); VERSION reference (3.0.6 → 3.0.7)
 [Change] VERSION: 3.0.7
-[Fix] canonical/commands/r-save.md §6: insights.jsonl trim now uses `sed -i` in-place edit instead of `tail -N > tmp && mv tmp file`; interactive shells alias `mv` to `mv -i`, which stalled /r-save waiting for overwrite confirmation — in-place editing sidesteps the alias entirely
+[Fix] canonical/commands/r-save.md §6: insights.jsonl trim now uses `sed -i` in-place edit instead of `tail -N > tmp && mv tmp file`; interactive shells alias `mv` to `mv -i`, which stalled /r-save waiting for overwrite confirmation; in-place editing sidesteps the alias entirely
 [New] canonical/reference/plan-schema.md: authoritative validation rules for PLAN.md cited by /r-plan, reviewer (challenge mode), and /r-build; Plan-Version Awareness + Rules 1-7 covering phase heading shape, mandatory metadata fields, crash-safety markers, Regression-case shape (named-test or `N/A — category — reason`), forbidden shapes (whole-file invariants, deferred refs, free-form prose), category allowed set, category disambiguation (pure test-addition phases use `refactor` not `security`; halo-category mistakes; `refactor` requires no behavior change), and security CVE/bug/issue identifier requirement
-[New] canonical/commands/r-plan.md Step 2.7: schema validation pass run after writing the plan and before reviewer dispatch — walks every rule in reference/plan-schema.md against every phase, fixes violations in-place, blocks Step 3 if any remain; saves a reviewer cycle and a downstream /r-build dispatch failure
+[New] canonical/commands/r-plan.md Step 2.7: schema validation pass run after writing the plan and before reviewer dispatch: walks every rule in reference/plan-schema.md against every phase, fixes violations in-place, blocks Step 3 if any remain; saves a reviewer cycle and a downstream /r-build dispatch failure
 [Change] canonical/commands/r-plan.md reviewer checklist + Plan Quality Standard: collapsed schema-mechanical items (metadata field presence, Regression-case shape/category, Plan Version marker) into single cite-by-reference items pointing at reference/plan-schema.md; phase format inline pointer added near Regression-case template line
 [Change] canonical/commands/r-build.md Section 1: replaced ~32 lines of inline Regression-case validation prose with one cite-by-reference paragraph pointing at reference/plan-schema.md; same rules now applied in the same order at all three call sites (planner Step 2.7, reviewer challenge mode, build dispatch)
-[Change] canonical/commands/r-plan.md reviewer item 3: trimmed full schema re-walk to a Step-2.7-trust-but-verify check (confirm pre-pass ran, spot-check 1-2 phases) — same-context re-validation by a weaker model isn't real defense in depth; /r-build Section 1 is the independent late-binding check that actually runs in a fresh context against on-disk truth
+[Change] canonical/commands/r-plan.md reviewer item 3: trimmed full schema re-walk to a Step-2.7-trust-but-verify check (confirm pre-pass ran, spot-check 1-2 phases); same-context re-validation by a weaker model isn't real defense in depth; /r-build Section 1 is the independent late-binding check that actually runs in a fresh context against on-disk truth
 
 ## 3.0.6
 
 ### Harness Primitives (5-item release)
 
 [New] canonical/commands/r-verify-claim.md: slash command for evidence verification; 5 closed-set claim classes (commit-landed, pattern-absent, pattern-present, file-unchanged, behavior-observable); UNVERIFIABLE verdict for unclassifiable claims; produces evidence lines suitable for engineer result files
-[New] canonical/reference/framework.md: EVIDENCE block in engineer result schema — one line per phase claim; citation forms <path>:<line>, <cmd> → <output>, <sha> <message>; required for STATUS: DONE; arrow accepted as → or ->
+[New] canonical/reference/framework.md: EVIDENCE block in engineer result schema: one line per phase claim; citation forms <path>:<line>, <cmd> → <output>, <sha> <message>; required for STATUS: DONE; arrow accepted as → or ->
 [Change] canonical/agents/engineer.md §Evidence: structured TDD_EVIDENCE + EVIDENCE two-section description replacing narrative list
-[New] canonical/agents/dispatcher.md Gate 1: structural EVIDENCE check — empty or missing block on DONE produces NEEDS_CONTEXT verdict
+[New] canonical/agents/dispatcher.md Gate 1: structural EVIDENCE check: empty or missing block on DONE produces NEEDS_CONTEXT verdict
 [Change] canonical/agents/dispatcher.md §Load: parse Regression-case from target phase and pass to engineer; pass phase N to QA for result file path derivation
-[New] canonical/agents/qa.md §Protocol: EVIDENCE re-validation step (scope-gated) — derive result file from .rdf/work-output/phase-<N>-result.md; re-run commands and compare output; scope {docs,focused} records SKIPPED
+[New] canonical/agents/qa.md §Protocol: EVIDENCE re-validation step (scope-gated): derive result file from .rdf/work-output/phase-<N>-result.md; re-run commands and compare output; scope {docs,focused} records SKIPPED
 [New] canonical/agents/qa.md report format: EVIDENCE row in ### Checks table with PASS/FAIL/SKIPPED outcomes
-[Change] canonical/agents/reviewer.md §Challenge Mode: Verification protocol subsection — require /r-verify-claim on MUST-FIX assertions about current state; exempt design opinions and SHOULD-FIX findings
+[Change] canonical/agents/reviewer.md §Challenge Mode: Verification protocol subsection: require /r-verify-claim on MUST-FIX assertions about current state; exempt design opinions and SHOULD-FIX findings
 [New] canonical/commands/r-plan.md preamble template: **Plan Version:** 3.0.6 marker for version-aware schema validation
-[New] canonical/commands/r-plan.md phase template: **Regression-case** field — named test reference OR N/A with closed-set category (docs/performance/logging/refactor/security); security category requires CVE/bug/issue reference
+[New] canonical/commands/r-plan.md phase template: **Regression-case** field: named test reference OR N/A with closed-set category (docs/performance/logging/refactor/security); security category requires CVE/bug/issue reference
 [Change] canonical/commands/r-plan.md mandatory fields: add Regression-case to Mode/Accept/Test/Edge cases set
 [New] canonical/commands/r-plan.md quality checklist: checks #9 (Regression-case) and #10 (Plan Version); Plan Quality Standard items #14, #15
 [New] canonical/commands/r-build.md minimum schema validation: include Regression-case; reject unknown category; reject security N/A without CVE/bug/issue reference; skip validation on pre-3.0.6 plans (no Plan Version preamble marker)
 [New] profiles/core/reference/ignore-defaults.md: seed content for .rdf/governance/ignore.md with conservative defaults (node_modules, vendor, dist, build, target, __pycache__, .venv, venv, *.pyc, .rdf/work-output/, docs/specs/)
 [New] canonical/commands/r-init.md §Generate: ignore.md: first-time generation from defaults with user-modified-merge behavior
 [Change] canonical/commands/r-refresh.md Stage 3b: add ignore.md row; create on pre-3.0.6 consumer projects; append missing defaults under "# Added by /r-refresh" heading
-[Remove] adapters/agents-md/adapter.sh: _amd_extract_governance_section (broken — produced "(governance file not found)" on every invocation)
+[Remove] adapters/agents-md/adapter.sh: _amd_extract_governance_section (broken: produced "(governance file not found)" on every invocation)
 [New] adapters/agents-md/adapter.sh: _amd_extract_canonical_section (heading-based extraction from canonical/reference/framework.md or CLAUDE.md.ref; visible "section not found" marker on rename)
 [Change] adapters/agents-md/sections.json: replace governance sources with canonical sources; new sections (Operating Primitives, Architecture Overview, Result File Artifacts, Commands); max_lines 150 → 200
-[Change] adapters/agents-md/output/AGENTS.md: regenerated from new sources — 60+ lines, zero "(governance file not found)" strings
+[Change] adapters/agents-md/output/AGENTS.md: regenerated from new sources; 60+ lines, zero "(governance file not found)" strings
 [New] tests/adapter.bats: +8 @test cases covering r-verify-claim file existence, engineer EVIDENCE declaration, dispatcher Gate 1 references, r-plan Regression-case field, r-build schema validation, ignore-defaults structural check (Goal 4), agents-md clean output, rdf doctor zero FAILs after generate (Goal 8)
 [Change] VERSION, RDF.md, README.md: bumped to 3.0.6; command count 33 → 34 in README.md
 
 ## 3.0.5
 
 ### CLAUDE.md.ref Integration
-[Change] CLAUDE.md: reference CLAUDE.md.ref (operating primitives — Trust but Verify, Scope Discipline, Adversarial Review, Context Preservation, Comment Discipline, Safe Execution); file was added via GitHub UI on 2026-04-17 but never wired into the workflow; this commit takes local ownership going forward and makes it discoverable from the project's top-level CLAUDE.md
+[Change] CLAUDE.md: reference CLAUDE.md.ref (operating primitives: Trust but Verify, Scope Discipline, Adversarial Review, Context Preservation, Comment Discipline, Safe Execution); file was added via GitHub UI on 2026-04-17 but never wired into the workflow; this commit takes local ownership going forward and makes it discoverable from the project's top-level CLAUDE.md
 
 ### Docs Quality Overhaul
 [Change] README.md: restructured to numbered sections (## 1-11), new `## 3. Configuration` section covering environment variables + per-project setup + convention inheritance chain, new `## 4. Usage` section consolidating Command Reference + CLI Reference + exit codes table, new `## License` section; updated counts from 31 commands / 10 scripts to 33 / 12; added 2 new scripts to table (comment-metrics.sh, comment-snapshot.sh); updated utility commands list to include /r-audit-slop and /r-context-audit; updated directory tree to show state/ helpers (rdf-state.sh, context-audit.sh, rotate-work-output.sh); updated doctor scope count to 7 checks (added content-drift)
-[Change] lib/cmd/doctor.sh: relax README section checks to accept optional `## N. ` numbered prefix on Quick Start / Configuration / Usage — consistent with the same file's numbered-sections requirement; prior regex required literal `## Quick Start` which conflicted with numbered-section convention
-[Change] CLAUDE.md: added one-paragraph parent-CLAUDE.md reference at top — satisfies `rdf doctor` drift check and documents inheritance explicitly
+[Change] lib/cmd/doctor.sh: relax README section checks to accept optional `## N. ` numbered prefix on Quick Start / Configuration / Usage, consistent with the same file's numbered-sections requirement; prior regex required literal `## Quick Start` which conflicted with numbered-section convention
+[Change] CLAUDE.md: added one-paragraph parent-CLAUDE.md reference at top; satisfies `rdf doctor` drift check and documents inheritance explicitly
 [Change] VERSION + RDF.md: bumped to 3.0.5 to match CHANGELOG section header
 
 ### Context Audit Command
-[New] canonical/commands/r-context-audit.md: command driver for `state/context-audit.sh` (committed in Phase 3) — runs the measurement script, parses JSON, renders a scored report (0-100 CLEAN/NEEDS_WORK/BLOATED/CRITICAL) with boot-cost breakdown, rdf-state.sh field analysis, work-output accumulation, session history totals, and prioritized 3-tier fix recommendations; supports `--fix` for Tier 1 auto-remediation and `--save-baseline` for drift tracking via `~/.rdf/context-audit-baseline.json`
+[New] canonical/commands/r-context-audit.md: command driver for `state/context-audit.sh` (committed in Phase 3): runs the measurement script, parses JSON, renders a scored report (0-100 CLEAN/NEEDS_WORK/BLOATED/CRITICAL) with boot-cost breakdown, rdf-state.sh field analysis, work-output accumulation, session history totals, and prioritized 3-tier fix recommendations; supports `--fix` for Tier 1 auto-remediation and `--save-baseline` for drift tracking via `~/.rdf/context-audit-baseline.json`
 
 ### BATS Adapter Test Suite
 [New] tests/adapter.bats: hermetic BATS test suite for the claude-code adapter round-trip; 7 tests covering: expected file tree generation, canonical body preservation in deployed output, .rdf-hash sidecar emission (Phase 7 regression), idempotency on second generate run, and drift detection (corrupted deployed file causes doctor content-drift FAIL with file cited)
@@ -1038,7 +1044,7 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [New] .github/workflows/ci.yml: minimal CI workflow on push/PR to main; lint job runs bash -n syntax check and shellcheck -S error on all source shell files (bin/, lib/, state/, adapters/*/*.sh, canonical/scripts/); doctor job runs rdf generate claude-code then rdf doctor --scope content-drift to verify adapter health; tests job conditional on tests/Makefile (stub for Phase 10 BATS suite)
 
 ### Progress Tracking Reference
-[New] canonical/reference/progress-tracking.md: canonical superset of the Progress Tracking protocol — CRITICAL batch-creation rule, TaskCreate branch with activeForm example, in_progress/completed guidance, >30s spinner note, N/A phase handling, checkbox fallback for Gemini CLI/Codex
+[New] canonical/reference/progress-tracking.md: canonical superset of the Progress Tracking protocol: CRITICAL batch-creation rule, TaskCreate branch with activeForm example, in_progress/completed guidance, >30s spinner note, N/A phase handling, checkbox fallback for Gemini CLI/Codex
 [Change] canonical/commands/r-init.md: replace 36-line inline Progress Tracking block with reference link + compact task-name list for /r-init's 5 phases
 [Change] canonical/commands/r-start.md: replace 12-line inline Progress Tracking block with reference link + single-task spec (Initialize session) and fallback note
 [Change] canonical/commands/r-save.md: replace 35-line inline Progress Tracking block with reference link + compact task-name list for /r-save's 6 phases
@@ -1048,21 +1054,21 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [New] lib/cmd/doctor.sh: add content-drift check scope; hashes deployed file body (YAML frontmatter stripped for agents) and compares to .rdf-hash sidecar; FAIL with specific file name on mismatch; WARN on missing sidecar (directs user to regenerate); usable as --scope content-drift or as part of full 'rdf doctor' run
 
 ### Release Packaging
-[New] .gitattributes: export-ignore rules for docs/, assets/, tests/, .github/, .rdf/, .claude/, .pytest_cache/, and working files (CLAUDE.md, PLAN.md, MEMORY.md, AUDIT.md) — prevents dev-only artifacts from shipping in git archive / GitHub release tarballs
+[New] .gitattributes: export-ignore rules for docs/, assets/, tests/, .github/, .rdf/, .claude/, .pytest_cache/, and working files (CLAUDE.md, PLAN.md, MEMORY.md, AUDIT.md); prevents dev-only artifacts from shipping in git archive / GitHub release tarballs
 
 ### Stale Artifact Cleanup
-[Remove] .pytest_cache/: deleted from RDF repo root — RDF has no Python tests; stale artifact from an aborted path
+[Remove] .pytest_cache/: deleted from RDF repo root; RDF has no Python tests; stale artifact from an aborted path
 [Remove] advanced-policy-firewall: full-branch-diff.patch (521 KB, 34 days old) deleted from .rdf/work-output/
-[Remove] s3perf: PLAN-tier0-909cbaa-239722c.md (60 KB) deleted from .rdf/memory/ — misfiled plan
+[Remove] s3perf: PLAN-tier0-909cbaa-239722c.md (60 KB) deleted from .rdf/memory/; misfiled plan
 [Change] Run live rotation via rotate-work-output.sh against 4 projects (LMD: 227 pruned, BFD: 175, Sigforge: 150, APF: 119)
-[Change] session-safety.md and docs/superpowers/: SKIPPED — both have active references in docs/; preserved per governance (grep evidence in phase report)
+[Change] session-safety.md and docs/superpowers/: SKIPPED; both have active references in docs/; preserved per governance (grep evidence in phase report)
 
 ### Work-Output Rotation
 [New] state/rotate-work-output.sh: age-based pruning of *.md result files (default 14-day mtime threshold) with PLAN.md cross-reference guard to preserve active phase files; size-based truncation of agent-feed.log to last 1000 lines when file exceeds 100 KB; --dry-run, --age, and --size-cap flags
 [Change] rdf generate claude-code: deploys rotate-work-output.sh to ~/.rdf/state/ alongside rdf-state.sh and context-audit.sh
 
 ### Context Audit Timeout Guards
-[New] context-audit.sh: add TIMEOUT_PREFIX ("timeout 30") — same pattern as rdf-state.sh — wrapping the git log call in the per-repo recency sort and both python3 invocations (field breakdown + baseline comparison)
+[New] context-audit.sh: add TIMEOUT_PREFIX ("timeout 30"), same pattern as rdf-state.sh, wrapping the git log call in the per-repo recency sort and both python3 invocations (field breakdown + baseline comparison)
 [New] context-audit.sh: extract _count_md_files() helper replacing 8 near-duplicate find+wc patterns across skills, agents, memory, and work-output sections
 [Fix] context-audit.sh: replace per-file stat loop over JSONL session files with find -printf byte sum; reduces Section 8 from ~15s to <0.1s on machines with thousands of JSONL files
 
@@ -1074,8 +1080,8 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [New] rdf generate claude-code: deploy rdf-state.sh and context-audit.sh to ~/.rdf/state/ with executable bit; creates directory if absent
 
 ### New Commands
-[New] /r-audit-slop — AI slop audit (dead code, orphan helpers, noop functions, tautological guards, redundant implementations, over-engineered abstractions). Promoted from /r-util-slop-scan with two additional verification passes: independent sentinel peer-review of HIGH findings and engineer FP-validation pass (read-only). --quick flag restores single-agent behavior. Discovery-first protocol: Phase 0 builds a per-project call-site manifest before scanning, preventing the false-positive wall that hits naive dead-code scanners. Confidence gated on attached grep evidence; density safeguard triggers re-scan when >10 HIGH findings in a category.
-[Remove] /r-util-slop-scan — superseded by /r-audit-slop (use --quick for equivalent single-agent behavior)
+[New] /r-audit-slop: AI slop audit (dead code, orphan helpers, noop functions, tautological guards, redundant implementations, over-engineered abstractions). Promoted from /r-util-slop-scan with two additional verification passes: independent sentinel peer-review of HIGH findings and engineer FP-validation pass (read-only). --quick flag restores single-agent behavior. Discovery-first protocol: Phase 0 builds a per-project call-site manifest before scanning, preventing the false-positive wall that hits naive dead-code scanners. Confidence gated on attached grep evidence; density safeguard triggers re-scan when >10 HIGH findings in a category.
+[Remove] /r-util-slop-scan: superseded by /r-audit-slop (use --quick for equivalent single-agent behavior)
 
 ### Model Cost Optimization
 [New] Dispatcher: scope-based model routing for engineer dispatch (sonnet for docs/focused, opus for multi-file+)
@@ -1110,20 +1116,20 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [Change] Dispatcher: PARALLEL_BATCH flag prevents nested parallelism
 
 ### Documentation Convention
-[New] reference/documentation-standard.md — README template, section ordering, SVG asset specs, badge conventions, documentation level system (floor/level-2/level-3)
-[New] reference/templates/SECURITY.md — companion file template with {{PROJECT}} placeholders
-[New] reference/templates/CONTRIBUTING.md — companion file template with {{PROJECT}}/{{ORG}}/{{LICENSE}} placeholders
-[New] Workspace reference/brand.md — rfxn brand definition (palette, typography, project identities)
+[New] reference/documentation-standard.md: README template, section ordering, SVG asset specs, badge conventions, documentation level system (floor/level-2/level-3)
+[New] reference/templates/SECURITY.md: companion file template with {{PROJECT}} placeholders
+[New] reference/templates/CONTRIBUTING.md: companion file template with {{PROJECT}}/{{ORG}}/{{LICENSE}} placeholders
+[New] Workspace reference/brand.md: rfxn brand definition (palette, typography, project identities)
 
 ### Doctor: Readme Scope
 [New] rdf doctor --scope readme: documentation convention enforcement
-[New] _check_readme() — level-gated README structure validation (floor/level-2/level-3)
+[New] _check_readme(): level-gated README structure validation (floor/level-2/level-3)
 [Change] Floor: badge row, Quick Start, License, numbered sections, Config/Usage sections, exit codes table
 [Change] Level 2: What's New, Contents, Integration, SECURITY.md, CONTRIBUTING.md, banner SVGs, picture tag
 [Change] Level 3: Troubleshooting, pipeline SVG, terminal demo asset
 
 ### Init: Companion File Generation
-[New] _generate_companion_files() — creates SECURITY.md and CONTRIBUTING.md from templates
+[New] _generate_companion_files(): creates SECURITY.md and CONTRIBUTING.md from templates
 [New] .rdf/docs-level created during init (products default to level-2, libraries to floor)
 [Change] rdf init calls companion file generation after reference docs copy
 
@@ -1134,7 +1140,7 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [Change] Finding vocabulary: shared severity spine + agent-scoped qualifiers (v2 routing restored)
 [Change] Plan metadata: 7 mandatory fields → 4 (Risk/Type/Gates removed)
 [Change] CONCERN reverted to SHOULD-FIX, SUGGESTION reverted to INFORMATIONAL
-[New] /r-vpe — optional end-to-end pipeline orchestrator (spec→plan→build→ship)
+[New] /r-vpe: optional end-to-end pipeline orchestrator (spec→plan→build→ship)
 [New] Scope classification: docs, focused, multi-file, cross-cutting, sensitive
 [New] Finding qualifiers: merge-block, fix-or-refute, workflow-breaking, blocking-concern, etc.
 [New] VPE adaptive intake conversation (1-4 exchanges)
@@ -1143,7 +1149,7 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 ## 3.0.2
 
 ### Sentinel Integration & Quality Gate Redesign
-[Change] Dispatcher gate selection — sentinel on all non-trivial phases
+[Change] Dispatcher gate selection: sentinel on all non-trivial phases
 [New] Tiered sentinel depth (lite 2-pass, full 4-pass)
 [New] Counter-hypothesis FP prevention protocol in reviewer
 [New] Parallel QA+sentinel execution with dedup
@@ -1151,7 +1157,7 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [New] Dispatcher-owned finding resolution (fix/refute cycle)
 [New] FP calibration (dispatcher-internal heuristics)
 [Change] SHOULD-FIX renamed to CONCERN across all surfaces
-[Change] Gate machinery hidden from developer — dispatcher-internal
+[Change] Gate machinery hidden from developer: dispatcher-internal
 
 ## 3.0.1
 
@@ -1168,15 +1174,15 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [Remove] REGR.md, audit-output/ from default exclude entries
 
 ### Profile & Mode Expansion
-[New] profiles/rust/: full profile — ownership, error handling, unsafe, cargo (3 ref docs)
-[New] profiles/typescript/: full profile — strict mode, async, Node.js backend (3 ref docs)
-[New] profiles/perl/: starter profile — strict/warnings, three-arg open, Moo OOP
-[New] profiles/php/: starter profile — strict_types, PSR, parameterized queries
-[New] profiles/infrastructure/: starter profile — Terraform, K8s, Ansible, CI/CD
+[New] profiles/rust/: full profile: ownership, error handling, unsafe, cargo (3 ref docs)
+[New] profiles/typescript/: full profile: strict mode, async, Node.js backend (3 ref docs)
+[New] profiles/perl/: starter profile: strict/warnings, three-arg open, Moo OOP
+[New] profiles/php/: starter profile: strict_types, PSR, parameterized queries
+[New] profiles/infrastructure/: starter profile: Terraform, K8s, Ansible, CI/CD
 [New] modes/refactoring/: behavior preservation, regression blocking
 [New] modes/debugging/: hypothesis-driven, instrument-first
 [New] modes/documentation/: read-then-write, accuracy review
-[New] Stackable profile auto-detection — rdf init detects and merges multiple profiles
+[New] Stackable profile auto-detection: rdf init detects and merges multiple profiles
 [Change] core governance template expanded with AI agent discipline (62→117 lines)
 [Change] registry.json: tier (full/starter) and detect fields on all profiles
 [Change] init.sh: _detect_profiles() replaces _detect_project_type(), governance merge
@@ -1186,10 +1192,10 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 ## 3.0.0
 
 ### Architecture
-[Change] Universal agent architecture — 6 domain-agnostic agents replace
+[Change] Universal agent architecture: 6 domain-agnostic agents replace
          12 domain-specific agents
-[Change] Governance initialization model — project data drives agent behavior
-[Change] /r- command namespace — 13 lifecycle + 10 utility commands
+[Change] Governance initialization model: project data drives agent behavior
+[Change] /r- command namespace: 13 lifecycle + 10 utility commands
 [Change] Profiles become governance seed templates, not agent bundles
 [Change] CC agent name prefix rfxn- -> rdf-
 [Remove] Domain-prefixed agents (sys-eng, fe-qa, sec-eng, etc.)
@@ -1197,39 +1203,39 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [Remove] profile.json manifest files
 
 ### Agents
-[New] planner — research-driven collaborative planning (opus)
-[New] dispatcher — plan execution orchestrator (sonnet)
-[New] engineer — universal implementation engineer (opus)
-[New] qa — verification gate (sonnet)
-[New] uat — user acceptance testing (sonnet)
-[New] reviewer — adversarial review, challenge + sentinel modes (opus)
+[New] planner: research-driven collaborative planning (opus)
+[New] dispatcher: plan execution orchestrator (sonnet)
+[New] engineer: universal implementation engineer (opus)
+[New] qa: verification gate (sonnet)
+[New] uat: user acceptance testing (sonnet)
+[New] reviewer: adversarial review, challenge + sentinel modes (opus)
 
 ### Lifecycle Commands
-[New] /r-init — governance initialization
-[New] /r-start — session initialization with context anchor
-[New] /r-plan — 5-phase planner workflow
-[New] /r-mode — session-scoped mode switching
-[New] /r-status — project health dashboard
-[New] /r-refresh — governance-aware codebase re-scan
-[New] /r-sync — canonical source pull-back
-[New] /r-audit — full codebase audit with parallel dispatch
-[New] /r-ship — composite release workflow
-[New] /build — plan phase execution via dispatcher
-[New] /verify — QA verification via qa subagent
-[New] /test — UAT acceptance via uat subagent
-[New] /review — adversarial review in challenge or sentinel mode
+[New] /r-init: governance initialization
+[New] /r-start: session initialization with context anchor
+[New] /r-plan: 5-phase planner workflow
+[New] /r-mode: session-scoped mode switching
+[New] /r-status: project health dashboard
+[New] /r-refresh: governance-aware codebase re-scan
+[New] /r-sync: canonical source pull-back
+[New] /r-audit: full codebase audit with parallel dispatch
+[New] /r-ship: composite release workflow
+[New] /build: plan phase execution via dispatcher
+[New] /verify: QA verification via qa subagent
+[New] /test: UAT acceptance via uat subagent
+[New] /review: adversarial review in challenge or sentinel mode
 
 ### Utility Commands
-[New] /r-util-mem-compact — archive stale MEMORY.md entries
-[New] /r-util-doc-gen — generate documentation for specific surfaces
-[New] /r-util-ci-gen — generate CI workflow from test infrastructure
-[New] /r-util-lib-sync — cross-project shared library drift detection
-[New] /r-util-lib-release — shared library release lifecycle
-[New] /r-util-code-scan — structured pattern-class bug finder
-[New] /r-util-code-modernize — codebase maturity assessment
-[New] /r-util-test-dedup — find duplicate/overlapping tests
-[New] /r-util-chg-gen — generate changelog entries from diff
-[New] /r-util-chg-dedup — deduplicate changelog entries
+[New] /r-util-mem-compact: archive stale MEMORY.md entries
+[New] /r-util-doc-gen: generate documentation for specific surfaces
+[New] /r-util-ci-gen: generate CI workflow from test infrastructure
+[New] /r-util-lib-sync: cross-project shared library drift detection
+[New] /r-util-lib-release: shared library release lifecycle
+[New] /r-util-code-scan: structured pattern-class bug finder
+[New] /r-util-code-modernize: codebase maturity assessment
+[New] /r-util-test-dedup: find duplicate/overlapping tests
+[New] /r-util-chg-gen: generate changelog entries from diff
+[New] /r-util-chg-dedup: deduplicate changelog entries
 
 ### Profiles & Modes
 [Change] Profiles restructured from agent bundles to governance seed
@@ -1239,22 +1245,22 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 [New] Profile registry with auto-detection rules
 
 ### Adapter
-[Change] agent-meta.json — 6 universal agents with rdf- prefix
-[Change] adapter.sh — profile filtering removed for agents/commands
-[Change] teams-meta.json — name prefix rfxn -> rdf
-[New] command-meta-v3.json — command-to-agent dispatch metadata
+[Change] agent-meta.json: 6 universal agents with rdf- prefix
+[Change] adapter.sh: profile filtering removed for agents/commands
+[Change] teams-meta.json: name prefix rfxn -> rdf
+[New] command-meta-v3.json: command-to-agent dispatch metadata
 
 ### Migration
-[New] canonical/agents-v2-archived/ — preserved v2 agent definitions
-[New] canonical/commands-v2-archived/ — preserved v2 command definitions
-[New] adapters/claude-code/agent-meta-v2.json — preserved v2 metadata
+[New] canonical/agents-v2-archived/: preserved v2 agent definitions
+[New] canonical/commands-v2-archived/: preserved v2 command definitions
+[New] adapters/claude-code/agent-meta-v2.json: preserved v2 metadata
 [Remove] canonical/agents-v3/ and canonical/commands-v3/ (staging dirs)
 [Remove] lib/dispatch-agents.json, lib/dispatch-tasks.json (v2 dispatch)
 [Remove] adapters/claude-code/command-meta.json (v2 stub)
 
 ## 2.1.0 (2026-03-16)
 
-### GitHub Issue Model v2 — Phase-Level Tracking + Roadmap Planning
+### GitHub Issue Model v2: Phase-Level Tracking + Roadmap Planning
 [New] type:initiative and type:release labels in label taxonomy
 [New] Target Date field (DATE) in ecosystem project setup
 [New] Initiative issue type for roadmap planning (directional time-boxed)
@@ -1276,82 +1282,82 @@ See docs/specs/2026-04-25-concurrent-sessions-design.md.
 
 ## 2.0.0 (2026-03-16)
 
-### Phase 8 — Documentation, Archive, Cutover
+### Phase 8: Documentation, Archive, Cutover
 [Change] Complete README.md rewrite for public release
 [Change] Archive all workforce/ references to rdf/
 [Change] Update parent CLAUDE.md sync rules for RDF-authoritative flow
 [Change] RDF.md version target updated to release version
 [New] GitHub Issues + Projects bootstrapped for RDF and ecosystem
 [New] Label taxonomy synced across all rfxn repos
-[New] Fresh install cutover verified — full regeneration from canonical
+[New] Fresh install cutover verified: full regeneration from canonical
 
-### Phase 7 — Project Init + Health Checker
-[New] rdf init — project initialization from profile templates
-[New] rdf init --batch — batch initialization for multiple projects
-[New] rdf init --github — GitHub scaffolding during init
-[New] rdf init --dry-run — preview mode
-[New] rdf doctor — 6-category project health checker
-[New] rdf doctor --all — cross-project workspace scan
-[New] rdf doctor --scope — per-category filtering
-[New] rdf doctor --json — machine-readable output
-[Change] bin/rdf — init and doctor wired as active commands
+### Phase 7: Project Init + Health Checker
+[New] rdf init: project initialization from profile templates
+[New] rdf init --batch: batch initialization for multiple projects
+[New] rdf init --github: GitHub scaffolding during init
+[New] rdf init --dry-run: preview mode
+[New] rdf doctor: 6-category project health checker
+[New] rdf doctor --all: cross-project workspace scan
+[New] rdf doctor --scope: per-category filtering
+[New] rdf doctor --json: machine-readable output
+[Change] bin/rdf: init and doctor wired as active commands
 [Fix] grep -c exit-code double-output in doctor plan check
 
-### Phase 6 — Gemini CLI + Codex Adapters + AGENTS.md
-[New] adapters/gemini-cli/adapter.sh — Gemini CLI generation
-[New] adapters/gemini-cli/agent-meta.json — agent metadata for Gemini
-[New] adapters/gemini-cli/command-meta.json — command descriptions for Gemini
-[New] adapters/codex/adapter.sh — Codex generation (AGENTS.md + config)
-[New] adapters/agents-md/adapter.sh — cross-tool AGENTS.md generation
-[New] adapters/agents-md/sections.json — section definitions
-[Change] lib/cmd/generate.sh — multi-adapter support (gemini-cli, codex, agents-md, all)
+### Phase 6: Gemini CLI + Codex Adapters + AGENTS.md
+[New] adapters/gemini-cli/adapter.sh: Gemini CLI generation
+[New] adapters/gemini-cli/agent-meta.json: agent metadata for Gemini
+[New] adapters/gemini-cli/command-meta.json: command descriptions for Gemini
+[New] adapters/codex/adapter.sh: Codex generation (AGENTS.md + config)
+[New] adapters/agents-md/adapter.sh: cross-tool AGENTS.md generation
+[New] adapters/agents-md/sections.json: section definitions
+[Change] lib/cmd/generate.sh: multi-adapter support (gemini-cli, codex, agents-md, all)
 
-### Phase 4 — State Refresh + Context Anchoring
-[New] lib/cmd/refresh.sh — rdf refresh command (memory/plan/github scopes)
-[New] canonical/commands/refresh.md — agent-driven /refresh slash command
-[Change] canonical/commands/mgr.md — consume rdf-state JSON at startup
-[Change] canonical/commands/reload.md — context anchoring with rdf state
-[Change] bin/rdf — activate refresh command
+### Phase 4: State Refresh + Context Anchoring
+[New] lib/cmd/refresh.sh: rdf refresh command (memory/plan/github scopes)
+[New] canonical/commands/refresh.md: agent-driven /refresh slash command
+[Change] canonical/commands/mgr.md: consume rdf-state JSON at startup
+[Change] canonical/commands/reload.md: context anchoring with rdf state
+[Change] bin/rdf: activate refresh command
 
-### Phase 5 — Agent Teams Architecture
-[New] lib/dispatch.sh — mode-aware agent dispatch abstraction (subagent vs Agent Teams)
-[New] lib/dispatch-agents.json — centralized agent registry (11 agents)
-[New] lib/dispatch-tasks.json — pipeline task templates with dependency chains
-[New] lib/cmd/dispatch.sh — rdf dispatch subcommand (agent/pipeline/status)
-[New] adapters/claude-code/teams-meta.json — CC Agent Teams configuration
-[New] docs/specs/agent-teams-research.md — Agent Teams API research
-[New] docs/specs/dispatch-abstraction.md — dispatch interface specification
-[New] docs/specs/task-based-coordination.md — file-based to task-based mapping
-[Change] lib/rdf_common.sh — add rdf_feature_enabled() feature flag helper
-[Change] bin/rdf — register dispatch subcommand
-[Change] canonical/agents/mgr.md — dispatch modes awareness
-[Change] canonical/commands/mgr.md — dispatch abstraction reference
+### Phase 5: Agent Teams Architecture
+[New] lib/dispatch.sh: mode-aware agent dispatch abstraction (subagent vs Agent Teams)
+[New] lib/dispatch-agents.json: centralized agent registry (11 agents)
+[New] lib/dispatch-tasks.json: pipeline task templates with dependency chains
+[New] lib/cmd/dispatch.sh: rdf dispatch subcommand (agent/pipeline/status)
+[New] adapters/claude-code/teams-meta.json: CC Agent Teams configuration
+[New] docs/specs/agent-teams-research.md: Agent Teams API research
+[New] docs/specs/dispatch-abstraction.md: dispatch interface specification
+[New] docs/specs/task-based-coordination.md: file-based to task-based mapping
+[Change] lib/rdf_common.sh: add rdf_feature_enabled() feature flag helper
+[Change] bin/rdf: register dispatch subcommand
+[Change] canonical/agents/mgr.md: dispatch modes awareness
+[Change] canonical/commands/mgr.md: dispatch abstraction reference
 [New] RDF_AGENT_TEAMS feature flag (default: false, opt-in for Agent Teams)
 
-### Phase 2 — CC Adapter + State Helper + CLI + GitHub
-[New] bin/rdf CLI dispatcher — Sigforge sf pattern with lazy-sourced subcommands
-[New] lib/rdf_common.sh — shared init, version, path helpers, require guards
-[New] rdf generate claude-code — canonical + metadata -> CC output with YAML frontmatter
-[New] rdf sync — reverse flow strips frontmatter, detects drift, supports --dry-run
-[New] rdf state — deterministic project state JSON in <1s (no LLM)
-[New] rdf github — setup, sync-labels, ecosystem-init, ecosystem-add
-[New] adapters/claude-code/agent-meta.json — CC frontmatter for all 12 agents
-[New] adapters/claude-code/hooks/hooks.json — hook event definitions
-[New] .claude-plugin/plugin.json — CC plugin manifest
+### Phase 2: CC Adapter + State Helper + CLI + GitHub
+[New] bin/rdf CLI dispatcher: Sigforge sf pattern with lazy-sourced subcommands
+[New] lib/rdf_common.sh: shared init, version, path helpers, require guards
+[New] rdf generate claude-code: canonical + metadata -> CC output with YAML frontmatter
+[New] rdf sync: reverse flow strips frontmatter, detects drift, supports --dry-run
+[New] rdf state: deterministic project state JSON in <1s (no LLM)
+[New] rdf github: setup, sync-labels, ecosystem-init, ecosystem-add
+[New] adapters/claude-code/agent-meta.json: CC frontmatter for all 12 agents
+[New] adapters/claude-code/hooks/hooks.json: hook event definitions
+[New] .claude-plugin/plugin.json: CC plugin manifest
 [Change] /root/.claude/{commands,agents,scripts} now symlinked to adapter output
 [Fix] Version detection handles rfxn patterns (V=, VER=, VERSION=, *_version=)
 [Fix] grep -c fallback avoids doubled output (anti-pattern #29)
 [Remove] overwatch-hook.sh reference from settings.json SubagentStop hooks
 
-### Phase 1 — Canonical Migration + Naming Overhaul
-[New] Canonical-first architecture — tool-agnostic storage
+### Phase 1: Canonical Migration + Naming Overhaul
+[New] Canonical-first architecture: tool-agnostic storage
 [New] {domain}-{role} naming convention for all agents/commands
 [New] Self-verification gates in QA and Sentinel agents
 [New] Scope confirmation protocol in EM/mgr command
 [New] sec-eng agent and command
 [New] mgr agent definition (for Agent Teams delegate mode)
 [Change] workforce/ renamed to rdf/
-[Change] RDF is authoritative — /root/.claude/ is deployment target, not source
+[Change] RDF is authoritative: /root/.claude/ is deployment target, not source
 [Change] All agent/command cross-references updated for new naming
 [Remove] overwatch-hook.sh (Overwatch project dead)
 [Remove] sync.sh and install.sh (replaced by rdf generate + rdf sync)
