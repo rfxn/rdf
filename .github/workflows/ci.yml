@@ -111,8 +111,14 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Validate plugin + marketplace (strict)
-        run: claude plugin validate . --strict
+      - name: Validate plugin + marketplace (strict; root CLAUDE.md warning expected)
+        # Repo root is the plugin root, so RDF's tracked CLAUDE.md always draws that one warning.
+        run: |
+          claude plugin validate . --json > validate.json || true  # verdict comes from the JSON below
+          jq . validate.json
+          jq -e '.success == true and ([.. | objects | select(has("warnings")) | .warnings[]
+            | select((.path == "root" and ((.message // "") | startswith("CLAUDE.md at the plugin root"))) | not)]
+            | length == 0)' validate.json
 
       - name: Validate plugin skills tree (strict)
         run: claude plugin validate adapters/claude-plugin/output/skills --strict

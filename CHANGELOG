@@ -1,5 +1,14 @@
 # RDF Changelog
 
+## Unreleased
+
+-- Bug Fixes --
+
+[Fix] CI Plugin job failed on every push: newer Claude Code validators warn that CLAUDE.md
+      at the plugin root is not loaded as project context (RDF's repo root is the plugin
+      root), and --strict made that fatal; the step now reads the --json report and fails
+      on any error or any other warning
+
 ## 3.9.0
 
 -- New Features --

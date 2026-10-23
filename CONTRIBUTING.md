@@ -61,7 +61,7 @@ case that exercises the non-GNU / older-bash path (see `tests/portability.bats`)
 4. Open a PR against `rfxn/rdf:main`. CI (`.github/workflows/ci.yml`) runs:
    - Lint (ubuntu): `bash -n`, `shellcheck -S error --exclude=SC1090,SC1091` over the sources and `tests/*.bats`
    - Doctor (ubuntu): `rdf generate claude-code`, `rdf doctor --scope content-drift`
-   - Plugin (ubuntu): `rdf generate claude-plugin`, `claude plugin validate . --strict`
+   - Plugin (ubuntu): `rdf generate claude-plugin`, `claude plugin validate . --json` (strict except the expected root CLAUDE.md warning), `claude plugin validate adapters/claude-plugin/output/skills --strict`
    - Tests (ubuntu + macOS, incl. a bash 3.2 smoke on macOS): `make -C tests test`
 
 Questions or larger proposals: open an issue first so we can align on approach.
