@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/account.bats — rdf account: registry, shared-state links, list, remove, dir
+# tests/account.bats — rdf account: registry, shared-state links, list, remove, default, primary, dir
 # (C) 2026 R-fx Networks <proj@rfxn.com>
 # GNU GPL v2
 #
@@ -14,7 +14,7 @@ _rdf() { bash "${RDF_SRC}/bin/rdf" "$@"; }
 setup() {
     HOME="$(mktemp -d)"
     export HOME
-    unset RDF_CLAUDE_ACCOUNT
+    unset RDF_CLAUDE_ACCOUNT CLAUDE_CONFIG_DIR
     mkdir -p "${HOME}/.claude/projects" "${HOME}/.claude/skills"
     printf '{}\n' > "${HOME}/.claude/settings.json"
     : > "${HOME}/.claude/history.jsonl"
@@ -185,6 +185,220 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     run _rdf account remove work
     [[ "$output" == *"default cleared"* ]]
     [ ! -e "$D" ]
+}
+
+# _rdfs — rdf with the uname/ps/mv/awk stubs from _swap_fixture first on PATH
+_rdfs() { PATH="${HOME}/bin:${PATH}" bash "${RDF_SRC}/bin/rdf" "$@"; }
+
+# _swap_fixture — work (primary) and personal logged in, with plugins; spare not logged in
+_swap_fixture() {
+    REAL_MV="$(command -v mv)"
+    REAL_AWK="$(command -v awk)"
+    export REAL_MV REAL_AWK
+    mkdir -p "${HOME}/bin" "${HOME}/.claude/plugins"
+    printf '#!/bin/sh\necho "${UNAME_S:-Linux}"\n' > "${HOME}/bin/uname"
+    printf '#!/bin/sh\n[ ! -f "$HOME/ps.out" ] || cat "$HOME/ps.out"\n' > "${HOME}/bin/ps"
+    cat > "${HOME}/bin/mv" <<'STUB'
+#!/bin/sh
+if [ -n "${MV_FAIL:-}" ]; then
+    case "$1" in *"$MV_FAIL") [ -z "${MV_RECREATE:-}" ] || : > "$MV_RECREATE"; exit 1 ;; esac
+fi
+exec "$REAL_MV" "$@"
+STUB
+    cat > "${HOME}/bin/awk" <<'STUB'
+#!/bin/sh
+if [ -n "${AWK_FAIL:-}" ]; then
+    case "$*" in *"$AWK_FAIL"*) exit 1 ;; esac
+fi
+exec "$REAL_AWK" "$@"
+STUB
+    chmod +x "${HOME}/bin/uname" "${HOME}/bin/ps" "${HOME}/bin/mv" "${HOME}/bin/awk"
+    printf '{"oauthAccount":{"emailAddress":"w@example.com","organizationName":"Work Org"}}\n' > "${HOME}/.claude.json"
+    printf 'work\n' > "${HOME}/.claude/.credentials.json"
+    printf 'work\n' > "${HOME}/.claude/policy-limits.json"
+    printf '{"a":[{"installPath":"%s/.claude/plugins/cache/a"}]}\n' "$HOME" > "${HOME}/.claude/plugins/installed_plugins.json"
+    printf '{ }\n' > "${HOME}/.claude/plugins/blocklist.json"
+    _rdf account add work --primary
+    _rdf account add personal
+    _rdf account add spare
+    P="${HOME}/.claude-personal"
+    W="${HOME}/.claude-work"
+    mkdir -p "${P}/plugins" "${P}/sessions" "${P}/plans"
+    printf '{"oauthAccount":{"emailAddress":"p@example.com"}}\n' > "${P}/.claude.json"
+    printf 'personal\n' > "${P}/.credentials.json"
+    printf 'mine\n' > "${P}/plans/p.md"
+    printf '{"m":{"installLocation":"%s/plugins/marketplaces/m","other":"/x%s/plugins"}}\n' "$P" "$P" \
+        > "${P}/plugins/known_marketplaces.json"
+    chmod 644 "${P}/plugins/known_marketplaces.json"
+}
+
+# _tree — every path under HOME (stubs excluded) with link targets and file checksums
+_tree() {
+    local p
+    find "$HOME" -path "${HOME}/bin" -prune -o -print | LC_ALL=C sort | while IFS= read -r p; do
+        if [ -L "$p" ]; then
+            echo "$p -> $(readlink "$p")"
+        elif [ -f "$p" ]; then
+            echo "$p $(cksum < "$p")"
+        else
+            echo "$p"
+        fi
+    done
+}
+
+_mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then BSD
+
+@test "primary swaps logins, .claude.json, plugins and org policy; shared state stays in ~/.claude" {
+    _swap_fixture
+    printf '{}\n' > "${HOME}/.claude/.claude.json"
+    run _rdfs account primary personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"primary is now personal; launch work with 'c @work'"* ]]
+    [[ "$output" == *"left in place: ${HOME}/.claude/.claude.json"* ]]
+    [ -f "${HOME}/.claude/.claude.json" ]
+    [ "$(cat "${HOME}/.claude/.credentials.json")" = "personal" ]
+    [ "$(cat "${W}/.credentials.json")" = "work" ]
+    [ "$(cat "${W}/policy-limits.json")" = "work" ]
+    [ ! -e "${HOME}/.claude/policy-limits.json" ]
+    [ "$(jq -r .oauthAccount.emailAddress "${HOME}/.claude.json")" = "p@example.com" ]
+    [ "$(jq -r .oauthAccount.emailAddress "${W}/.claude.json")" = "w@example.com" ]
+    [ "$(jq -r .m.installLocation "${HOME}/.claude/plugins/known_marketplaces.json")" = "${HOME}/.claude/plugins/marketplaces/m" ]
+    [ "$(jq -r .m.other "${HOME}/.claude/plugins/known_marketplaces.json")" = "/x${P}/plugins" ]
+    [ "$(_mode "${HOME}/.claude/plugins/known_marketplaces.json")" = "644" ]
+    [ "$(jq -r '.a[0].installPath' "${W}/plugins/installed_plugins.json")" = "${W}/plugins/cache/a" ]
+    [ "$(cat "${W}/plugins/blocklist.json")" = "{ }" ]
+    [ -d "${HOME}/.claude/sessions" ]
+    [ "$(cat "${HOME}/.claude/plans/p.md")" = "mine" ]
+    [ -d "${HOME}/.claude/projects" ]
+    [ ! -L "${HOME}/.claude/projects" ]
+    [ "$(_mode "$W")" = "700" ]
+    for e in projects skills settings.json history.jsonl plans; do
+        [ "$(readlink "${W}/${e}")" = "${HOME}/.claude/${e}" ]
+    done
+    [ "$(readlink "${HOME}/.claude-spare/projects")" = "${HOME}/.claude/projects" ]
+    [ "$(readlink "${HOME}/.claude-spare/plans")" = "${HOME}/.claude/plans" ]
+    [ ! -e "$P" ]
+    [ -z "$(_rdf account dir personal)" ]
+    [ "$(_rdf account dir work)" = "$W" ]
+    run _rdf account list
+    [[ "$output" == *"personal       ~/.claude                primary      p@example.com"* ]]
+    [[ "$output" == *"work           ~/.claude-work           5/5          w@example.com (Work Org)"* ]]
+}
+
+@test "primary --dry-run lists the moves and changes nothing; every refusal changes nothing" {
+    _swap_fixture
+    before="$(_tree)"
+    run _rdfs account primary personal --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"move ~/.claude/.credentials.json -> ~/.claude-work/.credentials.json"* ]]
+    [[ "$output" == *"move ~/.claude.json -> ~/.claude-work/.claude.json"* ]]
+    [[ "$output" == *"move ~/.claude-personal/.claude.json -> ~/.claude.json"* ]]
+    [[ "$output" == *"move ~/.claude-personal/plans -> ~/.claude/plans"* ]]
+    [[ "$output" == *"then: registry personal -> primary, work -> ~/.claude-work"* ]]
+    [[ "$output" != *"~/.claude/projects"* ]]
+    [[ "$output" == *"dry run: nothing changed"* ]]
+    [ "$(_tree)" = "$before" ]
+
+    run _rdfs account primary nope
+    [ "$status" -eq 2 ]
+    run _rdfs account primary
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"primary requires <name>"* ]]
+    run _rdfs account primary personal -x
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown option: -x"* ]]
+    run _rdfs account primary work
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"work is already the primary account"* ]]
+    run _rdfs account primary spare
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"spare is not logged in"* ]]
+    UNAME_S=Darwin run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"not supported on macOS"* ]]
+
+    mkdir "$W"
+    run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"${W} already exists"* ]]
+    rmdir "$W"
+
+    rm "${P}/skills"
+    mkdir "${P}/skills"
+    run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"${P}/skills is not a link to ${HOME}/.claude/skills"* ]]
+    rmdir "${P}/skills"
+    ln -s "${HOME}/.claude/skills" "${P}/skills"
+
+    mkdir "${HOME}/.claude/ide"
+    ln -s "${HOME}/.claude/ide" "${P}/ide"
+    run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"${P}/ide is a symlink"* ]]
+    rm "${P}/ide"
+    rmdir "${HOME}/.claude/ide"
+
+    mkdir -p "${HOME}/.claude/sessions"
+    printf '{}\n' > "${HOME}/.claude/sessions/$$.json"
+    run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"running: pid $$ (${HOME}/.claude/sessions/$$.json)"* ]]
+    [[ "$output" == *"quit every Claude Code session"* ]]
+    run _rdfs account primary personal --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"running: pid $$"* ]]
+    rm -r "${HOME}/.claude/sessions"
+
+    mkdir -p "${P}/daemon"
+    printf '{"proto":1,"supervisorPid":%s,"workers":{}}\n' "$$" > "${P}/daemon/roster.json"
+    run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"running: pid $$ (${P}/daemon/roster.json)"* ]]
+    rm -r "${P}/daemon"
+
+    printf '4242 claude claude --resume\n4243 2.1.309 /opt/x/claude/versions/2.1.309 --bg-spare\n' > "${HOME}/ps.out"
+    run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"running: pid 4242 (claude process)"* ]]
+    [[ "$output" == *"running: pid 4243 (claude process)"* ]]
+    rm "${HOME}/ps.out"
+    [ "$(_tree)" = "$before" ]
+}
+
+@test "primary undoes every move when a move or the registry write fails" {
+    _swap_fixture
+    before="$(_tree)"
+    MV_FAIL=".claude-personal/.claude.json" run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"could not move ${P}/.claude.json; every move was undone"* ]]
+    [ "$(_tree)" = "$before" ]
+    AWK_FAIL=".rdf/accounts" run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"could not write ${HOME}/.rdf/accounts; every move was undone"* ]]
+    [ "$(_tree)" = "$before" ]
+}
+
+@test "primary undo never moves onto a path recreated mid-swap" {
+    _swap_fixture
+    MV_FAIL=".claude-personal/.claude.json" MV_RECREATE="${HOME}/.claude/policy-limits.json" \
+        run _rdfs account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"could not restore ${HOME}/.claude/policy-limits.json: it was recreated; the original is at ${W}/policy-limits.json"* ]]
+    [[ "$output" == *"some moves could not be undone"* ]]
+    [ "$(cat "${W}/policy-limits.json")" = "work" ]
+    [ ! -s "${HOME}/.claude/policy-limits.json" ]
+    [ "$(cat "${HOME}/.claude/.credentials.json")" = "work" ]
+    [ "$(cat "${P}/.credentials.json")" = "personal" ]
+    [ "$(_rdf account dir personal)" = "$P" ]
+}
+
+@test "primary with no primary registered refuses" {
+    _rdf account add personal
+    printf '{}\n' > "${HOME}/.claude-personal/.credentials.json"
+    run _rdf account primary personal
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no primary account registered"* ]]
 }
 
 @test "add rejects bad names, duplicates, a second primary and a missing ~/.claude" {

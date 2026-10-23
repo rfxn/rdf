@@ -190,6 +190,13 @@ rdf account list                 # logins and link health; * = active
   never replaces a path that already exists in an account dir.
 - `ch @<name>` picks the CLI account; the Chrome extension uses whichever
   claude.ai account the browser is signed in to.
+- `rdf account primary <name>` makes `<name>` the login in `~/.claude`, which is
+  what plain `claude`, IDE extensions and scripts use, and moves the current
+  primary's login, `.claude.json`, plugins and org-managed settings to
+  `~/.claude-<old>`. Shared state stays where it is, and names keep working with
+  `@name`, `cuse` and `rdf account default`. Quit every Claude Code session first
+  (it refuses while one runs), and preview the moves with `--dry-run`. Linux
+  only: macOS keeps each login in the keychain under its config dir path.
 
 ---
 
@@ -315,7 +322,7 @@ Run 'rdf <command> help' for details.
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
 | `rdf migrate [--dry-run] [--all]` | Migrate project layout from `.claude/` + work-output/ to `.rdf/` |
-| `rdf account add\|list\|link\|remove\|default\|dir` | Claude Code accounts that share `~/.claude` projects, memory and config |
+| `rdf account add\|list\|link\|remove\|default\|primary\|dir` | Claude Code accounts that share `~/.claude` projects, memory and config |
 | `rdf shell init [--sandbox]` | Print bash/zsh launchers (`claude`, `c`, `cs`, `ch`, `cuse`) with `@account` switching |
 
 ### 4.5. Exit Codes

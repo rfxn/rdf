@@ -7,6 +7,11 @@
 [New] rdf account default <name>|-: store the account the rdf shell init launchers use when
       neither @name nor cuse picks one; list shows it, '-' clears it, and removing that
       account clears it
+[New] rdf account primary <name> [--dry-run]: move <name>'s login, .claude.json, plugins and
+      org-managed settings into ~/.claude and the current primary's to ~/.claude-<old>;
+      shared state stays put, plugin paths are rewritten, and any failed move is undone;
+      it refuses while Claude Code or its daemon runs, on symlinked entries, and on macOS
+      (keychain logins)
 
 -- Bug Fixes --
 
