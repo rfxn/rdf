@@ -7,6 +7,8 @@
 # Registered dirs are never re-derived: the macOS keychain entry is keyed to the exact path string.
 _ACCOUNT_HOME="${HOME%/}"
 _ACCOUNT_REGISTRY="${_ACCOUNT_HOME}/.rdf/accounts"
+# rdf_launch (lib/cmd/shell.sh) reads this path directly so a launch costs no rdf call.
+_ACCOUNT_DEFAULT="${_ACCOUNT_REGISTRY}.default"
 _ACCOUNT_PRIMARY_DIR="${_ACCOUNT_HOME}/.claude"
 # The primary row stores a marker, not a path: it always launches with CLAUDE_CONFIG_DIR unset.
 _ACCOUNT_PRIMARY_MARK="@primary"
@@ -30,12 +32,14 @@ Subcommands:
   list                   Show accounts, logins and shared-link health (* = active)
   link [<name>]          Re-link shared state for one or all accounts
   remove <name>          Unregister an account (its config dir and login are kept)
+  default <name>|-       Account launchers use without @name or cuse; '-' clears it
   dir <name>             Print the account's CLAUDE_CONFIG_DIR (empty for primary)
 
 Examples:
   rdf account add work --primary
   rdf account add personal
   cs @personal           # first launch asks you to log in
+  rdf account default personal
 USAGE
 }
 
@@ -210,7 +214,7 @@ _account_link() {
 
 _account_list() {
     rdf_require_bin jq
-    local entries name dir mark shared active_dir
+    local entries name dir mark shared active_dir default
     entries="$(_account_entries)"
     if [[ -z "$entries" ]]; then
         echo "No accounts registered. Start with: rdf account add <name> --primary"
@@ -232,6 +236,8 @@ _account_list() {
         fi
         printf '%s %-14s %-24s %-12s %s\n' "$mark" "$name" "$(_account_display "$dir")" "$shared" "$(_account_login "$dir")"
     done <<< "$entries"
+    default="$(_account_default_name)"
+    [[ -z "$default" ]] || printf 'default: %s (launches without @name or cuse)\n' "$default"
 }
 
 _account_remove() {
@@ -242,6 +248,29 @@ _account_remove() {
     command awk -F'\t' -v n="$name" '$1 != n' "$_ACCOUNT_REGISTRY" > "$tmp"
     command mv "$tmp" "$_ACCOUNT_REGISTRY"
     rdf_log "unregistered ${name}; config dir kept: $(_account_display "$dir")"
+    [[ "$(_account_default_name)" != "$name" ]] || _account_default_clear
+}
+
+_account_default_name() {
+    [[ -f "$_ACCOUNT_DEFAULT" ]] || return 0
+    command head -n 1 "$_ACCOUNT_DEFAULT"
+}
+
+_account_default_clear() {
+    command rm -f "$_ACCOUNT_DEFAULT"
+    rdf_log "default cleared; launches without @name or cuse leave the environment as it is"
+}
+
+_account_default() {
+    local name="${1:-}"
+    [[ -n "$name" ]] || rdf_die "default requires <name>, or - to clear — run 'rdf account help'"
+    if [[ "$name" == "-" ]]; then
+        _account_default_clear
+        return 0
+    fi
+    _account_lookup "$name" >/dev/null || _account_unknown "$name"
+    printf '%s\n' "$name" > "$_ACCOUNT_DEFAULT"
+    rdf_log "default: ${name} (launches without @name or cuse)"
 }
 
 _account_dir() {
@@ -262,6 +291,7 @@ cmd_account() {
         list)   shift; _account_list ;;
         link)   shift; _account_link "$@" ;;
         remove) shift; _account_remove "$@" ;;
+        default) shift; _account_default "$@" ;;
         dir)    shift; _account_dir "$@" ;;
         help|--help|-h) _account_usage ;;
         "")     rdf_die "missing subcommand — run 'rdf account help'" ;;

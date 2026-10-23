@@ -86,7 +86,7 @@ path on a plain Flask project, with real output at every step.
 | `RDF_HOME` | resolved from `bin/rdf` | RDF install root (canonical/, lib/, bin/, state/) |
 | `RDF_CANONICAL` | `$RDF_HOME/canonical` | Canonical content source tree |
 | `RDF_TARGET` | `~/.claude` | Deploy target for claude-code adapter |
-| `RDF_CLAUDE_ACCOUNT` | unset | Account the `rdf shell init` launchers use when no `@name` is given (set by `cuse`) |
+| `RDF_CLAUDE_ACCOUNT` | unset | Account the `rdf shell init` launchers use when no `@name` is given (set by `cuse`; overrides `rdf account default`) |
 | `RDF_WORKSPACE` | parent of `$RDF_HOME` | Workspace root scanned by `rdf doctor --all`. Set this when the checkout lives directly in `$HOME` (e.g. `~/rdf`) — `--all` refuses to scan a home directory |
 
 Most users do not need to override these — `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
@@ -159,7 +159,8 @@ in the current directory (unless registered as an account) pass through as
 prompt text. Picking an account drops inherited credential and provider
 variables (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`,
 `CLAUDE_CODE_USE_BEDROCK` and the others listed in `rdf shell help`) so that
-account's login is used against Anthropic. With no account picked, the environment is left as it is.
+account's login is used against Anthropic. Without `@name` or `cuse`, launches use the
+account set by `rdf account default`; with none of these, the environment is left as it is.
 
 `rdf account` runs several Claude Code accounts against one set of projects, auto
 memory, `--resume` history and config. The account logged in to `~/.claude` is the
@@ -175,6 +176,7 @@ rdf account add work --primary   # name the login ~/.claude already holds
 rdf account add personal         # create ~/.claude-personal
 cs @personal                     # first launch asks you to log in
 cuse personal                    # or make it sticky for this shell
+rdf account default personal     # or for every launch without @name/cuse ('-' clears)
 rdf account list                 # logins and link health; * = active
 ```
 
@@ -313,7 +315,7 @@ Run 'rdf <command> help' for details.
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
 | `rdf migrate [--dry-run] [--all]` | Migrate project layout from `.claude/` + work-output/ to `.rdf/` |
-| `rdf account add\|list\|link\|remove\|dir` | Claude Code accounts that share `~/.claude` projects, memory and config |
+| `rdf account add\|list\|link\|remove\|default\|dir` | Claude Code accounts that share `~/.claude` projects, memory and config |
 | `rdf shell init [--sandbox]` | Print bash/zsh launchers (`claude`, `c`, `cs`, `ch`, `cuse`) with `@account` switching |
 
 ### 4.5. Exit Codes

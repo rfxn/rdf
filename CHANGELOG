@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+-- New Features --
+
+[New] rdf account default <name>|-: store the account the rdf shell init launchers use when
+      neither @name nor cuse picks one; list shows it, '-' clears it, and removing that
+      account clears it
+
 -- Bug Fixes --
 
 [Fix] CI Plugin job failed on every push: newer Claude Code validators warn that CLAUDE.md

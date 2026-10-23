@@ -158,6 +158,35 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ -f "${HOME}/.claude-personal/.credentials.json" ]
 }
 
+@test "default stores a registered account; list shows it; - and removing that account clear it" {
+    _rdf account add work --primary
+    _rdf account add personal
+    D="${HOME}/.rdf/accounts.default"
+    run _rdf account default nope
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"unknown account: nope"* ]]
+    [ ! -e "$D" ]
+    run _rdf account default
+    [ "$status" -ne 0 ]
+    run _rdf account default personal
+    [ "$status" -eq 0 ]
+    [ "$(cat "$D")" = "personal" ]
+    run _rdf account list
+    [ "${lines[3]}" = "default: personal (launches without @name or cuse)" ]
+    run _rdf account default -
+    [ "$status" -eq 0 ]
+    [ ! -e "$D" ]
+    run _rdf account list
+    [[ "$output" != *"default:"* ]]
+
+    _rdf account default work
+    _rdf account remove personal
+    [ "$(cat "$D")" = "work" ]
+    run _rdf account remove work
+    [[ "$output" == *"default cleared"* ]]
+    [ ! -e "$D" ]
+}
+
 @test "add rejects bad names, duplicates, a second primary and a missing ~/.claude" {
     for bad in "../x" "A" "a/b" "agent-ci" "$(printf 'a%.0s' {1..33})"; do
         run _rdf account add "$bad"

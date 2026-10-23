@@ -26,8 +26,9 @@ drops inherited credential and provider settings (CLAUDE_CODE_OAUTH_TOKEN,
 CLAUDE_CODE_OAUTH_REFRESH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN,
 ANTHROPIC_PROFILE, ANTHROPIC_BASE_URL, CLAUDE_CODE_USE_BEDROCK,
 CLAUDE_CODE_USE_VERTEX, CLAUDE_CODE_USE_FOUNDRY) so that account's login is
-used against Anthropic. With no account picked, the launch environment is left
-as it is. Accounts: rdf account help
+used against Anthropic. Without @<name> or cuse, launches use the account set by
+'rdf account default'; with none of these, the launch environment is left as it
+is. Accounts: rdf account help
 
 Options:
   --sandbox     cs also sets IS_SANDBOX=1 for its run, which lets it bypass
@@ -65,6 +66,7 @@ function rdf_launch {
             ;;
     esac
     [ -n "$acct" ] || acct="${RDF_CLAUDE_ACCOUNT:-}"
+    [ -n "$acct" ] || [ ! -f "$HOME/.rdf/accounts.default" ] || read -r acct < "$HOME/.rdf/accounts.default"
     cmd=(env)
     if [ -n "$acct" ]; then
         dir="$(rdf_cli account dir "$acct")" || return

@@ -128,6 +128,20 @@ c "@src/a.ts explain"; c @README.md; c @Makefile; c @agent-rdf-reviewer; c @src;
     [ "${lines[4]}" = "CFG=unset ACCT=unset SANDBOX=unset ARGS=" ]
 }
 
+@test "the stored default applies without @name or cuse; both override it; a stale default fails closed" {
+    bash "${RDF_SRC}/bin/rdf" account default personal
+    run _sh 'c; c @work; cuse work; c; cuse -; cs'
+    [ "${lines[0]}" = "CFG=${P} ACCT=personal SANDBOX=unset ARGS=" ]
+    [ "${lines[1]}" = "CFG=unset ACCT=work SANDBOX=unset ARGS=" ]
+    [ "${lines[2]}" = "CFG=unset ACCT=work SANDBOX=unset ARGS=" ]
+    [ "${lines[3]}" = "CFG=${P} ACCT=personal SANDBOX=unset ARGS=--dangerously-skip-permissions|" ]
+    printf 'gone\n' > "${HOME}/.rdf/accounts.default"
+    run _sh 'c; echo "rc=$?"'
+    [[ "$output" == *"unknown account: gone"* ]]
+    [[ "$output" != *"ARGS="* ]]
+    [[ "$output" == *"rc=2"* ]]
+}
+
 @test "init replaces existing aliases of the launcher names" {
     run bash -c 'shopt -s expand_aliases
 alias cs="echo ALIAS-cs"
