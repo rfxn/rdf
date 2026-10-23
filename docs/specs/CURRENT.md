@@ -15,6 +15,24 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases, since a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.9.1 (2026-10-23)
+
+ADDED: `rdf account default <name>|-` (`lib/cmd/account.sh`): `~/.rdf/accounts.default`
+names the account launchers use when neither `@name` nor `cuse` picks one; `rdf_launch`
+reads the file directly (`RDF_CLAUDE_ACCOUNT` still wins); `list` shows it, `remove` clears it.
+ADDED: `rdf account primary <name> [--dry-run]`: moves the target's per-account entries
+(everything outside `_ACCOUNT_SHARED`, plus `.claude.json`) into `~/.claude` and the old
+primary's into `~/.claude-<old>`, rewrites the registry, rewrites config-dir paths in
+`plugins/*.json` in place, and re-links every account; preflight refuses on live sessions
+(session pid files, `daemon/roster.json`, processes by comm/argv0/`/proc` exe), symlinked
+entries, own copies of shared entries and macOS; renames before the registry write are
+undone on failure, never onto a recreated path.
+MODIFIED: bash 3.2 floor: `command` calls whose failure is handled run in a subshell
+(`_account_try`, `context-audit.sh` find probe, `_rdf_atomic_write`, rdf-bus mkdirs,
+migrate cp fallbacks); rule in CONTRIBUTING.md; macOS CI smokes context-audit.
+MODIFIED: `/r-ship` 1d gate and Stage 3e fold, `docs/platform-triage.md` and this file
+use `## X.Y (date)` headers.
+
 ## 3.9.0 (2026-10-22)
 
 ADDED: `rdf account` (`lib/cmd/account.sh`): registry `~/.rdf/accounts` (`name<TAB>dir`,
