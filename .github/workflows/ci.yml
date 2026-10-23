@@ -175,6 +175,16 @@ jobs:
             exit 1
           fi
 
+      - name: Smoke context-audit under system bash 3.2 (macOS)
+        # BSD find has no -printf: the capability probe must fall back, not exit the script
+        if: runner.os == 'macOS'
+        run: |
+          h="$(mktemp -d)"; mkdir -p "$h/.claude/projects/p"
+          printf '{"a":1}\n' > "$h/.claude/projects/p/s.jsonl"
+          out="$(HOME="$h" /bin/bash state/context-audit.sh "$(mktemp -d)")"
+          printf '%s' "$out" | jq -e '.. | objects | select(has("jsonl_files")) | .jsonl_files == 1 and .jsonl_total_bytes == 8' >/dev/null
+          echo "bash 3.2 context-audit smoke (BSD find fallback): OK"
+
       - name: Smoke state-bootstrap under system bash 3.2 (macOS)
         if: runner.os == 'macOS'
         run: |

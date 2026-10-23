@@ -214,7 +214,7 @@ rdf_active_tier() {
         marker="${marker%%[[:space:]]*}"                  # first token (marker line may carry prose)
         case "$marker" in
             full|quick-plan|bugfix)
-                command mkdir -p "${root}/.rdf" 2>/dev/null || true   # reconcile write is best-effort
+                ( command mkdir -p "${root}/.rdf" ) 2>/dev/null || true   # reconcile write is best-effort; ( ) for bash 3.2 set -e
                 printf '%s\n' "$marker" > "$pointer" 2>/dev/null || true   # pointer follows the authoritative marker
                 printf '%s\n' "$marker"; return 0 ;;
         esac
@@ -260,7 +260,8 @@ _rdf_realdir() {
 _rdf_atomic_write() {
     local dest="$1" mode="$2" tmp
     tmp="$(command mktemp "${dest%/*}/.tmp.XXXXXX")" || return 1
-    if command cat > "$tmp" && command chmod "$mode" "$tmp" && command mv -f -- "$tmp" "$dest"; then
+    # Subshell: bash 3.2 set -e exits on a failing 'command' even in an if (CONTRIBUTING.md).
+    if ( command cat > "$tmp" && command chmod "$mode" "$tmp" && command mv -f -- "$tmp" "$dest" ); then
         return 0
     fi
     command rm -f -- "$tmp"
@@ -326,7 +327,7 @@ rdf_phase_hook_install() {
         return 1
     fi
     hdir="${common}/rdf-hooks"
-    command mkdir -p "$hdir" || return 1
+    ( command mkdir -p "$hdir" ) || return 1  # ( ) for bash 3.2 set -e (CONTRIBUTING.md)
     _rdf_atomic_write "${hdir}/pre-commit" 755 < "$src" || return 1
     printf '%s\n' "$main" | _rdf_atomic_write "${hdir}/.rdf-main-root" 644 || return 1
     _rdf_passthrough_script | _rdf_atomic_write "${hdir}/.rdf-passthrough" 755 || return 1

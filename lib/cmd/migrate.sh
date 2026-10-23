@@ -58,7 +58,7 @@ _migrate_governance() {
     fi
 
     command mkdir -p "$dst"
-    command cp -a "${src}/." "$dst/" 2>/dev/null || {
+    ( command cp -a "${src}/." "$dst/" ) 2>/dev/null || {  # logged below; ( ) for bash 3.2 set -e (CONTRIBUTING.md)
         echo "FAIL: cp governance" >> "$log_file"
         rdf_die "failed to copy governance files"
     }
@@ -101,7 +101,7 @@ _migrate_workoutput() {
 
     command mkdir -p "$dst"
     if [[ "$file_count" -gt 0 ]]; then
-        command cp -a "${src}/." "$dst/" 2>/dev/null || {
+        ( command cp -a "${src}/." "$dst/" ) 2>/dev/null || {  # logged below; ( ) for bash 3.2 set -e (CONTRIBUTING.md)
             echo "FAIL: cp work-output" >> "$log_file"
             rdf_die "failed to copy work-output files"
         }

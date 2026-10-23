@@ -15,6 +15,10 @@
 
 -- Bug Fixes --
 
+[Fix] bash 3.2 (macOS system bash) under set -e exits on a failing 'command <x>' even inside if
+      or ||, so the context-audit script died silently at its GNU find -printf probe on BSD
+      find; that probe, _rdf_atomic_write's cleanup path, two rdf-bus mkdirs and rdf migrate's
+      cp fallbacks now run in a subshell, and macOS CI smokes context-audit under /bin/bash
 [Fix] CI Plugin job failed on every push: newer Claude Code validators warn that CLAUDE.md
       at the plugin root is not loaded as project context (RDF's repo root is the plugin
       root), and --strict made that fatal; the step now reads the --json report and fails

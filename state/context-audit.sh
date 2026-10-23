@@ -89,7 +89,7 @@ while IFS= read -r _cf; do
     _subproject_claude_total_bytes=$((_subproject_claude_total_bytes + _cb))
     _subproject_claude_total_lines=$((_subproject_claude_total_lines + _cl))
     _subproject_claude_count=$((_subproject_claude_count + 1))
-    _rel="${_cf#$_workspace/}"
+    _rel="${_cf#"$_workspace"/}"
     _subproject_claude_list="${_subproject_claude_list}{\"path\":\"$(_json_str "$_rel")\",\"bytes\":${_cb},\"lines\":${_cl}},"
 done < <(command find "$_workspace" -maxdepth 3 -name "CLAUDE.md" ! -type d 2>/dev/null | sort)
 _subproject_claude_list="${_subproject_claude_list%,}"
@@ -324,11 +324,9 @@ _jsonl_count=0
 if [[ -d "${_claude_home}/projects" ]]; then
     _jsonl_count="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d 2>/dev/null | wc -l)"
     _jsonl_count="${_jsonl_count##* }"
-    # GNU find -printf sums bytes without per-file stat; BSD/macOS find has no
-    # -printf. Probe capability against /dev/null (target-independent), then fall
-    # back to the portable _fsize helper per file. Both branches use the same
-    # ! -type d predicate as the count above.
-    if command find /dev/null -maxdepth 0 -printf '' >/dev/null 2>&1; then
+    # GNU find -printf sums bytes without a stat per file; BSD find has none, so probe first.
+    # Subshell: bash 3.2 set -e exits on a failing 'command' even in an if (CONTRIBUTING.md).
+    if ( command find /dev/null -maxdepth 0 -printf '' ) >/dev/null 2>&1; then
         _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d -printf '%s\n' 2>/dev/null | awk '{s+=$1} END {print s+0}')"
     else
         _jsonl_total_bytes="$(command find "${_claude_home}/projects" -name "*.jsonl" ! -type d 2>/dev/null | while IFS= read -r _f; do _fsize "$_f"; done | awk '{s+=$1} END {print s+0}')"

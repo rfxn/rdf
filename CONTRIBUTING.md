@@ -36,6 +36,9 @@ first-class concern (see PR #1 for a model portability fix):
 - Use `command <coreutil>` (e.g. `command cp`, `command rm`) for PATH-portable
   resolution across pre- and post-usr-merge distros — never bare or hardcoded
   `/usr/bin/` paths
+- Under `set -e`, bash 3.2 exits on a failing `command <x>` even inside `if`,
+  `||` or `&&`; when you handle that failure, run it in a subshell:
+  `( command mv "$a" "$b" ) || …`. `$(command …)` and pipelines are already safe
 - Double-quote all variables in command context; `command -v` for discovery
 - Any `2>/dev/null` or `|| true` needs an inline comment on the same line
   explaining why the error is safe to ignore
