@@ -558,8 +558,8 @@ _env_system() {
         ram_kb="$(( $(sysctl -n hw.memsize 2>/dev/null || printf 0) / 1024 ))"  # no hw.memsize → unknown
     fi
     tmp="${CLAUDE_CODE_TMPDIR:-${TMPDIR:-/tmp}}"
-    disk_home="$(df -Pk "$HOME" 2>/dev/null | awk 'NR == 2 {print $4}')"  # df failure → unknown
-    disk_tmp="$(df -Pk "$tmp" 2>/dev/null | awk 'NR == 2 {print $4}')"  # missing tmp dir → unknown
+    disk_home="$(df -Pk "$HOME" 2>/dev/null | awk 'NR == 2 {print $4}')" || disk_home=""  # df failure → unknown
+    disk_tmp="$(df -Pk "$tmp" 2>/dev/null | awk 'NR == 2 {print $4}')" || disk_tmp=""  # missing tmp dir → unknown
     if [ -n "$ram_kb" ] && [ "$ram_kb" -gt 0 ] && [ "$ram_kb" -lt "$_ENV_RAM_MIN_KB" ]; then
         _env_find system-ram system warn "$(( ram_kb / 1024 )) MB RAM" "Claude Code's requirements call for 4 GB or more"
     fi
@@ -584,7 +584,7 @@ _env_sandbox() {
     fi
     while IFS= read -r f; do
         [ -f "$f" ] || continue
-        case "$(jq -r '.sandbox.enabled // empty | tostring' "$f" 2>/dev/null || true)" in  # unparsable settings → no opinion
+        case "$(jq -r '.sandbox.enabled | if . == null then empty else tostring end' "$f" 2>/dev/null || true)" in  # unparsable settings → no opinion
             true) enabled="true" ;;
             false) enabled="false" ;;
         esac

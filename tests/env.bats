@@ -203,6 +203,25 @@ _shell_project() {
     [ "$(jq -r '.findings[] | select(.id == "bash-output-length") | .severity' <<< "$output")" = "info" ]
 }
 
+@test "full: a missing CLAUDE_CODE_TMPDIR reports free space as unknown instead of aborting" {
+    local p; p="$(_shell_project)"
+    run _env CLAUDECODE=1 CLAUDE_CODE_TMPDIR="${T}/missing" -- --json --offline "$p"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.facts.system.tmp_dir, .facts.system.free_kb_tmp]' <<< "$output")" = "[\"${T}/missing\",null]" ]
+}
+
+@test "full: a project sandbox.enabled false overrides a user-level true" {
+    [ "$(uname -s)" = "Linux" ] || skip "sandbox settings are read on Linux only"
+    local p; p="$(_shell_project)"
+    mkdir -p "${p}/.claude"
+    printf '{"sandbox":{"enabled":true}}\n' > "${CFG}/settings.json"
+    printf '{"sandbox":{"enabled":false}}\n' > "${p}/.claude/settings.json"
+    run _env CLAUDECODE=1 -- --json --offline "$p"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '.facts.sandbox.enabled' <<< "$output")" = "false" ]
+    [ "$(jq -r '.findings[] | select(.id == "sandbox-deps") | .severity' <<< "$output")" = "info" ]
+}
+
 @test "bad arguments exit 2; a missing project exits 1" {
     run _env -- --tool vim .
     [ "$status" -eq 2 ]
