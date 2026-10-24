@@ -13,18 +13,23 @@ a large file by letting it read only the relevant line range.
   symbol name. Forms:
   - `path/to/file.py` — full map of the file
   - `path/to/file.py <symbol>` — locate a single class/function/method
-  - `path/to/file.py --threshold N` — override the 500-line default
+  - `path/to/file.py --threshold N` — override the 400-line default
     (files below the threshold are returned verbatim; no map)
 
 ## When to Use
 
-Call this before `Read` on any source file over 500 lines. The map is
-typically 20–40 lines. The agent then reads the specific line range it
-needs with `Read offset=... limit=...` — often 70–85% fewer tokens than
-a full-file read.
+Call this from the main conversation before `Read` on any source file of
+400 lines or more. The map is typically 20–40 lines. The agent then reads
+the specific line range it needs with `Read offset=... limit=...` — often
+70–85% fewer tokens than a full-file read. This is step 2 of the ladder in
+`reference/read-discipline.md`.
+
+When the LSP tool is active for the file's language, its `documentSymbol`
+operation returns the same map with exact ranges; prefer it. Subagents
+cannot invoke skills, so they map files inline as the reference describes.
 
 Do NOT call for:
-- Small files (< 500 lines) — just `Read` directly
+- Small files (under 400 lines) — just `Read` directly
 - Non-source files (markdown, JSON, YAML, SQL, data) — no symbol
   structure to extract
 - Files you need end-to-end (refactor passes, full reviews, whole-file
@@ -39,7 +44,7 @@ Read `.rdf/governance/index.md` if present, to identify:
 
 The threshold is configurable per project via
 `governance/conventions.md` (key: `code-map-threshold`). Absent that,
-default is 500 lines.
+default is 400 lines.
 
 ## Step 1: Threshold Check
 
@@ -239,10 +244,9 @@ Other skills and commands invoke `/rdf:r-util-code-map` as a primitive:
   contain matches
 - `/rdf:r-util-test-scope` — rank candidate test files by symbol graph
 - `/rdf:r-util-doc-gen` — target specific functions by line range
-- `/rdf:r-audit` (via reviewer subagents) — pre-read maps for large
-  source files before full-content scans
 
-Agents working in long-running sessions should call this before any
-`Read` on a file over the threshold — the map token cost is recovered
-on the first focused read and compounds on subsequent reads of the
-same file.
+Main-conversation sessions should call this before any `Read` on a file
+at or over the threshold — the map token cost is recovered on the first
+focused read and compounds on subsequent reads of the same file.
+Subagents (including `/rdf:r-audit`'s reviewers) map inline per
+`reference/read-discipline.md`.

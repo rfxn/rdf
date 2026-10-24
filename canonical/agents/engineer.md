@@ -183,3 +183,7 @@ Governance constraints applied are listed in GOVERNANCE_APPLIED.
   (Code Comments section, merged from core profile) and the expanded
   taxonomy is in `.rdf/governance/reference/comment-discipline.md`.
   This is an AI-context-cost concern, not style
+- Read code by the ladder in `reference/read-discipline.md`: locate first
+  (`grep -n`, glob, or the LSP tool when active), read files under 400
+  lines whole, map or window larger ones (200-250 lines around the target),
+  and read a whole large file only when editing or reviewing across all of it

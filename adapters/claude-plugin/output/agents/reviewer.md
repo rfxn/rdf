@@ -7,6 +7,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - LSP
 disallowedTools:
   - Write
   - Edit
@@ -322,3 +323,7 @@ protocol. CLEAN findings and INFORMATIONAL-level findings are exempt.
 - Every finding needs a "Why" and a suggested fix or alternative
 - If the operational mode is security-assessment, weight security
   findings more heavily and apply OWASP methodology
+- Read code by the ladder in `reference/read-discipline.md`: locate first
+  (`grep -n`, glob, or the LSP tool when active), read files under 400
+  lines whole, map or window larger ones (200-250 lines around the target),
+  and read a whole large file only when editing or reviewing across all of it

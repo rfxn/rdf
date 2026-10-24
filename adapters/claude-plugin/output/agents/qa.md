@@ -7,6 +7,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - LSP
 disallowedTools:
   - Write
   - Edit
@@ -110,3 +111,7 @@ Produce a structured report:
 - Run every check in verification.md, even if you think it's unnecessary
 - Report failures with actionable fix suggestions
 - If verification.md is missing or empty, report that as a finding
+- Read code by the ladder in `reference/read-discipline.md`: locate first
+  (`grep -n`, glob, or the LSP tool when active), read files under 400
+  lines whole, map or window larger ones (200-250 lines around the target),
+  and read a whole large file only when editing or reviewing across all of it

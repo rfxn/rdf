@@ -2,7 +2,7 @@
   "planner": {
     "name": "rdf-planner",
     "description": "Research-driven collaborative planner. Brainstorms ideas, researches best practices, challenges assumptions, writes specs and implementation plans. Use for any planning, scoping, or design work.",
-    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "LSP"],
     "model": "fable",
     "effort": "high"
   },
@@ -16,7 +16,7 @@
   "engineer": {
     "name": "rdf-engineer",
     "description": "Universal implementation engineer. Follows TDD, reads governance for domain-specific conventions. Dispatched by the dispatcher for plan phase execution.",
-    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    "tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "LSP"],
     "model": "opus",
     "effort": "xhigh",
     "variants": {
@@ -29,7 +29,7 @@
   "qa": {
     "name": "rdf-qa",
     "description": "Verification gate. Reads governance for project-specific checks (lint, tests, anti-patterns). Read-only — cannot modify source files. Dispatched by dispatcher or invoked via /r-verify.",
-    "tools": ["Bash", "Read", "Glob", "Grep"],
+    "tools": ["Bash", "Read", "Glob", "Grep", "LSP"],
     "disallowedTools": ["Write", "Edit"],
     "model": "opus",
     "effort": "medium"
@@ -45,7 +45,7 @@
   "reviewer": {
     "name": "rdf-reviewer",
     "description": "Adversarial reviewer with two modes: challenge (pre-impl spec/plan review) and sentinel (post-impl 2-3 pass code review). Read-only — cannot modify source files. Dispatched by planner, dispatcher, or invoked via /r-review.",
-    "tools": ["Bash", "Read", "Glob", "Grep"],
+    "tools": ["Bash", "Read", "Glob", "Grep", "LSP"],
     "disallowedTools": ["Write", "Edit"],
     "model": "opus",
     "effort": "xhigh",

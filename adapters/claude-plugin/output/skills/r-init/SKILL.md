@@ -795,8 +795,8 @@ not committed source. Do not prompt the user; this is the default.
 ### Performance
 
 **Phase 1 (ingest):**
-- Read convention files in full only if under 500 lines. For files
-  >500 lines, scan section headers (`## `) and extract the coverage
+- Read convention files in full only if under 400 lines. For files of
+  400 lines or more, scan section headers (`## `) and extract the coverage
   map from headings without reading every line.
 - Maximum 10 convention files. If more exist (e.g., many
   `.cursor/rules/*.md`), read the 10 most recently modified.

@@ -26,7 +26,7 @@
 - Delegate open-ended exploration over three queries to subagents. Protect the main context window
 - Subagent payloads are self-contained. Subagents cannot prompt users or read the parent's task list. Prime serial successors with prior commit SHAs and judgment calls so they inherit calibration
 - Brief subagents like a colleague who just walked in: goal, constraints, prior attempts, expected output shape. Terse prompts yield shallow work
-- Batch independent tool calls in parallel. Use targeted reads. Do not re-read unchanged files. Prefer grep and glob over full-directory reads
+- Batch independent tool calls in parallel. Locate before reading (grep, glob, or the LSP tool when active). Read files under 400 lines whole and larger ones as a map or a 200-250 line window, whole only when editing or reviewing across all of it (`reference/read-discipline.md`). Do not re-read unchanged files. Prefer grep and glob over full-directory reads
 - CLAUDE.md is constitutional: HOW to work, not WHAT exists. Exclude any value derivable from code in under three seconds. Nothing lints CLAUDE.md against source, so grep every named identifier, command, and count before trusting it
 
 ## Comment Discipline

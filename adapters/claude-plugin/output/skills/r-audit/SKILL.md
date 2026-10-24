@@ -111,9 +111,10 @@ Dispatch reviewer subagent in sentinel mode:
   .rdf/work-output/audit-baseline-patterns.md (Stage 1c output —
   UNTRACKED hits must be promoted to findings; TRACKED hits may
   be deepened with new context)
-- Large-file discipline: for any source file over 500 lines in the
-  audit scope, invoke `/rdf:r-util-code-map` before reading — scope full
-  reads to specific symbol ranges
+- Large-file discipline: for any source file of 400 lines or more in
+  the audit scope, map it before reading (LSP `documentSymbol` when
+  active, else a definitions grep; see `reference/read-discipline.md`)
+  and read only the symbol ranges a finding needs
 - Write results to: .rdf/work-output/reviewer-regression.md
 
 ### 2b. Reviewer — Security Focus

@@ -158,7 +158,14 @@ derive from the code.
 ## Context Window Hygiene
 
 - Batch independent tool calls into single messages
-- Use targeted file reads (offset + limit) for large files
+- Locate before opening: grep -n, glob, or the LSP tool when a code
+  intelligence plugin is active. Narrow searches with -l or -c and cap
+  output (| head -50) instead of paging through every match
+- Read files under 400 lines whole; map or window larger ones (200-250
+  lines around the target). Read a whole large file only when editing
+  or reviewing across all of it
+- With the LSP tool active, fix type errors from its post-edit
+  diagnostics instead of re-reading the file or building to find them
 - Do not re-read files that haven't changed since your last read
 - Prefer grep/glob for discovery over reading entire directories
 - Push repetitive data gathering into shell scripts that return

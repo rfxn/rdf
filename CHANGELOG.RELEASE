@@ -8,14 +8,23 @@
       1 h when the turn's 1h writes exceed its 5m writes) that rewrite at least half of a 50K+
       token context, costed as the write price minus a cache read; --json adds a rebuilds object,
       --summary rebuild_events and rebuild_cost_usd, and the text report a cache rebuilds line
+[New] read discipline: reference/read-discipline.md ladder (locate first; read whole under 400
+      lines; map or a 200-250 line window above; a whole large file only when editing or
+      reviewing across it) with LSP code intelligence use and limits; planner, engineer, qa and
+      reviewer carry the rule and list LSP in their tools
 
 -- Changes --
 
 [Change] mutation checks run only the tests that target the mutated code, then the full suite
          once: engineer red step, reviewer regression pass, core governance template, CLAUDE.md,
          and a "Mutation checks" section with the filter command in each language testing reference
+[Change] read thresholds 500 -> 400 lines: /r-util-code-map default, /r-audit large-file
+         discipline, /r-init convention ingest; core governance Context Window Hygiene and
+         CLAUDE.md.ref Context Preservation carry the ladder
 
 -- Bug Fixes --
 
 [Fix] docs site: the 3.9.1 em dash sweep left an unquoted colon in docs/_config.yml, so Pages
       builds failed from 3.9.1 on; the description is quoted again
+[Fix] /r-audit told reviewer subagents to invoke /r-util-code-map, a skill subagents cannot
+      call; they now map large files inline (LSP documentSymbol or a definitions grep)
