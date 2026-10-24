@@ -31,7 +31,9 @@ Options:
   --json             full JSON report
   --summary          compact JSON object for session logs
   --codex            report Codex CLI sessions (rollouts whose cwd is the
-                     project or below it) instead of Claude Code transcripts
+                     project or below it) instead of Claude Code transcripts,
+                     split by kind (review = read-only sandbox, write) and
+                     effort, plus the account's plan quota peak per window
   --pricing          print the embedded price table, its date and sources
   help               this text
 
@@ -440,8 +442,15 @@ _tok_codex_rows() {
             | reduce ($l[] | select(.type == "turn_context" or .type == "token_usage_record"
                                     or (.type == "event_msg" and (.payload | type) == "object"
                                         and (.payload.type == "thread_settings_applied" or .payload.type == "token_count")))) as $e
-                ({model: "unknown", tier: "standard", prev: null, rows: []};
+                ({model: "unknown", tier: "standard", effort: "unset",
+                  kind: (($m.source // "") | if type == "object" and .subagent == "review" then "review" else "other" end),
+                  prev: null, rows: []};
                  if $e.type == "turn_context" then .model = ($e.payload.model // .model | tostring)
+                     | .effort = ($e.payload.effort // ($e.payload.collaboration_mode.settings.reasoning_effort)? // .effort
+                                  | tostring)
+                     | .kind = ((($e.payload.sandbox_policy.type)? // null
+                                 | if . == "read-only" then "review"
+                                   elif . == "workspace-write" or . == "danger-full-access" then "write" else null end) // .kind)
                  elif $e.payload.type == "thread_settings_applied" then
                      .model = ($e.payload.thread_settings.model // .model | tostring)
                      | .tier = ($e.payload.thread_settings.service_tier // "standard"
@@ -450,14 +459,15 @@ _tok_codex_rows() {
                      if ($e.payload.usage | type) == "object" then
                          .rows += [($e.payload.usage | usage)
                                    + {rid: ($e.payload.response_id // null), ts: ($e.timestamp // "" | tostring),
-                                      model: .model, tier: .tier}]
+                                      model: .model, tier: .tier, effort: .effort, kind: .kind}]
                      else . end
                  elif $per_response or ($e.payload.info.total_token_usage | type) != "object" then .
                  else ($e.payload.info.total_token_usage | usage) as $t
                    | (if .prev == null or ($t.in + $t.out) < (.prev.in + .prev.out) then $t
                       else {in: ($t.in - .prev.in | n), cr: ($t.cr - .prev.cr | n), cw: ($t.cw - .prev.cw | n),
                             out: ($t.out - .prev.out | n), rs: ($t.rs - .prev.rs | n)} end) as $d
-                   | .rows += [$d + {rid: null, ts: ($e.timestamp // "" | tostring), model: .model, tier: .tier}]
+                   | .rows += [$d + {rid: null, ts: ($e.timestamp // "" | tostring), model: .model, tier: .tier,
+                                     effort: .effort, kind: .kind}]
                    | .prev = $t
                  end)
             | .rows[]
@@ -468,11 +478,43 @@ _tok_codex_rows() {
     done < "${_TOK_WORK}/files"
 }
 
-# _tok_codex_report mode label sid root — price Codex rows; render text|json|summary
+# _tok_codex_quota root — plan quota from every rollout in the window (rate limits are per account); JSON or null
+_tok_codex_quota() {
+    local root="$1"
+    find -H "$root" -name 'rollout-*.jsonl' -type f -newer "${_TOK_WORK}/ref" \
+        -exec grep -hF '"rate_limits"' {} + > "${_TOK_WORK}/quota" || true  # grep exits 1 when no rollout in the window recorded a quota → no samples
+    jq -R -c --arg since "$_TOK_SINCE" '
+            fromjson? | select(type == "object" and .type == "event_msg" and (.payload | type) == "object"
+                               and .payload.type == "token_count" and (.payload.rate_limits | type) == "object")
+            | (.timestamp // "" | tostring) as $ts | select($ts[0:19] >= ($since[0:19]))
+            | .payload.rate_limits as $r
+            | ($r.primary, $r.secondary) | select(type == "object" and (.window_minutes | type) == "number")
+            | {ts: $ts, win: .window_minutes, pct: (.used_percent // 0), resets: (.resets_at // 0),
+               plan: ($r.plan_type // null), reached: ($r.rate_limit_reached_type != null)}' < "${_TOK_WORK}/quota" \
+        | jq -s -c '
+            # resets_at jitters by seconds within one window; a re-login opens a second, overlapping window
+            def windows: sort_by(.resets)
+                | reduce .[] as $x ([];
+                    if length > 0 and ($x.resets - .[length - 1].last) <= 3600
+                    then (length - 1) as $i | .[$i].last = $x.resets | .[$i].peak = ([.[$i].peak, $x.pct] | max)
+                    else . + [{last: $x.resets, peak: $x.pct}] end)
+                | map({resets_at: (.last | todate), peak_pct: .peak});
+            if length == 0 then null
+            else sort_by(.ts) as $s
+              | {scope: "account",
+                 plan: ([$s[] | .plan | select(. != null)] | last),
+                 limit_reached_events: ([$s[] | select(.reached) | .ts] | unique | length),
+                 limits: ($s | group_by(.win)
+                          | map({window_minutes: .[0].win, peak_pct: ([.[].pct] | max),
+                                 latest_pct: (last | .pct), latest_at: (last | .ts), windows: windows}))}
+            end'
+}
+
+# _tok_codex_report mode label sid root quota — price Codex rows; render text|json|summary
 _tok_codex_report() {
-    local mode="$1" plabel="$2" sid="$3" root="$4"
+    local mode="$1" plabel="$2" sid="$3" root="$4" quota="$5"
     jq -s -r --argjson prices "$(_tok_prices | jq -c .openai)" \
-        --argjson over "$(_tok_prices | jq -c .openai_long_over)" \
+        --argjson over "$(_tok_prices | jq -c .openai_long_over)" --argjson quota "$quota" \
         --arg mode "$mode" --arg plabel "$plabel" --arg sid "$sid" \
         --arg since "$_TOK_SINCE" --arg root "$root" "${_TOK_JQ_DEFS}"'
         # tier first (Fast has its own long-context rates), then the over-272K long-context rate, which is
@@ -516,14 +558,27 @@ _tok_codex_report() {
                       | map({model: .[0].model, tier: .[0].tier, turns: length,
                              cost_usd: (if .[0].priced then ([.[].c] | add | r4) else null end)})
                       | sort_by(.cost_usd // -1) | reverse),
+           # kind: review = read-only sandbox, write = workspace-write or full access; unpriced turns add $0
+           by_kind: ($rows | group_by(.kind)
+                     | map({kind: .[0].kind, runs: ([.[].sid] | unique | length), turns: length,
+                            cost_usd: ([.[].c] | add | r4)})
+                     | sort_by(.cost_usd) | reverse),
+           by_effort: ($rows | group_by(.effort)
+                       | map({effort: .[0].effort, turns: length, cost_usd: ([.[].c] | add | r4)})
+                       | sort_by(.cost_usd) | reverse),
+           quota: $quota,
            unpriced_models: ([$rows[] | select(.priced | not) | .model] | unique)}
         | . as $R
-        | if $mode == "json" then $R | tojson
+        | def wlabel: if . % 1440 == 0 then "\(. / 1440)-day" elif . % 60 == 0 then "\(. / 60)-hour"
+                      else "\(.)-minute" end;
+          if $mode == "json" then $R | tojson
           elif $mode == "summary" then
             {source: "codex", session: $R.scope.session, cost_usd: $R.cost_usd, api_turns: $R.api_turns,
              cache_read_share: $R.share.cache_read, subagent_runs: $R.subagent_runs,
              by_model: (reduce ($R.by_model[] | select(.cost_usd != null)) as $b ({}; .[$b.model] += $b.cost_usd)
-                        | map_values(r4))}
+                        | map_values(r4)),
+             quota: (if $quota == null then null
+                     else [$quota.limits[] | {window_minutes, peak_pct, latest_pct}] end)}
             | tojson
           elif $R.api_turns == 0 then "X\tno Codex usage in window"
           else
@@ -539,6 +594,17 @@ _tok_codex_report() {
             "B",
             "MH",
             ($R.by_model[] | "M\t\(.model)\(if .tier == "fast" then " (fast)" else "" end)\t\(.turns)\t\(if .cost_usd == null then "unpriced" else (.cost_usd | usd) end)"),
+            "B",
+            "KH",
+            ($R.by_kind[] | "A\t\(.kind)\t\(.runs)\t\(.turns)\t\(.cost_usd | usd)"),
+            "B",
+            "EH",
+            ($R.by_effort[] | "M\t\(.effort)\t\(.turns)\t\(.cost_usd | usd)"),
+            (if $quota == null then empty
+             else "B",
+                  ($quota.limits[] | "H\tquota, \(.window_minutes | wlabel) window (account-wide): peak \(.peak_pct)% · latest \(.latest_pct)% at \(.latest_at[0:16]) · \(.windows | length) windows"),
+                  "H\t  plan \($quota.plan // "unknown") · limit reached \($quota.limit_reached_events) times"
+             end),
             (if ($R.unpriced_models | length) > 0 then "B", "H\tunpriced models    \($R.unpriced_models | join(", "))" else empty end)
           end
     ' "${_TOK_WORK}/rows"
@@ -591,6 +657,8 @@ _tok_render() {
             MH)  printf '%-28s %6s %10s\n' "by model" "turns" "cost" ;;
             M)   printf '  %-26s %6s %10s\n' "$a" "$b" "$( [ "$c" = "unpriced" ] && printf 'unpriced' || printf '$%s' "$c")" ;;
             AH)  printf '%-28s %6s %6s %10s\n' "by agent" "runs" "turns" "cost" ;;
+            KH)  printf '%-28s %6s %6s %10s\n' "by kind" "runs" "turns" "cost" ;;
+            EH)  printf '%-28s %6s %10s\n' "by effort" "turns" "cost" ;;
             A)   printf '  %-26s %6s %6s %10s\n' "$a" "$b" "$c" "\$${d}" ;;
         esac
     done
@@ -598,7 +666,7 @@ _tok_render() {
 
 main() {
     local project="" tdir="" sid="" sid_set=0 days="30" since="" mode="text" plabel codex=0 pricing=0
-    local logical physical
+    local logical physical croot quota
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -653,12 +721,15 @@ main() {
             plabel="$(command basename "$logical")"
             _tok_window "$days" "$since"
         fi
+        croot="${CODEX_HOME:-${HOME}/.codex}/sessions"
         _tok_codex_files "$sid" "${logical:-}" "${physical:-}"
         _tok_codex_rows "${logical:-}" "${physical:-}" "$sid"
+        quota="null"
+        [ "$sid_set" -eq 1 ] || quota="$(_tok_codex_quota "$croot")"
         if [ "$mode" = "text" ]; then
-            _tok_codex_report text "$plabel" "$sid" "${CODEX_HOME:-${HOME}/.codex}/sessions" | _tok_render
+            _tok_codex_report text "$plabel" "$sid" "$croot" "$quota" | _tok_render
         else
-            _tok_codex_report "$mode" "$plabel" "$sid" "${CODEX_HOME:-${HOME}/.codex}/sessions"
+            _tok_codex_report "$mode" "$plabel" "$sid" "$croot" "$quota"
         fi
         return 0
     fi

@@ -243,7 +243,8 @@ transcript counts once).
 `--session <id> --summary` is what `/r-save` records per session;
 `/r-start` shows it. `--codex` reports Codex CLI rollouts the same way
 (per-response usage, model and Fast/Standard tier, subagent runs apart from
-sessions). Prices are list prices copied from the Anthropic and OpenAI pricing
+sessions), split by kind (review for a read-only sandbox, write) and effort, with
+the account's plan quota peak per reset window. Prices are list prices copied from the Anthropic and OpenAI pricing
 pages; `--pricing` prints them with their date and sources. Nothing is sent
 anywhere.
 

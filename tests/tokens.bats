@@ -610,6 +610,56 @@ _cx_tur() {
     rm -rf "$h" "$p"
 }
 
+# _cx_run ts model effort sandbox — turn_context with effort and sandbox / _cx_rl ts json — rate_limits only
+_cx_run() { printf '{"timestamp":"%s","type":"turn_context","payload":{"model":"%s","effort":"%s","sandbox_policy":{"type":"%s"}}}\n' "$1" "$2" "$3" "$4"; }
+_cx_rl() { printf '{"timestamp":"%s","type":"event_msg","payload":{"type":"token_count","info":null,"rate_limits":%s}}\n' "$1" "$2"; }
+
+@test "codex: kind comes from the sandbox and effort from turn_context; by_kind and by_effort split the cost" {
+    local h p d; h="$(_cx_home)"; p="$(mktemp -d)"; d="${h}/sessions/2026/10/02"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"; _cx_run 2026-10-02T10:00:00Z gpt-6-sol medium read-only
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0; } > "${d}/rollout-1.jsonl"
+    { _cx_meta 2026-10-02T10:00:00Z c2 "$p"; _cx_run 2026-10-02T10:00:00Z gpt-6-sol high workspace-write
+      _cx_tok 2026-10-02T10:00:10Z 500000 0 0 200000 0; } > "${d}/rollout-2.jsonl"
+    { _cx_meta 2026-10-02T10:00:00Z c3 "$p"
+      printf '{"timestamp":"2026-10-02T10:00:00Z","type":"turn_context","payload":{"model":"gpt-6-sol","collaboration_mode":{"settings":{"reasoning_effort":"xhigh"}},"sandbox_policy":{"type":"danger-full-access"}}}\n'
+      _cx_tok 2026-10-02T10:00:10Z 100000 0 0 0 0; } > "${d}/rollout-3.jsonl"
+    { printf '{"timestamp":"2026-10-02T10:00:00Z","type":"session_meta","payload":{"id":"rv1","cwd":"%s","source":{"subagent":"review"}}}\n' "$p"
+      _cx_tok 2026-10-02T10:00:10Z 50000 0 0 1000 0; } > "${d}/rollout-r.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '.by_kind' <<< "$output")" = '[{"kind":"write","runs":2,"turns":2,"cost_usd":3.2},{"kind":"review","runs":2,"turns":2,"cost_usd":2}]' ]
+    [ "$(jq -c '[.by_effort[] | [.effort, .turns, .cost_usd]]' <<< "$output")" = '[["high",1,3],["medium",1,2],["xhigh",1,0.2],["unset",1,0]]' ]
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"by kind"*"write"*"by effort"*"high"* ]]
+    rm -rf "$h" "$p"
+}
+
+@test "codex: quota is account-wide, peaks per reset window and per limit, ignores samples before the window, and is null with --session" {
+    local h p o d; h="$(_cx_home)"; p="$(mktemp -d)"; o="$(mktemp -d)"; d="${h}/sessions/2026/10/02"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"; _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_rl 2026-09-20T10:00:00Z '{"primary":{"used_percent":90,"window_minutes":10080,"resets_at":1790000000},"plan_type":"plus"}'
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0
+      _cx_rl 2026-10-02T10:00:10Z '{"primary":{"used_percent":5,"window_minutes":10080,"resets_at":1791000000},"secondary":{"used_percent":40,"window_minutes":300,"resets_at":1791018000},"plan_type":"plus"}'
+      _cx_rl 2026-10-02T11:00:00Z '{"primary":{"used_percent":12,"window_minutes":10080,"resets_at":1791000001},"plan_type":"plus","rate_limit_reached_type":"primary"}'
+      _cx_rl 2026-10-04T10:00:00Z '{"primary":{"used_percent":3,"window_minutes":10080,"resets_at":1791604800},"plan_type":"pro"}'; } > "${d}/rollout-1.jsonl"
+    { _cx_meta 2026-10-02T12:00:00Z c9 "$o"; _cx_ctx 2026-10-02T12:00:00Z gpt-6-sol
+      _cx_rl 2026-10-02T12:00:00Z '{"primary":{"used_percent":20,"window_minutes":10080,"resets_at":1791000000},"plan_type":"plus"}'; } > "${d}/rollout-9.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .quota.scope, .quota.plan, .quota.limit_reached_events]' <<< "$output")" = '[1,"account","pro",1]' ]
+    [ "$(jq -c '.quota.limits' <<< "$output")" = '[{"window_minutes":300,"peak_pct":40,"latest_pct":40,"latest_at":"2026-10-02T10:00:10Z","windows":[{"resets_at":"2026-10-03T09:00:00Z","peak_pct":40}]},{"window_minutes":10080,"peak_pct":20,"latest_pct":3,"latest_at":"2026-10-04T10:00:00Z","windows":[{"resets_at":"2026-10-03T04:00:01Z","peak_pct":20},{"resets_at":"2026-10-10T04:00:00Z","peak_pct":3}]}]' ]
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --summary
+    [ "$(jq -c '.quota' <<< "$output")" = '[{"window_minutes":300,"peak_pct":40,"latest_pct":40},{"window_minutes":10080,"peak_pct":20,"latest_pct":3}]' ]
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01
+    [[ "$output" == *"quota, 7-day window (account-wide): peak 20% · latest 3%"*"2 windows"* ]]
+    [[ "$output" == *"quota, 5-hour window"*"plan pro · limit reached 1 times"* ]]
+    CODEX_HOME="$h" run _tok --codex --session c1 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '.quota' <<< "$output")" = 'null' ]
+    rm -rf "$h" "$p" "$o"
+}
+
 @test "codex: --transcripts is rejected; a missing Codex home exits 1; an empty window prints no usage" {
     local h p; h="$(_cx_home)"; p="$(mktemp -d)"
     run _tok --codex --transcripts "$p"

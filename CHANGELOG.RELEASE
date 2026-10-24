@@ -9,6 +9,9 @@
       deduplicated by response_id (cumulative token_count deltas for older rollouts), model and
       Fast/Standard tier from turn_context and thread_settings_applied, subagent runs apart from
       sessions
+[New] rdf tokens --codex: by_kind (review for a read-only sandbox, write for workspace-write or full
+      access) and by_effort splits; account-wide plan quota (peak and latest used_percent per reset
+      window and limit, plan, limit-reached events) from every rollout in the window, null with --session
 [New] rdf tokens --pricing [--json]: the embedded price table with its as-of date, age, earliest
       promotional expiry and source pages (Anthropic and OpenAI pricing)
 
