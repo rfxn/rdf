@@ -61,6 +61,7 @@ and project orchestration for any repo. Tool-agnostic by design.
 - State helper: `bash state/rdf-state.sh --full .` — validate JSON structure + accuracy
 - Canonical content: frontmatter-free verification, stale-name grep
 - Post-migration / post-init: `rdf doctor --all` must show zero FAILs before push
+- Mutation checks: run only the targeted tests (`bats -f '<name>' tests/<file>.bats`) per mutant, the full suite once at the end
 
 ## Naming Convention
 - Agents: role-only names (`planner`, `engineer`, `qa`, etc.)
