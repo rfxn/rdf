@@ -8,6 +8,8 @@ set -euo pipefail
 RDF_CLAUDE_PROJECTS="${RDF_CLAUDE_PROJECTS:-${HOME}/.claude/projects}"
 _TOK_WORK=""
 _TOK_SINCE=""
+_TOK_LOOKBACK=""
+_TOK_TTL_1H=3600  # 1h cache TTL; also how far before the window rebuild detection looks for a predecessor
 trap '[ -z "$_TOK_WORK" ] || command rm -rf "$_TOK_WORK"' EXIT
 
 _tok_usage() {
@@ -16,7 +18,7 @@ Usage: rdf tokens [options]
 
 Local token usage report from Claude Code transcripts: deduplicated usage,
 list-price cost, and breakdowns by cost class, model, agent, context depth,
-subagent boot cost, and effort.
+subagent boot cost, cache rebuilds, and effort.
 
 Options:
   --project DIR      project directory (default: current directory)
@@ -70,7 +72,7 @@ _tok_prices() {
     printf '%s' '{"claude-opus-5-5":{"in":4,"out":20,"cr":0.2},"claude-opus-5":{"in":5,"out":25,"cr":0.5},"claude-opus-4-8":{"in":5,"out":25,"cr":0.5},"claude-fable-5-1":{"in":10,"out":50,"cr":0.25},"claude-fable-5":{"in":10,"out":50,"cr":1},"claude-sonnet-5":{"in":2,"out":10,"cr":0.2},"claude-haiku-4-5":{"in":1,"out":5,"cr":0.1}}'
 }
 
-# _tok_window days since — sets _TOK_SINCE and the mtime-prefilter ref file
+# _tok_window days since — sets _TOK_SINCE, _TOK_LOOKBACK and the mtime-prefilter ref file
 _tok_window() {
     local days="$1" since="$2" e now ref
     if [ -n "$since" ]; then
@@ -81,6 +83,7 @@ _tok_window() {
         e=$(( now - days * 86400 ))
         _TOK_SINCE="$(jq -nr --argjson e "$e" '$e | todate')"
     fi
+    _TOK_LOOKBACK="$(jq -nr --argjson e "$(( e - _TOK_TTL_1H ))" '$e | todate')"
     ref="$(jq -nr --argjson e "$(( e - 86400 ))" '$e | strftime("%Y%m%d%H%M")')"
     command touch -t "$ref" "${_TOK_WORK}/ref"
 }
@@ -140,16 +143,17 @@ _tok_rows() {
         : > "${_TOK_WORK}/rows"
         return 0
     fi
-    xargs -0 jq -cR --arg since "$_TOK_SINCE" '
+    xargs -0 jq -cR --arg since "$_TOK_SINCE" --arg lookback "$_TOK_LOOKBACK" '
         fromjson? | select(type == "object")
         | select((.message | type) == "object" and ((.timestamp // "") | type) == "string")
         | select(.type == "assistant"
             and ((.message.id // "") != "")
             and ((.message.usage | type) == "object")
             and (.message.model != "<synthetic>")
-            and (((.timestamp // "")[0:19]) >= ($since[0:19])))
+            and (((.timestamp // "")[0:19]) >= ($lookback[0:19])))
         | .message.usage as $u
         | {id: .message.id, ts: (.timestamp // ""), file: input_filename,
+           pre: (((.timestamp // "")[0:19]) < ($since[0:19])),
            sid: (.sessionId // ""), model: (.message.model // "unknown"),
            eff: (.effort // .perTurnEffort // "unset"),
            in: ($u.input_tokens // 0), cr: ($u.cache_read_input_tokens // 0),
@@ -170,7 +174,7 @@ _tok_report() {
     jq -s -r --slurpfile agents "${_TOK_WORK}/agents.json" \
         --argjson prices "$(_tok_prices)" \
         --arg mode "$mode" --arg plabel "$plabel" --arg sid "$sid" \
-        --arg since "$_TOK_SINCE" --arg tdir "$tdir" '
+        --arg since "$_TOK_SINCE" --arg tdir "$tdir" --argjson ttl_1h "$_TOK_TTL_1H" '
         def r4: (. * 10000 + 0.5 | floor) / 10000;
         def r1: (. * 10 + 0.5 | floor) / 10;
         def nr($p): length as $n
@@ -183,14 +187,27 @@ _tok_report() {
         def pkey($m): ($m | if endswith("[1m]") then .[0:(length - 4)] else . end) as $s
             | ([$prices | keys[] ] | sort_by(length) | reverse
                | map(select(. as $k | $s | startswith($k)))) | .[0];
+        def ttl_5m: 300;
+        def rebuild_min_ctx: 50000;
+        def rebuild_min_write_share: 0.5;
+        def role_of: if contains("/subagents/") then "sub" else "main" end;
+        # [seconds, fraction] of a UTC "Z" timestamp, else null; fromdateiso8601 rejects fractions and normalizes Feb 30
+        def epoch: if endswith("Z") and length >= 20 then
+                (.[0:19] + "Z") as $w | (($w | fromdateiso8601?) // null) as $s
+                | (if length == 20 then 0 elif .[19:20] == "." then (("0" + .[19:(length - 1)] | tonumber?) // null)
+                   else null end) as $f
+                | if $s == null or ($s | todate) != $w or $f == null or $f >= 1 then null else [$s, $f] end
+            else null end;
         ($agents[0] // {}) as $amap
+        | . as $raw
+        | map(select(.pre != true))
         | group_by(.id)
         | map(sort_by(.ts) as $g
               | $g[0] + {in: ([$g[].in] | max), cw5: ([$g[].cw5] | max),
                          cw1h: ([$g[].cw1h] | max), cr: ([$g[].cr] | max),
                          out: ([$g[].out] | max), th: ([$g[].th] | max)})
         | map(. as $r
-              | (if ($r.file | contains("/subagents/")) then "sub" else "main" end) as $role
+              | ($r.file | role_of) as $role
               | pkey($r.model) as $pk
               | (if $pk == null then null else $prices[$pk] end) as $p
               | $r + {role: $role,
@@ -201,9 +218,26 @@ _tok_report() {
                       c_cw: (if $p == null then 0 else ($r.cw5 * $p.in * 1.25 + $r.cw1h * $p.in * 2) / 1000000 end),
                       c_cr: (if $p == null then 0 else $r.cr * $p.cr / 1000000 end),
                       c_out: (if $p == null then 0 else $r.out * $p.out / 1000000 end)}
-              | . + {c: (.c_in + .c_cw + .c_cr + .c_out)})
+              | . + {c: (.c_in + .c_cw + .c_cr + .c_out),
+                     c_rb: (if $p == null then 0 else .c_cw - (.cw5 + .cw1h) * $p.cr / 1000000 end)})
         | . as $rows
         | ([$rows[] | .c] | add // 0) as $total
+        | (reduce $rows[] as $r ({}; .[$r.id | tostring] = $r)) as $byid
+        # per-file sequences come from raw rows (window plus lookback): the shared dedup keeps a fork-copied turn in only one file
+        | ([$raw | group_by(.file) | .[]
+            | group_by(.id) | map(min_by(.ts)) | sort_by(.ts) as $f
+            | range(1; $f | length) as $i
+            | select($f[$i].pre != true)
+            | $byid[$f[$i].id | tostring] as $c
+            | ($c.cw5 + $c.cw1h) as $w | ($c.in + $w + $c.cr) as $n
+            | ($f[$i - 1].ts | epoch) as $a | ($f[$i].ts | epoch) as $b
+            | (if $a == null or $b == null then null else ($b[0] - $a[0]) + ($b[1] - $a[1]) end) as $gap
+            | select($gap != null
+                     and $gap > (if $c.cw1h > $c.cw5 then $ttl_1h else ttl_5m end)
+                     and $n >= rebuild_min_ctx
+                     and $w >= $n * rebuild_min_write_share)
+            | {id: $c.id, file: $f[$i].file, role: ($f[$i].file | role_of), gap: $gap, w: $w, c: $c.c_rb}]
+           | group_by(.id) | map(min_by([.role, .file]))) as $rb
         | ([$rows[] | select(.role == "main") | (.in + .cw5 + .cw1h + .cr)] | sort) as $ctx
         | ([$rows[] | select(.role == "sub")] | group_by(.file)
            | map(sort_by(.ts) | .[0] | (.cw5 + .cw1h)) | sort) as $boot
@@ -239,6 +273,12 @@ _tok_report() {
                           over_200k_pct: (if ($ctx | length) == 0 then 0
                                           else ([$ctx[] | select(. > 200000)] | length) * 100 / ($ctx | length) | r1 end)},
            subagent_boot: {median_cache_write: ($boot | nr(0.5)), runs: ($boot | length)},
+           rebuilds: (([$rb[].c] | add // 0) as $rc
+                      | {events: ($rb | length), tokens: ([$rb[].w] | add // 0), cost_usd: ($rc | r4),
+                         share: (if $total > 0 then $rc / $total | r4 else 0 end),
+                         median_gap_s: ([$rb[].gap] | sort | nr(0.5) | . + 0.5 | floor),
+                         main: ([$rb[] | select(.role == "main")] | {events: length, cost_usd: ([.[].c] | add // 0 | r4)}),
+                         sub: ([$rb[] | select(.role == "sub")] | {events: length, cost_usd: ([.[].c] | add // 0 | r4)})}),
            effort: ($rows | group_by(.eff) | map({key: .[0].eff, value: length}) | from_entries),
            unpriced_models: ([$rows[] | select(.priced | not) | .model] | unique)}
         | . as $R
@@ -247,6 +287,7 @@ _tok_report() {
             {session: $R.scope.session, cost_usd: $R.cost_usd, api_turns: $R.api_turns,
              cache_read_share: $R.share.cache_read, main_ctx_median: $R.main_context.median,
              subagent_runs: $R.subagent_runs,
+             rebuild_events: $R.rebuilds.events, rebuild_cost_usd: $R.rebuilds.cost_usd,
              by_model: ([$R.by_model[] | select(.cost_usd != null) | {key: .model, value: .cost_usd}] | from_entries)}
             | tojson
           elif $R.api_turns == 0 then "X\tno usage in window"
@@ -269,6 +310,8 @@ _tok_report() {
             "B",
             "H\tmain context/turn  median \($R.main_context.median | k) · p90 \($R.main_context.p90 | k) · >200K \($R.main_context.over_200k_pct)%",
             "H\tsubagent boot      median \($R.subagent_boot.median_cache_write | k) cache-write tokens (\($R.subagent_boot.runs) runs)",
+            ($R.rebuilds | "H\tcache rebuilds     \(if .events == 0 then "none"
+                else "\(.events) (main \(.main.events) · sub \(.sub.events)) · $\(.cost_usd | usd) extra (\(.share | pct)% of spend) · median idle \(.median_gap_s / 60 | r1)m" end)"),
             "H\teffort             \([$R.effort | to_entries | sort_by(.value) | reverse[] | "\(.key) \(.value)"] | join(" · "))",
             (if ($R.unpriced_models | length) > 0 then "H\tunpriced models    \($R.unpriced_models | join(", "))" else empty end)
           end

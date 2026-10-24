@@ -233,7 +233,14 @@ against drift in CI.
 the Claude Code transcripts already on your machine: usage deduplicated by
 message id (one API turn is logged once per content block), list-price cost,
 and breakdowns by cost class, model, agent, context depth, subagent boot cost,
-and effort. `--session <id> --summary` is what `/r-save` records per session;
+cache rebuilds, and effort. A cache rebuild is a turn that came after the
+prompt cache expired (an idle gap over 5 minutes, or over 1 hour when the
+turn's 1h-TTL writes exceed its 5m writes) and rewrote at least half of a
+context of 50K+ tokens; its cost is the write price minus what reading those
+tokens would have cost (main and subagent transcripts are reported separately;
+a transcript's first turn never counts; a turn copied into a fork or resumed
+transcript counts once).
+`--session <id> --summary` is what `/r-save` records per session;
 `/r-start` shows it. Prices are embedded estimates; nothing is sent anywhere.
 
 Scoped language rules load only when a matching file is read; they add nothing

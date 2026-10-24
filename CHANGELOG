@@ -1,5 +1,14 @@
 # RDF Changelog
 
+## Unreleased
+
+-- New Features --
+
+[New] rdf tokens reports cache rebuilds: turns after an idle gap past the cache TTL (5 min, or
+      1 h when the turn's 1h writes exceed its 5m writes) that rewrite at least half of a 50K+
+      token context, costed as the write price minus a cache read; --json adds a rebuilds object,
+      --summary rebuild_events and rebuild_cost_usd, and the text report a cache rebuilds line
+
 ## 3.9.1
 
 -- New Features --

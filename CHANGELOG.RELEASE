@@ -1,31 +1,10 @@
-# RDF 3.9.1 Release Notes
+# RDF Unreleased Release Notes
 
-## 3.9.1
+## Unreleased
 
 -- New Features --
 
-[New] rdf account default <name>|-: store the account the rdf shell init launchers use when
-      neither @name nor cuse picks one; list shows it, '-' clears it, and removing that
-      account clears it
-[New] rdf account primary <name> [--dry-run]: move <name>'s login, .claude.json, plugins and
-      org-managed settings into ~/.claude and the current primary's to ~/.claude-<old>;
-      shared state stays put, plugin paths are rewritten, and any failed move is undone;
-      it refuses while Claude Code or its daemon runs, on symlinked entries, and on macOS
-      (keychain logins)
-
--- Bug Fixes --
-
-[Fix] bash 3.2 (macOS system bash) under set -e exits on a failing 'command <x>' even inside if
-      or ||, so the context-audit script died silently at its GNU find -printf probe on BSD
-      find; that probe, _rdf_atomic_write's cleanup path, two rdf-bus mkdirs and rdf migrate's
-      cp fallbacks now run in a subshell, and macOS CI smokes context-audit under /bin/bash
-[Fix] CI Plugin job failed on every push: newer Claude Code validators warn that CLAUDE.md
-      at the plugin root is not loaded as project context (RDF's repo root is the plugin
-      root), and --strict made that fatal; the step now reads the --json report and fails
-      on any error or any other warning
-
--- Changes --
-
-[Change] docs: the quickstart covers the shell launchers and multiple accounts and the Pages
-         home points to it; em dashes swept from the docs, changelog and release names;
-         /r-ship and the triage ledger use "## X.Y (date)" headers
+[New] rdf tokens reports cache rebuilds: turns after an idle gap past the cache TTL (5 min, or
+      1 h when the turn's 1h writes exceed its 5m writes) that rewrite at least half of a 50K+
+      token context, costed as the write price minus a cache read; --json adds a rebuilds object,
+      --summary rebuild_events and rebuild_cost_usd, and the text report a cache rebuilds line

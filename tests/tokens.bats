@@ -66,7 +66,7 @@ _tok() { bash "$TOK" "$@"; }
 @test "--summary emits the compact session object" {
     RDF_CLAUDE_PROJECTS="${RDF_SRC}/tests/fixtures/tokens" run _tok --session s1 --summary
     [ "$status" -eq 0 ]
-    [ "$(jq -r 'keys | join(",")' <<< "$output")" = "api_turns,by_model,cache_read_share,cost_usd,main_ctx_median,session,subagent_runs" ]
+    [ "$(jq -r 'keys | join(",")' <<< "$output")" = "api_turns,by_model,cache_read_share,cost_usd,main_ctx_median,rebuild_cost_usd,rebuild_events,session,subagent_runs" ]
     [ "$(jq -c '.by_model' <<< "$output")" = '{"claude-opus-5-5":0.2701,"claude-fable-5-1":0.13}' ]
 }
 
@@ -181,6 +181,240 @@ _tok_row() {
     [[ "$output" == *"--since expects a valid YYYY-MM-DD date"* ]]
     run _tok --transcripts "$FX" --since 2026-02-30
     [ "$status" -eq 2 ]
+}
+
+# _tok_turn id ts in cw5 cw1h cr [out] — one claude-opus-5-5 entry with split cache-write usage
+_tok_turn() {
+    printf '{"type":"assistant","timestamp":"%s","sessionId":"r1","message":{"id":"%s","model":"claude-opus-5-5","usage":{"input_tokens":%s,"cache_creation_input_tokens":%s,"cache_read_input_tokens":%s,"output_tokens":%s,"cache_creation":{"ephemeral_5m_input_tokens":%s,"ephemeral_1h_input_tokens":%s}}}}\n' \
+        "$2" "$1" "$3" "$(( $4 + $5 ))" "$6" "${7:-0}" "$4" "$5"
+}
+
+# _tok_rb dir — the rebuilds object for a transcripts dir
+_tok_rb() {
+    bash "$TOK" --transcripts "$1" --since 2026-09-01 --json | jq -c '.rebuilds'
+}
+
+@test "cache rebuild: a 5m write of half a 50K context after a 400 s idle counts at the write premium" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.250Z 1 20000 0 0
+      _tok_turn m2 2026-09-10T00:06:40.900Z 1 25000 0 24999; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$output" = '{"events":1,"tokens":25000,"cost_usd":0.12,"share":0.5217,"median_gap_s":401,"main":{"events":1,"cost_usd":0.12},"sub":{"events":0,"cost_usd":0}}' ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: under half the context written, or a context under 50K, is not a rebuild" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 20000 0 0
+      _tok_turn m2 2026-09-10T00:06:40.000Z 1 24999 0 25000; } > "${t}/half.jsonl"
+    { _tok_turn n1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn n2 2026-09-10T00:06:40.000Z 1 49998 0 0; } > "${t}/small.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .cost_usd]' <<< "$output")" = "[0,0]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a large 5m write 100 s or exactly 300 s after the previous turn is not a rebuild" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:01:40.000Z 1 60000 0 0
+      _tok_turn m3 2026-09-10T00:06:40.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '.events' <<< "$output")" = "0" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a large 5m write 301 s after the previous turn counts" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:05:01.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .median_gap_s]' <<< "$output")" = "[1,301]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: fractional seconds count (300.9 s is a rebuild, 299.9 s is not)" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:05:00.900Z 1 60000 0 0; } > "${t}/over.jsonl"
+    { _tok_turn n1 2026-09-10T00:00:00.500Z 1 1000 0 0
+      _tok_turn n2 2026-09-10T00:05:00.400Z 1 60000 0 0; } > "${t}/under.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .median_gap_s]' <<< "$output")" = "[1,301]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a 1h write counts only past the 1h TTL (1,200 s no, 4,000 s yes)" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 0 1000 0
+      _tok_turn m2 2026-09-10T00:20:00.000Z 1 0 60000 0
+      _tok_turn m3 2026-09-10T01:26:40.000Z 1 0 60000 0; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .tokens, .cost_usd, .median_gap_s]' <<< "$output")" = "[1,60000,0.468,4000]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a 1h write 3,600 s after the previous turn is not a rebuild, 3,601 s is" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 0 1000 0
+      _tok_turn m2 2026-09-10T01:00:00.000Z 1 0 60000 0
+      _tok_turn m3 2026-09-10T02:00:01.000Z 1 0 60000 0; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .median_gap_s]' <<< "$output")" = "[1,3601]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: equal 5m and 1h writes use the 5m TTL (400 s counts)" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:06:40.000Z 1 30000 30000 0; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .tokens, .cost_usd]' <<< "$output")" = "[1,60000,0.378]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: the TTL comes from the current turn's writes, not the previous turn's" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:20:00.000Z 1 0 60000 0; } > "${t}/to1h.jsonl"
+    { _tok_turn n1 2026-09-10T00:00:00.000Z 1 0 1000 0
+      _tok_turn n2 2026-09-10T00:06:40.000Z 1 60000 0 0; } > "${t}/to5m.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .median_gap_s]' <<< "$output")" = "[1,400]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a transcript's first turn never counts, even a large write long after another file's turn" {
+    local t; t="$(mktemp -d)"
+    mkdir -p "${t}/s/subagents"
+    _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0 > "${t}/s.jsonl"
+    { _tok_turn a1 2026-09-10T00:10:00.000Z 1 100000 0 0
+      _tok_turn a2 2026-09-10T00:11:00.000Z 1 0 0 100000; } > "${t}/s/subagents/agent-a.jsonl"
+    _tok_turn x1 2026-09-10T02:00:00.000Z 1 100000 0 0 > "${t}/x.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '.events' <<< "$output")" = "0" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a parent's rebuild copied into a fork counts once, whichever file is read first" {
+    local t d parent fork
+    t="$(mktemp -d)"
+    for d in a b; do
+        if [ "$d" = a ]; then parent=agent-p; fork=agent-f; else parent=agent-f; fork=agent-p; fi
+        mkdir -p "${t}/${d}/s/subagents"
+        _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0 > "${t}/${d}/s.jsonl"
+        { _tok_turn p1 2026-09-10T00:00:10.000Z 1 5000 0 200000
+          _tok_turn p2 2026-09-10T00:20:00.000Z 1 193169 0 17836; } > "${t}/${d}/s/subagents/${parent}.jsonl"
+        { _tok_turn p2 2026-09-10T00:20:00.000Z 1 193169 0 17836
+          _tok_turn f1 2026-09-10T00:20:05.000Z 1 1796 0 211005; } > "${t}/${d}/s/subagents/${fork}.jsonl"
+        run _tok_rb "${t}/${d}"
+        [ "$status" -eq 0 ]
+        [ "$(jq -c '[.events, .tokens, .sub.events, .median_gap_s]' <<< "$output")" = "[1,193169,1,1190]" ]
+    done
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a resumed transcript that copies a rebuild counts it once and counts its own" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:10:00.000Z 1 60000 0 0; } > "${t}/s1.jsonl"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:10:00.000Z 1 60000 0 0
+      _tok_turn m3 2026-09-10T02:00:00.000Z 1 80000 0 0; } > "${t}/s2.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .tokens, .main.events]' <<< "$output")" = "[2,140000,2]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a turn up to an hour before the window is a predecessor only, never counted or priced" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn a0 2026-09-09T23:20:00.000Z 1 1000 0 0
+      _tok_turn a1 2026-09-09T23:50:00.000Z 1 60000 0 0
+      _tok_turn b1 2026-09-10T00:01:00.000Z 1 60000 0 0; } > "${t}/near.jsonl"
+    { _tok_turn c1 2026-09-09T22:00:00.000Z 1 1000 0 0
+      _tok_turn d1 2026-09-10T00:30:00.000Z 1 60000 0 0; } > "${t}/far.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-10 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .tokens.cache_write_5m, .cost_usd]' <<< "$output")" = "[2,120000,0.6]" ]
+    [ "$(jq -c '[.rebuilds.events, .rebuilds.tokens, .rebuilds.cost_usd, .rebuilds.median_gap_s]' <<< "$output")" = "[1,60000,0.288,660]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: a turn that starts before the window is not counted even if it ends inside it" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn p1 2026-09-09T23:50:00.000Z 1 1000 0 0
+      _tok_turn m1 2026-09-09T23:59:59.000Z 1 60000 0 0
+      _tok_turn m1 2026-09-10T00:00:01.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-10 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .rebuilds.events]' <<< "$output")" = "[1,0]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: main and subagent rebuilds are split, and text and --summary report them" {
+    local t; t="$(mktemp -d)"
+    mkdir -p "${t}/s/subagents"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2026-09-10T00:10:00.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    { _tok_turn a1 2026-09-10T00:20:00.000Z 1 1000 0 0
+      _tok_turn a2 2026-09-10T00:26:00.000Z 1 60000 0 40000
+      _tok_turn a3 2026-09-10T02:00:00.000Z 1 0 60000 0; } > "${t}/s/subagents/agent-a.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.events, .tokens, .median_gap_s, .main, .sub]' <<< "$output")" = '[3,180000,600,{"events":1,"cost_usd":0.288},{"events":2,"cost_usd":0.756}]' ]
+    run _tok --transcripts "$t" --since 2026-09-01 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.rebuild_events, .rebuild_cost_usd]' <<< "$output")" = "[3,1.044]" ]
+    run _tok --transcripts "$t" --since 2026-09-01
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'cache rebuilds     3 (main 1 · sub 2) · $1.04 extra ('*'% of spend) · median idle 10m'* ]]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: partial then final entries for one message.id are one turn, timed from its first entry" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0 50
+      _tok_turn m2 2026-09-10T00:06:40.000Z 1 60000 0 0 10
+      _tok_turn m2 2026-09-10T00:13:20.000Z 1 60000 0 0 900
+      _tok_turn m3 2026-09-10T00:16:40.000Z 1 70000 0 0; } > "${t}/s.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .tokens.output, .rebuilds.events, .rebuilds.tokens, .rebuilds.median_gap_s]' <<< "$output")" = "[3,950,2,130000,400]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: an unparseable or non-Z timestamp is kept as a turn but forms no gap" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-10T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 zzzz 1 60000 0 0
+      _tok_turn m3 2026-09-10T00:10:00.000 1 60000 0 0
+      _tok_turn m4 2026-09-10T00:10:00.000+00:00 1 60000 0 0
+      _tok_turn m5 2026-13-45T00:00:00.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .rebuilds.events]' <<< "$output")" = "[5,0]" ]
+    rm -rf "$t"
+}
+
+@test "cache rebuild: an impossible date (Feb 30) forms no gap" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2027-02-28T00:00:00.000Z 1 1000 0 0
+      _tok_turn m2 2027-02-30T00:06:40.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok_rb "$t"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '.events' <<< "$output")" = "0" ]
+    rm -rf "$t"
 }
 
 @test "rdf-tokens.sh uses no jq 1.6+ builtins or reserved-word variables" {
