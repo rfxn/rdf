@@ -11,9 +11,18 @@
       sessions
 [New] rdf tokens --codex: by_kind (review for a read-only sandbox, write for workspace-write or full
       access) and by_effort splits; account-wide plan quota (peak and latest used_percent per reset
-      window and limit, plan, limit-reached events) from every rollout in the window, null with --session
+      window and limit, plan, limit-reached events) from every rollout in the window, null with
+      --session
 [New] rdf tokens --pricing [--json]: the embedded price table with its as-of date, age, earliest
       promotional expiry and source pages (Anthropic and OpenAI pricing)
+[New] /r-env: environment assessment against an optimal Claude Code + RDF setup for the project
+      (code intelligence plugin and language server per primary language, project tools, hard fd
+      limit, sandbox dependencies, Claude Code currency on the update channel, .claude settings,
+      CLAUDE.md and auto-memory sizes, price-table age) with fixes for this host's package manager;
+      read-only; --pricing compares the price table with the vendors' pages
+[New] state/rdf-env.sh behind /r-env, the /r-start brief (rdf-state.sh --full --env) and rdf
+      doctor's new env scope (default set, offline, machine checks once per --all run, WARN only);
+      findings are silenced by id in ~/.rdf/env-ignore or <project>/.rdf/env-ignore
 
 -- Changes --
 
@@ -23,11 +32,16 @@
          OpenAI Standard and Fast rates, with over-272K long-context rates, for Codex models
 [Change] a model id matches a price key only as the exact id or the id plus a date, @version or
          -vN suffix; an unlisted newer model reports unpriced instead of borrowing a sibling's price
+[Change] /r-start adds "Env N to fix" to its warnings line from the offline environment brief
+[Change] docs/privacy.md names the /r-env network lookups; command counts 37 -> 38
 
 -- Bug Fixes --
 
 [Fix] rdf tokens priced Claude Sonnet 5.5 as Sonnet 5 (cache reads $0.20 instead of $0.10 per
       MTok) and left Haiku 5.5, Opus 4.5-4.7, Sonnet 4.x and Mythos unpriced
+[Fix] rdf doctor --scope harness warned that BASH_MAX_OUTPUT_LENGTH above 30000 keeps large results
+      in context; it only widens the failure-excerpt read-back window, so it now reports OK and
+      bashOutputMaxChars above 30000 warns
 
 ## 3.9.2
 

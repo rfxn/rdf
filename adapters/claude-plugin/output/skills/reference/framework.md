@@ -159,7 +159,7 @@ Agent personas, commands, hooks, and scripts that define the pipeline.
 **Agent naming:** `rdf-{role}` (e.g., `rdf-engineer`, `rdf-qa`)
 
 **Command naming:**
-- `/r-{name}` — lifecycle commands (21)
+- `/r-{name}` — lifecycle commands (22)
 - `/r-util-{subject}-{verb}` — utility commands (16)
 
 ### Category 5: Integration (monitoring)

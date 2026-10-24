@@ -129,7 +129,7 @@ dispatcher, or invoked via `/r-review`.
 
 ## 3. Command Reference
 
-### Lifecycle Commands (21)
+### Lifecycle Commands (22)
 
 | Command | Slash | Dispatches | Purpose |
 |---------|-------|------------|---------|
@@ -140,6 +140,7 @@ dispatcher, or invoked via `/r-review`.
 | r-spec | /r-spec | reviewer | Specification authoring |
 | r-mode | /r-mode | none | Switch operational mode |
 | r-status | /r-status | none | Project health dashboard |
+| r-env | /r-env | none | Environment assessment against an optimal setup |
 | r-tasks | /r-tasks | none | Task list status |
 | r-refresh | /r-refresh | none | Governance refresh |
 | r-sync | /r-sync | none | Canonical source sync |
@@ -184,6 +185,7 @@ dispatcher, or invoked via `/r-review`.
 ```
 /r-start                         # Load context, scan state
 /r-status                        # Project health dashboard
+/r-env                           # Environment assessment
 ```
 
 ### Plan and Execute
@@ -258,4 +260,4 @@ dispatcher, or invoked via `/r-review`.
 | /rel-chg-dedup | /r-util-chg-dedup |
 | /test-dedup | /r-util-test-dedup |
 
-**Total: 6 agents + 37 commands + 16 scripts = 59 primitives**
+**Total: 6 agents + 38 commands + 16 scripts = 60 primitives**

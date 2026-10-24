@@ -716,14 +716,18 @@ _harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
     rm -rf "$p" "$h"
 }
 
-@test "doctor harness: BASH_MAX_OUTPUT_LENGTH above 30000 WARNs; bashOutputMaxChars takes precedence" {
+@test "doctor harness: BASH_MAX_OUTPUT_LENGTH above 30000 is OK (read-back window only); bashOutputMaxChars above it WARNs" {
     read -r p h <<< "$(_harness_fixture)"
     printf '{"model":"sonnet","env":{"BASH_MAX_OUTPUT_LENGTH":"128000"}}\n' > "$h/.claude/settings.json"
     run _run_harness "$p" "$h"
-    [[ "$output" == *"harness|WARN|BASH_MAX_OUTPUT_LENGTH=128000 exceeds the 30000 default"* ]]
+    [[ "$output" == *"harness|OK|BASH_MAX_OUTPUT_LENGTH=128000 only widens the read-back window"* ]]
+    [[ "$output" != *"harness|WARN|BASH_MAX_OUTPUT_LENGTH"* ]]
     printf '{"model":"sonnet","bashOutputMaxChars":20000,"env":{"BASH_MAX_OUTPUT_LENGTH":"128000"}}\n' > "$h/.claude/settings.json"
     run _run_harness "$p" "$h"
     [[ "$output" == *"harness|OK|Bash output limit at or below platform default"* ]]
+    printf '{"model":"sonnet","bashOutputMaxChars":100000}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|WARN|bashOutputMaxChars=100000 raises inline Bash output above the 30000 default"* ]]
     rm -rf "$p" "$h"
 }
 
@@ -732,7 +736,7 @@ _harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
     printf '{"model":"sonnet"}\n' > "$h/.claude/settings.json"
     run _run_harness "$p" "$h" BASH_MAX_OUTPUT_LENGTH=040000
     [ "$status" -eq 0 ]
-    [[ "$output" == *"harness|WARN|BASH_MAX_OUTPUT_LENGTH=040000 exceeds the 30000 default"* ]]
+    [[ "$output" == *"harness|OK|BASH_MAX_OUTPUT_LENGTH=040000 only widens the read-back window"* ]]
     run _run_harness "$p" "$h" BASH_MAX_OUTPUT_LENGTH=08
     [ "$status" -eq 0 ]
     [[ "$output" == *"harness|OK|Bash output limit at or below platform default"* ]]
@@ -791,4 +795,60 @@ _harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
     run env -u RDF_SESSION_ID CLAUDE_CODE_SESSION_ID=11111111-2222-4333-8444-555555555555 "${RDF_SRC}/bin/rdf" doctor --scope plan "$p"
     [[ "$output" == *"session pointer present"* ]]
     rm -rf "$p"
+}
+
+# ── env scope (rdf-env.sh via a stub that logs its arguments) ────────────────
+
+# Usage: _run_env <stub-dir> <project>... — _check_env rows for each project in one doctor invocation
+_run_env() {
+    local stub="$1"; shift
+    bash -c '
+        set -euo pipefail
+        rdf_src="$1"; stub="$2"; shift 2
+        RDF_HOME="$(mktemp -d)"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
+        source "${rdf_src}/lib/rdf_common.sh"; rdf_init
+        RDF_STATE_DIR="$stub"
+        source "${rdf_src}/lib/cmd/doctor.sh"
+        _reset_results
+        for p in "$@"; do _check_env "$p"; done
+        printf "%s\n" "${_RESULTS[@]}"
+    ' -- "$RDF_SRC" "$stub" "$@"
+}
+
+@test "doctor env: gaps and risks WARN, config, pricing and info stay out; machine checks run for the first project only" {
+    local s; s="$(mktemp -d)"
+    cat > "${s}/rdf-env.sh" <<'STUB'
+printf '%s\n' "$*" >> "$(dirname "$0")/args"
+cat <<'JSON'
+{"summary":{"gap":1,"warn":3,"info":1},"findings":[
+ {"id":"lsp-python","area":"code-intel","severity":"gap","title":"python project without code intelligence"},
+ {"id":"limit-nofile","area":"limits","severity":"warn","title":"hard open-file limit is 1024"},
+ {"id":"memory-index","area":"config","severity":"warn","title":"auto-memory index is long"},
+ {"id":"pricing-age","area":"pricing","severity":"warn","title":"price table is old"},
+ {"id":"tool-python3","area":"tools","severity":"info","title":"python3 is not installed"}]}
+JSON
+STUB
+    run _run_env "$s" /p1 /p2
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"env|WARN|python project without code intelligence [lsp-python] — /r-env shows the fix"* ]]
+    [[ "$output" == *"env|WARN|hard open-file limit is 1024 [limit-nofile]"* ]]
+    [[ "$output" != *"memory-index"* && "$output" != *"pricing-age"* && "$output" != *"tool-python3"* ]]
+    [[ "$output" != *"|FAIL|"* ]]
+    [ "$(cat "${s}/args")" = "$(printf -- '--json --offline /p1\n--json --offline --project-only /p2')" ]
+    rm -rf "$s"
+}
+
+@test "doctor env: a failing or missing helper WARNs, never FAILs; no findings is one OK row" {
+    local s; s="$(mktemp -d)"
+    printf 'echo "not json"; exit 3\n' > "${s}/rdf-env.sh"
+    run _run_env "$s" /p1
+    [[ "$output" == *"env|WARN|environment assessment failed (rdf-env.sh exit 3)"* ]]
+    printf 'echo "{\\"summary\\":{\\"gap\\":0},\\"findings\\":[]}"\n' > "${s}/rdf-env.sh"
+    run _run_env "$s" /p1
+    [[ "$output" == *"env|OK|environment has what this project needs"* ]]
+    rm -f "${s}/rdf-env.sh"
+    run _run_env "$s" /p1
+    [[ "$output" == *"env|WARN|rdf-env.sh helper not found"* ]]
+    [[ "$output" != *"|FAIL|"* ]]
+    rm -rf "$s"
 }

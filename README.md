@@ -40,8 +40,8 @@ Six universal agents handle every project. Their behavior is shaped by governanc
 #     /plugin marketplace add rfxn/rdf
 #     /plugin install rdf@rdf
 #   Bootstrap: a SessionStart hook delivers the ~/.rdf/state/ helpers on
-#     install; 10 state-backed commands (r-spec/r-plan/r-build/r-ship/
-#     r-status/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) run
+#     install; 11 state-backed commands (r-spec/r-plan/r-build/r-ship/
+#     r-status/r-env/r-save/r-refresh/r-context-audit/r-vpe/r-util-mem-compact) run
 #     degraded only before the first session restart after install; see
 #     docs/multi-tool-parity.md.
 #   Hooks auto-register on this path (plugin.json declares them); no manual
@@ -212,6 +212,7 @@ rdf account primary personal --dry-run   # preview making personal the ~/.claude
 | `/r-save` | End-of-session state sync: PLAN.md, MEMORY.md, session log |
 | `/r-mode` | Switch operational mode (development, security, performance, migration, refactoring, debugging, documentation) |
 | `/r-status` | Project health dashboard: pipeline position, plan progress, warnings |
+| `/r-env` | Environment assessment: code intelligence plugins and language servers, tools, limits, sandbox, Claude Code currency, `.claude` files, price table; exact fixes |
 | `/r-refresh` | Re-scan codebase and update governance files |
 | `/r-sync` | Pull emergency edits from deployed location back to canonical |
 | `/r-context-audit` | Measure Claude Code context overhead; scored report + drift detection |
@@ -247,6 +248,15 @@ sessions), split by kind (review for a read-only sandbox, write) and effort, wit
 the account's plan quota peak per reset window. Prices are list prices copied from the Anthropic and OpenAI pricing
 pages; `--pricing` prints them with their date and sources. Nothing is sent
 anywhere.
+
+**Environment.** `/r-env` checks this host against what an optimal setup needs
+for the project: a code intelligence plugin and its language server for each
+primary language (detected from manifests, ignoring samples, docs and vendored
+code), the tools RDF relies on, the hard fd limit, sandbox dependencies, Claude
+Code currency on your update channel, `.claude` settings and memory files, and
+the price table's age. It prints exact fixes for this host's package manager and
+applies none. `/r-start` shows a one-line brief; `rdf doctor` runs it offline as
+its `env` scope. Silence a finding by adding its id to `~/.rdf/env-ignore`.
 
 Scoped language rules load only when a matching file is read; they add nothing
 to the always-loaded figures. Opt into either variant with a deploy flag:
@@ -328,7 +338,7 @@ Run 'rdf <command> help' for details.
 | `rdf deploy <target>` | Symlink output to `~/.claude/`, `~/.gemini/`, etc. |
 | `rdf profile list\|install\|remove\|status` | Manage active profiles with dependency resolution |
 | `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
-| `rdf doctor [--scope] [--all]` | 15 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness |
+| `rdf doctor [--scope] [--all]` | 16 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness, env |
 | `rdf state [<path>]` | JSON snapshot in <1s, no LLM calls |
 | `rdf tokens [--days N] [--session ID] [--json] [--codex] [--pricing]` | Local token usage report from Claude Code transcripts or Codex rollouts (deduplicated, list-price estimate); `--pricing` shows the dated, sourced price table |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
@@ -561,7 +571,7 @@ rdf/
 |                                      #   account, shell
 |-- canonical/
 |   |-- agents/                        # 6 universal agents (pure markdown)
-|   |-- commands/                      # 37 commands (/r- namespace)
+|   |-- commands/                      # 38 commands (/r- namespace)
 |   |-- scripts/                       # 16 hook scripts (bash)
 |   +-- reference/                     # Framework docs
 |-- profiles/
@@ -599,6 +609,7 @@ rdf/
 |-- state/
 |   |-- rdf-state.sh                   # Project state -> JSON (<1s, timeout-guarded)
 |   |-- rdf-tokens.sh                  # Local token usage report (bash + jq)
+|   |-- rdf-env.sh                     # Environment assessment (/r-env, /r-start brief, doctor env)
 |   |-- context-audit.sh               # Context weight audit -> JSON
 |   +-- rotate-work-output.sh          # Age/size-based work-output rotation
 +-- reference/                         # Diagrams, architecture docs
@@ -754,6 +765,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents · 37 commands · 16 scripts · 13 profiles · 5 adapters · 7 modes**
+**6 agents · 38 commands · 16 scripts · 13 profiles · 5 adapters · 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

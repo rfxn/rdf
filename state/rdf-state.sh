@@ -6,6 +6,7 @@
 # Output: JSON to stdout
 # --full: include extended fields for /r-start dashboard
 # --no-insights: omit global insights array (caller reads once)
+# --env: with --full, embed the rdf-env.sh brief summary (single-project /r-start only)
 set -euo pipefail
 
 # Source rdf-bus.sh for rdf_active_plan_path resolver
@@ -25,10 +26,12 @@ if command -v timeout >/dev/null 2>&1; then TIMEOUT_PREFIX="timeout 30"; else TI
 
 _full_mode=0
 _skip_insights=0
+_env_mode=0
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --full) _full_mode=1; shift ;;
         --no-insights) _skip_insights=1; shift ;;
+        --env) _env_mode=1; shift ;;
         *) break ;;
     esac
 done
@@ -353,6 +356,21 @@ except: print('')
     fi
 fi
 
+# Environment brief: gap/warn counts and the top two titles from the sibling rdf-env.sh, validated
+# before embedding so a failed or killed helper can never corrupt this JSON
+_env_brief="null"
+if [[ "$_full_mode" -eq 1 && "$_env_mode" -eq 1 ]]; then
+    _env_helper="$(command dirname "$0")/rdf-env.sh"
+    if [[ -f "$_env_helper" ]] && command -v jq >/dev/null 2>&1; then
+        # shellcheck disable=SC2086  # TIMEOUT_PREFIX is empty or a command word list on purpose
+        if _env_raw="$(${TIMEOUT_PREFIX:+timeout 5} bash "$_env_helper" --brief --json "$_project_path" 2>/dev/null)"; then  # helper failure or timeout → env omitted
+            _env_brief="$(jq -c '{gap: .summary.gap, warn: .summary.warn, ignored: .summary.ignored,
+                top: ([.findings[] | select(.severity != "info") | {id, title}] | .[0:2])}' <<< "$_env_raw" 2>/dev/null || true)"  # invalid JSON → env omitted
+            [[ -n "$_env_brief" ]] || _env_brief="null"
+        fi
+    fi
+fi
+
 # Output JSON
 cat <<JSONEOF
 {
@@ -390,6 +408,7 @@ cat <<JSONEOF
   "session_last": "$(_json_str "$_session_last")",
   "in_flight": ${_in_flight},
   "diff_categories": ${_diff_categories},
+  "env": ${_env_brief},
   "insights": ${_insights}
 }
 JSONEOF

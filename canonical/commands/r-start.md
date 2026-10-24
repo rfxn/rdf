@@ -29,7 +29,7 @@ this probe order — use the first path that exists:
 2. `<rdf-checkout>/state/rdf-state.sh` — the RDF checkout this deployment was generated from (dev installs only)
 
 ```bash
-bash ~/.rdf/state/rdf-state.sh --full .
+bash ~/.rdf/state/rdf-state.sh --full --env .
 ```
 
 If neither path exists, skip to **Supplemental reads** below.
@@ -37,7 +37,9 @@ If neither path exists, skip to **Supplemental reads** below.
 This returns a JSON blob with: project name, version, branch, HEAD,
 dirty count + file names, recent commits, plan phases, governance
 status, pipeline position, in-flight signals, session log last entry,
-and insights. Parse the JSON — do NOT make additional git/stat calls.
+insights, and `env` (the offline environment brief from `rdf-env.sh`:
+gap and warn counts plus the top two findings; `null` when the helper is
+absent). Parse the JSON — do NOT make additional git/stat calls.
 
 **Parent workspace** (cwd is NOT a git repo):
 - Enumerate sub-project repos: directories containing `.git/`
@@ -195,7 +197,7 @@ Fallback (no session log) — 3 most recent commits:
 **Warnings** — one blockquote line, pipe-separated:
 
 ```
-> ▶ Governance {T}h old — `/r-refresh` | MEMORY.md {N}/200 — previewed compaction saves {M} lines | Context ~{N}% — fresh session or `/half-clone`
+> ▶ Governance {T}h old — `/r-refresh` | MEMORY.md {N}/200 — previewed compaction saves {M} lines | Context ~{N}% — fresh session or `/half-clone` | Env {N} to fix: {title}; {title} — `/r-env`
 ```
 
 When MEMORY.md ≥180, run `/r-util-mem-compact` in preview mode and render the
@@ -203,6 +205,9 @@ proposed reduction inline (auto-act, not a passive warning). When estimated
 context >60%, render the fresh-session/`/half-clone` directive.
 
 Thresholds:
+- Environment: `env.gap + env.warn` > 0 (missing language server or plugin
+  for the project's languages, missing project tools, low hard fd limit);
+  name at most the two `env.top` titles
 - Governance stale: >24 hours
 - Dirty state: >5 files
 - Status file stale: >1 hour

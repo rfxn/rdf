@@ -28,8 +28,8 @@ describes the **symlink deploy** (`rdf deploy claude-code`), which also
 populates the `~/.rdf/state/` session-state helpers. A **plugin install**
 (`/plugin install rdf@rdf`) ships commands and agents plus a SessionStart hook
 that bootstraps the same `~/.rdf/state/` helpers on the plugin's first session
-start after install, so the 10 state-backed commands (`r-spec`, `r-plan`,
-`r-build`, `r-ship`, `r-status`, `r-save`, `r-refresh`, `r-context-audit`,
+start after install, so the 11 state-backed commands (`r-spec`, `r-plan`,
+`r-build`, `r-ship`, `r-status`, `r-env`, `r-save`, `r-refresh`, `r-context-audit`,
 `r-vpe`, `r-util-mem-compact`) run in a **degraded mode** only before that
 first restart. `r-start` degrades gracefully (probe + fallback); the others
 require the helpers for full session-scoped state.

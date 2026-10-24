@@ -14,15 +14,23 @@ designed to collect nothing.
 ## What RDF collects
 
 **Nothing.** RDF has no telemetry, no analytics, no account system, and
-makes no network calls to R-fx Networks or any third party. There is no
-data to sell, share, or breach on our side, because none leaves your
-machine.
+makes no network calls to R-fx Networks. The only third-party requests are
+the version and pricing lookups `/r-env` makes when you run it online
+(below). There is no data to sell, share, or breach on our side, because
+none leaves your machine.
 
 `rdf tokens` (and the per-session summary `/r-save` records) reads the
 Claude Code transcripts already stored on your machine under
 `~/.claude/projects/` (with `--codex`, the Codex rollouts under
 `~/.codex/sessions/`) and writes its summary to your local
 `.rdf/work-output/session-log.jsonl`. It sends nothing anywhere.
+
+`/r-env` (the environment assessment) is the one exception, and only when you
+run it without `--offline`: it asks the public npm registry for the current
+Claude Code and Codex version numbers (a plain GET with no identifiers), runs
+`claude doctor` (which can fetch your organization's managed settings), and
+with `--pricing` downloads the Anthropic and OpenAI pricing pages. `/r-start`
+and `rdf doctor` run it offline.
 
 ## Where your data lives
 

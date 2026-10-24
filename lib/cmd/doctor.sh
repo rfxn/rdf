@@ -19,7 +19,7 @@ Options:
                         artifacts, drift, memory, plan, github, sync,
                         install-mode, deps, catalogs, state-helpers,
                         content-drift, doc-stats, readme, doc-truth,
-                        harness
+                        harness, env
   --json                Output results as JSON
   --quiet               Only show WARN and FAIL
 
@@ -975,7 +975,11 @@ _check_harness() {
             ;;
         *)
             if [[ ${#lim} -gt 9 ]] || [[ $((10#$lim)) -gt 30000 ]]; then
-                _add_result "harness" "$_WARN" "${src}=${lim} exceeds the 30000 default — large Bash results stay in context for the rest of the session; overflow already spills to a file"
+                if [[ "$src" == "bashOutputMaxChars" ]]; then
+                    _add_result "harness" "$_WARN" "bashOutputMaxChars=${lim} raises inline Bash output above the 30000 default — those results stay in context for the rest of the session"
+                else
+                    _add_result "harness" "$_OK" "BASH_MAX_OUTPUT_LENGTH=${lim} only widens the read-back window a failing command's excerpt is cut from; inline output stays at 30000 (bashOutputMaxChars sets that)"
+                fi
             else
                 _add_result "harness" "$_OK" "Bash output limit at or below platform default"
             fi
@@ -1013,6 +1017,36 @@ _harness_truthy() {
     v="$(printf '%s' "$1" | command tr -d '[:space:]' | command tr '[:upper:]' '[:lower:]')"
     case "$v" in 1|true|yes|on) return 0 ;; esac
     return 1
+}
+
+# _check_env path — the rdf-env.sh assessment, offline (no claude doctor, no registry lookups). Machine-wide
+# checks run for the first project only, so --all repeats just the per-project ones. Gaps and risks WARN,
+# never FAIL; config and pricing findings belong to the memory, harness and /r-env surfaces, not here.
+_DOCTOR_ENV_MACHINE_DONE=0
+_check_env() {
+    local path="$1" helper="${RDF_STATE_DIR}/rdf-env.sh" out rc=0 n=0 title id
+    local -a extra=()
+    if [[ ! -f "$helper" ]]; then
+        _add_result "env" "$_WARN" "rdf-env.sh helper not found — run 'rdf deploy claude-code'"
+        return 0
+    fi
+    [[ "$_DOCTOR_ENV_MACHINE_DONE" -eq 1 ]] && extra=(--project-only)
+    _DOCTOR_ENV_MACHINE_DONE=1
+    out="$(bash "$helper" --json --offline "${extra[@]+"${extra[@]}"}" "$path" 2>/dev/null)" || rc=$?  # failure is reported below
+    if [[ "$rc" -ne 0 ]] || ! jq -e '.summary' >/dev/null 2>&1 <<< "$out"; then  # unparsable output is the same failure
+        _add_result "env" "$_WARN" "environment assessment failed (rdf-env.sh exit ${rc})"
+        return 0
+    fi
+    while IFS=$'\t' read -r _ title id; do
+        [[ -n "$id" ]] || continue
+        n=$((n + 1))
+        _add_result "env" "$_WARN" "${title} [${id}] — /r-env shows the fix"
+    done < <(jq -r '.findings[] | select(.severity != "info" and .area != "config" and .area != "pricing")
+                     | [.severity, .title, .id] | @tsv' <<< "$out")
+    if [[ "$n" -eq 0 ]]; then
+        _add_result "env" "$_OK" "environment has what this project needs$( [[ ${#extra[@]} -gt 0 ]] && printf ' (project checks)')"
+    fi
+    return 0
 }
 
 # _harness_env name [settings-file ...] — env var <name>, else the first settings file's .env.<name>
@@ -1692,6 +1726,7 @@ _doctor_one() {
             _check_readme "$path"
             _check_doc_truth "$path"
             _check_harness "$path"
+            _check_env "$path"
             ;;
         artifacts)      _check_artifacts "$path" ;;
         drift)          _check_drift "$path" ;;
@@ -1708,7 +1743,8 @@ _doctor_one() {
         readme)         _check_readme "$path" ;;
         doc-truth)      _check_doc_truth "$path" ;;
         harness)        _check_harness "$path" ;;
-        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness" ;;
+        env)            _check_env "$path" ;;
+        *)         rdf_die "unknown scope: $scope — valid: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness, env" ;;
     esac
 }
 

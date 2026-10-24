@@ -20,7 +20,7 @@ rules.
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
 [![License: GPL v2](https://img.shields.io/github/license/rfxn/rdf?color=blue)](https://github.com/rfxn/rdf/blob/main/LICENSE)
 
-**6 agents · 37 commands · 13 profiles · 5 adapters · 7 modes**
+**6 agents · 38 commands · 13 profiles · 5 adapters · 7 modes**
 
 [Quickstart: 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
 [View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }
@@ -41,8 +41,8 @@ verify health. 42 seconds, no edits, ends at `0 FAIL`.*
 /plugin install rdf@rdf
 ```
 
-Plugin-only installs run in a **degraded mode** for the 10 state-backed
-commands (`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`,
+Plugin-only installs run in a **degraded mode** for the 11 state-backed
+commands (`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-env`, `r-save`,
 `r-refresh`, `r-context-audit`, `r-vpe`, `r-util-mem-compact`): the full
 session-state machinery needs the `~/.rdf/state/` helpers that only the
 symlink deploy below populates. See [multi-tool parity](multi-tool-parity).

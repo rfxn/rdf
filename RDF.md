@@ -122,12 +122,13 @@ rdf/                                 # Repository root
 |   |   |-- uat.md                   # User acceptance testing
 |   |   +-- reviewer.md              # Adversarial review (challenge + sentinel)
 |   |
-|   |-- commands/                    # 37 commands under /r- namespace
+|   |-- commands/                    # 38 commands under /r- namespace
 |   |   |-- r-init.md                # Governance initialization
 |   |   |-- r-start.md               # Session initialization
 |   |   |-- r-plan.md                # Planning workflow
 |   |   |-- r-mode.md                # Mode switching
 |   |   |-- r-status.md              # Project health dashboard
+|   |   |-- r-env.md                 # Environment assessment
 |   |   |-- r-refresh.md             # Governance refresh
 |   |   |-- r-sync.md                # Canonical source sync
 |   |   |-- r-audit.md               # Full codebase audit
@@ -192,6 +193,7 @@ rdf/                                 # Repository root
 |-- state/
 |   |-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
 |   |-- rdf-tokens.sh                # Local token usage report from Claude Code transcripts and Codex rollouts
+|   |-- rdf-env.sh                   # Environment assessment (/r-env, /r-start brief, doctor env)
 |   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
 |   |-- rdf-lessons.sh               # Lessons ID-index + consolidation scan (3.4)
 |   |-- rdf-overhead.sh              # Per-session token overhead -> JSON (3.4)
@@ -217,7 +219,7 @@ rdf/                                 # Repository root
 
 - Canonical agent/command/script storage with tool-agnostic content
 - 6 universal agents with governance-driven behavior
-- 37 commands under `/r-` namespace (21 lifecycle + 16 utility)
+- 38 commands under `/r-` namespace (22 lifecycle + 16 utility)
 - Unified CLI (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
   `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`, `rdf migrate`)
 - Tool-specific adapters (Claude Code, Claude Plugin, Agent Skills, Gemini CLI, AGENTS.md; Codex and Antigravity CLI served by the Agent Skills + AGENTS.md composite)
@@ -250,7 +252,7 @@ rdf/                                 # Repository root
 ## Success Metrics
 
 - All active projects pass `rdf doctor --all` with OK status
-- `rdf generate claude-code` produces 8 agents (6 canonical + 2 routing variants) + 37 skills
+- `rdf generate claude-code` produces 8 agents (6 canonical + 2 routing variants) + 38 skills
 - `rdf state` returns accurate JSON for any project in <1 second
 - Zero convention drift between canonical source and deployed copies
 - Zero stale v2 references in active code

@@ -30,7 +30,7 @@ bin/rdf doctor
 Plugin commands are namespaced (`/rdf:r-start` instead of `/r-start`).
 Note: a SessionStart hook bootstraps the `~/.rdf/state/` helpers on the
 plugin's first session start after install; the state-backed commands
-(`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-save`, `r-refresh`,
+(`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-env`, `r-save`, `r-refresh`,
 `r-context-audit`, `r-vpe`, `r-util-mem-compact`) run in a **degraded mode**
 only before that first restart ([parity details](multi-tool-parity)). Hooks
 auto-register on the plugin path (declared in `plugin.json`); the symlink
