@@ -417,6 +417,212 @@ _tok_rb() {
     rm -rf "$t"
 }
 
+# ── pricing rules ────────────────────────────────────────────────────────────
+
+# _tok_u sid id model ts usage-json — one assistant entry with an explicit usage object
+_tok_u() {
+    printf '{"type":"assistant","timestamp":"%s","sessionId":"%s","message":{"id":"%s","model":"%s","usage":%s}}\n' "$4" "$1" "$2" "$3" "$5"
+}
+
+# _tok_models dir — sorted [model, turns, cost] triples for a transcripts dir
+_tok_models() {
+    bash "$TOK" --transcripts "$1" --since 2026-09-01 --json | jq -c '[.by_model[] | [.model, .turns, .cost_usd]] | sort'
+}
+
+@test "pricing: Sonnet 5.5 cache reads cost its own 0.05x rate, not Sonnet 5's" {
+    local t; t="$(mktemp -d)"
+    { _tok_u s1 a claude-sonnet-5-5 2026-09-10T00:00:00Z '{"input_tokens":0,"output_tokens":0,"cache_read_input_tokens":1000000}'
+      _tok_u s1 b claude-sonnet-5 2026-09-10T00:01:00Z '{"input_tokens":0,"output_tokens":0,"cache_read_input_tokens":1000000}'; } > "${t}/s1.jsonl"
+    run _tok_models "$t"
+    [ "$status" -eq 0 ]
+    [ "$output" = '[["claude-sonnet-5",1,0.2],["claude-sonnet-5-5",1,0.1]]' ]
+    rm -rf "$t"
+}
+
+@test "pricing: a Haiku 5.5 prompt over 100K tokens, cache reads included, uses the long-prompt tier" {
+    local t; t="$(mktemp -d)"
+    { _tok_u s1 a claude-haiku-5-5 2026-09-10T00:00:00Z '{"input_tokens":100000,"output_tokens":0}'
+      _tok_u s1 b claude-haiku-5-5 2026-09-10T00:01:00Z '{"input_tokens":50000,"output_tokens":0,"cache_read_input_tokens":60000}'; } > "${t}/s1.jsonl"
+    run _tok_models "$t"
+    [ "$status" -eq 0 ]
+    [ "$output" = '[["claude-haiku-5-5",2,0.038]]' ]
+    rm -rf "$t"
+}
+
+@test "pricing: fast mode scales every class from the fast input price; US residency adds 1.1x only on 4.6+ models" {
+    local t; t="$(mktemp -d)"
+    { _tok_u s1 a claude-opus-5-5 2026-09-10T00:00:00Z '{"input_tokens":1000000,"output_tokens":1000000,"cache_read_input_tokens":1000000,"speed":"fast"}'
+      _tok_u s1 b claude-opus-5-5 2026-09-10T00:01:00Z '{"input_tokens":0,"output_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":1000000,"ephemeral_1h_input_tokens":1000000},"speed":"fast"}'
+      _tok_u s1 c claude-opus-5-5 2026-09-10T00:02:00Z '{"input_tokens":1000000,"output_tokens":0,"inference_geo":"us"}'
+      _tok_u s1 d claude-opus-5-5 2026-09-10T00:03:00Z '{"input_tokens":1000000,"output_tokens":0,"speed":"fast","inference_geo":"us"}'
+      _tok_u s1 e claude-haiku-4-5 2026-09-10T00:04:00Z '{"input_tokens":1000000,"output_tokens":0,"inference_geo":"us"}'; } > "${t}/s1.jsonl"
+    run _tok_models "$t"
+    [ "$status" -eq 0 ]
+    [ "$output" = '[["claude-haiku-4-5",1,1],["claude-opus-5-5",4,87.6]]' ]
+    rm -rf "$t"
+}
+
+@test "pricing: an unlisted newer model id reports unpriced instead of borrowing a sibling's price" {
+    local t; t="$(mktemp -d)"
+    { _tok_row s1 a claude-opus-5-6 2026-09-10T00:00:00Z
+      _tok_row s1 b claude-opus-4-1-20250805 2026-09-10T00:01:00Z
+      _tok_row s1 c 'claude-opus-4-8@20260101' 2026-09-10T00:02:00Z; } > "${t}/s1.jsonl"
+    run bash "$TOK" --transcripts "$t" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.cost_usd, .unpriced_models]' <<< "$output")" = '[20,["claude-opus-5-6"]]' ]
+    rm -rf "$t"
+}
+
+@test "--pricing --json carries the date, its age, the source pages and both vendors' tables" {
+    run _tok --pricing --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -r '.as_of | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")' <<< "$output")" = "true" ]
+    [ "$(jq -r '.age_days | type' <<< "$output")" = "number" ]
+    [ "$(jq -r '.expires == null or .expires >= .as_of' <<< "$output")" = "true" ]
+    [ "$(jq -r '.sources.anthropic' <<< "$output")" = "https://platform.claude.com/docs/en/about-claude/pricing" ]
+    [ "$(jq -r '.sources.openai' <<< "$output")" = "https://developers.openai.com/api/docs/pricing" ]
+    [ "$(jq -c '.anthropic["claude-sonnet-5-5"] | [.in, .cr, .cw5, .cw1h]' <<< "$output")" = "[2,0.1,2.5,4]" ]
+    [ "$(jq -c '.openai["gpt-6-sol"] | [.in, .cr, .cw, .out]' <<< "$output")" = "[2,0.2,2.5,10]" ]
+    run _tok --pricing
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"https://platform.claude.com/docs/en/about-claude/pricing"* ]]
+    [[ "$output" == *"claude-opus-5-5"*"fast 8/40"* ]]
+    run _tok --pricing --summary
+    [ "$status" -eq 2 ]
+}
+
+# ── Codex rollouts (--codex) ─────────────────────────────────────────────────
+
+# _cx_meta ts id cwd / _cx_ctx ts model / _cx_tok ts in cached cw out reasoning — rollout records
+_cx_meta() { printf '{"timestamp":"%s","type":"session_meta","payload":{"id":"%s","cwd":"%s"}}\n' "$1" "$2" "$3"; }
+_cx_ctx() { printf '{"timestamp":"%s","type":"turn_context","payload":{"model":"%s"}}\n' "$1" "$2"; }
+_cx_tok() {
+    printf '{"timestamp":"%s","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":%s,"cached_input_tokens":%s,"cache_write_input_tokens":%s,"output_tokens":%s,"reasoning_output_tokens":%s,"total_tokens":%s}}}}\n' \
+        "$1" "$2" "$3" "$4" "$5" "$6" "$(( $2 + $5 ))"
+}
+
+# _cx_home — a CODEX_HOME with one day directory; prints its path
+_cx_home() {
+    local h; h="$(mktemp -d)"
+    mkdir -p "${h}/sessions/2026/10/02"
+    printf '%s' "$h"
+}
+
+@test "codex: cumulative totals become per-turn deltas; a repeated event counts once; cached and cache-write split out of input" {
+    local h p; h="$(_cx_home)"; p="$(mktemp -d)"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"
+      _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_tok 2026-10-02T10:00:10Z 1000000 600000 100000 100000 50000
+      _cx_tok 2026-10-02T10:00:15Z 1000000 600000 100000 100000 50000
+      _cx_tok 2026-10-02T10:01:00Z 2000000 1500000 100000 150000 60000; } > "${h}/sessions/2026/10/02/rollout-a.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.source, .sessions, .api_turns, .cost_usd]' <<< "$output")" = '["codex",1,2,2.85]' ]
+    [ "$(jq -c '.tokens' <<< "$output")" = '{"input":400000,"cached_input":1500000,"cache_write":100000,"output":150000,"reasoning":60000}' ]
+    rm -rf "$h" "$p"
+}
+
+@test "codex: a model switch re-attributes later deltas, an unknown model is unpriced, a dropped total restarts the sequence" {
+    local h p; h="$(_cx_home)"; p="$(mktemp -d)"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"
+      _cx_ctx 2026-10-02T10:00:00Z gpt-5.6-sol
+      _cx_tok 2026-10-02T10:00:10Z 100000 0 0 10000 0
+      _cx_ctx 2026-10-02T10:01:00Z codex-auto-review
+      _cx_tok 2026-10-02T10:01:10Z 150000 0 0 20000 0
+      _cx_tok 2026-10-02T10:02:10Z 30000 0 0 1000 0; } > "${h}/sessions/2026/10/02/rollout-a.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd, .unpriced_models]' <<< "$output")" = '[3,0.6,["codex-auto-review"]]' ]
+    [ "$(jq -c '[.by_model[] | [.model, .turns, .cost_usd]] | sort' <<< "$output")" = '[["codex-auto-review",2,null],["gpt-5.6-sol",1,0.6]]' ]
+    rm -rf "$h" "$p"
+}
+
+@test "codex: scope is the project's cwd or below it, not a sibling sharing its prefix; --session finds any project" {
+    local h p d; h="$(_cx_home)"; p="$(mktemp -d)"; d="${h}/sessions/2026/10/02"
+    mkdir -p "${p}/proj/sub" "${p}/proj-other"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "${p}/proj"; _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0; } > "${d}/rollout-1.jsonl"
+    { _cx_meta 2026-10-02T10:00:00Z c2 "${p}/proj/sub"; _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0; } > "${d}/rollout-2.jsonl"
+    { _cx_meta 2026-10-02T10:00:00Z c3 "${p}/proj-other"; _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0; } > "${d}/rollout-3.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "${p}/proj" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.sessions, .api_turns, .cost_usd]' <<< "$output")" = '[2,2,4]' ]
+    CODEX_HOME="$h" run _tok --codex --session c3 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.source, .session, .api_turns, .cost_usd]' <<< "$output")" = '["codex","c3",1,2]' ]
+    rm -rf "$h" "$p"
+}
+
+@test "codex: a delta before the window is excluded but still serves as the baseline" {
+    local h p; h="$(_cx_home)"; p="$(mktemp -d)"
+    { _cx_meta 2026-08-01T10:00:00Z c1 "$p"
+      _cx_ctx 2026-08-01T10:00:00Z gpt-6-sol
+      _cx_tok 2026-08-01T10:00:10Z 1000000 0 0 0 0
+      _cx_tok 2026-10-02T10:00:10Z 1500000 0 0 0 0; } > "${h}/sessions/2026/10/02/rollout-a.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .tokens.input, .cost_usd]' <<< "$output")" = '[1,500000,1]' ]
+    rm -rf "$h" "$p"
+}
+
+# _cx_sub ts id cwd parent / _cx_set ts tier / _cx_tur ts response-id in cached cw out reasoning
+_cx_sub() { printf '{"timestamp":"%s","type":"session_meta","payload":{"id":"%s","cwd":"%s","source":{"subagent":{"thread_spawn":{"parent_thread_id":"%s","depth":1}}}}}\n' "$1" "$2" "$3" "$4"; }
+_cx_set() { printf '{"timestamp":"%s","type":"event_msg","payload":{"type":"thread_settings_applied","thread_settings":{"service_tier":"%s"}}}\n' "$1" "$2"; }
+_cx_tur() {
+    printf '{"timestamp":"%s","type":"token_usage_record","payload":{"response_id":"%s","usage":{"input_tokens":%s,"cached_input_tokens":%s,"cache_write_input_tokens":%s,"output_tokens":%s,"reasoning_output_tokens":%s}}}\n' \
+        "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+}
+
+@test "codex: per-response records win over token_count, dedup by response id across rollouts, and price Fast and over-272K requests" {
+    local h p d; h="$(_cx_home)"; p="$(mktemp -d)"; d="${h}/sessions/2026/10/02"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"
+      _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_set 2026-10-02T10:00:01Z priority
+      _cx_tur 2026-10-02T10:00:10Z r1 300000 0 0 0 0
+      _cx_set 2026-10-02T10:01:00Z default
+      _cx_tur 2026-10-02T10:01:10Z r2 100000 0 0 10000 0
+      _cx_tok 2026-10-02T10:01:20Z 9000000 0 0 9000000 0; } > "${d}/rollout-a.jsonl"
+    { _cx_sub 2026-10-02T10:02:00Z c2 "$p" c1
+      _cx_meta 2026-10-02T10:02:00Z c1 "$p"
+      _cx_ctx 2026-10-02T10:02:00Z gpt-6-sol
+      _cx_tur 2026-10-02T10:01:10Z r2 100000 0 0 10000 0
+      _cx_ctx 2026-10-02T10:03:00Z gpt-5.1-codex-max
+      _cx_tur 2026-10-02T10:03:10Z r3 50000 0 0 0 0; } > "${d}/rollout-b.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.sessions, .subagent_runs, .api_turns, .cost_usd, .unpriced_models]' <<< "$output")" = '[1,1,3,2.7,["gpt-5.1-codex-max"]]' ]
+    [ "$(jq -c '[.by_model[] | [.model, .tier, .turns, .cost_usd]] | sort' <<< "$output")" = '[["gpt-5.1-codex-max","standard",1,null],["gpt-6-sol","fast",1,2.4],["gpt-6-sol","standard",1,0.3]]' ]
+    CODEX_HOME="$h" run _tok --codex --session c1 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .subagent_runs, .cost_usd]' <<< "$output")" = '[3,1,2.7]' ]
+    rm -rf "$h" "$p"
+}
+
+@test "codex: a review subagent (source subagent \"review\", no turn_context) counts as a run with an unknown, unpriced model" {
+    local h p; h="$(_cx_home)"; p="$(mktemp -d)"
+    { printf '{"timestamp":"2026-10-02T10:00:00Z","type":"session_meta","payload":{"id":"rv1","cwd":"%s","source":{"subagent":"review"}}}\n' "$p"
+      _cx_tok 2026-10-02T10:00:10Z 50000 0 0 1000 0; } > "${h}/sessions/2026/10/02/rollout-r.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.sessions, .subagent_runs, .api_turns, .cost_usd, .unpriced_models]' <<< "$output")" = '[0,1,1,0,["unknown"]]' ]
+    rm -rf "$h" "$p"
+}
+
+@test "codex: --transcripts is rejected; a missing Codex home exits 1; an empty window prints no usage" {
+    local h p; h="$(_cx_home)"; p="$(mktemp -d)"
+    run _tok --codex --transcripts "$p"
+    [ "$status" -eq 2 ]
+    CODEX_HOME="${p}/none" run _tok --codex --project "$p"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no Codex sessions"* ]]
+    CODEX_HOME="$h" run _tok --codex --project "$p"
+    [ "$status" -eq 0 ]
+    [ "$output" = "no Codex usage in window" ]
+    rm -rf "$h" "$p"
+}
+
 @test "rdf-tokens.sh uses no jq 1.6+ builtins or reserved-word variables" {
     run grep -nE '(^|[^a-z_])(round|ceil|abs|trim|ltrim|rtrim|pick|IN|INDEX|walk|halt_error|splits|test|match|capture|sub|gsub|scan)\(|\$ENV|[^a-z]env\.|--args|--jsonargs|--rawfile|strptime' "$TOK"
     [ "$status" -eq 1 ]

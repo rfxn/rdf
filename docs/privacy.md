@@ -20,7 +20,8 @@ machine.
 
 `rdf tokens` (and the per-session summary `/r-save` records) reads the
 Claude Code transcripts already stored on your machine under
-`~/.claude/projects/` and writes its summary to your local
+`~/.claude/projects/` (with `--codex`, the Codex rollouts under
+`~/.codex/sessions/`) and writes its summary to your local
 `.rdf/work-output/session-log.jsonl`. It sends nothing anywhere.
 
 ## Where your data lives

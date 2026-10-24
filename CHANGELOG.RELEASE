@@ -1,35 +1,28 @@
-# RDF 3.9.2 Release Notes
+# RDF Unreleased Release Notes
 
-## 3.9.2
+## Unreleased
 
 -- New Features --
 
-[New] rdf tokens reports cache rebuilds: turns after an idle gap past the cache TTL (5 min, or
-      1 h when the turn's 1h writes exceed its 5m writes) that rewrite at least half of a 50K+
-      token context, costed as the write price minus a cache read; --json adds a rebuilds object,
-      --summary rebuild_events and rebuild_cost_usd, and the text report a cache rebuilds line
-[New] read discipline: reference/read-discipline.md ladder (locate first; read whole under 400
-      lines; map or a 200-250 line window above; a whole large file only when editing or
-      reviewing across it) with LSP code intelligence use and limits; planner, engineer, qa and
-      reviewer carry the rule and list LSP in their tools
-[New] rdf doctor harness reports the effective subagent prompt cache TTL and its source in
-      Claude Code's documented order (FORCE_PROMPT_CACHING_5M,
-      CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, subagentPromptCacheTtl, ENABLE_PROMPT_CACHING_1H,
-      else the automatic 5m); every outcome is OK, and the automatic 5m row says to compare rdf
-      tokens rebuild cost with subagent cache-write spend before choosing 1h
+[New] rdf tokens --codex: Codex CLI spend from ~/.codex/sessions rollouts whose cwd is the project
+      or below it, or --session with its spawned threads; per-response token_usage_record rows
+      deduplicated by response_id (cumulative token_count deltas for older rollouts), model and
+      Fast/Standard tier from turn_context and thread_settings_applied, subagent runs apart from
+      sessions
+[New] rdf tokens --pricing [--json]: the embedded price table with its as-of date, age, earliest
+      promotional expiry and source pages (Anthropic and OpenAI pricing)
 
 -- Changes --
 
-[Change] mutation checks run only the tests that target the mutated code, then the full suite
-         once: engineer red step, reviewer regression pass, core governance template, CLAUDE.md,
-         and a "Mutation checks" section with the filter command in each language testing reference
-[Change] read thresholds 500 -> 400 lines: /r-util-code-map default, /r-audit large-file
-         discipline, /r-init convention ingest; core governance Context Window Hygiene and
-         CLAUDE.md.ref Context Preservation carry the ladder
+[Change] rdf tokens prices: every current and retired Claude model from the Anthropic pricing page
+         with explicit 5m/1h cache-write and cache-read rates, the Haiku 5.5 over-100K prompt tier,
+         fast mode (usage.speed) and 1.1x US data residency (usage.inference_geo, Claude 4.6+);
+         OpenAI Standard and Fast rates, with over-272K long-context rates, for Codex models
+[Change] a model id matches a price key only as the exact id or the id plus a date, @version or
+         -vN suffix; an unlisted newer model reports unpriced instead of borrowing a sibling's price
 
 -- Bug Fixes --
 
-[Fix] docs site: the 3.9.1 em dash sweep left an unquoted colon in docs/_config.yml, so Pages
-      builds failed from 3.9.1 on; the description is quoted again
-[Fix] /r-audit told reviewer subagents to invoke /r-util-code-map, a skill subagents cannot
-      call; they now map large files inline (LSP documentSymbol or a definitions grep)
+[Fix] rdf tokens priced Claude Sonnet 5.5 as Sonnet 5 (cache reads $0.20 instead of $0.10 per
+      MTok) and left Haiku 5.5, Opus 4.5-4.7, Sonnet 4.x and Mythos unpriced
+

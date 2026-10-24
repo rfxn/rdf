@@ -191,7 +191,7 @@ rdf/                                 # Repository root
 |
 |-- state/
 |   |-- rdf-state.sh                 # Project state -> JSON (<1s, no LLM)
-|   |-- rdf-tokens.sh                # Local token usage report from Claude Code transcripts
+|   |-- rdf-tokens.sh                # Local token usage report from Claude Code transcripts and Codex rollouts
 |   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
 |   |-- rdf-lessons.sh               # Lessons ID-index + consolidation scan (3.4)
 |   |-- rdf-overhead.sh              # Per-session token overhead -> JSON (3.4)

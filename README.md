@@ -241,7 +241,11 @@ tokens would have cost (main and subagent transcripts are reported separately;
 a transcript's first turn never counts; a turn copied into a fork or resumed
 transcript counts once).
 `--session <id> --summary` is what `/r-save` records per session;
-`/r-start` shows it. Prices are embedded estimates; nothing is sent anywhere.
+`/r-start` shows it. `--codex` reports Codex CLI rollouts the same way
+(per-response usage, model and Fast/Standard tier, subagent runs apart from
+sessions). Prices are list prices copied from the Anthropic and OpenAI pricing
+pages; `--pricing` prints them with their date and sources. Nothing is sent
+anywhere.
 
 Scoped language rules load only when a matching file is read; they add nothing
 to the always-loaded figures. Opt into either variant with a deploy flag:
@@ -325,7 +329,7 @@ Run 'rdf <command> help' for details.
 | `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
 | `rdf doctor [--scope] [--all]` | 15 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness |
 | `rdf state [<path>]` | JSON snapshot in <1s, no LLM calls |
-| `rdf tokens [--days N] [--session ID] [--json]` | Local token usage report from Claude Code transcripts (deduplicated, list-price estimate) |
+| `rdf tokens [--days N] [--session ID] [--json] [--codex] [--pricing]` | Local token usage report from Claude Code transcripts or Codex rollouts (deduplicated, list-price estimate); `--pricing` shows the dated, sourced price table |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
