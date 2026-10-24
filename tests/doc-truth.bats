@@ -391,3 +391,8 @@ FOOMD
     [[ "$output" != *"|FAIL|"* ]]
     rm -rf "$fix"
 }
+
+@test "docs/_config.yml: no unquoted value holds ': ' (Jekyll rejects it and Pages stops deploying)" {
+    run grep -nE "^[A-Za-z_]+: [^\"'|>].*: " "${RDF_SRC}/docs/_config.yml"
+    [ "$status" -eq 1 ]
+}
