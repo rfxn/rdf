@@ -12,6 +12,9 @@
       lines; map or a 200-250 line window above; a whole large file only when editing or
       reviewing across it) with LSP code intelligence use and limits; planner, engineer, qa and
       reviewer carry the rule and list LSP in their tools
+[New] rdf doctor harness: subagent prompt cache TTL check; WARNs when subagents run on the
+      automatic 5m TTL and recommends "subagentPromptCacheTtl": "1h" in ~/.claude/settings.json,
+      resolving CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, then the setting, then ENABLE_PROMPT_CACHING_1H
 
 -- Changes --
 

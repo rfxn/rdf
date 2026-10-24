@@ -981,7 +981,39 @@ _check_harness() {
             fi
             ;;
     esac
+
+    # Claude Code's subagent TTL order: env var, then setting, then ENABLE_PROMPT_CACHING_1H, else 5m
+    local ttl tsrc="CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL"
+    ttl="$(_harness_env CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL "${files[@]+"${files[@]}"}")"
+    case "$ttl" in 5m|1h) ;; *) ttl="" ;; esac
+    if [[ -z "$ttl" ]]; then
+        for f in "${files[@]+"${files[@]}"}"; do
+            ttl="$(jq -r '.subagentPromptCacheTtl // empty | select(. == "5m" or . == "1h")' "$f" 2>/dev/null || true)"  # the CC schema drops other values; non-object settings → unset
+            [[ -n "$ttl" ]] && { tsrc="subagentPromptCacheTtl in ${f}"; break; }
+        done
+    fi
+    if [[ -z "$ttl" ]] && [[ -n "$(_harness_env ENABLE_PROMPT_CACHING_1H "${files[@]+"${files[@]}"}")" ]]; then
+        ttl="1h"; tsrc="ENABLE_PROMPT_CACHING_1H"
+    fi
+    if [[ -n "$ttl" ]]; then
+        _add_result "harness" "$_OK" "subagent prompt cache TTL ${ttl} (${tsrc})"
+    else
+        _add_result "harness" "$_WARN" "subagent prompt cache TTL is the automatic 5m — a subagent idle past 5 minutes between turns (test runs, reviews) rewrites its whole prompt cache; add \"subagentPromptCacheTtl\": \"1h\" to ~/.claude/settings.json (1h writes bill higher, so it pays when subagent turns sit minutes apart)"
+    fi
     return 0
+}
+
+# _harness_env name [settings-file ...] — env var <name>, else the first settings file's .env.<name>
+_harness_env() {
+    local name="$1" val f; shift
+    val="${!name:-}"
+    if [[ -z "$val" ]]; then
+        for f in "$@"; do
+            val="$(jq -r --arg n "$name" '.env[$n] // empty' "$f" 2>/dev/null || true)"  # non-object env → unset
+            [[ -n "$val" ]] && break
+        done
+    fi
+    printf '%s' "$val"
 }
 
 # ── Check: doc-stats (RDF-specific) ──

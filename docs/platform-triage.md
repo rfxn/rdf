@@ -34,6 +34,18 @@ Deferred from the spike's Go/No-Go summary (spike §8):
   an `evals/*/case.yaml` suite (37 positive + ~10 negative cases) run by
   `claude plugin eval`, a `/r-ship` 1e line, and an optional CI job.
 
+Rows to add to the next block:
+
+- **`subagentPromptCacheTtl`**: detect and advise; never write user settings.
+  Doctor `harness` WARNs when it resolves to the automatic 5m. Evidence: the
+  2.1.310 settings schema (not the docs) covers "subagents, workflows,
+  background and helper requests", with "Unset = automatic (5 minutes unless
+  ENABLE_PROMPT_CACHING_1H=1)"; the key is in every installed build from
+  2.1.302. Probe 2026-10-24: with the setting at `"1h"`, a fresh subagent's
+  transcript wrote 37,791 tokens at `ephemeral_1h` and 0 at 5m; before the
+  change, every subagent wrote only 5m. Trigger: the docs publish the
+  setting, rename it, or change its default.
+
 ---
 
 ## 3.9 (2026-10-22)
