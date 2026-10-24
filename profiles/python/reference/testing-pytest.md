@@ -320,3 +320,14 @@ def handle_error(exc: Exception) -> None:  # pragma: no cover  # BAD
     logger.error("Failed: %s", exc)
     sys.exit(1)
 ```
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+pytest tests/test_args.py::test_refuses_empty_name -q
+pytest tests/test_args.py -k refuses_empty -q
+```

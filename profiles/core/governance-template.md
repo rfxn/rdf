@@ -17,6 +17,8 @@
 
 - Run project linter(s) on all changed files before commit
 - Run project test suite (or targeted subset) before commit
+- Mutation checks (break code on purpose, watch a test go red): run only the
+  tests that target the mutated code, then the full suite once at the end
 - Scan for common anti-patterns (see anti-patterns section)
 - Validate that documentation stays in sync with code changes
 

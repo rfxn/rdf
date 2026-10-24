@@ -447,3 +447,13 @@ pnpm vitest run --coverage
 # Update snapshots
 pnpm vitest run --update
 ```
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+npx vitest run src/args.test.ts -t 'refuses an empty name'
+```

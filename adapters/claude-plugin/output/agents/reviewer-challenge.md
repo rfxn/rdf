@@ -151,7 +151,9 @@ Reviews diffs across the passes selected by depth:
    outside the scope of the phase
 2. **Regression** — does any existing behavior change? Are there
    pre-existing tests that this change might break? Does the change
-   preserve backward compatibility?
+   preserve backward compatibility? When you mutate code to check that
+   a test catches it, run only the tests that target the mutated code,
+   never the full suite per mutant
 3. **Security** — injection vectors, auth bypass, data exposure,
    secrets in code, unsafe deserialization, path traversal
 

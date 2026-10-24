@@ -244,3 +244,13 @@ capture the exit:
     [[ "$output" == *"usage"* ]]
 }
 ```
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+bats -f 'refuses an empty name' tests/args.bats
+```

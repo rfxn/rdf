@@ -9,6 +9,12 @@
       token context, costed as the write price minus a cache read; --json adds a rebuilds object,
       --summary rebuild_events and rebuild_cost_usd, and the text report a cache rebuilds line
 
+-- Changes --
+
+[Change] mutation checks run only the tests that target the mutated code, then the full suite
+         once: engineer red step, reviewer regression pass, core governance template, CLAUDE.md,
+         and a "Mutation checks" section with the filter command in each language testing reference
+
 -- Bug Fixes --
 
 [Fix] docs site: the 3.9.1 em dash sweep left an unquoted colon in docs/_config.yml, so Pages

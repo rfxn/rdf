@@ -345,3 +345,15 @@ php artisan test --stop-on-failure
 ```
 
 Use `--stop-on-failure` for fast feedback on the first broken test.
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+vendor/bin/phpunit --filter testRefusesEmptyName tests/ArgsTest.php
+```
+
+Infection already runs only the tests that cover each mutant's line, from coverage data.

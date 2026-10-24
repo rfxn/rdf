@@ -322,3 +322,13 @@ func TestRenderTemplate(t *testing.T) {
 
 Run `go test -update` to regenerate golden files after intentional
 output changes. Commit the updated files alongside the code change.
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+go test -run '^TestRefusesEmptyName$' ./internal/args
+```

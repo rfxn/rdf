@@ -375,3 +375,13 @@ prove t/specific.t     # single file isolation
 If a test fails in isolation but passes in the full suite, it has
 a hidden dependency on another test's side effects. Fix the
 dependency -- do not rely on execution order.
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+prove -v t/args.t
+```

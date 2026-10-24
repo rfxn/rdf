@@ -438,3 +438,13 @@ If the project declares an MSRV in `Cargo.toml`, test against it:
           toolchain: "1.70" # match rust-version in Cargo.toml
       - run: cargo test
 ```
+
+## Mutation checks
+
+When you break code on purpose to prove a test catches it (a mutant), run only the
+tests that target that code, then the full suite once after the last restore. A full
+suite per mutant multiplies the cost by the number of mutants for no extra signal.
+
+```bash
+cargo test args::tests::refuses_empty_name -- --exact
+```

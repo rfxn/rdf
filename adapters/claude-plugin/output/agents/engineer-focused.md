@@ -149,6 +149,9 @@ SHOULD-FIX. LOW rows are INFORMATIONAL.
 1. **Red** — Write a failing test that defines the acceptance criteria
    - Test must fail for the RIGHT reason (missing function, wrong output)
    - Run the test, capture failure output
+   - When you break code on purpose to prove a test catches it (a mutant),
+     run only the tests that target that code, then the full suite once
+     after the last restore, never the full suite per mutant
 2. **Green** — Write the minimum implementation to pass the test
    - Follow conventions from governance
    - Respect constraints (platform targets, version floors, etc.)
