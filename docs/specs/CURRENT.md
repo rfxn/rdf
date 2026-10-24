@@ -15,6 +15,28 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases, since a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.9.3 (2026-10-24)
+
+ADDED: `rdf tokens --codex` (`state/rdf-tokens.sh`): Codex CLI rollouts under
+`${CODEX_HOME:-~/.codex}/sessions` scoped by `session_meta.cwd` (path boundary) or `--session`
+with spawned threads; per-response `token_usage_record` rows deduplicated by `response_id`
+(cumulative `token_count` deltas as the fallback), Standard/Fast tier, the over-272K rate per
+request only; `by_kind` (review = read-only sandbox, write), `by_effort`, and account-wide
+`quota` (peak and latest `used_percent` per reset window and limit, from every rollout in the
+window; null with `--session`).
+ADDED: `rdf tokens --pricing [--json]`: the embedded `_tok_prices` table with `as_of`, age,
+earliest promotional expiry and source pages; Anthropic rows carry 5m/1h cache-write, cache-read,
+fast, long-prompt and US-residency rates; OpenAI rows Standard, Fast and long-context rates.
+ADDED: `/r-env` (`canonical/commands/r-env.md`) over `state/rdf-env.sh`: read-only environment
+assessment (code intelligence plugin and language server per primary language, tools, fd limit,
+sandbox dependencies, Claude Code currency, settings, CLAUDE.md and memory sizes, price-table
+age) with fixes for the host's package manager; brief mode embedded by
+`rdf-state.sh --full --env` for `/r-start`; `rdf doctor` `env` scope (default set, WARN only).
+MODIFIED: a model id matches a price key only as the exact id or the id plus a date, @version or
+-vN suffix; unlisted models report unpriced.
+MODIFIED: `rdf doctor --scope harness` Bash output row: `bashOutputMaxChars` above 30000 warns;
+`BASH_MAX_OUTPUT_LENGTH` is OK (it sizes only the read-back window).
+
 ## 3.9.2 (2026-10-24)
 
 ADDED: `canonical/reference/read-discipline.md`: the read ladder (locate first; read whole

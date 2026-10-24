@@ -95,6 +95,18 @@ carried in this release:
       built-in profiles; see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Shipped in 3.9.3: sourced pricing, Codex usage and environment assessment
+
+Joint release from two concurrent sessions; spec → build → QA + sentinel, then a Codex
+(gpt-6-astra) review of the fix diff before tagging.
+
+- [x] `rdf tokens` price table copied from the Anthropic and OpenAI pricing pages, dated and
+      sourced; `--pricing` prints it with its age and links
+- [x] `rdf tokens --codex`: Codex CLI spend per model and tier, review vs write, effort, and the
+      account's plan quota peak per reset window
+- [x] `/r-env` environment assessment with exact fixes; `/r-start` brief; `rdf doctor` env scope
+- [x] BATS 507 → 541
+
 ## Shipped in 3.9.2: read discipline and cache rebuilds
 
 Transcript-driven token-spend review → build → QA + sentinel release gates.
