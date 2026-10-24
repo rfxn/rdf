@@ -86,9 +86,9 @@ symlinked into the new project and its `AGENTS.md` is composed from the
 `CLAUDE.md` that `init` just wrote (spec
 `docs/specs/2026-09-02-skills-native-adapter-consolidation-design.md` §5).
 
-**Bounded surface.** The shared skills tree covers the **10 lifecycle
+**Bounded surface.** The shared skills tree covers the **11 lifecycle
 commands** (`/r-spec`, `/r-plan`, `/r-build`, `/r-ship`, `/r-start`,
-`/r-save`, `/r-status`, `/r-audit`, `/r-refresh`, `/r-init`), not all 37 RDF
+`/r-save`, `/r-status`, `/r-env`, `/r-audit`, `/r-refresh`, `/r-init`), not all 38 RDF
 commands (source of truth: `adapters/agent-skills/skill-meta.json`). Utility
 commands stay Claude-Code-only for now.
 

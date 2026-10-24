@@ -127,9 +127,9 @@ _tok_prices() {
   "gpt-5.5":       {"in": 5, "out": 30, "cr": 0.5, "long": {"in": 10, "out": 45, "cr": 1}, "fast": {"in": 12.5, "out": 75, "cr": 1.25}},
   "gpt-5.4":       {"in": 2.5, "out": 15, "cr": 0.25, "long": {"in": 5, "out": 22.5, "cr": 0.5}, "fast": {"in": 5, "out": 30, "cr": 0.5}},
   "gpt-5.3-codex": {"in": 1.75, "out": 14, "cr": 0.175, "fast": {"in": 3.5, "out": 28, "cr": 0.35}},
-  "gpt-5.2":       {"in": 1.75, "out": 14, "cr": 0.175},
-  "gpt-5.1":       {"in": 1.25, "out": 10, "cr": 0.125},
-  "gpt-5":         {"in": 1.25, "out": 10, "cr": 0.125}}}
+  "gpt-5.2":       {"in": 1.75, "out": 14, "cr": 0.175, "fast": {"in": 3.5, "out": 28, "cr": 0.35}},
+  "gpt-5.1":       {"in": 1.25, "out": 10, "cr": 0.125, "fast": {"in": 2.5, "out": 20, "cr": 0.25}},
+  "gpt-5":         {"in": 1.25, "out": 10, "cr": 0.125, "fast": {"in": 2.5, "out": 20, "cr": 0.25}}}}
 JSON
 }
 
@@ -416,16 +416,13 @@ _tok_codex_files() {
     fi
 }
 
-# _tok_codex_rows logical physical sid — one row per model response into ${_TOK_WORK}/rows.
-# Rollouts with token_usage_record give per-response usage keyed by response_id; older ones only carry
-# cumulative token_count totals, whose differences stand in (a dropped total is a reset). Each row takes
-# the model and service tier of the latest turn_context / thread_settings_applied before it. A rollout's
-# own identity is its first session_meta (a spawned thread repeats its parent's after its own).
+# _tok_codex_rows logical physical sid — one row per model response into ${_TOK_WORK}/rows (sources and attribution: spec §4)
 _tok_codex_rows() {
     local pl="$1" pp="$2" sid="$3" f
+    local records='"type":"(session_meta|turn_context|token_usage_record|thread_settings_applied|token_count)"'
     : > "${_TOK_WORK}/rows"
     while IFS= read -r -d '' f; do
-        # shellcheck disable=SC2094  # the rollout is only read; its path also passes to jq as a plain string
+        grep -E "$records" "$f" > "${_TOK_WORK}/rollout" 2>/dev/null || true  # no record lines or an unreadable rollout → empty input
         jq -R -s -c --arg since "$_TOK_SINCE" --arg pl "$pl" --arg pp "$pp" --arg sid "$sid" --arg file "$f" '
             def n: if type == "number" and . > 0 then . else 0 end;
             def under($c; $p): $p != "" and ($c == $p or ($c | startswith($p + "/")));
@@ -453,8 +450,10 @@ _tok_codex_rows() {
                                    elif . == "workspace-write" or . == "danger-full-access" then "write" else null end) // .kind)
                  elif $e.payload.type == "thread_settings_applied" then
                      .model = ($e.payload.thread_settings.model // .model | tostring)
-                     | .tier = ($e.payload.thread_settings.service_tier // "standard"
-                                | if . == "priority" or . == "fast" then "fast" else "standard" end)
+                     | .tier = ($e.payload.thread_settings.service_tier // "standard" | tostring
+                                | if . == "priority" or . == "fast" then "fast"
+                                  elif . == "standard" or . == "default" or . == "auto" or . == "" then "standard"
+                                  else . end)
                  elif $e.type == "token_usage_record" then
                      if ($e.payload.usage | type) == "object" then
                          .rows += [($e.payload.usage | usage)
@@ -474,7 +473,7 @@ _tok_codex_rows() {
             | select(.in + .out > 0)
             | select($sid != "" or ((.ts[0:19]) >= ($since[0:19])))
             | . + {sid: ($m.id // "" | tostring), role: $role, file: $file}
-        ' < "$f" >> "${_TOK_WORK}/rows" || true  # unreadable rollout → skipped, like a malformed transcript line
+        ' < "${_TOK_WORK}/rollout" >> "${_TOK_WORK}/rows" || true  # malformed rollout → skipped, like a malformed transcript line
     done < "${_TOK_WORK}/files"
 }
 
@@ -517,12 +516,11 @@ _tok_codex_report() {
         --argjson over "$(_tok_prices | jq -c .openai_long_over)" --argjson quota "$quota" \
         --arg mode "$mode" --arg plabel "$plabel" --arg sid "$sid" \
         --arg since "$_TOK_SINCE" --arg root "$root" "${_TOK_JQ_DEFS}"'
-        # tier first (Fast has its own long-context rates), then the over-272K long-context rate, which is
-        # per request: a token_count delta may sum several requests, so only per-response rows get it. An
-        # absent cached or cache-write rate bills at the input rate.
-        def orates($p; $r): (if $r.tier == "fast" and $p.fast != null then $p.fast else $p end) as $t
-            | (if $r.rid != null and $r.in > $over and $t.long != null then $t.long else $t end) as $x
-            | {in: $x.in, out: $x.out, cr: ($x.cr // $x.in), cw: ($x.cw // $x.in)};
+        # tier rate (none for the tier → unpriced), then the per-request over-272K rate; absent cached/write rates bill at input
+        def orates($p; $r): (if $r.tier == "standard" then $p elif $r.tier == "fast" then $p.fast else null end) as $t
+            | if $t == null then null
+              else (if $r.rid != null and $r.in > $over and $t.long != null then $t.long else $t end) as $x
+                   | {in: $x.in, out: $x.out, cr: ($x.cr // $x.in), cw: ($x.cw // $x.in)} end;
         ([.[] | select(.rid != null)] | group_by(.rid) | map(.[0])) + [.[] | select(.rid == null)]
         # cached and cache-write tokens are subsets of input_tokens; reasoning is a subset of output_tokens
         | map(. as $r
@@ -567,7 +565,8 @@ _tok_codex_report() {
                        | map({effort: .[0].effort, turns: length, cost_usd: ([.[].c] | add | r4)})
                        | sort_by(.cost_usd) | reverse),
            quota: $quota,
-           unpriced_models: ([$rows[] | select(.priced | not) | .model] | unique)}
+           unpriced_models: ([$rows[] | select(.priced | not)
+                              | if .tier == "standard" then .model else "\(.model) (\(.tier))" end] | unique)}
         | . as $R
         | def wlabel: if . % 1440 == 0 then "\(. / 1440)-day" elif . % 60 == 0 then "\(. / 60)-hour"
                       else "\(.)-minute" end;

@@ -1,6 +1,6 @@
 # Environment Assessment and Sourced Pricing
 
-Status: built (challenge review answered in §8). Scope: one release.
+Status: built (challenge review answered in §8, sentinel review in §9). Scope: one release.
 
 ## 1. Problem
 
@@ -84,7 +84,11 @@ installs): `as_of`, `sources` (Anthropic and OpenAI pricing pages, Codex plans),
   differences of cumulative `token_count.total_token_usage` (a dropped total is
   a reset). Each row takes the model and tier of the latest `turn_context` /
   `event_msg thread_settings_applied`; `service_tier` `priority` or `fast`
-  prices at Fast. A rollout with no model reports `unknown` (unpriced).
+  prices at Fast, `standard`/`default`/`auto` or none at Standard; any other
+  tier, or Fast on a model without a Fast rate, reports unpriced (named with
+  its tier) rather than at Standard. A rollout with no model reports
+  `unknown` (unpriced). A `grep -E` pre-filter keeps only the record lines the
+  parse needs before the per-rollout slurp.
 - Semantics: cached and cache-write tokens are subsets of `input_tokens`,
   reasoning of `output_tokens` (`total_tokens == input + output`). The 272K
   long rate applies only to per-response rows; a delta may sum requests.
@@ -92,9 +96,11 @@ installs): `as_of`, `sources` (Anthropic and OpenAI pricing pages, Codex plans),
   rollouts), api_turns, tokens, cost, shares, `by_model` by model and tier,
   unpriced models; same text / `--json` / `--summary` shapes, labeled Codex.
 - Known gaps: the cache-write TTL Codex uses is not recorded (priced at the
-  30-minute rate; every write seen so far was zero); web search calls are not
-  priced; Codex scope includes subdirectories while Claude's is the exact
-  project slug. The rollout format is undocumented and pinned by tests.
+  30-minute rate; every write seen so far was zero); a Fast default set only in
+  `config.toml` is not recorded in rollouts (priced at Standard); web search
+  calls are not priced; Codex scope includes subdirectories while Claude's is
+  the exact project slug. The rollout format is undocumented and pinned by
+  tests.
 
 ## 5. Environment assessment
 
@@ -105,8 +111,12 @@ bash 3.2+, jq 1.5+, read-only, no cache file. JSON: `schema`, `mode`, `tool`,
 `summary` (gap, warn, info, ignored), `findings` (`id`, `area`, `severity`,
 `title`, `why`, `fix[]`), `facts`. Severity `gap` is a missing piece of the
 optimal setup, `warn` a risk, `info` context; findings never change the exit
-status. The tool comes from `CLAUDECODE=1`, `GEMINI_CLI` or `CODEX_SANDBOX*`,
-else claude; Claude Code plugin checks run only for claude.
+status. The tool comes from `CLAUDECODE=1`, `GEMINI_CLI`, or `CODEX_THREAD_ID`
+/ `CODEX_SESSION_ID` / `CODEX_SANDBOX*` (Codex exports the first two into
+every command), else claude; Claude Code plugin checks run only for claude.
+Not read: `managed-settings.d/` drop-ins, the macOS MDM plist, `--settings`,
+and a plugin's `defaultEnabled` (a plugin with no `enabledPlugins` entry counts
+as disabled, so the advice is to enable it).
 
 ### 5.2 Checks and their evidence
 
@@ -124,10 +134,10 @@ else claude; Claude Code plugin checks run only for claude.
 | config | `BASH_MAX_OUTPUT_LENGTH` > 30000 without `bashOutputMaxChars` | full | info | env-vars.md, tools-reference.md |
 | config | `USE_BUILTIN_RIPGREP=0` without a system rg | full | warn | troubleshooting.md |
 | config | CLAUDE.md files: > 200 lines info, > 4 MiB warn | full | info/warn | memory.md |
-| config | auto-memory `MEMORY.md` > 200 lines or > 25 KB | full | warn | memory.md load limit |
-| config | transcript disk use when `cleanupPeriodDays` > 90 | full | info | — |
+| config | auto-memory `MEMORY.md` > 200 lines or > 25 KB (the main checkout's memory dir, which worktrees share) | full | warn | memory.md load limit |
+| config | transcript disk use when `cleanupPeriodDays` > 90 (`du -H`: `rdf account` symlinks `projects`) | full | info | — |
 | sandbox | Linux bwrap + socat (warn when `sandbox.enabled`), Ubuntu userns restriction | full | info/warn | sandboxing.md |
-| system | RAM < 4 GB; free disk < 1 GB under HOME or the tmp dir | full | warn | setup.md; changelog disk-full fixes |
+| system | RAM < 3.5 GiB of MemTotal (a 4 GB host reports less: kernel-reserved memory is excluded); free disk < 1 GB under HOME or the tmp dir | full | warn | setup.md; changelog disk-full fixes |
 | tools | python3, ctags (TypeScript/C projects), node/npm when an npm-installed server is missing | full | info/gap | RDF helpers and code-map |
 | codex | installed version behind npm latest | full, online | info | — |
 | pricing | promotional price ended (warn), table > 90 days (warn), > 45 days (info) | full | warn/info | — |
@@ -138,7 +148,8 @@ Languages: manifest markers at depth <= 2 (`tsconfig.json`/`package.json`,
 `Package.swift`, `*.csproj`/`*.sln`, `CMakeLists.txt`/`meson.build`/`compile_commands.json`,
 `.luarc.json`) plus file counts from `git ls-files` (or a pruned `find` outside
 git). Samples, fixtures, docs, examples, vendored, build, scratch and
-`.gitattributes` `linguist-vendored`/`linguist-generated` paths never count. A
+`.gitattributes` paths with `linguist-vendored` or `linguist-generated` set
+(not negated) never count. A
 language is primary with a marker and >= 3 files, or, in a git repository only,
 >= 50 files (shell >= 10).
 
@@ -215,3 +226,18 @@ handling. Targeted mutants were run against each rule and killed.
 | S11 brief noise | Accepted: ignore list, container-harness rule for bats, pricing and jq out of brief |
 | S12 delivery | Accepted: command, skill metadata, counts, docs; Codex/Gemini skip plugin checks |
 | CONSIDER items | Web search pricing, cache-write TTL and scope differences documented (§4); inotify reported as a fact only; disk threshold 1 GB; `residency` kept as a precise per-model flag; el7 git noted in the fix text |
+
+## 9. Sentinel review responses (post-implementation)
+
+| Finding | Response |
+|---|---|
+| MUST-FIX Codex never sets `CODEX_SANDBOX`; /r-start in Codex offered Claude-only fixes | Fixed: `CODEX_THREAD_ID` / `CODEX_SESSION_ID` detect Codex; test added |
+| Fast on gpt-5/5.1/5.2 silently at Standard; unknown tiers likewise | Fixed: Fast rows added; a tier without a rate reports unpriced, named with its tier; test added |
+| `du` read 0 through the symlinked `projects` of `rdf account` | Fixed: `du -skH`, zero skipped, KB shown under 1 MB; test added |
+| auto-memory path wrong from a git worktree | Fixed: the main checkout from `git rev-parse --git-common-dir`; test added |
+| RAM warning at exactly 4 GiB fires on 4 GB hosts | Fixed: 3.5 GiB of MemTotal |
+| `.gitattributes` negations read as exclusions | Fixed: only a set attribute excludes; test added |
+| privacy.md understated the automatic pricing fetch | Fixed: the triggers are named |
+| banners and multi-line comments | Fixed: banners removed, headers one line, rationale lives here |
+| informational: `--project-only` ran config checks doctor discards; MCP count from `$HOME/.claude.json` for another config dir; unquoted config dirs in fix commands; 537 MB jq peak on a 146 MB rollout | Fixed: config skipped in project-only mode; the config dir's `.claude.json`; `printf %q`; the record pre-filter |
+| informational: managed-settings drop-ins and `defaultEnabled`; Codex config.toml Fast default; quota keyed by window only (374db03); nproc on low-RAM Macs | Documented as known gaps (§4, §5.1); quota grouping left to the next `limit_id` seen |

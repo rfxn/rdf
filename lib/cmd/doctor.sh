@@ -1019,9 +1019,7 @@ _harness_truthy() {
     return 1
 }
 
-# _check_env path — the rdf-env.sh assessment, offline (no claude doctor, no registry lookups). Machine-wide
-# checks run for the first project only, so --all repeats just the per-project ones. Gaps and risks WARN,
-# never FAIL; config and pricing findings belong to the memory, harness and /r-env surfaces, not here.
+# _check_env path — offline rdf-env.sh assessment: machine checks once per run, WARN only, config/pricing left to /r-env
 _DOCTOR_ENV_MACHINE_DONE=0
 _check_env() {
     local path="$1" helper="${RDF_STATE_DIR}/rdf-env.sh" out rc=0 n=0 title id

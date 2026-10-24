@@ -20,7 +20,7 @@ setup() {
     mkdir -p "$BIN" "$HOMEDIR" "$CFG" "${T}/tmp"
     local tool path
     for tool in bash jq git awk sed grep sort head tail tr wc cksum uname mktemp rm cat cp mv mkdir \
-        dirname basename date find env getconf df ls ln chmod touch stat cut xargs od; do
+        dirname basename date find env getconf df du ls ln chmod touch stat cut xargs od; do
         path="$(command -v "$tool" 2>/dev/null)" || continue
         ln -s "$path" "${BIN}/${tool}"
     done
@@ -223,4 +223,41 @@ _shell_project() {
     run env -i HOME="$HOMEDIR" PATH="$BIN" CLAUDE_CONFIG_DIR="$CFG" TMPDIR="${T}/tmp" \
         "$BASH_BIN" "${RDF_SRC}/state/rdf-state.sh" --full "$p"
     [ "$(jq -c '.env' <<< "$output")" = "null" ]
+}
+
+@test "brief: a Codex shell (CODEX_THREAD_ID) skips Claude Code plugin checks without --tool" {
+    local p; p="$(_ts_project)"
+    run _env CODEX_THREAD_ID=01a1516a -- --brief --json "$p"
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.tool, .summary.gap, .facts.lsp]' <<< "$output")" = '["codex",0,null]' ]
+}
+
+@test "brief: a .gitattributes negation (linguist-vendored=false) keeps the path; a set attribute excludes it" {
+    local p i; p="${T}/py"; mkdir -p "${p}/lib"
+    touch "${p}/requirements.txt"
+    for i in 1 2 3 4 5; do touch "${p}/lib/m${i}.py"; done
+    printf 'lib/** linguist-vendored=false\n' > "${p}/.gitattributes"
+    _repo "$p"
+    run _env CLAUDECODE=1 -- --brief --json "$p"
+    [ "$(jq -r '[.findings[].id] | join(",")' <<< "$output")" = "lsp-python" ]
+    printf 'lib/** linguist-vendored\n' > "${p}/.gitattributes"
+    run _env CLAUDECODE=1 -- --brief --json "$p"
+    [ "$(jq -r '[.findings[].id] | join(",")' <<< "$output")" = "" ]
+}
+
+@test "full: a worktree reads the main checkout's auto-memory; a symlinked transcripts dir is measured through the link" {
+    local p w slug; p="$(_shell_project)"
+    git -C "$p" -c user.name=t -c user.email=t@t commit -qm init
+    w="${T}/wt"; git -C "$p" worktree add -q "$w" -b side
+    slug="$(cd "$p" && pwd -P | sed 's/[^A-Za-z0-9-]/-/g')"
+    mkdir -p "${CFG}/projects/${slug}/memory" "${T}/real-projects/x"
+    seq 1 210 > "${CFG}/projects/${slug}/memory/MEMORY.md"
+    head -c 4096 /dev/zero > "${T}/real-projects/x/t.jsonl"
+    mv "${CFG}/projects" "${T}/cfg-projects"; ln -s "${T}/cfg-projects" "${CFG}/projects"
+    printf '{"cleanupPeriodDays":365}\n' > "${CFG}/settings.json"
+    run _env CLAUDECODE=1 -- --json --offline "$w"
+    [ "$status" -eq 0 ]
+    [ "$(jq -r '.findings[] | select(.id == "memory-index") | .severity' <<< "$output")" = "warn" ]
+    [ "$(jq -r '.facts.config.memory.path' <<< "$output")" = "${CFG}/projects/${slug}/memory/MEMORY.md" ]
+    [[ "$(jq -r '.findings[] | select(.id == "transcripts-size") | .title' <<< "$output")" == "transcripts use "*" KB with cleanupPeriodDays 365" ]]
 }

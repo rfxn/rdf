@@ -29,8 +29,9 @@ Claude Code transcripts already stored on your machine under
 run it without `--offline`: it asks the public npm registry for the current
 Claude Code and Codex version numbers (a plain GET with no identifiers), runs
 `claude doctor` (which can fetch your organization's managed settings), and
-with `--pricing` downloads the Anthropic and OpenAI pricing pages. `/r-start`
-and `rdf doctor` run it offline.
+downloads the Anthropic and OpenAI pricing pages when you pass `--pricing`
+or when the embedded price table is over 45 days old or a promotional price
+in it has ended. `/r-start` and `rdf doctor` run it offline.
 
 ## Where your data lives
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Maps canonical command basename to an Agent-Skills intent-trigger description. The adapter emits one SKILL.md per key. Reused by the CC command frontmatter (Phase 9). Bounded set — not all 37 commands.",
+  "_comment": "Maps canonical command basename to an Agent-Skills intent-trigger description. The adapter emits one SKILL.md per key. Reused by the CC command frontmatter (Phase 9). Bounded set — not all 38 commands.",
   "r-spec": "Use when starting a new feature, subsystem, or design change: turns an idea into an architecture-grade spec through research-driven dialogue.",
   "r-plan": "Use when a spec is ready and you need an execution-grade, phase-by-phase implementation plan a fresh engineer can run mechanically.",
   "r-build": "Use when a plan exists and you want it built: dispatches the plan-execution orchestrator (engineer/QA/review gates) per phase at the right tier.",

@@ -660,6 +660,23 @@ _cx_rl() { printf '{"timestamp":"%s","type":"event_msg","payload":{"type":"token
     rm -rf "$h" "$p" "$o"
 }
 
+@test "codex: Fast uses the model's Fast rate; Fast without one, or an unknown tier, is unpriced, never Standard" {
+    local h p d; h="$(_cx_home)"; p="$(mktemp -d)"; d="${h}/sessions/2026/10/02"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"
+      _cx_ctx 2026-10-02T10:00:00Z gpt-5.2
+      _cx_set 2026-10-02T10:00:01Z priority
+      _cx_tur 2026-10-02T10:00:10Z f1 1000000 0 0 0 0
+      _cx_ctx 2026-10-02T10:01:00Z gpt-5.6-cyber
+      _cx_tur 2026-10-02T10:01:10Z f2 1000000 0 0 0 0
+      _cx_ctx 2026-10-02T10:02:00Z gpt-6-sol
+      _cx_set 2026-10-02T10:02:01Z ultrafast
+      _cx_tur 2026-10-02T10:02:10Z f3 1000000 0 0 0 0; } > "${d}/rollout-a.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.cost_usd, .unpriced_models]' <<< "$output")" = '[3.5,["gpt-5.6-cyber (fast)","gpt-6-sol (ultrafast)"]]' ]
+    rm -rf "$h" "$p"
+}
+
 @test "codex: --transcripts is rejected; a missing Codex home exits 1; an empty window prints no usage" {
     local h p; h="$(_cx_home)"; p="$(mktemp -d)"
     run _tok --codex --transcripts "$p"

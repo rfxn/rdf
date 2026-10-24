@@ -8,7 +8,7 @@ set -euo pipefail
 # Thresholds: the evidence for each is in docs/specs/2026-10-24-env-assessment-and-pricing-design.md §5.2
 _ENV_NOFILE_HARD_MIN=4096
 _ENV_NPROC_MIN=2048
-_ENV_RAM_MIN_KB=4194304
+_ENV_RAM_MIN_KB=3670016
 _ENV_DISK_MIN_KB=1048576
 _ENV_PRICING_INFO_DAYS=45
 _ENV_PRICING_WARN_DAYS=90
@@ -96,7 +96,6 @@ _env_ver_num() {
     printf '%s' "$(( 10#$a * 1000000 + 10#$b * 1000 + 10#$c ))"
 }
 
-# --- host ---------------------------------------------------------------------
 
 _ENV_OS="" _ENV_PKG="unknown" _ENV_RHEL=0 _ENV_CFG="" _ENV_TOOL="claude"
 
@@ -127,9 +126,7 @@ _env_host() {
     _env_fact pkg "$(jq -cn --arg p "$_ENV_PKG" '$p')"
 }
 
-# _env_pkg tool — install command for a tool under the detected package manager; empty when unmapped.
-# Names verified against the dnf (Fedora 40), Debian stable, Ubuntu noble, Homebrew, Alpine edge and Arch
-# indexes on 2026-10-24.
+# _env_pkg tool — install command under this host's package manager (names verified, spec §5.2); empty when unmapped
 _env_pkg() {
     local tool="$1" name=""
     case "${_ENV_PKG}:${tool}" in
@@ -166,13 +163,10 @@ _env_pkg() {
     esac
 }
 
-# --- project languages ---------------------------------------------------------
 
 _ENV_PRIMARY=""
 
-# _env_languages project — languages from manifest markers plus file counts. Samples, fixtures, docs,
-# scratch, vendored and generated paths do not count; a language is primary with a marker and >= 3
-# files, or (in a git repository only) >= 50 files without one.
+# _env_languages project — languages from manifest markers and file counts; primary rules in spec §5.2
 _env_languages() {
     local project="$1" in_git=0
     if git -C "$project" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -184,7 +178,7 @@ _env_languages() {
     fi
     : > "${_ENV_WORK}/excluded"
     if [ -f "${project}/.gitattributes" ]; then
-        awk '/linguist-(vendored|generated)/ { p = $1; sub(/\*\*?$/, "", p); sub(/\/$/, "", p); if (p != "") print p }' \
+        awk '{ for (i = 2; i <= NF; i++) if ($i ~ /^linguist-(vendored|generated)(=true)?$/) { p = $1; sub(/\*\*?$/, "", p); sub(/\/$/, "", p); if (p != "") print p; break } }' \
             "${project}/.gitattributes" > "${_ENV_WORK}/excluded"
     fi
     awk -v mk="$_ENV_LANG_MARKER_FILES" -v mn="$_ENV_LANG_MIN_FILES" -v git="$in_git" '
@@ -235,7 +229,6 @@ _env_languages() {
         "${_ENV_WORK}/langs" | jq -cs '.')"
 }
 
-# --- code intelligence ---------------------------------------------------------
 
 # _env_lsp_row lang — "plugin binary" for a language with an official code intelligence plugin
 _env_lsp_row() {
@@ -286,8 +279,7 @@ _env_settings_files() {
         "${project}/.claude/settings.local.json" "$managed"
 }
 
-# _env_plugin_state plugin project — "installed enabled" (0/1) for <plugin>@claude-plugins-official in the
-# active config dir: installs are per config dir; enablement is the merged settings value
+# _env_plugin_state plugin project — "installed enabled" (0/1): installed in the active config dir, enabled in merged settings
 _env_plugin_state() {
     local key="${1}@claude-plugins-official" project="$2" inst=0 en=0 f
     if jq -e --arg k "$key" '(.plugins // {}) | has($k)' "${_ENV_CFG}/plugins/installed_plugins.json" >/dev/null 2>&1; then  # missing or unreadable file → not installed
@@ -308,7 +300,7 @@ _env_code_intel() {
     local project="$1" lang files primary row plugin bin state inst en have fix acct=""
     : > "${_ENV_WORK}/lsp"
     [ "$_ENV_TOOL" = "claude" ] || { _env_fact lsp 'null'; return 0; }
-    [ -n "${CLAUDE_CONFIG_DIR:-}" ] && acct="CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR} "
+    [ -n "${CLAUDE_CONFIG_DIR:-}" ] && acct="CLAUDE_CONFIG_DIR=$(printf '%q' "$CLAUDE_CONFIG_DIR") "
     while IFS=$'\t' read -r lang files _ primary; do
         row="$(_env_lsp_row "$lang")"
         [ -n "$row" ] || continue
@@ -341,8 +333,7 @@ _env_code_intel() {
     _env_fact lsp "$(jq -cs '.' "${_ENV_WORK}/lsp")"
 }
 
-# _env_accounts — plugin installs are per Claude Code config dir: report primary-language plugins missing
-# from any other RDF account (registry ~/.rdf/accounts: "name<TAB>dir", dir "@primary" = ~/.claude)
+# _env_accounts — primary-language plugins missing from another RDF account (~/.rdf/accounts; plugins install per config dir)
 _env_accounts() {
     local reg="${HOME}/.rdf/accounts" name dir lang primary row plugin missing
     : > "${_ENV_WORK}/accounts"
@@ -367,7 +358,7 @@ _env_accounts() {
         if [ -n "$missing" ] && [ "$dir" != "$_ENV_CFG" ]; then
             set --
             for plugin in $missing; do
-                set -- "$@" "CLAUDE_CONFIG_DIR=${dir} claude plugin install ${plugin}@claude-plugins-official"
+                set -- "$@" "CLAUDE_CONFIG_DIR=$(printf '%q' "$dir") claude plugin install ${plugin}@claude-plugins-official"
             done
             _env_find "account-${name}" code-intel info "account ${name} lacks${missing}" \
                 "Plugins install per account, so sessions launched as ${name} get no code intelligence for this project" "$@"
@@ -377,7 +368,6 @@ _env_accounts() {
         "${_ENV_WORK}/accounts" | jq -cs '.')"
 }
 
-# --- tools ---------------------------------------------------------------------
 
 # _env_tool name binary — record presence and version of one tool
 _env_tool() {
@@ -469,13 +459,13 @@ _env_tools_machine() {
     fi
 }
 
-# --- Claude Code and Codex -----------------------------------------------------
 
 # _env_npm_tag pkg tag — a dist-tag version from the npm registry (no identifiers are sent); empty offline
 _env_npm_tag() {
+    local tags
     _env_has curl || return 0
-    curl -fsS --max-time "$_ENV_NET_TIMEOUT" "https://registry.npmjs.org/-/package/${1}/dist-tags" 2>/dev/null \
-        | jq -r --arg t "$2" '.[$t] // empty' 2>/dev/null || true  # offline or registry error → unknown, never fatal
+    tags="$(curl -fsS --max-time "$_ENV_NET_TIMEOUT" "https://registry.npmjs.org/-/package/${1}/dist-tags" 2>/dev/null || true)"  # offline or registry error → unknown, never fatal
+    printf '%s' "$tags" | jq -r --arg t "$2" '.[$t] // empty' 2>/dev/null || true  # non-JSON reply → unknown
 }
 
 _env_claude() {
@@ -540,7 +530,6 @@ _env_codex() {
     _env_fact codex "$(jq -cn --arg c "$cur" --arg l "$latest" '{version: $c, latest: (if $l == "" then null else $l end)}')"
 }
 
-# --- limits and system ---------------------------------------------------------
 
 _env_limits() {
     local mode="$1" soft hard nproc watches=""
@@ -622,7 +611,6 @@ _env_sandbox() {
         --argjson s "$(_env_bool _env_has socat)" '{platform: "bubblewrap", enabled: ($e == "true"), bubblewrap: $b, socat: $s}')"
 }
 
-# --- .claude configuration and memory files ------------------------------------
 
 # _env_md_file path scope — size facts and findings for one CLAUDE.md-family file
 _env_md_file() {
@@ -641,10 +629,9 @@ _env_md_file() {
     fi
 }
 
-# _env_config project — settings knobs (allowlisted: no env values beyond the named three, no MCP
-# config beyond counts), CLAUDE.md sizes, the auto-memory index, transcript disk use
+# _env_config project — allowlisted settings knobs, CLAUDE.md sizes, the auto-memory index, transcript disk use
 _env_config() {
-    local project="$1" f d root slug mem mlines=0 mbytes=0 knobs mcp_user=0 mcp_proj=0 cleanup projects_kb="" here
+    local project="$1" f d root common slug mem mlines=0 mbytes=0 knobs mcp_user=0 mcp_proj=0 cleanup projects_kb="" here cj
     : > "${_ENV_WORK}/settings"
     while IFS= read -r f; do
         [ -f "$f" ] || continue
@@ -678,8 +665,10 @@ _env_config() {
         _env_find ripgrep-system config warn "USE_BUILTIN_RIPGREP=0 but no system ripgrep" \
             "Search, @file mentions, agents and skills discovery use the system rg when the bundled one is off" "$(_env_pkg ripgrep)"
     fi
-    if [ -f "${HOME}/.claude.json" ]; then
-        mcp_user="$(jq -r '(.mcpServers // {}) | length' "${HOME}/.claude.json" 2>/dev/null || printf 0)"  # unparsable → 0
+    cj="${HOME}/.claude.json"
+    [ -n "${CLAUDE_CONFIG_DIR:-}" ] && cj="${CLAUDE_CONFIG_DIR}/.claude.json"
+    if [ -f "$cj" ]; then
+        mcp_user="$(jq -r '(.mcpServers // {}) | length' "$cj" 2>/dev/null || printf 0)"  # unparsable → 0
     fi
     if [ -f "${project}/.mcp.json" ]; then
         mcp_proj="$(jq -r '(.mcpServers // {}) | length' "${project}/.mcp.json" 2>/dev/null || printf 0)"  # unparsable → 0
@@ -690,12 +679,13 @@ _env_config() {
         *)
             if [ "$cleanup" -gt 90 ] && [ -d "${_ENV_CFG}/projects" ]; then
                 if _env_has timeout; then
-                    projects_kb="$(timeout 15 du -sk "${_ENV_CFG}/projects" 2>/dev/null | awk '{print $1}' || true)"  # slow or unreadable tree → unknown
+                    projects_kb="$(timeout 15 du -skH "${_ENV_CFG}/projects" 2>/dev/null | awk '{print $1}' || true)"  # slow or unreadable tree → unknown
                 else
-                    projects_kb="$(du -sk "${_ENV_CFG}/projects" 2>/dev/null | awk '{print $1}' || true)"  # unreadable tree → unknown
+                    projects_kb="$(du -skH "${_ENV_CFG}/projects" 2>/dev/null | awk '{print $1}' || true)"  # unreadable tree → unknown
                 fi
+                case "$projects_kb" in ''|0|*[!0-9]*) projects_kb="" ;; esac
                 [ -z "$projects_kb" ] || _env_find transcripts-size config info \
-                    "transcripts use $(( projects_kb / 1024 )) MB with cleanupPeriodDays ${cleanup}" \
+                    "transcripts use $( [ "$projects_kb" -ge 1024 ] && printf '%s MB' "$(( projects_kb / 1024 ))" || printf '%s KB' "$projects_kb") with cleanupPeriodDays ${cleanup}" \
                     "Transcripts are kept ${cleanup} days; rdf tokens and /resume read them, so keep the window only as long as you use it"
             fi
             ;;
@@ -710,7 +700,11 @@ _env_config() {
         [ "$d" = "/" ] && break
         d="$(command dirname "$d")"
     done
-    root="$(git -C "$project" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$here")"  # not a git repo → the project dir
+    root="$here"
+    common="$(git -C "$project" rev-parse --git-common-dir 2>/dev/null || true)"  # not a git repo → the project dir
+    if [ -n "$common" ] && common="$(cd "$project" && cd "$common" 2>/dev/null && pwd -P)"; then  # worktrees share the main checkout's memory dir
+        root="$(command dirname "$common")"
+    fi
     slug="$(printf '%s' "$root" | sed 's/[^A-Za-z0-9-]/-/g')"
     mem="${_ENV_CFG}/projects/${slug}/memory/MEMORY.md"
     if [ -f "$mem" ]; then
@@ -729,7 +723,6 @@ _env_config() {
           transcripts_kb: (if $pk == "" then null else ($pk | tonumber) end)}')"
 }
 
-# --- pricing -------------------------------------------------------------------
 
 _env_pricing() {
     local p as_of expires today age
@@ -755,7 +748,6 @@ _env_pricing() {
     _env_fact pricing "$(jq -c --argjson age "$age" '{as_of, expires, age_days: $age, sources}' <<< "$p")"
 }
 
-# --- report --------------------------------------------------------------------
 
 # _env_ignored project — finding ids to drop, from ~/.rdf/env-ignore and <project>/.rdf/env-ignore
 _env_ignored() {
@@ -805,7 +797,7 @@ _env_report() {
 _env_detect_tool() {
     if [ "${CLAUDECODE:-}" = "1" ]; then printf claude
     elif [ -n "${GEMINI_CLI:-}" ]; then printf gemini
-    elif env | grep -q '^CODEX_SANDBOX'; then printf codex
+    elif [ -n "${CODEX_THREAD_ID:-}${CODEX_SESSION_ID:-}" ] || env | grep -q '^CODEX_SANDBOX'; then printf codex
     else printf claude
     fi
 }
@@ -847,17 +839,15 @@ main() {
     if [ "$project_only" -eq 0 ]; then
         _env_limits "$mode"
     fi
-    if [ "$mode" = "full" ]; then
+    if [ "$mode" = "full" ] && [ "$project_only" -eq 0 ]; then
         _env_config "$project"
-        if [ "$project_only" -eq 0 ]; then
-            _env_accounts
-            _env_tools_machine
-            _env_claude "$online" "$project"
-            _env_codex "$online"
-            _env_system
-            _env_sandbox "$project"
-            _env_pricing
-        fi
+        _env_accounts
+        _env_tools_machine
+        _env_claude "$online" "$project"
+        _env_codex "$online"
+        _env_system
+        _env_sandbox "$project"
+        _env_pricing
     fi
     _env_report "$mode" "$json" "$project"
 }

@@ -399,8 +399,8 @@ frontmatter on every generated command, Codex and Antigravity via the shared
 `gemini-cli` adapter is a **frozen legacy tier** for enterprise Gemini CLI
 users (Gemini CLI stopped serving free/Pro/Ultra tiers on 2026-06-18;
 Antigravity CLI is its successor and converts the generated TOML on import).
-The shared `.agents/skills/` surface is bounded to the 10 lifecycle commands
-(not all 37); the parity doc lists them.
+The shared `.agents/skills/` surface is bounded to the 11 lifecycle commands
+(not all 38); the parity doc lists them.
 Full matrix: [docs/multi-tool-parity.md](docs/multi-tool-parity.md).
 
 ### Profiles + Modes
