@@ -36,15 +36,19 @@ Deferred from the spike's Go/No-Go summary (spike §8):
 
 Rows to add to the next block:
 
-- **`subagentPromptCacheTtl`**: detect and advise; never write user settings.
-  Doctor `harness` WARNs when it resolves to the automatic 5m. Evidence: the
-  2.1.310 settings schema (not the docs) covers "subagents, workflows,
-  background and helper requests", with "Unset = automatic (5 minutes unless
-  ENABLE_PROMPT_CACHING_1H=1)"; the key is in every installed build from
-  2.1.302. Probe 2026-10-24: with the setting at `"1h"`, a fresh subagent's
-  transcript wrote 37,791 tokens at `ephemeral_1h` and 0 at 5m; before the
-  change, every subagent wrote only 5m. Trigger: the docs publish the
-  setting, rename it, or change its default.
+- **`subagentPromptCacheTtl`**: detect and report; never write user settings,
+  and recommend 1h only from measurement. Doctor `harness` reports the effective
+  TTL and its source as OK, the unset case included (automatic 5m, with a
+  pointer to compare `rdf tokens` rebuild cost against cache-write spend).
+  Evidence: `prompt-caching.md` "Choose the TTL yourself" gives the order
+  (`FORCE_PROMPT_CACHING_5M=1`, the bucket's env var, the bucket's setting,
+  subagent `experimental.cacheTtl`, `ENABLE_PROMPT_CACHING_1H=1`, the default)
+  and requires v2.1.242+; it says the one-hour TTL "costs more on short bursts
+  of work that never idle past five minutes". Probe 2026-10-24: with the
+  setting at `"1h"`, a fresh subagent wrote 37,791 tokens at `ephemeral_1h` and
+  0 at 5m. RDF's own 30 days would have cost about $25 more at 1h (31.6M
+  subagent write tokens at the 1h premium vs ~9M rebuild tokens avoided).
+  Trigger: the docs change the order or a bucket's default.
 
 ---
 

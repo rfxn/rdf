@@ -631,7 +631,7 @@ _run_path_check() {
 _run_harness() {
     local project="$1" home="$2"; shift 2
     env -u BASH_MAX_OUTPUT_LENGTH -u CLAUDE_CODE_EFFORT_LEVEL -u ANTHROPIC_MODEL \
-        -u CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL -u ENABLE_PROMPT_CACHING_1H "$@" bash -c '
+        -u CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL -u ENABLE_PROMPT_CACHING_1H -u FORCE_PROMPT_CACHING_5M "$@" bash -c '
         set -euo pipefail
         rdf_src="$1"; project="$2"; HOME="$3"
         RDF_HOME="$(mktemp -d)"; RDF_LIBDIR="${rdf_src}/lib"; RDF_VERSION="0.0.0-test"
@@ -740,14 +740,30 @@ _harness_fixture() {  # prints "<project> <home>" with empty .claude dirs
     rm -rf "$p" "$h"
 }
 
-@test "doctor harness: unset subagent cache TTL WARNs; ENABLE_PROMPT_CACHING_1H counts as 1h" {
+@test "doctor harness: unset subagent cache TTL is the automatic 5m; ENABLE_PROMPT_CACHING_1H counts only when truthy" {
     read -r p h <<< "$(_harness_fixture)"
     printf '{"model":"sonnet"}\n' > "$h/.claude/settings.json"
     run _run_harness "$p" "$h"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"harness|WARN|subagent prompt cache TTL is the automatic 5m"* ]]
-    run _run_harness "$p" "$h" ENABLE_PROMPT_CACHING_1H=1
+    [[ "$output" == *"harness|OK|subagent prompt cache TTL 5m (automatic)"* ]]
+    [[ "$output" != *"cache TTL"*"WARN"* ]]
+    run _run_harness "$p" "$h" ENABLE_PROMPT_CACHING_1H=" TRUE "
     [[ "$output" == *"harness|OK|subagent prompt cache TTL 1h (ENABLE_PROMPT_CACHING_1H)"* ]]
+    run _run_harness "$p" "$h" ENABLE_PROMPT_CACHING_1H=0
+    [[ "$output" == *"harness|OK|subagent prompt cache TTL 5m (automatic)"* ]]
+    rm -rf "$p" "$h"
+}
+
+@test "doctor harness: FORCE_PROMPT_CACHING_5M beats the subagent TTL setting and env var" {
+    read -r p h <<< "$(_harness_fixture)"
+    printf '{"subagentPromptCacheTtl":"1h"}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h" FORCE_PROMPT_CACHING_5M=1 CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL=1h
+    [[ "$output" == *"harness|OK|subagent prompt cache TTL 5m (FORCE_PROMPT_CACHING_5M)"* ]]
+    run _run_harness "$p" "$h" FORCE_PROMPT_CACHING_5M=0
+    [[ "$output" == *"harness|OK|subagent prompt cache TTL 1h (subagentPromptCacheTtl in ${h}/.claude/settings.json)"* ]]
+    printf '{"subagentPromptCacheTtl":"1h","env":{"FORCE_PROMPT_CACHING_5M":"yes"}}\n' > "$h/.claude/settings.json"
+    run _run_harness "$p" "$h"
+    [[ "$output" == *"harness|OK|subagent prompt cache TTL 5m (FORCE_PROMPT_CACHING_5M)"* ]]
     rm -rf "$p" "$h"
 }
 
