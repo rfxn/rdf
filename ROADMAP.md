@@ -95,6 +95,18 @@ carried in this release:
       built-in profiles; see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Shipped in 3.9.2: read discipline and cache rebuilds
+
+Transcript-driven token-spend review → build → QA + sentinel release gates.
+
+- [x] Read discipline: locate first, read whole under 400 lines, map or a 200-250 line window
+      above, in `reference/read-discipline.md` and the planner, engineer, qa and reviewer
+      agents, which now list `LSP` so code intelligence plugins reach them
+- [x] `rdf tokens` reports cache rebuilds: idle gaps past the cache TTL that rewrite a large
+      context, with their cost
+- [x] `rdf doctor` reports the effective subagent prompt cache TTL and where it comes from
+- [x] Mutation checks run only the targeted tests per mutant; Pages build fixed; BATS 485 → 507
+
 ## Shipped in 3.9.1: default and primary accounts
 
 Quick-plan → build → adversarial sentinel review (findings fixed with

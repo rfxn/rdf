@@ -15,6 +15,25 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases, since a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.9.2 (2026-10-24)
+
+ADDED: `canonical/reference/read-discipline.md`: the read ladder (locate first; read whole
+under 400 lines; map or a 200-250 line window above; a whole large file only when editing or
+reviewing across it) and LSP code intelligence use; planner, engineer, qa and reviewer carry
+it as a constraint and list `LSP` in their tools (`adapters/claude-code/agent-meta.json`).
+ADDED: `rdf tokens` cache rebuilds (`state/rdf-tokens.sh`): turns after an idle gap past the
+cache TTL that rewrite at least half of a 50K+ token context, costed as the write price minus a
+cache read; `--json` gains `rebuilds`, `--summary` `rebuild_events` and `rebuild_cost_usd`.
+ADDED: `rdf doctor --scope harness` subagent prompt cache TTL row (`lib/cmd/doctor.sh`): the
+effective TTL and its source in Claude Code's documented order (`FORCE_PROMPT_CACHING_5M`,
+`CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`, `subagentPromptCacheTtl`, `ENABLE_PROMPT_CACHING_1H`,
+else the automatic 5m); always OK, never writes settings.
+MODIFIED: read thresholds 500 -> 400 lines (`/r-util-code-map` default, `/r-audit`,
+`/r-init`); `/r-audit` reviewers map large files inline instead of invoking a skill that
+subagents cannot call.
+MODIFIED: mutation checks run only the targeted tests per mutant, then the full suite once
+(engineer red step, reviewer regression pass, core governance, language testing references).
+
 ## 3.9.1 (2026-10-23)
 
 ADDED: `rdf account default <name>|-` (`lib/cmd/account.sh`): `~/.rdf/accounts.default`

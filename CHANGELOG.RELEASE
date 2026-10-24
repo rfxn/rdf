@@ -1,6 +1,6 @@
-# RDF Unreleased Release Notes
+# RDF 3.9.2 Release Notes
 
-## Unreleased
+## 3.9.2
 
 -- New Features --
 
@@ -12,9 +12,11 @@
       lines; map or a 200-250 line window above; a whole large file only when editing or
       reviewing across it) with LSP code intelligence use and limits; planner, engineer, qa and
       reviewer carry the rule and list LSP in their tools
-[New] rdf doctor harness: subagent prompt cache TTL check; WARNs when subagents run on the
-      automatic 5m TTL and recommends "subagentPromptCacheTtl": "1h" in ~/.claude/settings.json,
-      resolving CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, then the setting, then ENABLE_PROMPT_CACHING_1H
+[New] rdf doctor harness reports the effective subagent prompt cache TTL and its source in
+      Claude Code's documented order (FORCE_PROMPT_CACHING_5M,
+      CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL, subagentPromptCacheTtl, ENABLE_PROMPT_CACHING_1H,
+      else the automatic 5m); every outcome is OK, and the automatic 5m row says to compare rdf
+      tokens rebuild cost with subagent cache-write spend before choosing 1h
 
 -- Changes --
 
