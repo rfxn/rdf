@@ -113,7 +113,8 @@ Dispatch reviewer subagent in sentinel mode:
   be deepened with new context)
 - Large-file discipline: for any source file of 400 lines or more in
   the audit scope, map it before reading (LSP `documentSymbol` when
-  active, else a definitions grep; see `reference/read-discipline.md`)
+  active, else a definitions grep; see
+  [reference/read-discipline.md](../reference/read-discipline.md))
   and read only the symbol ranges a finding needs
 - Write results to: .rdf/work-output/reviewer-regression.md
 

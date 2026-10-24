@@ -150,14 +150,20 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     # a CI checkout) — skip unless generated locally; the plugin test
     # below covers CI (plugin output IS committed)
     [ -d "$RDF_SRC/adapters/claude-code/output" ] || skip "no generated cc output"
-    [ "$(ls "$RDF_SRC"/adapters/claude-code/output/reference/*.md | wc -l)" -eq 7 ]
-    [ "$(ls "$RDF_SRC"/adapters/claude-code/output/reference/*.rdf-hash | wc -l)" -eq 7 ]
+    local refs=("$RDF_SRC"/canonical/reference/*.md)
+    local want="${#refs[@]}"
+    [ -f "${refs[0]}" ]
+    [ "$(ls "$RDF_SRC"/adapters/claude-code/output/reference/*.md | wc -l)" -eq "$want" ]
+    [ "$(ls "$RDF_SRC"/adapters/claude-code/output/reference/*.rdf-hash | wc -l)" -eq "$want" ]
 }
 
 @test "plugin and agent-skills outputs ship reference docs" {
-    [ "$(ls "$RDF_SRC"/adapters/claude-plugin/output/reference/*.md | wc -l)" -eq 7 ]
+    local refs=("$RDF_SRC"/canonical/reference/*.md)
+    local want="${#refs[@]}"
+    [ -f "${refs[0]}" ]
+    [ "$(ls "$RDF_SRC"/adapters/claude-plugin/output/reference/*.md | wc -l)" -eq "$want" ]
     if [ -d "$RDF_SRC/adapters/agent-skills/output" ]; then
-        [ "$(ls "$RDF_SRC"/adapters/agent-skills/output/.agents/skills/reference/*.md | wc -l)" -eq 7 ]
+        [ "$(ls "$RDF_SRC"/adapters/agent-skills/output/.agents/skills/reference/*.md | wc -l)" -eq "$want" ]
     fi
 }
 

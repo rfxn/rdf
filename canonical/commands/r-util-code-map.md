@@ -16,7 +16,7 @@ Call this from the main conversation before `Read` on any source file of
 400 lines or more. The map is typically 20–40 lines. The agent then reads
 the specific line range it needs with `Read offset=... limit=...` — often
 70–85% fewer tokens than a full-file read. This is step 2 of the ladder in
-`reference/read-discipline.md`.
+[reference/read-discipline.md](../reference/read-discipline.md).
 
 When the LSP tool is active for the file's language, its `documentSymbol`
 operation returns the same map with exact ranges; prefer it. Subagents
