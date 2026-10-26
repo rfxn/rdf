@@ -115,6 +115,37 @@ _no_contract() {
     _contract commands/r-verify-claim.md 'UNVERIFIABLE'
 }
 
+# ── Claims checker: derive before compare, pinned text, honest verdicts ───────
+
+@test "claims checker derives each claim from the primary record before comparing" {
+    _contract agents/claims.md 'only then compare the answer with the claim'
+    _contract agents/claims.md 'they are never evidence'
+}
+
+@test "claims checker pins the live head and fingerprints the checked text" {
+    _contract agents/claims.md 'sha256sum'
+    _contract agents/claims.md 'headRefOid'
+}
+
+@test "claims checker checks every commit message on a multi-commit branch" {
+    _contract agents/claims.md 'every commit subject and body'
+}
+
+@test "claims checker never counts chat-only or unreachable evidence as CONFIRMED" {
+    _contract agents/claims.md 'is CONTROLLER-ONLY'
+    _contract agents/claims.md 'Never promote UNVERIFIABLE to CONFIRMED'
+}
+
+@test "claims checker decides the report verdict in a fixed order" {
+    _contract agents/claims.md 'first that applies wins'
+    _contract agents/claims.md '^2\. INCOMPLETE: a claim is listed under Not checked'
+}
+
+@test "claims checker writes only its report and evidence, never the checked text" {
+    _contract agents/claims.md 'Write only the report'
+    _contract agents/claims.md 'Never edit the text under check'
+}
+
 # ── /r-util-mem-compact: anti-crystallization (dedup auto-merges, contradictions
 #    are flagged only — auto NEVER resolves one) ───────────────────────────────
 

@@ -68,8 +68,10 @@ teardown() {
 
         for f in "${RDF_CANONICAL}"/agents/*.md; do
             b="$(basename "$f")"
-            diff <(sed -n "1,/^---$/p" "${out}/agents/${b}") <(sed -n "1,/^---$/p" "${expected}/agents/${b}")
-            diff <(sed -n "1,/^---$/p" "${out}/plugin-agents/${b}") <(sed -n "1,/^---$/p" "${expected}/plugin-agents/${b}")
+            if jq -e --arg a "${b%.md}" "has(\$a)" "$agent_meta" >/dev/null; then  # agents added after 3.7.0 have no frozen frontmatter
+                diff <(sed -n "1,/^---$/p" "${out}/agents/${b}") <(sed -n "1,/^---$/p" "${expected}/agents/${b}")
+                diff <(sed -n "1,/^---$/p" "${out}/plugin-agents/${b}") <(sed -n "1,/^---$/p" "${expected}/plugin-agents/${b}")
+            fi
             diff <(rdf_strip_frontmatter "${out}/agents/${b}") "$f"
             diff <(rdf_strip_frontmatter "${out}/plugin-agents/${b}") <(_cpl_rewrite_namespace_text < "$f")
             [[ "$(rdf_hash_stdin < "$f")" == "$(cat "${out}/agents/${b}.rdf-hash")" ]] \
@@ -360,7 +362,8 @@ dispatcher opus high
 engineer opus xhigh
 qa opus medium
 uat opus medium
-reviewer opus xhigh" ]
+reviewer opus xhigh
+claims opus high" ]
     [ "$(jq -r '.engineer.variants.focused.effort, .reviewer.variants.challenge.effort' "${RDF_SRC}/adapters/claude-code/agent-meta.json" | paste -sd, -)" = "medium,high" ]
 }
 
@@ -374,8 +377,9 @@ reviewer opus xhigh" ]
         adp_emit_agents "${RDF_CANONICAL}/agents" "$out" "${RDF_ADAPTERS}/claude-code/agent-meta.json" - 0
     ' -- "$RDF_SRC" "${TEST_WORK}/agents"
     [ "$status" -eq 0 ]
-    [ "$(cd "${TEST_WORK}/agents" && printf '%s\n' *.md | LC_ALL=C sort | paste -sd, -)" = "dispatcher.md,engineer-focused.md,engineer.md,planner.md,qa.md,reviewer-challenge.md,reviewer.md,uat.md" ]
+    [ "$(cd "${TEST_WORK}/agents" && printf '%s\n' *.md | LC_ALL=C sort | paste -sd, -)" = "claims.md,dispatcher.md,engineer-focused.md,engineer.md,planner.md,qa.md,reviewer-challenge.md,reviewer.md,uat.md" ]
     [ "$(grep -h '^\(name\|model\|effort\):' "${TEST_WORK}/agents/engineer-focused.md" | paste -sd, -)" = "name: rdf-engineer-focused,model: opus,effort: medium" ]
     [ "$(grep -h '^\(name\|model\|effort\):' "${TEST_WORK}/agents/reviewer-challenge.md" | paste -sd, -)" = "name: rdf-reviewer-challenge,model: opus,effort: high" ]
-    [ "$(grep -c '^effort: ' "${TEST_WORK}"/agents/*.md | grep -c ':1$')" = "8" ]
+    [ "$(sed -n '/^tools:/,/^model:/p' "${TEST_WORK}/agents/claims.md" | paste -sd, -)" = "tools:,  - Bash,  - Read,  - Write,  - Glob,  - Grep,  - LSP,disallowedTools:,  - Edit,model: opus" ]
+    [ "$(grep -c '^effort: ' "${TEST_WORK}"/agents/*.md | grep -c ':1$')" = "9" ]
 }

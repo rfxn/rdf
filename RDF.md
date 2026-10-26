@@ -27,8 +27,8 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   and other tool-specific directories are deployment targets populated by
   `rdf generate`. Emergency edits to deployed copies are pulled back via
   `rdf sync`.
-- **Governance-driven agent behavior:** Six universal agents (planner, dispatcher,
-  engineer, qa, uat, reviewer) replace the prior 12+ domain-specific agents. Agent
+- **Governance-driven agent behavior:** Seven universal agents (planner, dispatcher,
+  engineer, qa, uat, reviewer, claims) replace the prior 12+ domain-specific agents. Agent
   behavior is shaped by governance files initialized per-project via `/r-init`, not
   by baking domain knowledge into agent prompts. Profiles provide governance seed
   templates, not agent/command bundles.
@@ -86,6 +86,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 | qa | rdf-qa | opus · medium | Verification gate |
 | uat | rdf-uat | opus · medium | User acceptance testing |
 | reviewer | rdf-reviewer, rdf-reviewer-challenge | opus · xhigh / high | Adversarial review (sentinel / challenge variant) |
+| claims | rdf-claims | opus · high | Fresh-context claims check of text before it is posted (direct dispatch) |
 
 **Slash commands:** `/r-{name}` (lifecycle) or `/r-util-{name}` (utility)
 
@@ -114,13 +115,14 @@ rdf/                                 # Repository root
 |       +-- github.sh                # rdf github <setup|sync-labels|ecosystem-init|ecosystem-add>
 |
 |-- canonical/                       # Tool-agnostic framework content
-|   |-- agents/                      # 6 universal agents (pure markdown)
+|   |-- agents/                      # 7 universal agents (pure markdown)
 |   |   |-- planner.md               # Research, specs, plans
 |   |   |-- dispatcher.md            # Plan execution orchestrator
 |   |   |-- engineer.md              # Universal implementation
 |   |   |-- qa.md                    # Verification gate
 |   |   |-- uat.md                   # User acceptance testing
-|   |   +-- reviewer.md              # Adversarial review (challenge + sentinel)
+|   |   |-- reviewer.md              # Adversarial review (challenge + sentinel)
+|   |   +-- claims.md                # Claims check of text before posting
 |   |
 |   |-- commands/                    # 38 commands under /r- namespace
 |   |   |-- r-init.md                # Governance initialization
@@ -218,7 +220,7 @@ rdf/                                 # Repository root
 **In scope:**
 
 - Canonical agent/command/script storage with tool-agnostic content
-- 6 universal agents with governance-driven behavior
+- 7 universal agents with governance-driven behavior
 - 38 commands under `/r-` namespace (22 lifecycle + 16 utility)
 - Unified CLI (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
   `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`, `rdf migrate`)
@@ -252,7 +254,7 @@ rdf/                                 # Repository root
 ## Success Metrics
 
 - All active projects pass `rdf doctor --all` with OK status
-- `rdf generate claude-code` produces 8 agents (6 canonical + 2 routing variants) + 38 skills
+- `rdf generate claude-code` produces 9 agents (7 canonical + 2 routing variants) + 38 skills
 - `rdf state` returns accurate JSON for any project in <1 second
 - Zero convention drift between canonical source and deployed copies
 - Zero stale v2 references in active code

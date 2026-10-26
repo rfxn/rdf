@@ -77,6 +77,7 @@ natively.
 
 ## Agent Roster
 
+- **claims**: You are the Claims Checker. You verify every factual claim in text that is
 - **dispatcher**: You are the Dispatcher. You execute implementation plans by managing
 - **engineer**: You are the Engineer. You implement code changes following TDD in any
 - **planner**: You are the Planner. You decompose specs into execution-grade

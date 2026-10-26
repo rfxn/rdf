@@ -12,6 +12,7 @@
   "repository": "https://github.com/rfxn/rdf",
   "license": "GPL-2.0",
   "agents": [
+    "./adapters/claude-plugin/output/agents/claims.md",
     "./adapters/claude-plugin/output/agents/dispatcher.md",
     "./adapters/claude-plugin/output/agents/engineer-focused.md",
     "./adapters/claude-plugin/output/agents/engineer.md",

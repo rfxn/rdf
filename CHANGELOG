@@ -1,5 +1,22 @@
 # RDF Changelog
 
+## Unreleased
+
+-- New Features --
+
+[New] rdf-claims agent (opus · high): fresh-context claims check of text before it is posted (PR bodies,
+      commit and squash messages, changelogs, issue and chat drafts); pins the state (and the live PR head
+      when gh reads are allowed), hashes the text, derives each answer from the primary record before
+      comparing, and gives closed-set verdicts with replacements; writes only a report, evidence and scratch
+
+-- Changes --
+
+[Change] agent counts 6 -> 7 in README, RDF.md, WORKFORCE.md and docs/index.md; WORKFORCE lists rdf-claims
+         in the org chart, model summary and agent details
+[Change] tests: six behavioral contracts for the claims checker; live agent-meta emission covers claims.md
+         tools and disallowedTools; the 3.6.5 fixture test compares frozen frontmatter only for agents in the
+         frozen 3.7.0 catalog
+
 ## 3.9.3
 
 -- New Features --

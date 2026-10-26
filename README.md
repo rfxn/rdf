@@ -28,7 +28,7 @@ RDF is a convention governance layer for AI coding agents. It sits between the h
   <img src="assets/pipeline.svg" alt="RDF Pipeline: spec -> plan -> build -> ship" width="100%"/>
 </p>
 
-Six universal agents handle every project. Their behavior is shaped by governance files initialized per-project, not baked into prompts. A QA agent reviewing a bash firewall tool and a QA agent reviewing a Python pipeline follow different rules because their governance files are different, not because they are different agents.
+Seven universal agents handle every project. Their behavior is shaped by governance files initialized per-project, not baked into prompts. A QA agent reviewing a bash firewall tool and a QA agent reviewing a Python pipeline follow different rules because their governance files are different, not because they are different agents.
 
 ---
 
@@ -504,6 +504,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | **rdf-reviewer** | opus · xhigh | Adversarial review: sentinel (read-only) | Read + execute |
 | **rdf-reviewer-challenge** | opus · high | Variant of rdf-reviewer for challenge (pre-implementation) review | Read + execute |
 | **rdf-uat** | opus · medium | User acceptance from end-user persona (read-only) | Read + execute |
+| **rdf-claims** | opus · high | Fresh-context claims check of text before it is posted: PR bodies, commit messages, changelogs, issue and chat drafts (direct dispatch) | Read + execute; writes only a report, evidence and scratch copy (no Edit) |
 
 *Routing lives in `adapters/claude-code/agent-meta.json` (`model`, `effort`, `variants`). Variants are generated from the base agent's canonical body; the Agent tool cannot pass effort per call, so each effort level is its own agent. `CLAUDE_CODE_EFFORT_LEVEL` overrides every agent's effort; prefer `/effort`, which saves a level per model. Spec and plan sessions are tuned for `claude --model fable --effort high`, builds for `claude --model opus`. No Fable access? Set the planner's `"model"` to `"opus"` and regenerate. `/r-util-claudemd-review` deliberately fans out to Sonnet for bulk transcript reading.*
 
@@ -536,7 +537,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 
 1. **Canonical-first, adapter-delivered.** All content lives as tool-agnostic markdown in `canonical/`. Adapters generate tool-specific output. Develop in canonical, deploy via `rdf generate`.
 
-2. **Governance-driven agents.** Six universal agents shaped by per-project governance files, not baked-in domain knowledge. Same agent, different governance, different behavior.
+2. **Governance-driven agents.** Seven universal agents shaped by per-project governance files, not baked-in domain knowledge. Same agent, different governance, different behavior.
 
 3. **Profiles are expertise, modes are methodology.** Profiles define *what the code is* (shell, Python, frontend). Modes define *how you work* (development, security assessment). They compose independently.
 
@@ -570,7 +571,7 @@ rdf/
 |                                      #   state, tokens, refresh, sync, github, deploy, migrate,
 |                                      #   account, shell
 |-- canonical/
-|   |-- agents/                        # 6 universal agents (pure markdown)
+|   |-- agents/                        # 7 universal agents (pure markdown)
 |   |-- commands/                      # 38 commands (/r- namespace)
 |   |-- scripts/                       # 16 hook scripts (bash)
 |   +-- reference/                     # Framework docs
@@ -765,6 +766,6 @@ Copyright (C) 2026 R-fx Networks &lt;proj@rfxn.com&gt;
 
 ---
 
-**6 agents · 38 commands · 16 scripts · 13 profiles · 5 adapters · 7 modes**
+**7 agents · 38 commands · 16 scripts · 13 profiles · 5 adapters · 7 modes**
 
 (C) 2026 R-fx Networks <proj@rfxn.com>

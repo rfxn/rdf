@@ -36,6 +36,10 @@ USER
  │                └─► uat  (opus)     User Acceptance (read-only)
  │                                    End-user persona, real scenarios
  │
+ ├─► claims      (opus·high)          Claims Check (direct dispatch)
+ │                                     Fresh-context check of text before
+ │                                     posting; writes report, evidence, scratch
+ │
  └─► /r-audit ──► reviewer(×3) + qa   Full Codebase Audit
                    parallel dispatch
 
@@ -56,6 +60,7 @@ LIFECYCLE PIPELINE
 | engineer / engineer-focused    | opus · xhigh / medium   |
 | reviewer / reviewer-challenge  | opus · xhigh / high     |
 | qa, uat                        | opus · medium           |
+| claims                         | opus · high             |
 
 Routing is by agent name: the dispatcher sends `scope:docs`/`scope:focused`
 phases to rdf-engineer-focused and escalates a failed focused phase to
@@ -124,6 +129,24 @@ Adversarial reviewer with two modes:
 
 Read-only; cannot modify source files. Dispatched by planner,
 dispatcher, or invoked via `/r-review`.
+
+### claims (opus · high)
+
+Fresh-context claims checker for text about to be posted: PR bodies,
+commit and squash messages, changelogs, release notes, issue or chat
+drafts, status reports. It pins the state (head, working tree or run)
+and fingerprints the text, derives the answer to each claim from the
+primary record before comparing it with the wording, and gives every
+claim a verdict (CONFIRMED, WRONG, OVERSTATED, STALE, UNVERIFIABLE,
+CONTROLLER-ONLY, PENDING), with replacement text or "drop" for each claim
+not CONFIRMED. It then rules the text POST AS IS, POST WITH REPLACEMENTS,
+INCOMPLETE or DO NOT POST. The Edit tool is disallowed; its prompt limits
+writes to its report, evidence files and a scratch copy.
+
+Dispatch it directly after the code settles and before the text is
+posted or summarized to the user. The brief names the text, the state
+and the report path, and can say what the checker may run. For one falsifiable
+claim about the codebase, `/r-verify-claim` is lighter.
 
 ---
 
@@ -260,4 +283,4 @@ dispatcher, or invoked via `/r-review`.
 | /rel-chg-dedup | /r-util-chg-dedup |
 | /test-dedup | /r-util-test-dedup |
 
-**Total: 6 agents + 38 commands + 16 scripts = 60 primitives**
+**Total: 7 agents + 38 commands + 16 scripts = 61 primitives**
