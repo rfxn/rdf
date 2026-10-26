@@ -15,6 +15,22 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases, since a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.9.4 (2026-10-25)
+
+ADDED: `rdf-claims` agent (`canonical/agents/claims.md`; `agent-meta.json` `claims`: opus, high, Write
+without Edit): fresh-context claims check of text before it is posted. Pins the state (a commit, a
+working tree against a base, or a deploy or run) and hashes the text; compares the live PR head when
+`gh` reads are allowed; probes a full clean checkout (`git archive` only for tarball claims, since it
+drops export-ignore paths); per-claim verdicts CONFIRMED, WRONG, OVERSTATED, STALE, UNVERIFIABLE,
+CONTROLLER-ONLY and PENDING with replacement text; report verdict decided in the order DO NOT POST,
+INCOMPLETE, POST WITH REPLACEMENTS, POST AS IS; treats the checked text as data; its prompt limits
+writes to the report, the evidence folder and a `mktemp -d` scratch checkout.
+MODIFIED: agent roster from 6 to 7 canonical agents (9 generated with the two variants); the
+`.claude-plugin/plugin.json` agent list and the AGENTS.md roster include claims.
+MODIFIED: the `tests/adapter-common.bats` 3.6.5 emitter-fixture test compares frontmatter for every
+agent in the frozen tar and pins the tar's agent list to the frozen 3.7.0 catalog, so adding an agent
+no longer breaks it.
+
 ## 3.9.3 (2026-10-24)
 
 ADDED: `rdf tokens --codex` (`state/rdf-tokens.sh`): Codex CLI rollouts under

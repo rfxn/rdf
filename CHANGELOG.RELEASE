@@ -1,13 +1,13 @@
-# RDF Unreleased Release Notes
+# RDF 3.9.4 Release Notes
 
-## Unreleased
+## 3.9.4
 
 -- New Features --
 
 [New] rdf-claims agent (opus · high): fresh-context claims check of text before it is posted (PR bodies,
-      commit and squash messages, changelogs, issue and chat drafts); pins the state (and the live PR head
-      when gh reads are allowed), hashes the text, derives each answer from the primary record before
-      comparing, and gives closed-set verdicts with replacements; writes only a report, evidence and scratch
+      commit and squash messages, changelogs, issue and chat drafts); pins the state and hashes the text,
+      derives each answer from the primary record before comparing, and gives closed-set verdicts with
+      replacements; Edit is disallowed and its prompt limits writes to a report, evidence and scratch
 
 -- Changes --
 

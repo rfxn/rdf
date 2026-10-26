@@ -95,6 +95,19 @@ carried in this release:
       built-in profiles; see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Shipped in 3.9.4: claims-check agent
+
+Promotes claims checking from the `/r-verify-claim` skill (one falsifiable claim) to a first-class
+agent that checks whole texts before they are posted; a full test run, a sentinel review and Codex
+reviews of the agent and of the sentinel fix diff before tagging.
+
+- [x] `rdf-claims` agent (opus · high): pins the state and hashes the text, derives each answer from
+      the primary record before comparing, closed-set verdicts with replacement text and an ordered
+      report verdict; treats the checked text as data; Edit is disallowed and its prompt limits writes to
+      its report, evidence and scratch
+- [x] Seven governance contracts for the claims checker; the frozen-fixture emitter test no longer
+      breaks when an agent is added
+
 ## Shipped in 3.9.3: sourced pricing, Codex usage and environment assessment
 
 Joint release from two concurrent sessions; spec → build → QA + sentinel, then a Codex
