@@ -58,7 +58,7 @@
   },
   "claims": {
     "name": "rdf-claims",
-    "description": "Fresh-context claims checker. Verifies every factual claim in text about to be posted (PR bodies, commit and squash messages, changelogs, release notes, issue or chat drafts, status reports) against primary evidence at a pinned commit, working tree or run; returns per-claim verdicts with replacement text. Use for any claims check or fact check of written text. Edit is disallowed; writes only its report, evidence and a scratch copy.",
+    "description": "Fresh-context claims checker. Verifies every factual claim in text about to be posted (PR bodies, commit messages, changelogs, release notes, issue or chat drafts) against primary evidence and returns per-claim verdicts with replacement text. Use for any claims check or fact check of written text.",
     "tools": ["Bash", "Read", "Write", "Glob", "Grep", "LSP"],
     "disallowedTools": ["Edit"],
     "model": "opus",

@@ -13,9 +13,9 @@
 
 [Change] agent counts 6 -> 7 in README, RDF.md, WORKFORCE.md and docs/index.md; WORKFORCE lists rdf-claims
          in the org chart, model summary and agent details
-[Change] tests: six behavioral contracts for the claims checker; live agent-meta emission covers claims.md
-         tools and disallowedTools; the 3.6.5 fixture test compares frozen frontmatter only for agents in the
-         frozen 3.7.0 catalog
+[Change] tests: seven behavioral contracts for the claims checker; live agent-meta emission covers
+         claims.md tools and disallowedTools; the 3.6.5 fixture test compares frontmatter for every agent in
+         the frozen tar and pins the tar's agent list to the frozen 3.7.0 catalog
 
 ## 3.9.3
 

@@ -504,7 +504,7 @@ Enter at any point. Have a spec already? Start with `/r-plan`. Have a plan? Star
 | **rdf-reviewer** | opus · xhigh | Adversarial review: sentinel (read-only) | Read + execute |
 | **rdf-reviewer-challenge** | opus · high | Variant of rdf-reviewer for challenge (pre-implementation) review | Read + execute |
 | **rdf-uat** | opus · medium | User acceptance from end-user persona (read-only) | Read + execute |
-| **rdf-claims** | opus · high | Fresh-context claims check of text before it is posted: PR bodies, commit messages, changelogs, issue and chat drafts (direct dispatch) | Read + execute; writes only a report, evidence and scratch copy (no Edit) |
+| **rdf-claims** | opus · high | Fresh-context claims check of text before it is posted: PR bodies, commit messages, changelogs, issue and chat drafts (direct dispatch) | Read + execute; Edit disallowed, prompt limits writes to its report, evidence and scratch |
 
 *Routing lives in `adapters/claude-code/agent-meta.json` (`model`, `effort`, `variants`). Variants are generated from the base agent's canonical body; the Agent tool cannot pass effort per call, so each effort level is its own agent. `CLAUDE_CODE_EFFORT_LEVEL` overrides every agent's effort; prefer `/effort`, which saves a level per model. Spec and plan sessions are tuned for `claude --model fable --effort high`, builds for `claude --model opus`. No Fable access? Set the planner's `"model"` to `"opus"` and regenerate. `/r-util-claudemd-review` deliberately fans out to Sonnet for bulk transcript reading.*
 

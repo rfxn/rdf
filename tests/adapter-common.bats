@@ -65,13 +65,17 @@ teardown() {
 
         diff <(ls "${out}/agents" | grep -v "\.rdf-hash$") <(ls "${RDF_CANONICAL}/agents")
         diff <(ls "${out}/plugin-agents") <(ls "${RDF_CANONICAL}/agents")
+        diff <(cd "${expected}/agents" && LC_ALL=C ls -1 -- *.md) <(jq -r "keys[] | select(. != \"commands\") | . + \".md\"" "$agent_meta" | LC_ALL=C sort)
+
+        for e in "${expected}"/agents/*.md; do
+            b="$(basename "$e")"
+            [[ -f "${RDF_CANONICAL}/agents/${b}" ]] || { echo "frozen agent missing from canonical: $b"; exit 1; }
+            diff <(sed -n "1,/^---$/p" "${out}/agents/${b}") <(sed -n "1,/^---$/p" "${expected}/agents/${b}")
+            diff <(sed -n "1,/^---$/p" "${out}/plugin-agents/${b}") <(sed -n "1,/^---$/p" "${expected}/plugin-agents/${b}")
+        done
 
         for f in "${RDF_CANONICAL}"/agents/*.md; do
             b="$(basename "$f")"
-            if jq -e --arg a "${b%.md}" "has(\$a)" "$agent_meta" >/dev/null; then  # agents added after 3.7.0 have no frozen frontmatter
-                diff <(sed -n "1,/^---$/p" "${out}/agents/${b}") <(sed -n "1,/^---$/p" "${expected}/agents/${b}")
-                diff <(sed -n "1,/^---$/p" "${out}/plugin-agents/${b}") <(sed -n "1,/^---$/p" "${expected}/plugin-agents/${b}")
-            fi
             diff <(rdf_strip_frontmatter "${out}/agents/${b}") "$f"
             diff <(rdf_strip_frontmatter "${out}/plugin-agents/${b}") <(_cpl_rewrite_namespace_text < "$f")
             [[ "$(rdf_hash_stdin < "$f")" == "$(cat "${out}/agents/${b}.rdf-hash")" ]] \
