@@ -40,8 +40,12 @@ Commands:
   sync       Pull ~/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
   tokens     Local token usage report from Claude Code and Codex sessions
-  account    Claude Code accounts that share ~/.claude projects and memory
-  shell      Shell launchers (c, cs, ch, cuse) with account switching
+  run        Launch Claude Code or Codex for an account (--yolo, @account)
+  c, x       Short for run claude, run codex (rdf c -y --resume)
+  review     Read-only Codex review run (codex exec) for an account
+  use        Account for this shell's launches (needs rdf shell init)
+  account    Claude Code and Codex accounts that share projects and memory
+  shell      Shell function (rdf use) and tab completion
   github     GitHub Issues + Projects integration
   profile    Manage active domain profiles
   refresh    Agent-driven state file updates
@@ -66,6 +70,11 @@ case "${1:-}" in
     tokens)   shift; source "${RDF_LIBDIR}/cmd/tokens.sh";   cmd_tokens "$@" ;;
     account)  shift; source "${RDF_LIBDIR}/cmd/account.sh";  cmd_account "$@" ;;
     shell)    shift; source "${RDF_LIBDIR}/cmd/shell.sh";    cmd_shell "$@" ;;
+    run)      shift; source "${RDF_LIBDIR}/cmd/run.sh";      cmd_run "$@" ;;
+    c)        shift; source "${RDF_LIBDIR}/cmd/run.sh";      cmd_run claude "$@" ;;
+    x)        shift; source "${RDF_LIBDIR}/cmd/run.sh";      cmd_run codex "$@" ;;
+    use)      rdf_die "rdf use sets the account for this shell, so it needs the shell function: add eval \"\$(rdf shell init)\" to ~/.bashrc or ~/.zshrc (rdf c @name picks one for a single run)" ;;
+    review)   shift; source "${RDF_LIBDIR}/cmd/run.sh";      cmd_review "$@" ;;
     github)   shift; source "${RDF_LIBDIR}/cmd/github.sh";   cmd_github "$@" ;;
     profile)  shift; source "${RDF_LIBDIR}/cmd/profile.sh";  cmd_profile "$@" ;;
     help|--help|-h|"") _rdf_usage ;;

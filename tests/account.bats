@@ -14,7 +14,7 @@ _rdf() { bash "${RDF_SRC}/bin/rdf" "$@"; }
 setup() {
     HOME="$(mktemp -d)"
     export HOME
-    unset RDF_CLAUDE_ACCOUNT CLAUDE_CONFIG_DIR
+    unset RDF_CLAUDE_ACCOUNT RDF_ACCOUNT CLAUDE_CONFIG_DIR
     mkdir -p "${HOME}/.claude/projects" "${HOME}/.claude/skills"
     printf '{}\n' > "${HOME}/.claude/settings.json"
     : > "${HOME}/.claude/history.jsonl"
@@ -172,7 +172,7 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -eq 0 ]
     [ "$(cat "$D")" = "personal" ]
     run _rdf account list
-    [ "${lines[3]}" = "default: personal (launches without @name or cuse)" ]
+    [ "${lines[3]}" = "default: personal (launches without @name or rdf use)" ]
     run _rdf account default -
     [ "$status" -eq 0 ]
     [ ! -e "$D" ]
@@ -253,7 +253,7 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     printf '{}\n' > "${HOME}/.claude/.claude.json"
     run _rdfs account primary personal
     [ "$status" -eq 0 ]
-    [[ "$output" == *"primary is now personal; launch work with 'c @work'"* ]]
+    [[ "$output" == *"primary is now personal; launch work with 'rdf run claude @work'"* ]]
     [[ "$output" == *"left in place: ${HOME}/.claude/.claude.json"* ]]
     [ -f "${HOME}/.claude/.claude.json" ]
     [ "$(cat "${HOME}/.claude/.credentials.json")" = "personal" ]
@@ -429,4 +429,52 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     run _rdf account add work --primary
     [ "$status" -ne 0 ]
     [[ "$output" == *"run claude once and log in first"* ]]
+}
+
+@test "codex: with ~/.codex present, add creates ~/.codex-<name> (700) linking shared entries and the session dirs it creates in ~/.codex, never auth.json or state; without it, none" {
+    run _rdf account add work --primary
+    run _rdf account add solo
+    [ ! -e "${HOME}/.codex-solo" ]
+    mkdir -p "${HOME}/.codex/skills"
+    printf 'model = "x"\n' > "${HOME}/.codex/config.toml"
+    printf '{}\n' > "${HOME}/.codex/auth.json"
+    : > "${HOME}/.codex/state_5.sqlite"
+    run _rdf account add personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"personal (codex): 4/4 shared entries linked (4 new, 0 kept)"* ]]
+    x="${HOME}/.codex-personal"
+    [ "$(stat -c %a "$x" 2>/dev/null || stat -f %Lp "$x")" = "700" ]  # GNU stat, then BSD
+    for e in config.toml sessions archived_sessions skills; do
+        [ "$(readlink "${x}/${e}")" = "${HOME}/.codex/${e}" ]
+    done
+    [ ! -e "${x}/auth.json" ]
+    [ ! -e "${x}/state_5.sqlite" ]
+    [ ! -e "${HOME}/.codex-work" ]
+}
+
+@test "codex: link adds missing Codex homes; list shows each account's Codex state; dir --codex prints the home; remove keeps it" {
+    run _rdf account add work --primary
+    run _rdf account add personal
+    mkdir -p "${HOME}/.codex/sessions"
+    run _rdf account list
+    [[ "$output" == *"CODEX"* ]]
+    run _rdf account dir personal --codex
+    [ "$output" = "" ]
+    run _rdf account link
+    [ "$status" -eq 0 ]
+    [ -L "${HOME}/.codex-personal/sessions" ]
+    [ ! -e "${HOME}/.codex-work" ]
+    run _rdf account dir personal --codex
+    [ "$output" = "${HOME}/.codex-personal" ]
+    run _rdf account dir work --codex
+    [ "$output" = "" ]
+    run _rdf account dir personal --bogus
+    [ "$status" -ne 0 ]
+    printf '{}\n' > "${HOME}/.codex-personal/auth.json"
+    run _rdf account list
+    echo "$output" | grep -qE '^[ *] work .* ~/\.codex$'
+    echo "$output" | grep -qE '^  personal .* own, logged in$'
+    run _rdf account remove personal
+    [[ "$output" == *"Codex home kept: ~/.codex-personal"* ]]
+    [ -d "${HOME}/.codex-personal" ]
 }

@@ -21,6 +21,23 @@
       transcript or rollout and re-extracted when its mtime (or its subagent meta's) differs from the entry's;
       entries hold usage metadata and Codex quota samples, never message content, mode 0600, under a root named
       by a checksum of the extraction program (roots unused for more than a week are pruned)
+[New] rdf run claude|codex [@account] [-y|--yolo | --root | --sandbox]: launch Claude Code or Codex for an
+      account (rdf c and rdf x for short); --yolo is --dangerously-skip-permissions (claude) or
+      --dangerously-bypass-approvals-and-sandbox (codex); --root (claude) adds IS_SANDBOX=1 so --yolo runs as root
+      and isolates nothing; --sandbox runs the tool's own sandbox with permission checks kept (claude: strict
+      sandbox settings plus acceptEdits; codex: workspace-write, on-request) and refuses flags that undo it;
+      claude also takes --chrome and --fs; the account comes from @name, rdf use (RDF_ACCOUNT),
+      RDF_CLAUDE_ACCOUNT or rdf account default, a stale name fails closed, and a codex account pick drops
+      CODEX_API_KEY and CODEX_ACCESS_TOKEN
+[New] rdf review: codex exec for an account with a read-only sandbox (--write for workspace-write), --effort, -m,
+      -o and -C; a text prompt goes after -- with stdin closed, and -f FILE or - passes the prompt on stdin
+[New] rdf shell init: an rdf shell function whose rdf use sets the account for rdf run and rdf review in this
+      shell (every other command passes through to the binary), and bash/zsh tab completion for rdf subcommands,
+      options, @accounts and account names (zsh through bashcompinit when compinit is loaded)
+[New] rdf account: Codex homes, ~/.codex-<name>, for non-primary accounts when ~/.codex exists (add creates one,
+      link adds missing ones), linking whichever of config.toml, AGENTS.md, history.jsonl, prompts, rules, skills,
+      sessions and archived_sessions exist in ~/.codex (sessions and archived_sessions are created there first)
+      while auth.json and state stay per home; list shows a CODEX column and dir --codex prints the home
 
 -- Changes --
 
@@ -37,6 +54,15 @@
 [Change] rdf tokens: the default transcript root follows CLAUDE_CONFIG_DIR; Codex archived_sessions rollouts are
          read; --session falls back to a Codex thread when no Claude Code transcript has the id (an id neither
          tool has still exits 1); --transcripts implies --claude; --since is documented as UTC midnight
+[Change] rdf shell init no longer defines claude, c, cs, ch or cuse: use rdf c, rdf c -y (rdf c --root where
+         init had --sandbox, which was IS_SANDBOX=1 plus skipped permissions, not a sandbox), rdf c --chrome and
+         rdf use; init --sandbox now only prints that hint, so 3.9 eval lines keep working
+[Change] rdf help, README and quickstart describe rdf run, rdf c, rdf x, rdf review and rdf use, and docs/index
+         rdf run and rdf use; the README rdf help block is re-synced with rdf help; rdf account hints point at
+         rdf run
+[Change] tests: run.bats (new) covers rdf run, rdf c/x, rdf review, credential drop and @mention pass-through;
+         shell.bats covers the rdf function, rdf use and bash and zsh completion, including a real-terminal check
+         that @account completion keeps the @; account.bats covers Codex homes
 
 -- Bug Fixes --
 

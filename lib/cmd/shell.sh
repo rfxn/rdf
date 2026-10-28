@@ -6,104 +6,145 @@
 
 _shell_usage() {
     cat <<'USAGE'
-Usage: rdf shell init [--sandbox]
+Usage: rdf shell init
 
-Print Claude Code launcher functions for bash or zsh. Add to the end of
-~/.bashrc or ~/.zshrc (later aliases or functions with these names win):
+Print the rdf shell function and tab completion for bash or zsh. Add to the end
+of ~/.bashrc or ~/.zshrc (a later alias or function named rdf wins):
 
   eval "$(rdf shell init)"
 
-Launchers (replace existing aliases of the same names):
-  claude, c     claude
-  cs            claude --dangerously-skip-permissions
-  ch            claude --chrome
-  cuse <name>   Use account <name> for launches from this shell; 'cuse -' clears it,
-                'cuse' alone lists accounts
+  rdf use <name>   use account <name> for rdf run, rdf c, rdf x and rdf review
+                   in this shell; 'rdf use -' clears it, 'rdf use' alone lists
+                   accounts
+  completion       rdf subcommands and options, @accounts and account names (zsh:
+                   needs compinit)
 
-Every launcher takes a leading @<name> to pick an account for one run
-(cs @personal --resume) and maps --fs to --fork-session. Picking an account
-drops inherited credential and provider settings (CLAUDE_CODE_OAUTH_TOKEN,
-CLAUDE_CODE_OAUTH_REFRESH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN,
-ANTHROPIC_PROFILE, ANTHROPIC_BASE_URL, CLAUDE_CODE_USE_BEDROCK,
-CLAUDE_CODE_USE_VERTEX, CLAUDE_CODE_USE_FOUNDRY) so that account's login is
-used against Anthropic. Without @<name> or cuse, launches use the account set by
-'rdf account default'; with none of these, the launch environment is left as it
-is. Accounts: rdf account help
-
-Options:
-  --sandbox     cs also sets IS_SANDBOX=1 for its run, which lets it bypass
-                permissions as root; use only on a host you treat as a sandbox
+Every other rdf command passes through to the rdf binary unchanged.
+Accounts: rdf account help. Launch options: rdf run help.
 USAGE
 }
 
-# _shell_init [--sandbox] — config sits in function bodies; CC snapshots drop variables and _-prefixed functions
+# _shell_init — the rdf path sits in the function body; CC snapshots drop variables and _-prefixed functions
 _shell_init() {
-    local cs_mode=bypass
-    case "${1:-}" in
-        --sandbox) cs_mode=sandbox ;;
-        "") ;;
-        *) rdf_die "unknown option: $1 — run 'rdf shell help'" ;;
-    esac
-    printf '%s\n' 'unalias claude c cs ch cuse 2>/dev/null  # absent aliases are expected'
-    printf 'function rdf_cli { %q "$@"; }\n' "${RDF_HOME}/bin/rdf"
-    printf 'function cs { rdf_launch %s "$@"; }\n' "$cs_mode"
-    cat <<'INIT'
-function rdf_launch {
-    local mode="$1" acct="" dir a rc
-    local -a cmd
-    shift
-    case "${1:-}" in
-        @agent-*|@*[!abcdefghijklmnopqrstuvwxyz0123456789_-]*) ;;
-        @[abcdefghijklmnopqrstuvwxyz0123456789]*)
-            rc=0
-            if [ -e "${1#@}" ]; then
-                rdf_cli account dir "${1#@}" >/dev/null 2>&1 || rc=$?  # rc 2 = unknown account; other errors fail closed
-            fi
-            if [ "$rc" -ne 2 ]; then
-                acct="${1#@}"
-                shift
-            fi
-            ;;
-    esac
-    [ -n "$acct" ] || acct="${RDF_CLAUDE_ACCOUNT:-}"
-    [ -n "$acct" ] || [ ! -f "$HOME/.rdf/accounts.default" ] || read -r acct < "$HOME/.rdf/accounts.default"
-    cmd=(env)
-    if [ -n "$acct" ]; then
-        dir="$(rdf_cli account dir "$acct")" || return
-        cmd+=(-u CLAUDE_CODE_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_REFRESH_TOKEN -u ANTHROPIC_API_KEY
-            -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_PROFILE -u CLAUDE_CODE_USE_BEDROCK
-            -u CLAUDE_CODE_USE_VERTEX -u CLAUDE_CODE_USE_FOUNDRY -u ANTHROPIC_BASE_URL)
-        if [ -n "$dir" ]; then
-            cmd+=("CLAUDE_CONFIG_DIR=$dir")
-        else
-            cmd+=(-u CLAUDE_CONFIG_DIR)
-        fi
-        cmd+=("RDF_CLAUDE_ACCOUNT=$acct")
-    fi
-    case "$mode" in
-        sandbox) cmd+=(IS_SANDBOX=1 claude --dangerously-skip-permissions) ;;
-        bypass)  cmd+=(claude --dangerously-skip-permissions) ;;
-        chrome)  cmd+=(claude --chrome) ;;
-        *)       cmd+=(claude) ;;
-    esac
-    for a in "$@"; do
-        case "$a" in
-            --fs) cmd+=(--fork-session) ;;
-            *)    cmd+=("$a") ;;
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            --sandbox) echo "rdf: shell init --sandbox is gone: c, cs, ch and cuse became rdf c, rdf c --root, rdf c --chrome and rdf use (rdf shell help)" >&2 ;;
+            *) rdf_die "unknown option: ${arg} — run 'rdf shell help'" ;;
         esac
     done
-    command "${cmd[@]}"
-}
-function claude { rdf_launch plain "$@"; }
-function c { rdf_launch plain "$@"; }
-function ch { rdf_launch chrome "$@"; }
-function cuse {
-    case "${1:-}" in
-        "") rdf_cli account list ;;
-        -)  unset RDF_CLAUDE_ACCOUNT ;;
-        *)  rdf_cli account dir "$1" >/dev/null && export RDF_CLAUDE_ACCOUNT="$1" ;;
+    printf '%s\n' 'unalias rdf 2>/dev/null || true  # an absent alias is expected; true keeps set -e shells alive'
+    printf 'function rdf {\n    local bin=%q\n' "${RDF_HOME}/bin/rdf"
+    cat <<'INIT'
+    if [ "${1:-}" != use ]; then
+        "$bin" "$@"
+        return
+    fi
+    if [ "$#" -gt 2 ]; then
+        echo "rdf: error: usage: rdf use [<name> | -]" >&2
+        return 2
+    fi
+    case "${2:-}" in
+        "") "$bin" account list ;;
+        -)  unset RDF_ACCOUNT RDF_CLAUDE_ACCOUNT ;;
+        *)  "$bin" account dir "$2" >/dev/null && export RDF_ACCOUNT="$2" RDF_CLAUDE_ACCOUNT="$2" ;;
     esac
 }
+function _rdf_accounts {
+    local n d
+    [ -f "$HOME/.rdf/accounts" ] || return 0
+    while IFS="	" read -r n d || [ -n "$n" ]; do
+        case "$n" in ""|"#"*) continue ;; esac
+        printf '%s\n' "$n"
+    done < "$HOME/.rdf/accounts"
+}
+function _rdf_lines {
+    local w
+    COMPREPLY=()
+    while IFS= read -r w; do
+        [ -n "$w" ] && COMPREPLY+=("$w")
+    done < <("$@")
+}
+function _rdf_reply {
+    local w
+    COMPREPLY=()
+    while IFS= read -r w; do
+        case "$w" in "$2"*) [ -n "$w" ] && COMPREPLY+=("$w") ;; esac
+    done < <(printf '%s\n' "$1" | command tr ' ' '\n')
+}
+function _rdf_words {
+    local o=0
+    if [ -n "${ZSH_VERSION:-}" ]; then [[ -o ksharrays ]] || o=1; fi  # zsh bashcompinit: 1-based COMP_WORDS
+    _rdf_cur="${COMP_WORDS[COMP_CWORD+o]:-}"
+    [ "$#" -lt 2 ] || _rdf_cur="$2"  # readline's word, which COMPREPLY replaces: @p even though COMP_WORDS splits it at @
+    _rdf_prev=""
+    [ "$COMP_CWORD" -gt 0 ] && _rdf_prev="${COMP_WORDS[COMP_CWORD-1+o]:-}"
+    _rdf_w1="${COMP_WORDS[1+o]:-}"
+    _rdf_w2="${COMP_WORDS[2+o]:-}"
+}
+function _rdf_at {
+    case "$_rdf_cur" in
+        @*) _rdf_reply "$(_rdf_accounts | command sed 's/^/@/')" "$_rdf_cur"; return 0 ;;
+    esac
+    return 1
+}
+function _rdf_complete {
+    local words=""
+    _rdf_words "$@"
+    COMPREPLY=()
+    if [ "$COMP_CWORD" -le 1 ]; then
+        words="run review use account shell tokens state doctor generate deploy sync init refresh migrate profile github help version"
+    else
+        case "$_rdf_w1" in
+            run|c|x)
+                if [ "$_rdf_w1" = run ] && [ "$COMP_CWORD" -eq 2 ]; then words="claude codex help"
+                else
+                    _rdf_at && return 0
+                    words="--yolo --sandbox"
+                    case "$_rdf_w1 $_rdf_w2" in "c "*|"run claude") words="--yolo --root --sandbox --chrome --fs" ;; esac
+                fi ;;
+            review)
+                _rdf_at && return 0
+                case "$_rdf_prev" in
+                    --effort) words="low medium high xhigh" ;;
+                    -o|-f) _rdf_lines compgen -f -- "$_rdf_cur"; return 0 ;;
+                    -C) _rdf_lines compgen -d -- "$_rdf_cur"; return 0 ;;
+                    -m|--model) return 0 ;;
+                    *) words="--effort -m -o -C -f --write - --" ;;
+                esac ;;
+            use)
+                [ "$COMP_CWORD" -eq 2 ] && words="$(_rdf_accounts) -" ;;
+            account)
+                if [ "$COMP_CWORD" -eq 2 ]; then words="add list link remove default primary dir help"
+                else
+                    case "$_rdf_w2" in
+                        link|remove|primary) words="$(_rdf_accounts)" ;;
+                        default) words="$(_rdf_accounts) -" ;;
+                        dir) words="$(_rdf_accounts) --codex" ;;
+                        add) words="--primary" ;;
+                    esac
+                fi ;;
+            shell)
+                [ "$COMP_CWORD" -eq 2 ] && words="init help" ;;
+            tokens)
+                case "$_rdf_prev" in
+                    --by) words="day week month session project" ;;
+                    --project|--transcripts) _rdf_lines compgen -d -- "$_rdf_cur"; return 0 ;;
+                    --days|--since|--session|--top) return 0 ;;
+                    *) words="--claude --codex --all --project --transcripts --session --days --since --by --top --json --summary --pricing --no-cache help" ;;
+                esac ;;
+            generate|deploy)
+                words="claude-code claude-plugin codex antigravity agent-skills agents-md gemini-cli all" ;;
+        esac
+    fi
+    _rdf_reply "$words" "$_rdf_cur"
+}
+if [ -n "${ZSH_VERSION:-}" ] && ! whence complete >/dev/null 2>&1; then
+    whence compdef >/dev/null 2>&1 && autoload -U +X bashcompinit 2>/dev/null && bashcompinit  # zsh without compinit: no completion
+fi
+if type complete >/dev/null 2>&1; then
+    complete -F _rdf_complete rdf
+fi
 INIT
 }
 

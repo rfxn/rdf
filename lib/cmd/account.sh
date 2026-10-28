@@ -17,31 +17,38 @@ _ACCOUNT_NAME_RE='^[a-z0-9][a-z0-9_-]{0,31}$'
 _ACCOUNT_SHARED=(projects history.jsonl paste-cache file-history tasks todos plans CLAUDE.md
     settings.json keybindings.json skills agents commands rules output-styles scripts governance
     reference)
+# Codex: an account's own home is ~/.codex-<name> when it exists, else ~/.codex; auth.json and Codex's state
+# databases stay per home, rollouts are shared so rdf tokens reads them in one place.
+_ACCOUNT_CODEX_DIR="${_ACCOUNT_HOME}/.codex"
+_ACCOUNT_CODEX_SHARED=(config.toml AGENTS.md history.jsonl prompts rules skills sessions archived_sessions)
 
 _account_usage() {
     cat <<'USAGE'
 Usage: rdf account <subcommand> [args]
 
-Run Claude Code on several accounts that share projects, memory, history and
-config with ~/.claude. Each extra account keeps its own login in
-~/.claude-<name>. Launch with 'cs @<name>' after: eval "$(rdf shell init)"
+Run Claude Code and Codex on several accounts that share projects, memory,
+history and config. Each extra account keeps its own Claude Code login in
+~/.claude-<name> and, when ~/.codex exists, its own Codex login in
+~/.codex-<name>. Launch with 'rdf run claude @<name>' or 'rdf run codex @<name>'.
 
 Subcommands:
   add <name> --primary   Name the account already logged in to ~/.claude
-  add <name>             Create ~/.claude-<name> linked to ~/.claude's shared state
+  add <name>             Create ~/.claude-<name> (and ~/.codex-<name>) linked to shared state
   list                   Show accounts, logins and shared-link health (* = active)
-  link [<name>]          Re-link shared state for one or all accounts
+  link [<name>]          Re-link shared state for one or all accounts; adds missing Codex homes
   remove <name>          Unregister an account (its config dir and login are kept)
-  default <name>|-       Account launchers use without @name or cuse; '-' clears it
+  default <name>|-       Account rdf run uses without @name or rdf use; '-' clears it
   primary <name> [--dry-run]
                          Move <name>'s login into ~/.claude and the current primary's
                          login to ~/.claude-<old>; quit every Claude Code session first
-  dir <name>             Print the account's CLAUDE_CONFIG_DIR (empty for primary)
+  dir <name> [--codex]   Print the account's CLAUDE_CONFIG_DIR (empty for primary), or with
+                         --codex its CODEX_HOME (empty when it uses ~/.codex)
 
 Examples:
   rdf account add work --primary
   rdf account add personal
-  cs @personal           # first launch asks you to log in
+  rdf run claude @personal   # first launch asks you to log in
+  rdf run codex @personal    # codex login with CODEX_HOME=~/.codex-personal
   rdf account default personal
   rdf account primary personal --dry-run
 USAGE
@@ -106,13 +113,19 @@ _account_display() {
 
 # _account_link_dir NAME DIR — link each shared entry present in ~/.claude; never replaces a path
 _account_link_dir() {
-    local name="$1" dir="$2" entry src dst cur linked=0 present=0 kept=0
+    _account_link_into "$1" "config dir" "$2" "$_ACCOUNT_PRIMARY_DIR" "${_ACCOUNT_SHARED[@]}"
+}
+
+# _account_link_into LABEL NOUN DIR SRCROOT ENTRY... — link each ENTRY present in SRCROOT into DIR
+_account_link_into() {
+    local name="$1" noun="$2" dir="$3" root="$4" entry src dst cur linked=0 present=0 kept=0
+    shift 4
     if [[ ! -d "$dir" ]]; then
-        rdf_warn "${name}: config dir missing: ${dir}"
+        rdf_warn "${name}: ${noun} missing: ${dir}"
         return 0
     fi
-    for entry in "${_ACCOUNT_SHARED[@]}"; do
-        src="${_ACCOUNT_PRIMARY_DIR}/${entry}"
+    for entry in "$@"; do
+        src="${root}/${entry}"
         dst="${dir}/${entry}"
         [[ -e "$src" ]] || continue
         present=$((present + 1))
@@ -145,6 +158,36 @@ _account_linked_count() {
         fi
     done
     printf '%s/%s\n' "$ok" "$present"
+}
+
+# _account_codex_home NAME — the account's own Codex home, or nothing when it uses ~/.codex
+_account_codex_home() {
+    [[ ! -d "${_ACCOUNT_HOME}/.codex-${1}" ]] || printf '%s\n' "${_ACCOUNT_HOME}/.codex-${1}"
+}
+
+# _account_codex_link NAME — create ~/.codex-NAME when Codex is in use (~/.codex exists) and link shared entries
+_account_codex_link() {
+    local home="${_ACCOUNT_HOME}/.codex-${1}"
+    [[ -d "$_ACCOUNT_CODEX_DIR" ]] || return 0
+    if [[ ! -d "$home" ]]; then
+        command mkdir -p "$home"
+        command chmod 700 "$home"
+    fi
+    command mkdir -p "${_ACCOUNT_CODEX_DIR}/sessions" "${_ACCOUNT_CODEX_DIR}/archived_sessions"  # else codex makes its own and rollouts fork
+    _account_link_into "${1} (codex)" "Codex home" "$home" "$_ACCOUNT_CODEX_DIR" "${_ACCOUNT_CODEX_SHARED[@]}"
+}
+
+# _account_codex_state NAME — Codex column for list: the home's login file, or the shared ~/.codex
+_account_codex_state() {
+    local home
+    home="$(_account_codex_home "$1")"
+    if [[ -z "$home" ]]; then
+        if [[ -d "$_ACCOUNT_CODEX_DIR" ]]; then printf '%s\n' "$(_account_display "$_ACCOUNT_CODEX_DIR")"; else printf -- '-\n'; fi
+    elif [[ -f "${home}/auth.json" ]]; then
+        printf 'own, logged in\n'
+    else
+        printf 'own, no auth.json\n'
+    fi
 }
 
 # _account_login DIR — "email (org)" from the account's .claude.json, or "not logged in"
@@ -187,6 +230,7 @@ _account_add() {
         command mkdir -p "$dir"
         command chmod 700 "$dir"
         _account_link_dir "$name" "$dir"
+        _account_codex_link "$name"
     fi
 
     command mkdir -p "$(command dirname "$_ACCOUNT_REGISTRY")"
@@ -198,7 +242,8 @@ _account_add() {
     printf '%s\t%s\n' "$name" "$dir" >> "$_ACCOUNT_REGISTRY"
     rdf_log "registered ${name}: $(_account_display "$dir")"
     if [[ "$primary" -eq 0 ]]; then
-        rdf_log "log in on first launch: c @${name}"
+        rdf_log "log in on first launch: rdf run claude @${name}"
+        [[ ! -d "${_ACCOUNT_HOME}/.codex-${name}" ]] || rdf_log "Codex login: rdf run codex @${name} (or CODEX_HOME=~/.codex-${name} codex login)"
     fi
 }
 
@@ -208,11 +253,13 @@ _account_link() {
         dir="$(_account_lookup "$1")" || _account_unknown "$1"
         [[ "$dir" != "$_ACCOUNT_PRIMARY_MARK" ]] || rdf_die "$1 is the primary account; nothing to link"
         _account_link_dir "$1" "$dir"
+        _account_codex_link "$1"
         return 0
     fi
     while IFS=$'\t' read -r name dir; do
         [[ "$dir" == "$_ACCOUNT_PRIMARY_MARK" ]] && continue
         _account_link_dir "$name" "$dir"
+        _account_codex_link "$name"
     done < <(_account_entries)
 }
 
@@ -225,11 +272,11 @@ _account_list() {
         return 0
     fi
     active_dir="${CLAUDE_CONFIG_DIR:-$_ACCOUNT_PRIMARY_MARK}"
-    printf '  %-14s %-24s %-12s %s\n' "ACCOUNT" "DIR" "SHARED" "LOGIN"
+    printf '  %-14s %-24s %-12s %-32s %s\n' "ACCOUNT" "DIR" "SHARED" "LOGIN" "CODEX"
     while IFS=$'\t' read -r name dir; do
         mark=" "
-        if [[ -n "${RDF_CLAUDE_ACCOUNT:-}" ]]; then
-            [[ "$name" != "$RDF_CLAUDE_ACCOUNT" ]] || mark="*"
+        if [[ -n "${RDF_ACCOUNT:-${RDF_CLAUDE_ACCOUNT:-}}" ]]; then
+            [[ "$name" != "${RDF_ACCOUNT:-${RDF_CLAUDE_ACCOUNT:-}}" ]] || mark="*"
         elif [[ "$dir" == "${active_dir%/}" ]]; then
             mark="*"
         fi
@@ -238,10 +285,11 @@ _account_list() {
         else
             shared="$(_account_linked_count "$dir")"
         fi
-        printf '%s %-14s %-24s %-12s %s\n' "$mark" "$name" "$(_account_display "$dir")" "$shared" "$(_account_login "$dir")"
+        printf '%s %-14s %-24s %-12s %-32s %s\n' "$mark" "$name" "$(_account_display "$dir")" "$shared" \
+            "$(_account_login "$dir")" "$(_account_codex_state "$name")"
     done <<< "$entries"
     default="$(_account_default_name)"
-    [[ -z "$default" ]] || printf 'default: %s (launches without @name or cuse)\n' "$default"
+    [[ -z "$default" ]] || printf 'default: %s (launches without @name or rdf use)\n' "$default"
 }
 
 _account_remove() {
@@ -252,6 +300,7 @@ _account_remove() {
     command awk -F'\t' -v n="$name" '$1 != n' "$_ACCOUNT_REGISTRY" > "$tmp"
     command mv "$tmp" "$_ACCOUNT_REGISTRY"
     rdf_log "unregistered ${name}; config dir kept: $(_account_display "$dir")"
+    [[ ! -d "${_ACCOUNT_HOME}/.codex-${name}" ]] || rdf_log "Codex home kept: ~/.codex-${name}"
     [[ "$(_account_default_name)" != "$name" ]] || _account_default_clear
 }
 
@@ -262,7 +311,7 @@ _account_default_name() {
 
 _account_default_clear() {
     command rm -f "$_ACCOUNT_DEFAULT"
-    rdf_log "default cleared; launches without @name or cuse leave the environment as it is"
+    rdf_log "default cleared; launches without @name or rdf use leave the environment as it is"
 }
 
 _account_default() {
@@ -274,7 +323,7 @@ _account_default() {
     fi
     _account_lookup "$name" >/dev/null || _account_unknown "$name"
     printf '%s\n' "$name" > "$_ACCOUNT_DEFAULT"
-    rdf_log "default: ${name} (launches without @name or cuse)"
+    rdf_log "default: ${name} (launches without @name or rdf use)"
 }
 
 _account_is_shared() {
@@ -430,7 +479,7 @@ _account_primary() {
     rdf_require_bin jq
     [[ -d "$target" ]] || rdf_die "${name}: config dir missing: ${target}"
     [[ -f "${target}/.credentials.json" ]] \
-        || rdf_die "${name} is not logged in (no ${target}/.credentials.json) — log in with 'c @${name}' first"
+        || rdf_die "${name} is not logged in (no ${target}/.credentials.json) — log in with 'rdf run claude @${name}' first"
     [[ -d "$_ACCOUNT_PRIMARY_DIR" ]] || rdf_die "${_ACCOUNT_PRIMARY_DIR} not found"
     new_dir="${_ACCOUNT_HOME}/.claude-${old}"
     [[ ! -e "$new_dir" && ! -L "$new_dir" ]] || rdf_die "${new_dir} already exists — move it aside first"
@@ -512,13 +561,18 @@ _account_primary() {
     done
     _account_try command rmdir "$target" 2>/dev/null || rdf_warn "kept ${target}: not empty after the swap"  # rmdir's own error adds nothing
     _account_try _account_link || rdf_warn "linking stopped early; run 'rdf account link' to finish"
-    rdf_log "primary is now ${name}; launch ${old} with 'c @${old}'"
+    rdf_log "primary is now ${name}; launch ${old} with 'rdf run claude @${old}'"
 }
 
 _account_dir() {
     local dir
     [[ -n "${1:-}" ]] || rdf_die "dir requires <name> — run 'rdf account help'"
     dir="$(_account_lookup "$1")" || _account_unknown "$1"
+    if [[ "${2:-}" == "--codex" ]]; then
+        _account_codex_home "$1"
+        return 0
+    fi
+    [[ -z "${2:-}" ]] || rdf_die "unknown option: $2 — run 'rdf account help'"
     if [[ "$dir" == "$_ACCOUNT_PRIMARY_MARK" ]]; then
         printf '\n'
         return 0

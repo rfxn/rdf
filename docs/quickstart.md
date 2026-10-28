@@ -105,35 +105,35 @@ adversarial review of any diff.
 bin/rdf doctor ~/projects/my-app   # convention drift, stale state, sync health
 ```
 
-## 5. Optional: launchers and several Claude accounts
+## 5. Optional: launching, completion and several accounts
 
-`rdf shell init` prints short Claude Code launchers for bash and zsh. Add this
-line at the end of `~/.bashrc` or `~/.zshrc`:
+`bin/rdf run claude` and `bin/rdf run codex` launch either tool (`rdf c` and
+`rdf x` for short). `--yolo` or `-y` skips permission prompts
+(`--dangerously-skip-permissions` for Claude Code) and, for Codex, also turns
+off its sandbox (`--dangerously-bypass-approvals-and-sandbox`). `--sandbox`
+instead runs the tool's own sandbox with permission checks kept, and `--root`
+lets Claude Code skip permissions as root without isolating anything. `bin/rdf review`
+runs a Codex review, read-only unless `--write`. For `rdf use` and tab completion, add this line
+at the end of `~/.bashrc` or `~/.zshrc`:
 
 ```bash
 eval "$(~/rdf/bin/rdf shell init)"
 ```
 
-| Launcher | Runs |
-|----------|------|
-| `c` | `claude` |
-| `cs` | `claude --dangerously-skip-permissions` |
-| `ch` | `claude --chrome` |
-
-Every launcher maps `--fs` to `--fork-session`. If you use more than one
-Claude account (work and personal, say), register them once. They share
-projects, auto memory, `--resume` history and settings, and each keeps its
-own login:
+If you use more than one account (work and personal, say), register them
+once. They share projects, auto memory, `--resume` history and settings, and
+each keeps its own Claude Code login and, when you use Codex, its own Codex
+login:
 
 ```bash
 bin/rdf account add work --primary   # the login ~/.claude already holds
-bin/rdf account add personal         # creates ~/.claude-personal
-cs @personal                         # first launch asks you to log in
+bin/rdf account add personal         # creates ~/.claude-personal (and ~/.codex-personal)
+bin/rdf run claude @personal         # first launch asks you to log in
 bin/rdf account default personal     # launches without @name now use personal
 bin/rdf account list                 # logins and link health
 ```
 
-`cuse personal` makes an account sticky for the current shell instead. To
+`rdf use personal` makes an account sticky for the current shell instead. To
 change which login plain `claude`, IDE extensions and scripts use, quit every
 Claude Code session and run `bin/rdf account primary personal` (preview it
 with `--dry-run`; Linux only).

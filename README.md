@@ -86,7 +86,7 @@ path on a plain Flask project, with real output at every step.
 | `RDF_HOME` | resolved from `bin/rdf` | RDF install root (canonical/, lib/, bin/, state/) |
 | `RDF_CANONICAL` | `$RDF_HOME/canonical` | Canonical content source tree |
 | `RDF_TARGET` | `~/.claude` | Deploy target for claude-code adapter |
-| `RDF_CLAUDE_ACCOUNT` | unset | Account the `rdf shell init` launchers use when no `@name` is given (set by `cuse`; overrides `rdf account default`) |
+| `RDF_ACCOUNT` | unset | Account `rdf run` and `rdf review` use when no `@name` is given (set by `rdf use`; overrides `rdf account default`); `RDF_CLAUDE_ACCOUNT` is still read as a fallback |
 | `RDF_WORKSPACE` | parent of `$RDF_HOME` | Workspace root scanned by `rdf doctor --all`. Set this when the checkout lives directly in `$HOME` (e.g. `~/rdf`); `--all` refuses to scan a home directory |
 
 Most users do not need to override these; `bin/rdf` resolves paths from its own location automatically. Overrides matter only for multi-install setups or CI runs against a fixture tree.
@@ -136,31 +136,57 @@ canonical edits  -->  rdf generate  -->  deployed (~/.claude/, ~/.gemini/, etc.)
 deployed edits  <--   rdf sync     <--   (emergency path)
 ```
 
-### Launchers and Multiple Claude Accounts
+### Launching Claude Code and Codex, and Multiple Accounts
 
-`rdf shell init` prints Claude Code launchers for bash and zsh. Put the line last
-in `~/.bashrc` or `~/.zshrc`, and delete older `c`/`cs`/`ch` aliases or `claude()`
-functions (a definition after the line wins):
+`rdf run` launches Claude Code or Codex for an account, and `rdf review` runs a
+read-only Codex review (`codex exec`). `rdf c` and `rdf x` are short for
+`rdf run claude` and `rdf run codex`, and `-y` is short for `--yolo`:
 
 ```bash
-eval "$(rdf shell init)"     # --sandbox: cs also sets IS_SANDBOX=1 (root on a sandbox host)
+rdf run claude @personal --yolo --resume   # --yolo: --dangerously-skip-permissions
+rdf c @personal -y --resume                # the same, short
+rdf x @work -y                             # --yolo: --dangerously-bypass-approvals-and-sandbox
+rdf review --effort high -o /tmp/r.md "Review HEAD~1..HEAD for regressions"
+rdf review -f prompt.md -C ~/src/app       # long prompts go through stdin
 ```
 
-| Launcher | Runs |
-|----------|------|
-| `claude`, `c` | `claude` |
-| `cs` | `claude --dangerously-skip-permissions` |
-| `ch` | `claude --chrome` |
-| `cuse <name>` | Use account `<name>` for launches from this shell (`cuse -` clears, `cuse` lists) |
+Three launch modes, each named for what it does:
 
-Every launcher maps `--fs` to `--fork-session` and takes a leading `@<name>` to
-pick an account for one run. `@agent-…`, uppercase names and paths that exist
-in the current directory (unless registered as an account) pass through as
-prompt text. Picking an account drops inherited credential and provider
-variables (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`,
-`CLAUDE_CODE_USE_BEDROCK` and the others listed in `rdf shell help`) so that
-account's login is used against Anthropic. Without `@name` or `cuse`, launches use the
-account set by `rdf account default`; with none of these, the environment is left as it is.
+| Mode | Claude Code | Codex |
+|------|-------------|-------|
+| `-y`, `--yolo` | `--dangerously-skip-permissions` (refused as root) | `--dangerously-bypass-approvals-and-sandbox` |
+| `--root` | `--yolo` plus `IS_SANDBOX=1`, which tells Claude Code it is already sandboxed so it skips permissions as root; it isolates nothing | not accepted |
+| `--sandbox` | Claude Code's sandbox with permission checks kept: shell commands run without prompts but can write only the working directory and temp and reach only hosts you allow, and cannot ask to leave it; file edits in the working directory are auto-accepted; anything else asks (Linux needs `bubblewrap` and `socat`) | `--sandbox workspace-write --ask-for-approval on-request` |
+
+`--sandbox` does not combine with `--yolo` or `--root`, and refuses tool flags that
+would undo it (`--settings`, `--permission-mode`, `-s`, `-a`, the bypass flags).
+`rdf run claude` also takes `--chrome`, and `--fs` for `--fork-session`; every
+other argument goes to the tool. `rdf review` runs with a read-only sandbox
+(`--write` for workspace-write), takes `--effort`, `-m`, `-o` and `-C`, and closes
+stdin for a text prompt so a backgrounded run never waits on it.
+
+`rdf shell init` defines an `rdf` shell function so that `rdf use <name>` can set
+the account for `rdf run`, `rdf c`, `rdf x` and `rdf review` in the current shell
+(`rdf use -` clears it, `rdf use` alone lists accounts); every other command
+passes through to the binary. It also adds tab completion for bash and zsh
+(subcommands, options, `@accounts`; zsh needs `compinit`). Put the line last in
+`~/.bashrc` or `~/.zshrc`:
+
+```bash
+eval "$(rdf shell init)"
+```
+
+A leading `@<name>` picks an account for one run. `@agent-…`, uppercase names and
+paths that exist in the current directory (unless registered as an account)
+pass through to the tool. For Claude Code, picking an account sets
+`CLAUDE_CONFIG_DIR` and drops inherited credential and provider variables
+(`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`,
+`CLAUDE_CODE_USE_BEDROCK` and the others listed in `rdf run help`) so that
+account's login is used against Anthropic. For Codex it sets `CODEX_HOME` to the
+account's `~/.codex-<name>` when that exists, else unsets it (`~/.codex`), and
+drops `CODEX_API_KEY` and `CODEX_ACCESS_TOKEN`.
+Without `@name` or `rdf use`, launches use the account set by
+`rdf account default`; with none of these, the environment is left as it is.
 
 `rdf account` runs several Claude Code accounts against one set of projects, auto
 memory, `--resume` history and config. The account logged in to `~/.claude` is the
@@ -171,12 +197,21 @@ org-managed settings. It symlinks `projects`, `history.jsonl`, `paste-cache`,
 `keybindings.json`, `skills`, `agents`, `commands`, `rules`, `output-styles` and
 RDF's deployed `scripts`, `governance` and `reference` back to `~/.claude`.
 
+When `~/.codex` exists, each other account also gets `~/.codex-<name>` with its own
+Codex login (`auth.json`) and state databases, sharing `config.toml`, `AGENTS.md`,
+`history.jsonl`, `prompts`, `rules`, `skills`, `sessions` and `archived_sessions`
+with `~/.codex`; it creates `~/.codex/sessions` and `archived_sessions` first, so
+`rdf tokens` reads every account's rollouts in one place.
+`rdf account primary` moves Claude Code logins only; an account without its own
+Codex home uses `~/.codex`.
+
 ```bash
 rdf account add work --primary   # name the login ~/.claude already holds
-rdf account add personal         # create ~/.claude-personal
-cs @personal                     # first launch asks you to log in
-cuse personal                    # or make it sticky for this shell
-rdf account default personal     # or for every launch without @name/cuse ('-' clears)
+rdf account add personal         # create ~/.claude-personal (and ~/.codex-personal)
+rdf run claude @personal         # first launch asks you to log in
+rdf run codex @personal          # with ~/.codex-personal, Codex asks for its login too
+rdf use personal                 # or make it sticky for this shell
+rdf account default personal     # or for every launch without @name/rdf use ('-' clears)
 rdf account list                 # logins and link health; * = active
 rdf account primary personal --dry-run   # preview making personal the ~/.claude login
 ```
@@ -189,13 +224,13 @@ rdf account primary personal --dry-run   # preview making personal the ~/.claude
   `apiKeyHelper` and credential env vars out of it.
 - `rdf account link` adds links for entries that appear in `~/.claude` later. It
   never replaces a path that already exists in an account dir.
-- `ch @<name>` picks the CLI account; the Chrome extension uses whichever
+- `rdf run claude @<name> --chrome` picks the CLI account; the Chrome extension uses whichever
   claude.ai account the browser is signed in to.
 - `rdf account primary <name>` makes `<name>` the login in `~/.claude`, which is
   what plain `claude`, IDE extensions and scripts use, and moves the current
   primary's login, `.claude.json`, plugins and org-managed settings to
   `~/.claude-<old>`. Shared state stays where it is, and names keep working with
-  `@name`, `cuse` and `rdf account default`. Quit every Claude Code session first
+  `@name`, `rdf use` and `rdf account default`. Quit every Claude Code session first
   (it refuses while one runs), and preview the moves with `--dry-run`. Linux
   only: macOS keeps each login in the keychain under its config dir path.
 
@@ -327,20 +362,29 @@ full security review regardless of tier. See `canonical/reference/tiers.md`.
 Usage: rdf <command> [subcommand] [options]
 
 Commands:
-  generate   Build tool-specific output from canonical sources
-  deploy     Symlink generated output to tool deployment target
-  profile    Manage active domain profiles
-  init       Initialize projects with governance
-  doctor     Check project health and convention drift
+  generate   Build tool-specific files from canonical sources
+  deploy     Deploy generated output to tool destinations
+  sync       Pull ~/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
-  refresh    Agent-driven governance and state updates
-  sync       Pull deployed edits back to canonical sources
+  tokens     Local token usage report from Claude Code and Codex sessions
+  run        Launch Claude Code or Codex for an account (--yolo, @account)
+  c, x       Short for run claude, run codex (rdf c -y --resume)
+  review     Read-only Codex review run (codex exec) for an account
+  use        Account for this shell's launches (needs rdf shell init)
+  account    Claude Code and Codex accounts that share projects and memory
+  shell      Shell function (rdf use) and tab completion
   github     GitHub Issues + Projects integration
-  migrate    Migrate project layout from .claude/ + work-output/ to .rdf/
-  account    Claude Code accounts that share ~/.claude projects and memory
-  shell      Shell launchers (c, cs, ch, cuse) with account switching
+  profile    Manage active domain profiles
+  refresh    Agent-driven state file updates
+  init       Initialize projects with RDF conventions
+  doctor     Check project health and convention drift
+  migrate    Migrate project from .claude/ + work-output/ to .rdf/
 
-Run 'rdf <command> help' for details.
+Options:
+  help       Show this help
+  version    Show version
+
+Run 'rdf <command> help' for subcommand details.
 ```
 
 | Command | Key Operations |
@@ -356,8 +400,11 @@ Run 'rdf <command> help' for details.
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |
 | `rdf migrate [--dry-run] [--all]` | Migrate project layout from `.claude/` + work-output/ to `.rdf/` |
-| `rdf account add\|list\|link\|remove\|default\|primary\|dir` | Claude Code accounts that share `~/.claude` projects, memory and config |
-| `rdf shell init [--sandbox]` | Print bash/zsh launchers (`claude`, `c`, `cs`, `ch`, `cuse`) with `@account` switching |
+| `rdf run claude\|codex [@account] [-y\|--yolo \| --root \| --sandbox]` | Launch Claude Code or Codex for an account (`rdf c`, `rdf x` for short); `--root`, `--chrome`, `--fs` for claude |
+| `rdf review [@account] [--effort E] [-o FILE] [-C DIR] [--write] PROMPT` | Read-only `codex exec` review run with stdin closed (`-f FILE` or `-` for stdin prompts) |
+| `rdf account add\|list\|link\|remove\|default\|primary\|dir` | Claude Code and Codex accounts that share projects, memory and config |
+| `rdf use <name>\|-` | Account for this shell's `rdf run`, `rdf c`, `rdf x` and `rdf review` (needs `rdf shell init`) |
+| `rdf shell init` | Print the `rdf` shell function (`rdf use`) and bash/zsh tab completion |
 
 ### 4.5. Exit Codes
 

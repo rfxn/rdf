@@ -64,11 +64,10 @@ Context cost is published and CI-guarded: the default deploy adds ~0.1K
 always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
 `rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).
 
-**More than one Claude account?** `rdf shell init` adds `c`/`cs`/`ch`
-launchers, and `rdf account` runs work and personal logins against the same
-projects, memory and `--resume` history. Pick one per launch with
-`cs @personal`, set a default, or move which login `~/.claude` holds. See
-[Quickstart, step 5](quickstart).
+**More than one account?** `rdf run claude|codex @personal` launches Claude
+Code or Codex for an account, and `rdf account` runs work and personal logins
+against the same projects, memory and `--resume` history. `rdf shell init` adds
+`rdf use` (an account per shell) and tab completion. See [Quickstart, step 5](quickstart).
 
 ## The pipeline
 
