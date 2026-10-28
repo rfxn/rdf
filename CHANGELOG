@@ -8,6 +8,19 @@
       commit and squash messages, changelogs, issue and chat drafts); pins the state and hashes the text,
       derives each answer from the primary record before comparing, and gives closed-set verdicts with
       replacements; Edit is disallowed and its prompt limits writes to a report, evidence and scratch
+[New] rdf tokens: with no tool option the report covers Claude Code and, when the scope has Codex usage, Codex
+      too (combined spend line, one section per tool, top five sessions by cost); --claude and --codex report
+      one tool; the default --json and --summary carry source "all", the combined cost_usd and a claude and a codex
+      object (null when that tool has no data)
+[New] rdf tokens --all: every project, each project dir read once by its physical path, with a by-project table;
+      a Codex rollout counts toward its deepest ancestor that is a Claude Code project cwd or whose slug names a
+      project dir (aliases resolve to the physical dir), else the project whose slug its path names, else its cwd
+[New] rdf tokens --by day|week|month|session|project: one table instead of the full report (day, week and month in
+      local time; project implies --all); --top N sets the rows in the session and by-project tables
+[New] rdf tokens row cache (~/.rdf/cache/tokens, RDF_TOKENS_CACHE, --no-cache): rows are extracted once per
+      transcript or rollout and re-extracted when its mtime (or its subagent meta's) differs from the entry's;
+      entries hold usage metadata and Codex quota samples, never message content, mode 0600, under a root named
+      by a checksum of the extraction program (roots unused for more than a week are pruned)
 
 -- Changes --
 
@@ -16,6 +29,19 @@
 [Change] tests: seven behavioral contracts for the claims checker; live agent-meta emission covers
          claims.md tools and disallowedTools; the 3.6.5 fixture test compares frontmatter for every agent in
          the frozen tar and pins the tar's agent list to the frozen 3.7.0 catalog
+[Change] rdf tokens (Codex): a project's scope also covers rollouts run from its Claude Code scratchpads (a path
+         component equal to the project's slug), which some Claude-launched codex exec runs use as their cwd
+[Change] rdf tokens: extraction runs in parallel workers (RDF_TOKENS_JOBS, default the CPU count) that grep-filter
+         each file and run one jq per batch of files; one message's consecutive entries with the same metadata cache
+         as one row; a window run reads each Codex rollout once instead of up to three times
+[Change] rdf tokens: the default transcript root follows CLAUDE_CONFIG_DIR; Codex archived_sessions rollouts are
+         read; --session falls back to a Codex thread when no Claude Code transcript has the id (an id neither
+         tool has still exits 1); --transcripts implies --claude; --since is documented as UTC midnight
+
+-- Bug Fixes --
+
+[Fix] rdf tokens (Codex): record lines are read as text (grep -a, C locale), so a rollout with a NUL byte or
+      invalid UTF-8 can no longer lose the rows grep would have suppressed as binary
 
 ## 3.9.3
 

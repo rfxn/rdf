@@ -53,7 +53,7 @@ server counts only.
    for Anthropic, 30m for OpenAI), cache reads, the long-context and fast
    tiers, and promotional end dates. Report each difference as a row: model,
    field, table value, page value. List page models missing from the table
-   that this host uses (check `rdf tokens --json` and `--codex --json`
+   that this host uses (check `rdf tokens --claude --json` and `--codex --json`
    `unpriced_models`).
 4. Never edit the table here. The fix is a change to `_tok_prices` in
    `state/rdf-tokens.sh` with a new `as_of`; offer to make it.

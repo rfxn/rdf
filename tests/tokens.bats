@@ -15,6 +15,17 @@ FX="${RDF_SRC}/tests/fixtures/tokens/proj"
 
 _tok() { bash "$TOK" "$@"; }
 
+# every test gets its own row cache and no Codex home unless it sets CODEX_HOME
+setup() {
+    RDF_TOKENS_CACHE="$(mktemp -d)"
+    export RDF_TOKENS_CACHE
+    export CODEX_HOME="${RDF_TOKENS_CACHE}/no-codex"
+}
+
+teardown() {
+    rm -rf "$RDF_TOKENS_CACHE"
+}
+
 @test "--json on the fixture reproduces the hand-computed report" {
     run _tok --transcripts "$FX" --since 2026-09-01 --json
     [ "$status" -eq 0 ]
@@ -129,7 +140,7 @@ _tok_row() {
     { _tok_row s10 msg_Y claude-haiku-4-5-20251001 2026-09-10T00:01:00Z
       _tok_row s10 msg_W claude-haiku-4-5-20251001 2026-09-10T00:02:00Z; } > "${tdir}/s10.jsonl"
     _tok_row s10 msg_Z claude-sonnet-5 2026-09-10T00:03:00Z > "${tdir}/s10/subagents/agent-z.jsonl"
-    RDF_CLAUDE_PROJECTS="$cc" run _tok --project "${root}/link" --since 2026-09-01 --json
+    RDF_CLAUDE_PROJECTS="$cc" run _tok --claude --project "${root}/link" --since 2026-09-01 --json
     [ "$status" -eq 0 ]
     [ "$(jq -r '.scope.transcripts' <<< "$output")" = "$tdir" ]
     [ "$(jq -c '[.api_turns, .sessions, .cost_usd, .unpriced_models]' <<< "$output")" = '[4,2,8,[]]' ]
@@ -359,6 +370,38 @@ _tok_rb() {
     run _tok --transcripts "$t" --since 2026-09-10 --json
     [ "$status" -eq 0 ]
     [ "$(jq -c '[.api_turns, .rebuilds.events]' <<< "$output")" = "[1,0]" ]
+    rm -rf "$t"
+}
+
+@test "merged message entries: a message straddling the window start counts only its in-window entries, even when an earlier entry holds the larger usage" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn m1 2026-09-09T23:59:59.000Z 1 1000 0 0 900
+      _tok_turn m1 2026-09-10T00:00:01.000Z 1 1000 0 0 10
+      _tok_turn m2 2026-09-10T01:00:00.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-10 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .tokens.output, .rebuilds.events, .rebuilds.median_gap_s, .cost_usd]' <<< "$output")" = "[2,10,1,3601,0.3052]" ]
+    rm -rf "$t"
+}
+
+@test "merged message entries: entries of one message with different metadata are priced separately" {
+    local t; t="$(mktemp -d)"
+    printf '%s\n' '{"type":"assistant","timestamp":"2026-09-09T23:59:59.000Z","sessionId":"r1","message":{"id":"m1","model":"claude-opus-5-5","usage":{"input_tokens":1000000,"output_tokens":0,"speed":"standard"}}}' \
+        '{"type":"assistant","timestamp":"2026-09-10T00:00:01.000Z","sessionId":"r1","message":{"id":"m1","model":"claude-opus-5-5","usage":{"input_tokens":1000000,"output_tokens":0,"speed":"fast"}}}' > "${t}/s.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-10 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[1,8]" ]
+    rm -rf "$t"
+}
+
+@test "merged message entries: a message straddling the lookback start is timed from its first entry inside the lookback" {
+    local t; t="$(mktemp -d)"
+    { _tok_turn q1 2026-09-09T22:59:59.000Z 1 1000 0 0
+      _tok_turn q1 2026-09-09T23:00:30.000Z 1 1000 0 0
+      _tok_turn r1 2026-09-10T00:00:00.000Z 1 60000 0 0; } > "${t}/s.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-10 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .rebuilds.events, .rebuilds.median_gap_s]' <<< "$output")" = "[1,1,3570]" ]
     rm -rf "$t"
 }
 
@@ -688,6 +731,330 @@ _cx_rl() { printf '{"timestamp":"%s","type":"event_msg","payload":{"type":"token
     [ "$status" -eq 0 ]
     [ "$output" = "no Codex usage in window" ]
     rm -rf "$h" "$p"
+}
+
+# _tok_cwd sid id ts cwd — one claude-opus-5-5 entry (1M input tokens, $4) recorded in cwd
+_tok_cwd() {
+    printf '{"type":"assistant","timestamp":"%s","sessionId":"%s","cwd":"%s","message":{"id":"%s","model":"claude-opus-5-5","usage":{"input_tokens":1000000,"output_tokens":0}}}\n' "$3" "$1" "$4" "$2"
+}
+
+# _tok_cx_one id cwd — a one-turn gpt-6-sol rollout ($2) recorded in cwd
+_tok_cx_one() {
+    _cx_meta 2026-09-10T10:00:00Z "$1" "$2"
+    _cx_ctx 2026-09-10T10:00:00Z gpt-6-sol
+    _cx_tok 2026-09-10T10:00:10Z 1000000 0 0 0 0
+}
+
+# _tok_both — RDF_CLAUDE_PROJECTS tree and CODEX_HOME for one project with $4 of Claude and $2 of Codex usage
+_tok_both() {
+    local root p cc h
+    root="$(mktemp -d)"; p="${root}/work/alpha"; cc="${root}/cc"; h="${root}/codex"
+    mkdir -p "$p" "${cc}/$(printf '%s' "$p" | sed 's/[^A-Za-z0-9-]/-/g')" "${h}/sessions/2026/09/10"
+    _tok_cwd c1 m1 2026-09-10T20:00:00Z "$p" > "${cc}/$(printf '%s' "$p" | sed 's/[^A-Za-z0-9-]/-/g')/c1.jsonl"
+    { _cx_meta 2026-09-10T10:00:00Z x1 "${p}/wt/feature"; _cx_ctx 2026-09-10T10:00:00Z gpt-6-sol
+      _cx_tok 2026-09-10T10:00:10Z 1000000 0 0 0 0; } > "${h}/sessions/2026/09/10/rollout-x1.jsonl"
+    printf '%s' "$root"
+}
+
+@test "default report adds Codex when the scope has Codex usage; --claude and --codex report one tool each" {
+    local r; r="$(_tok_both)"
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --project "${r}/work/alpha" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.source, .cost_usd, .claude.cost_usd, .codex.cost_usd, .codex.source]' <<< "$output")" = '["all",6,4,2,"codex"]' ]
+    [ "$(jq -c '[.top_sessions[] | [.tool, .session, .cost_usd]]' <<< "$output")" = '[["claude","c1",4],["codex","x1",2]]' ]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --project "${r}/work/alpha" --since 2026-09-01
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'spend  $6.00  (claude code $4.00 · codex $2.00)'* ]]
+    [[ "$output" == *'claude code: sessions 1 · api turns 1'*'codex: sessions 1 · subagent runs 0 · api turns 1'* ]]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --project "${r}/work/alpha" --since 2026-09-01 --summary
+    [ "$(jq -c '[.source, .cost_usd, .claude.cost_usd, .codex.source, .codex.cost_usd]' <<< "$output")" = '["all",6,4,"codex",2]' ]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --claude --project "${r}/work/alpha" --since 2026-09-01 --json
+    [ "$(jq -c '[.source, .api_turns, .cost_usd]' <<< "$output")" = '[null,1,4]' ]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --codex --project "${r}/work/alpha" --since 2026-09-01 --json
+    [ "$(jq -c '[.source, .api_turns, .cost_usd]' <<< "$output")" = '["codex",1,2]' ]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/none" run _tok --project "${r}/work/alpha" --since 2026-09-01
+    [ "$status" -eq 0 ]
+    [[ "$output" == 'rdf tokens — alpha · since 2026-09-01T00:00:00Z'* ]]
+    [[ "$output" != *'codex'* ]]
+    rm -rf "$r"
+}
+
+@test "default report with Codex usage but no transcripts shows Codex; with neither it exits 1 with the transcripts reason" {
+    local r; r="$(_tok_both)"
+    rm -rf "${r}/cc"/*
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --project "${r}/work/alpha" --since 2026-09-01
+    [ "$status" -eq 0 ]
+    [[ "$output" == 'rdf tokens — codex · alpha'* ]]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" run _tok --project "${r}/work/alpha" --since 2026-10-01
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no transcripts for ${r}/work/alpha"* ]]
+    rm -rf "$r"
+}
+
+@test "--all reports every project, follows a project dir symlinked from elsewhere, labels below the common directory, and folds Codex worktrees into their project" {
+    local r cc b g; r="$(_tok_both)"; cc="${r}/cc"
+    mkdir -p "${r}/work/beta" "${r}/work/gamma"
+    b="${cc}/$(printf '%s' "${r}/work/beta" | sed 's/[^A-Za-z0-9-]/-/g')"
+    mkdir -p "$b"
+    { _tok_cwd c2 m2 2026-09-11T10:00:00Z "${r}/work/beta"; _tok_cwd c2 m3 2026-09-11T10:01:00Z "${r}/work/beta"; } > "${b}/c2.jsonl"
+    ln -s "$b" "${cc}/-link-to-beta"
+    g="${r}/moved/gamma"
+    mkdir -p "$g"
+    _tok_cwd c3 m4 2026-09-12T10:00:00Z "${r}/work/gamma" > "${g}/c3.jsonl"
+    ln -s "$g" "${cc}/-gamma"
+    ln -s "$b" "${cc}/$(printf '%s' "${r}/work/delta" | sed 's/[^A-Za-z0-9-]/-/g')"
+    _tok_cx_one x3 "${r}/work/gamma/wt/x" > "${r}/codex/sessions/2026/09/10/rollout-x3.jsonl"
+    _tok_cx_one x4 "${r}/work/delta/q" > "${r}/codex/sessions/2026/09/10/rollout-x4.jsonl"
+    _tok_cx_one x5 "${r}/tmpx/$(printf '%s' "${r}/work/alpha" | sed 's/[^A-Za-z0-9-]/-/g')/s1/scratchpad/codex" \
+        > "${r}/codex/sessions/2026/09/10/rollout-x5.jsonl"
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --all --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.claude.api_turns, .claude.cost_usd, .cost_usd]' <<< "$output")" = '[4,16,24]' ]
+    [ "$(jq -c '[.by_project[] | [.project, .claude, .codex, .cost_usd]]' <<< "$output")" = '[["beta",8,2,10],["alpha",4,4,8],["gamma",4,2,6]]' ]
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --codex --project "${r}/work/alpha" --since 2026-09-01 --json
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = '[2,4]' ]
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --by project --since 2026-09-01
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -qE '^  alpha +\$4\.00 +\$4\.00 +\$8\.00$'
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --by project --top 1 --since 2026-09-01
+    [[ "$output" == *"2 more (--top N or --json)"* ]]
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --all --since 2026-09-01
+    echo "$output" | grep -qE '^top sessions +tool +session +turns +cost  project$'
+    echo "$output" | grep -qE ' claude +c2 +2 +\$8\.00  beta$'
+    rm -rf "$r"
+}
+
+@test "--all adds two project dirs that record the same cwd, and folds a Codex worktree into a project with no usage in the window" {
+    local r cc d2; r="$(_tok_both)"; cc="${r}/cc"
+    d2="${cc}/-elsewhere-alpha-copy"
+    mkdir -p "$d2"
+    _tok_cwd c5 m5 2026-09-12T10:00:00Z "${r}/work/alpha" > "${d2}/c5.jsonl"
+    { _tok_cwd c6 m6 2026-09-12T11:00:00Z "${r}/work/alpha/sub"; _tok_cwd c6 m7 2026-09-12T11:01:00Z "${r}/work/alpha/sub"; } \
+        > "${cc}/$(printf '%s' "${r}/work/alpha" | sed 's/[^A-Za-z0-9-]/-/g')/c6.jsonl"
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --all --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.by_project[] | [.project, .claude, .codex, .cost_usd, .sessions]]' <<< "$output")" = '[["alpha",16,2,18,4]]' ]
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --codex --all --since 2026-09-01 --json
+    [ "$(jq -c '[.by_project[] | .cwd]' <<< "$output")" = "[\"${r}/work/alpha\"]" ]
+    RDF_CLAUDE_PROJECTS="$cc" CODEX_HOME="${r}/codex" run _tok --all --since 2026-09-11 --json
+    [ "$(jq -c '[.by_project[] | [.project, .claude, .codex]]' <<< "$output")" = '[["alpha",12,null]]' ]
+    rm -rf "$r"
+}
+
+@test "--by day uses each timestamp's own UTC offset across a daylight-saving change" {
+    local t; t="$(mktemp -d)"
+    { _tok_cwd s1 m1 2026-01-15T05:30:00Z /w; _tok_cwd s2 m2 2026-07-15T05:30:00Z /w; } > "${t}/s.jsonl"
+    TZ=America/Chicago run _tok --transcripts "$t" --since 2026-01-01 --by day --json
+    [ "$status" -eq 0 ]
+    if jq -n '0 | strflocaltime("%Y")' >/dev/null 2>&1 && [ "$(TZ=America/Chicago date -d @1768455000 +%z 2>/dev/null)" = "-0600" ]; then
+        [ "$(jq -c '[.by_day[].key]' <<< "$output")" = '["2026-01-14","2026-07-15"]' ]
+    fi
+    rm -rf "$t"
+}
+
+@test "--by day, week and month bucket in local time; --by session ranks sessions; --top caps them" {
+    local r; r="$(_tok_both)"
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --project "${r}/work/alpha" --since 2026-09-01 --by day --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.by_day[] | [.key, .claude, .codex, .cost_usd]]' <<< "$output")" = '[["2026-09-10",4,2,6]]' ]
+    if [ "$(TZ=Asia/Tokyo date +%z)" = "+0900" ]; then
+        RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=Asia/Tokyo run _tok --project "${r}/work/alpha" --since 2026-09-01 --by day --json
+        [ "$(jq -c '[.by_day[] | [.key, .claude, .codex]]' <<< "$output")" = '[["2026-09-10",null,2],["2026-09-11",4,null]]' ]
+    fi
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --claude --project "${r}/work/alpha" --since 2026-09-01 --by week --json
+    [ "$(jq -c '.by_week' <<< "$output")" = '[{"key":"2026-09-07","sessions":1,"turns":1,"cost_usd":4}]' ]
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --project "${r}/work/alpha" --since 2026-09-01 --by month
+    echo "$output" | grep -qE '^  2026-09 +\$4\.00 +\$2\.00 +\$6\.00$'
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --project "${r}/work/alpha" --since 2026-09-01 --by session --top 1
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -qE '^  2026-09-10 20:00 +claude +c1 +1 +\$4\.00$'
+    ! grep -qE ' codex +x1 ' <<< "$output"
+    { _cx_meta 2026-09-10T11:00:00Z x2 "${r}/work/alpha"; _cx_ctx 2026-09-10T11:00:00Z gpt-6-sol
+      _cx_tok 2026-09-10T11:00:10Z 3000000 0 0 0 0; } > "${r}/codex/sessions/2026/09/10/rollout-x2.jsonl"
+    RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --project "${r}/work/alpha" --since 2026-09-01 --by session --top 2
+    [ "$(printf '%s\n' "$output" | grep -cE '^  2026-09-10 ')" = "2" ]
+    printf '%s\n' "$output" | grep -E '^  2026-09-10 ' | head -1 | grep -qE ' codex +x2 +1 +\$6\.00$'
+    rm -rf "$r"
+}
+
+@test "row cache: an unchanged source is read from its entry, a touched source is re-extracted, --no-cache bypasses it, and stale roots are pruned" {
+    local t e
+    t="$(mktemp -d)"
+    { _tok_cwd s1 m1 2026-09-10T10:00:00Z /w; _tok_cwd s1 m1 2026-09-10T10:00:01Z /w; } > "${t}/s1.jsonl"
+    touch -t 202609100000 "${t}/s1.jsonl"
+    mkdir -p "${RDF_TOKENS_CACHE}/claude-1" "${RDF_TOKENS_CACHE}/claude-2" "${RDF_TOKENS_CACHE}/claude-3"
+    touch -t 202601010000 "${RDF_TOKENS_CACHE}/claude-1/.rdf-tokens"
+    touch "${RDF_TOKENS_CACHE}/claude-3/.rdf-tokens"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "4" ]
+    [ ! -d "${RDF_TOKENS_CACHE}/claude-1" ]
+    [ -d "${RDF_TOKENS_CACHE}/claude-2" ]
+    [ -d "${RDF_TOKENS_CACHE}/claude-3" ]
+    e="$(find "$RDF_TOKENS_CACHE" -name 's1.jsonl.rows')"
+    [ -n "$e" ]
+    [ "$(grep -c . "$e")" = "1" ]
+    sed 's/"in":1000000/"in":2000000/' "$e" > "${e}.new"
+    touch -r "$e" "${e}.new"
+    mv "${e}.new" "$e"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "8" ]
+    run _tok --transcripts "$t" --since 2026-09-01 --json --no-cache
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "4" ]
+    grep -q '"in":2000000' "$e"
+    touch "${t}/s1.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "4" ]
+    touch -t 202609100000 "${t}/s1.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    { _tok_cwd s1 m1 2026-09-10T10:00:00Z /w; _tok_cwd s1 m9 2026-09-10T10:05:00Z /w; } > "${t}/s1.jsonl"
+    touch -t 202609090000 "${t}/s1.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "8" ]
+    rm -rf "$t"
+}
+
+@test "row cache: a transcript written moments before the run is re-read next time, even within the same second" {
+    local t e; t="$(mktemp -d)"
+    _tok_cwd s1 m1 2026-09-10T10:00:00Z /w > "${t}/s1.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "4" ]
+    e="$(find "$RDF_TOKENS_CACHE" -name 's1.jsonl.rows')"
+    sed 's/"in":1000000/"in":2000000/' "$e" > "${e}.new"
+    touch -r "$e" "${e}.new"
+    mv "${e}.new" "$e"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '.cost_usd' <<< "$output")" = "4" ]
+    rm -rf "$t"
+}
+
+@test "row cache: a subagent meta written after its transcript was cached relabels the agent" {
+    local t; t="$(mktemp -d)"
+    mkdir -p "${t}/s1/subagents"
+    _tok_cwd s1 m1 2026-09-10T10:00:00Z /w > "${t}/s1/subagents/agent-a.jsonl"
+    touch -t 202609100000 "${t}/s1/subagents/agent-a.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -r '[.by_agent[].agent] | join(",")' <<< "$output")" = "unknown" ]
+    printf '{"agentType":"rdf-engineer"}' > "${t}/s1/subagents/agent-a.meta.json"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -r '[.by_agent[].agent] | join(",")' <<< "$output")" = "rdf-engineer" ]
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -r '[.by_agent[].agent] | join(",")' <<< "$output")" = "rdf-engineer" ]
+    touch -t 202609090000 "${t}/s1/subagents/agent-a.meta.json"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    rm "${t}/s1/subagents/agent-a.meta.json"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -r '[.by_agent[].agent] | join(",")' <<< "$output")" = "unknown" ]
+    printf '{"agentType":"rdf-qa"}' > "${t}/s1/subagents/agent-a.meta.json"
+    touch -t 202609120000 "${t}/s1/subagents/agent-a.meta.json"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    { _tok_cwd s1 m1 2026-09-10T10:00:00Z /w; _tok_cwd s1 m2 2026-09-10T10:01:00Z /w; } > "${t}/s1/subagents/agent-a.jsonl"
+    touch -t 202609110000 "${t}/s1/subagents/agent-a.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$(jq -c '[.cost_usd, [.by_agent[].agent]]' <<< "$output")" = '[8,["rdf-qa"]]' ]
+    rm -rf "$t"
+}
+
+@test "--all labels a project by the cwd holding most of its rows when two paths share its slug, and sums fractions before rounding" {
+    local r cc d; r="$(mktemp -d)"; cc="${r}/cc"
+    d="${cc}/$(printf '%s' "${r}/a-b" | sed 's/[^A-Za-z0-9-]/-/g')"
+    mkdir -p "$d" "${cc}/-copy"
+    { _tok_cwd c1 m1 2026-09-10T10:00:00Z "${r}/a-b"; _tok_cwd c1 m2 2026-09-10T10:01:00Z "${r}/a-b"
+      _tok_cwd c1 m3 2026-09-10T10:02:00Z "${r}/a/b"; } > "${d}/c1.jsonl"
+    RDF_CLAUDE_PROJECTS="$cc" run _tok --claude --all --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -r '.by_project[0].cwd' <<< "$output")" = "${r}/a-b" ]
+    rm -rf "$d"; mkdir -p "${cc}/-one"
+    printf '{"type":"assistant","timestamp":"2026-09-10T10:00:00Z","sessionId":"%s","cwd":"/w","message":{"id":"%s","model":"claude-opus-5-5","usage":{"input_tokens":10,"output_tokens":0}}}\n' s1 q1 > "${cc}/-one/s1.jsonl"
+    printf '{"type":"assistant","timestamp":"2026-09-10T10:00:00Z","sessionId":"%s","cwd":"/w","message":{"id":"%s","model":"claude-opus-5-5","usage":{"input_tokens":10,"output_tokens":0}}}\n' s2 q2 > "${cc}/-copy/s2.jsonl"
+    RDF_CLAUDE_PROJECTS="$cc" run _tok --all --since 2026-09-01 --json
+    [ "$(jq -c '[.cost_usd, (.by_project | length), .by_project[0].cost_usd]' <<< "$output")" = '[0.0001,1,0.0001]' ]
+    rm -rf "$r"
+}
+
+@test "a transcript or rollout that grep would call binary still yields every row" {
+    local t h p
+    t="$(mktemp -d)"; h="$(_cx_home)"; p="$(mktemp -d)"
+    { _tok_cwd s1 m1 2026-09-10T10:00:00Z /w
+      printf '{"type":"user","message":"a\000b"}\n'
+      _tok_cwd s1 m2 2026-09-10T10:01:00Z /w; } > "${t}/s1.jsonl"
+    run _tok --transcripts "$t" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[2,8]" ]
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"; _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      printf '{"type":"event_msg","payload":{"type":"agent_message","message":"a\000b"}}\n'
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0; } > "${h}/sessions/2026/10/02/rollout-a.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[1,2]" ]
+    rm -rf "$t" "$h" "$p"
+}
+
+@test "codex: archived_sessions rollouts count; --session falls back to a Codex thread when no transcript has the id" {
+    local h p; h="$(_cx_home)"; p="$(mktemp -d)"
+    mkdir -p "${h}/archived_sessions"
+    { _cx_meta 2026-10-02T10:00:00Z c1 "$p"; _cx_ctx 2026-10-02T10:00:00Z gpt-6-sol
+      _cx_tok 2026-10-02T10:00:10Z 1000000 0 0 0 0; } > "${h}/archived_sessions/rollout-old.jsonl"
+    CODEX_HOME="$h" run _tok --codex --project "$p" --since 2026-10-01 --json
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[1,2]" ]
+    RDF_CLAUDE_PROJECTS="${RDF_SRC}/tests/fixtures/tokens" CODEX_HOME="$h" run _tok --session c1 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.source, .session, .cost_usd]' <<< "$output")" = '["codex","c1",2]' ]
+    RDF_CLAUDE_PROJECTS="${RDF_SRC}/tests/fixtures/tokens" CODEX_HOME="$h" run _tok --session s1 --summary
+    [ "$(jq -c '[.source, .session, .api_turns]' <<< "$output")" = '[null,"s1",6]' ]
+    RDF_CLAUDE_PROJECTS="${RDF_SRC}/tests/fixtures/tokens" CODEX_HOME="$h" run _tok --session nope --summary
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no transcript for session nope"* ]]
+    RDF_CLAUDE_PROJECTS="${RDF_SRC}/tests/fixtures/tokens" CODEX_HOME="$h" run _tok --session c1
+    [[ "$output" != *"top sessions"* ]]
+    rm -rf "${h}/sessions"
+    RDF_CLAUDE_PROJECTS="${RDF_SRC}/tests/fixtures/tokens" CODEX_HOME="$h" run _tok --session c1 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.source, .session]' <<< "$output")" = '["codex","c1"]' ]
+    rm -rf "$h" "$p"
+}
+
+@test "CLAUDE_CONFIG_DIR sets the default transcript root" {
+    local c; c="$(mktemp -d)"
+    mkdir -p "${c}/projects"
+    cp -R "$FX" "${c}/projects/proj"
+    CLAUDE_CONFIG_DIR="$c" run env -u RDF_CLAUDE_PROJECTS bash "$TOK" --session s1 --summary
+    [ "$status" -eq 0 ]
+    [ "$(jq -c '[.api_turns, .cost_usd]' <<< "$output")" = "[6,0.4001]" ]
+    rm -rf "$c"
+}
+
+@test "one worker with several files per batch and many workers, and a transcript path holding a newline, give the same report" {
+    local t a b i
+    t="$(mktemp -d)"
+    cp -R "$FX" "${t}/x
+y"
+    cp -R "$FX" "${t}/pad"
+    for i in 1 2 3 4 5; do _tok_cwd "p${i}" "mp${i}" "2026-09-15T10:0${i}:00Z" /w > "${t}/pad/p${i}.jsonl"; done
+    run env RDF_TOKENS_JOBS=1 bash "$TOK" --transcripts "${t}/pad" --since 2026-09-01 --json --no-cache
+    a="$(jq -c 'del(.scope)' <<< "$output")"
+    [ "$(jq -c '[.api_turns, .subagent_runs, .cost_usd, ([.by_agent[].agent] | sort)]' <<< "$a")" = '[11,2,20.3981,["general-purpose","main","rdf-engineer"]]' ]
+    run env RDF_TOKENS_JOBS=7 bash "$TOK" --transcripts "${t}/pad" --since 2026-09-01 --json --no-cache
+    [ "$(jq -c 'del(.scope)' <<< "$output")" = "$a" ]
+    run _tok --transcripts "$FX" --since 2026-09-01 --json
+    a="$(jq -c 'del(.scope)' <<< "$output")"
+    run _tok --transcripts "${t}/x
+y" --since 2026-09-01 --json
+    [ "$status" -eq 0 ]
+    b="$(jq -c 'del(.scope)' <<< "$output")"
+    [ "$b" = "$a" ]
+    rm -rf "$t"
+}
+
+@test "bad --by, --top and --all combinations exit 2" {
+    run _tok --by year
+    [ "$status" -eq 2 ]
+    run _tok --top 0
+    [ "$status" -eq 2 ]
+    run _tok --top x
+    [ "$status" -eq 2 ]
+    run _tok --all --project .
+    [ "$status" -eq 2 ]
+    run _tok --by project --session s1
+    [ "$status" -eq 2 ]
 }
 
 @test "rdf-tokens.sh uses no jq 1.6+ builtins or reserved-word variables" {

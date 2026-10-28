@@ -21,9 +21,16 @@ none leaves your machine.
 
 `rdf tokens` (and the per-session summary `/r-save` records) reads the
 Claude Code transcripts already stored on your machine under
-`~/.claude/projects/` (with `--codex`, the Codex rollouts under
-`~/.codex/sessions/`) and writes its summary to your local
-`.rdf/work-output/session-log.jsonl`. It sends nothing anywhere.
+`~/.claude/projects/` (or `$CLAUDE_CONFIG_DIR/projects/` when that is set)
+and the Codex rollouts under `~/.codex/sessions/` and
+`~/.codex/archived_sessions/`, and writes its summary to your local
+`.rdf/work-output/session-log.jsonl`. To make later runs fast it keeps a
+row cache under `~/.rdf/cache/tokens/`, readable only by you: per-turn usage
+metadata (token counts, message and session ids, model, effort, speed and
+region, agent type, timestamps, working directories and file paths, and for
+Codex the response and parent-thread ids, service tier and sandbox kind) and
+Codex plan quota samples, never message content. The cache is safe to delete, and
+`--no-cache` skips it. It sends nothing anywhere.
 
 `/r-env` (the environment assessment) is the one exception, and only when you
 run it without `--offline`: it asks the public npm registry for the current

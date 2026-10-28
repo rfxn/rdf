@@ -231,7 +231,10 @@ against drift in CI.
 | `rdf-lite` (minimal deploy) | ~0.7K tokens (condensed core governance) |
 
 **Token usage.** `rdf tokens` reports what your sessions actually spent, from
-the Claude Code transcripts already on your machine: usage deduplicated by
+the Claude Code transcripts and Codex rollouts already on your machine; with
+no tool option it covers Claude Code and, when the project has Codex usage,
+Codex too, with a combined total and the most expensive sessions (`--claude`
+or `--codex` report one tool). Claude Code usage is deduplicated by
 message id (one API turn is logged once per content block), list-price cost,
 and breakdowns by cost class, model, agent, context depth, subagent boot cost,
 cache rebuilds, and effort. A cache rebuild is a turn that came after the
@@ -242,12 +245,20 @@ tokens would have cost (main and subagent transcripts are reported separately;
 a transcript's first turn never counts; a turn copied into a fork or resumed
 transcript counts once).
 `--session <id> --summary` is what `/r-save` records per session;
-`/r-start` shows it. `--codex` reports Codex CLI rollouts the same way
+`/r-start` shows it. Codex rollouts are reported the same way
 (per-response usage, model and Fast/Standard tier, subagent runs apart from
 sessions), split by kind (review for a read-only sandbox, write) and effort, with
-the account's plan quota peak per reset window. Prices are list prices copied from the Anthropic and OpenAI pricing
-pages; `--pricing` prints them with their date and sources. Nothing is sent
-anywhere.
+the account's plan quota peak per reset window. `--all` covers every project
+with a by-project table; `--by day|week|month|session|project` prints one
+table instead of the full report. Extracted rows are cached per transcript
+and rollout under `~/.rdf/cache/tokens/` and re-extracted when a file's
+modification time changes, so a repeat run re-extracts only the files written
+since the last run.
+Claude Code counts sessions started in the project directory; Codex counts
+rollouts whose working directory is the project, below it, or one of the
+project's Claude Code scratchpads. Prices are list prices
+copied from the Anthropic and OpenAI pricing pages; `--pricing` prints them
+with their date and sources. Nothing is sent anywhere.
 
 **Environment.** `/r-env` checks this host against what an optimal setup needs
 for the project: a code intelligence plugin and its language server for each
@@ -340,7 +351,7 @@ Run 'rdf <command> help' for details.
 | `rdf init <path> [--type] [--github]` | Project initialization with governance templates |
 | `rdf doctor [--scope] [--all]` | 16 checks: artifacts, drift, memory, plan, github, sync, install-mode, deps, catalogs, state-helpers, content-drift, doc-stats, readme, doc-truth, harness, env |
 | `rdf state [<path>]` | JSON snapshot in <1s, no LLM calls |
-| `rdf tokens [--days N] [--session ID] [--json] [--codex] [--pricing]` | Local token usage report from Claude Code transcripts or Codex rollouts (deduplicated, list-price estimate); `--pricing` shows the dated, sourced price table |
+| `rdf tokens [--claude\|--codex] [--all] [--by VIEW] [--days N] [--session ID] [--json] [--pricing]` | Local token usage report from Claude Code transcripts and Codex rollouts (deduplicated, list-price estimate, cached); `--all` and `--by day\|week\|month\|session\|project` add views; `--pricing` shows the dated, sourced price table |
 | `rdf refresh [--scope]` | Re-scan codebase, update governance and state files |
 | `rdf sync [--dry-run]` | Emergency: pull `~/.claude/` edits back to canonical |
 | `rdf github setup\|sync-labels\|ecosystem-init\|ecosystem-add` | GitHub issue model + project boards |

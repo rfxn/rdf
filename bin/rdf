@@ -39,7 +39,7 @@ Commands:
   deploy     Deploy generated output to tool destinations
   sync       Pull ~/.claude/ changes back to canonical
   state      Deterministic project state snapshot (JSON)
-  tokens     Local token usage report from Claude Code transcripts
+  tokens     Local token usage report from Claude Code and Codex sessions
   account    Claude Code accounts that share ~/.claude projects and memory
   shell      Shell launchers (c, cs, ch, cuse) with account switching
   github     GitHub Issues + Projects integration
