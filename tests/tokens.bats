@@ -868,7 +868,7 @@ _tok_both() {
     RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --project "${r}/work/alpha" --since 2026-09-01 --by session --top 1
     [ "$status" -eq 0 ]
     echo "$output" | grep -qE '^  2026-09-10 20:00 +claude +c1 +1 +\$4\.00$'
-    ! grep -qE ' codex +x1 ' <<< "$output"
+    [ "$(printf '%s\n' "$output" | grep -cE ' codex +x1 ')" = "0" ]
     { _cx_meta 2026-09-10T11:00:00Z x2 "${r}/work/alpha"; _cx_ctx 2026-09-10T11:00:00Z gpt-6-sol
       _cx_tok 2026-09-10T11:00:10Z 3000000 0 0 0 0; } > "${r}/codex/sessions/2026/09/10/rollout-x2.jsonl"
     RDF_CLAUDE_PROJECTS="${r}/cc" CODEX_HOME="${r}/codex" TZ=UTC run _tok --project "${r}/work/alpha" --since 2026-09-01 --by session --top 2
