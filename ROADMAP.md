@@ -33,6 +33,19 @@ carried in this release:
       built-in profiles; see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
+## Shipped in 3.9.5: sessions on every account see each other, docs site
+
+Claude Code sessions already message each other with `ListAgents` and `SendMessage`, but each one
+finds peers only in its own account's registry. A live probe showed delivery and replies work across
+accounts once the registry is visible, so RDF shares it instead of building a message bus.
+
+- [x] `rdf account` shares `sessions/` across accounts; `link` merges an account's own registry and
+      leaves it untouched on any conflict; `link` no longer creates logged-out Codex homes
+- [x] `rdf peers`: read-only view of every live session on the machine (account, permission mode,
+      branch, title, last prompt and reply, recent files, RDF progress), with `--here` and `--json`
+- [x] Docs site restructure: guides, reference and project sections, SEO, quickstart `/r-init` step,
+      README as a landing page
+
 ## Shipped in 3.9.4: claims-check agent, combined token report, launchers
 
 Promotes claims checking from the `/r-verify-claim` skill (one falsifiable claim) to a first-class
@@ -215,7 +228,7 @@ it earned a slot):
 
 - Wave 3 coordination re-triage → a later minor (message bus recommended against,
   obsoleted by native background agents; only phantom collect-spool cleanup
-  and an optional read-only peer view survive)
+  survives, since the read-only peer view shipped as `rdf peers` in 3.9.5)
 - Debt cleanup follow-ups beyond the executed 3.2 T5 cuts (shipped in 3.3.1)
 
 ---

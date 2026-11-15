@@ -15,6 +15,21 @@ is user-approved and lightweight (a few bullets), and is skipped for
 `bugfix`-tier releases, since a defect fix does not change the architecture. The
 dated design specs remain the authoritative rationale for each change.
 
+## 3.9.5 (2026-11-14)
+
+ADDED: `rdf peers [<name>] [--here] [--json]` (`lib/cmd/peers.sh`): read-only view of live Claude Code
+sessions on every registered account. Reads each account's `sessions/<pid>.json` registry (live by
+`kill -0`, plus `/proc/<pid>/stat` start time against `procStart` on Linux), the transcript tail
+(`ai-title`, `last-prompt`, `permissionMode`, `session-owner`, `gitBranch`) and RDF progress files;
+attributes the account by the (accountUuid, organizationUuid) pair from `.claude.json`. Stderr hints
+for unshared registries and for live sockets with no registry entry (the tripwire for a Claude Code
+layout change).
+MODIFIED: `rdf account` shares `sessions` (`_ACCOUNT_SHARED`), so the built-in `ListAgents` and
+`SendMessage` reach sessions on other accounts; `link` merges an account's real `sessions/` into
+`~/.claude/sessions` (any conflict leaves it untouched); `link` no longer creates Codex homes, only
+`add` does; `primary` refuses while the target has its own `sessions/`.
+MODIFIED: docs site restructured into guides, reference and project sections; README is a landing page.
+
 ## 3.9.4 (2026-10-25)
 
 ADDED: `rdf-claims` agent (`canonical/agents/claims.md`; `agent-meta.json` `claims`: opus, high, Write

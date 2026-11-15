@@ -2,7 +2,7 @@
   "name": "rdf",
   "displayName": "RDF: rfxn Development Framework",
   "description": "Spec-driven governance for AI coding: project conventions, a spec-to-ship pipeline, adversarial quality gates and typed agents for any repo",
-  "version": "3.9.4",
+  "version": "3.9.5",
   "author": {
     "name": "R-fx Networks",
     "email": "proj@rfxn.com",
