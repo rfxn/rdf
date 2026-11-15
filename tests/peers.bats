@@ -316,6 +316,94 @@ _fixture() {
     [ "$(jq -c '[.title, .last_prompt, .account]' <<< "$output")" = '["Alpha work title","fix the alpha bug","work"]' ]
 }
 
+# _pad FILE: append 2.4 MB of records with no permissionMode, pushing earlier records out of the tail
+_pad() {
+    local x
+    x="$(head -c 800000 /dev/zero | tr '\0' x)"
+    for _ in 1 2 3; do printf '{"type":"progress","pad":"%s"}\n' "$x"; done >> "$1"
+}
+
+@test "a permission mode only before the 2 MiB tail shows in the table, --json and the card; the last one wins" {
+    _fixture
+    _pad "${HOME}/.claude/projects/-fixture/${S1}.jsonl"
+    f="${HOME}/.claude/projects/-fixture/${S2}.jsonl"
+    jq -cn '{type: "permission-mode", permissionMode: "plan"}' >> "$f"
+    _pad "$f"
+    run _rdf peers
+    [ "$status" -eq 0 ]
+    [[ "${lines[1]}" == "  alpha-two "*"busy"*" plan "*"1m"* ]]
+    [[ "${lines[2]}" == "  alpha "*"busy"*" bypass "*"2h"* ]]
+    run _out peers --json
+    [ "$(jq -c 'map({(.name): .mode}) | add' <<< "$output")" = '{"alpha-two":"plan","alpha":"bypass"}' ]
+    run _rdf peers alpha
+    [ "$status" -eq 0 ]
+    grep -qx 'mode:         bypass' <<< "$output"
+    run _out peers alpha-two --json
+    [ "$(jq -r '.mode' <<< "$output")" = "plan" ]
+}
+
+@test "before the tail only a top-level permissionMode counts: escaped mentions and nested keys are ignored" {
+    _fixture
+    f="${HOME}/.claude/projects/-fixture/${S1}.jsonl"
+    {
+        jq -cn '{type: "user", message: {role: "user", content: "set \"permissionMode\":\"plan\" here"}}'
+        jq -cn '{type: "assistant", message: {content: [{type: "text", text: "{\"permissionMode\":\"plan\"}"}]}}'
+        jq -cn '{type: "assistant", message: {content: [{type: "tool_use", name: "X", input: {permissionMode: "plan"}}]}}'
+    } >> "$f"
+    _pad "$f"
+    grep -qF '\"permissionMode\":\"plan\"' "$f"
+    run _out peers --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -r '.[] | select(.name == "alpha") | .mode' <<< "$output")" = "bypass" ]
+}
+
+@test "before the tail, spaced JSON and a mode record cut by the tail boundary both count" {
+    _fixture
+    f="${HOME}/.claude/projects/-fixture/${S1}.jsonl"
+    printf '{"type": "user", "permissionMode": "plan"}\n' >> "$f"
+    _pad "$f"
+    {
+        printf '{"type":"user","permissionMode":"acceptEdits","pad":"'
+        head -c 2200000 /dev/zero | tr '\0' x
+        printf '"}\n'
+        jq -cn '{type: "user", message: {role: "user", content: "after"}}'
+    } >> "${HOME}/.claude/projects/-fixture/${S2}.jsonl"
+    run _out peers --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c 'map({(.name): .mode}) | add' <<< "$output")" = '{"alpha-two":"acceptEdits","alpha":"plan"}' ]
+}
+
+@test "a permission mode over 128 KiB before the tail never breaks the table, --json or the card" {
+    _fixture
+    f="${HOME}/.claude/projects/-fixture/${S1}.jsonl"
+    printf '{"type":"user","permissionMode":"%s"}\n' "$(head -c 200000 /dev/zero | tr '\0' m)" >> "$f"
+    _pad "$f"
+    run _rdf peers
+    [ "$status" -eq 0 ]
+    [ "${#lines[@]}" -eq 3 ]
+    [[ "${lines[1]}" == "  alpha-two "*" default "* ]]
+    [[ "${lines[2]}" == "  alpha "*" mmmmmmmmmmm "* ]]
+    run _out peers --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c 'map([.name, (.mode | length)])' <<< "$output")" = '[["alpha-two",7],["alpha",200000]]' ]
+    run _out peers alpha --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -r '.mode | length' <<< "$output")" = "200000" ]
+}
+
+@test "a permission mode in the tail beats an older one before it; none anywhere leaves mode empty" {
+    _fixture
+    f="${HOME}/.claude/projects/-fixture/${S1}.jsonl"
+    _pad "$f"
+    jq -cn '{type: "user", permissionMode: "acceptEdits", message: {role: "user", content: "go"}}' >> "$f"
+    jq -cn '{type: "user", gitBranch: "main", message: {role: "user", content: "no mode"}}' \
+        > "${HOME}/.claude/projects/-fixture/${S2}.jsonl"
+    run _out peers --json
+    [ "$status" -eq 0 ]
+    [ "$(jq -c 'map({(.name): .mode}) | add' <<< "$output")" = '{"alpha-two":"","alpha":"acceptEdits"}' ]
+    [ "$(jq -r '.[] | select(.name == "alpha-two") | .branch' <<< "$output")" = "main" ]
+}
+
 @test "no registry dirs at all: no live Claude Code sessions, exit 0; --json prints []" {
     run _rdf peers
     [ "$status" -eq 0 ]

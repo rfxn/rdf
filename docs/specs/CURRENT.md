@@ -20,7 +20,9 @@ dated design specs remain the authoritative rationale for each change.
 ADDED: `rdf peers [<name>] [--here] [--json]` (`lib/cmd/peers.sh`): read-only view of live Claude Code
 sessions on every registered account. Reads each account's `sessions/<pid>.json` registry (live by
 `kill -0`, plus `/proc/<pid>/stat` start time against `procStart` on Linux), the transcript tail
-(`ai-title`, `last-prompt`, `permissionMode`, `session-owner`, `gitBranch`) and RDF progress files;
+(`ai-title`, `last-prompt`, `permissionMode`, `session-owner`, `gitBranch`; `permissionMode` falls back
+to the last top-level value in the whole file, since Claude Code writes it on few records) and RDF
+progress files;
 attributes the account by the (accountUuid, organizationUuid) pair from `.claude.json`. Stderr hints
 for unshared registries and for live sockets with no registry entry (the tripwire for a Claude Code
 layout change).

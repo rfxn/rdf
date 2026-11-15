@@ -34,7 +34,7 @@ _PEERS_JQ='def str: if type == "string" then . else "" end;
     pid: $pid,
     session_id: ($reg.sessionId | str),
     status: ($reg.status | str),
-    mode: ([$recs[] | .permissionMode | strings] | last // "" | if . == "bypassPermissions" then "bypass" else . end),
+    mode: ([$recs[] | .permissionMode | strings] | last // ""),
     started_at: ($reg.startedAt | if type == "number" then . else null end),
     cwd: ($reg.cwd | str),
     branch: ([$recs[] | .gitBranch | strings | select(. != "")] | last // ""),
@@ -209,9 +209,17 @@ _peers_tail() {
     _account_try command tail -c "$_PEERS_TAIL_BYTES" "$1" 2>/dev/null || true  # transcript gone or unreadable: fields stay empty
 }
 
+# _peers_mode_fill OBJ FILE: OBJ with mode set to the last top-level permissionMode anywhere in FILE, one streaming pass
+_peers_mode_fill() {
+    # shellcheck disable=SC2016
+    local q='(input | fromjson) as $o | ([inputs | fromjson? | objects | .permissionMode | strings] | last) as $m
+        | $o | if $m == null then . else .mode = $m end'
+    { printf '%s\n' "$1"; _account_try command grep -aE '"permissionMode"[[:space:]]*:' "$2" 2>/dev/null || true; } | jq -cnR "$q"  # no match, or file gone or unreadable: OBJ unchanged
+}
+
 # _peers_collect TOP: append one JSON object per live session to _PEERS_OBJS (TOP non-empty: --here filter)
 _peers_collect() {
-    local top="$1" i=0 owner file pid probe sid pstart cwd reg start tx obj
+    local top="$1" i=0 owner file pid probe sid pstart cwd reg start tx obj filled
     while (( i < ${#_PEERS_SDIRS[@]} )); do
         owner="${_PEERS_SOWNER[i]}"
         for file in "${_PEERS_SDIRS[i]}"/*.json; do
@@ -236,6 +244,10 @@ _peers_collect() {
                 --argjson accts "$_PEERS_ACCTS" --arg dirowner "$owner" \
                 --arg self "${CLAUDE_CODE_SESSION_ID:-}" "$_PEERS_JQ" 2>/dev/null)" || continue  # entry that is not an object: skipped
             [[ -n "$obj" ]] || continue
+            # Claude Code writes permissionMode on few records; compact output spells "mode":"" only for that field.
+            if [[ -n "$tx" && "$obj" == *'"mode":""'* ]] && filled="$(_peers_mode_fill "$obj" "$tx")"; then
+                obj="$filled"
+            fi
             _PEERS_SEEN="${_PEERS_SEEN}${pid} "
             _PEERS_OBJS="${_PEERS_OBJS}${obj}"$'\n'
         done
@@ -334,8 +346,10 @@ _peers_card() {
             if [[ -f "$f" ]]; then prog="${prog}${f}"$'\n'; fi
         done
     fi
-    obj="$(printf '%s' "$prog" | jq -Rsc --argjson o "$obj" \
-        '$o + {rdf_progress: (split("\n") | map(select(. != "")))}')"
+    # Bound first: jq evaluates the right side of + before the left, so [inputs] would take the object line.
+    # shellcheck disable=SC2016
+    obj="$({ printf '%s\n' "$obj"; printf '%s' "$prog"; } \
+        | jq -cnR '(input | fromjson) as $o | $o + {rdf_progress: [inputs | select(. != "")]}')"
     if [[ "$json" -eq 1 ]]; then
         printf '%s\n' "$obj" | jq "${_PEERS_LIST_KEYS} + {last_reply, recent_files, rdf_progress}"
         return 0
@@ -375,7 +389,8 @@ cmd_peers() {
     _peers_scan
     [[ "$here" -eq 0 ]] || top="$(_peers_here_root)"
     _peers_collect "$top"
-    rows="$(printf '%s' "$_PEERS_OBJS" | jq -sc 'sort_by(-(.started_at // 0))')"
+    rows="$(printf '%s' "$_PEERS_OBJS" \
+        | jq -sc 'map(.mode |= if . == "bypassPermissions" then "bypass" else . end) | sort_by(-(.started_at // 0))')"
     if [[ -n "$name" ]]; then
         _peers_card "$name" "$rows" "$json"
         return 0

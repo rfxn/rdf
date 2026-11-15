@@ -36,6 +36,10 @@
 [Fix] docs: gate triggers, plan path (docs/plans/), profile reference counts and plugin helper behavior match the
       code; demo GIF, diagrams and social image rebuilt from current output
 [Fix] status line: a space after the 📁, 🔀 and ⚡ icons so wide emoji no longer overlap the text after them
+[Fix] rdf peers: MODE was empty for long sessions, because Claude Code writes permissionMode on few records
+      and none fell in the 2 MiB transcript tail; it now falls back to the last top-level permissionMode in the
+      whole file (one streaming pass, compact or spaced JSON, escaped mentions ignored); the fallback and the
+      rdf peers <name> card read the session object from stdin, so a field over 128 KiB no longer aborts the command
 
 -- Changes --
 
