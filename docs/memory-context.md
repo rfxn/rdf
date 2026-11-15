@@ -1,16 +1,17 @@
 ---
-title: Memory & Context
-nav_order: 5
+title: Memory and Context
+parent: Guides
+nav_order: 4
+description: "How RDF works alongside Claude Code auto-memory: who owns what, what reaches a session, and what RDF deliberately does not do."
 ---
 
-# Memory & Context: RDF alongside native auto-memory
+# Memory and context: RDF alongside native auto-memory
 
-RDF 3.4 assumes Claude Code's native auto-memory is present and does not
-compete with it. Native memory owns conversational recall and the loading of
-your project's `MEMORY.md`; RDF owns the **delta**: cross-project lessons,
-rolling insights, governance, project-state hygiene, and a durable session
-journal. This page draws the line explicitly so the two never duplicate or
-clobber each other.
+RDF assumes Claude Code's native auto-memory is present and does not compete with
+it. Native memory owns conversational recall and the loading of your project's
+`MEMORY.md`. RDF owns the **delta**: cross-project lessons, rolling insights,
+governance, project-state hygiene and a durable session journal. This page draws
+the line so the two never duplicate or clobber each other.
 
 ## Division of labor
 
@@ -40,8 +41,8 @@ the set is re-injected after compaction). RDF layers its delta on top:
   (single-writer) via `state/rdf-lessons.sh index`.
 - **Scoped governance**: language rules are `paths:`-scoped and stay dormant
   until a matching file is read; the core rule is unscoped so it survives
-  compaction. Deploy them opt-in with `rdf deploy --rules`, or run the
-  minimal `rdf deploy --lite`.
+  compaction. Deploy them opt-in with `rdf deploy --rules claude-code`, or use
+  the minimal `rdf generate --lite --deploy claude-code`.
 
 The always-loaded cost of all of this is measured, not estimated by feel:
 `state/rdf-overhead.sh` reports the default / `--rules` / `rdf-lite` boot
@@ -64,5 +65,4 @@ figures, and CI guards the published numbers against drift.
 ## See also
 
 - Design spec: [`docs/specs/2026-07-15-memory-context-design.md`](https://github.com/rfxn/rdf/blob/main/docs/specs/2026-07-15-memory-context-design.md)
-- Context cost breakdown: `state/rdf-overhead.sh` and the Context-cost table
-  in the [README](https://github.com/rfxn/rdf#4-usage)
+- Context cost breakdown: [Token usage and context cost](token-usage.md#what-rdf-adds-to-every-session)

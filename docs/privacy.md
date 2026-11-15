@@ -2,6 +2,7 @@
 title: Privacy Policy
 nav_exclude: true
 permalink: /privacy
+description: "RDF is a local development tool with no telemetry, analytics or account system. What it reads, where your data lives and the few third-party requests it makes."
 ---
 
 # Privacy Policy
@@ -19,26 +20,31 @@ the version and pricing lookups `/r-env` makes when you run it online
 (below). There is no data to sell, share, or breach on our side, because
 none leaves your machine.
 
-`rdf tokens` (and the per-session summary `/r-save` records) reads the
-Claude Code transcripts already stored on your machine under
-`~/.claude/projects/` (or `$CLAUDE_CONFIG_DIR/projects/` when that is set)
-and the Codex rollouts under `~/.codex/sessions/` and
-`~/.codex/archived_sessions/`, and writes its summary to your local
-`.rdf/work-output/session-log.jsonl`. To make later runs fast it keeps a
-row cache under `~/.rdf/cache/tokens/`, readable only by you: per-turn usage
-metadata (token counts, message and session ids, model, effort, speed and
-region, agent type, timestamps, working directories and file paths, and for
-Codex the response and parent-thread ids, service tier and sandbox kind) and
-Codex plan quota samples, never message content. The cache is safe to delete, and
-`--no-cache` skips it. It sends nothing anywhere.
+`rdf tokens` (and the per-session summary `/r-save` records) sends nothing
+anywhere. It works only with files on your machine:
+
+- **Reads** the Claude Code transcripts under `~/.claude/projects/` (or
+  `$CLAUDE_CONFIG_DIR/projects/` when that is set) and the Codex rollouts under
+  `~/.codex/sessions/` and `~/.codex/archived_sessions/`.
+- **Writes** its summary to your local `.rdf/work-output/session-log.jsonl`.
+- **Caches** rows under `~/.rdf/cache/tokens/`, readable only by you, to make
+  later runs fast. The cache holds per-turn usage metadata (token counts, message
+  and session ids, model, effort, speed and region, agent type, timestamps,
+  working directories and file paths, and for Codex the response and
+  parent-thread ids, service tier and sandbox kind) and Codex plan quota samples,
+  never message content. It is safe to delete, and `--no-cache` skips it.
 
 `/r-env` (the environment assessment) is the one exception, and only when you
-run it without `--offline`: it asks the public npm registry for the current
-Claude Code and Codex version numbers (a plain GET with no identifiers), runs
-`claude doctor` (which can fetch your organization's managed settings), and
-downloads the Anthropic and OpenAI pricing pages when you pass `--pricing`
-or when the embedded price table is over 45 days old or a promotional price
-in it has ended. `/r-start` and `rdf doctor` run it offline.
+run it without `--offline`. It then:
+
+- Asks the public npm registry for the current Claude Code and Codex version
+  numbers (a plain GET with no identifiers).
+- Runs `claude doctor`, which can fetch your organization's managed settings.
+- Downloads the Anthropic and OpenAI pricing pages when you pass `--pricing`, or
+  when the embedded price table is over 45 days old or a promotional price in it
+  has ended.
+
+`/r-start` and `rdf doctor` run it offline.
 
 ## Where your data lives
 

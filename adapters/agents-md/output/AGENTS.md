@@ -23,6 +23,7 @@ and project orchestration for any repo. Tool-agnostic by design.
 - Run `rdf generate claude-code` to deploy to `~/.claude/` — **mandatory before any commit touching `canonical/`**
 - Run `rdf sync` to pull emergency edits back to canonical
 - Run `rdf doctor` before push to verify zero drift
+- Docs show real captured output. Never edit it.
 
 ## Shell Standards
 - Shebang: `#!/usr/bin/env bash`

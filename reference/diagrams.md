@@ -1,4 +1,4 @@
-# RDF — Visual Reference
+# RDF Visual Reference
 
 ---
 
@@ -9,13 +9,13 @@ System-level overview: canonical sources, profiles, adapters, CLI tools.
 ```mermaid
 flowchart TD
     subgraph Canonical["Canonical Source (tool-agnostic)"]
-        Agents[agents/*.md\n6 universal agents]
-        Commands[commands/*.md\n37 commands]
+        Agents[agents/*.md\n7 universal agents]
+        Commands[commands/*.md\n38 commands]
         Scripts[scripts/*.sh]
         Reference[reference/*.md]
     end
 
-    subgraph Profiles["Profile System (11 full)"]
+    subgraph Profiles["Profile System (13 registered, 11 shown)"]
         Core[core/\ngovernance-template.md\nreference/framework.md]
         Shell[shell/\ngovernance-template.md\nreference/portability-matrix.md]
         Python[python/\ngovernance-template.md]
@@ -42,19 +42,22 @@ flowchart TD
 
     subgraph Adapters["Adapters (tool-specific)"]
         CC[Claude Code\nagent-meta.json\nhooks.json\noutput/]
-        Gemini[Gemini CLI\nGEMINI.md\n.gemini/ config]
-        Codex[Codex\nAGENTS.md\nconfig.toml]
-        AgentsMD[AGENTS.md\ncross-tool standard]
+        Plugin[Claude Plugin\nnamespaced skills\ncommitted output]
+        Skills[Agent Skills\n.agents/skills/\nCodex + Antigravity]
+        AgentsMD[AGENTS.md\nper-project composer]
+        Gemini[Gemini CLI legacy\nGEMINI.md\n.gemini/ config]
     end
 
     Canonical --> CC
-    Canonical --> Gemini
-    Canonical --> Codex
+    Canonical --> Plugin
+    Canonical --> Skills
     Canonical --> AgentsMD
+    Canonical --> Gemini
     Profiles --> CC
-    Profiles --> Gemini
-    Profiles --> Codex
+    Profiles --> Plugin
+    Profiles --> Skills
     Profiles --> AgentsMD
+    Profiles --> Gemini
 
     subgraph Tools["CLI Tools"]
         Generate[rdf generate\nadapter builder]
@@ -80,8 +83,9 @@ flowchart TD
     style PHP fill:#2b6cb0,color:#fff
     style Infra fill:#2b6cb0,color:#fff
     style CC fill:#276749,color:#fff
+    style Plugin fill:#276749,color:#fff
     style Gemini fill:#276749,color:#fff
-    style Codex fill:#276749,color:#fff
+    style Skills fill:#276749,color:#fff
     style AgentsMD fill:#276749,color:#fff
     style Generate fill:#975a16,color:#fff
     style ProfileCmd fill:#975a16,color:#fff
@@ -97,20 +101,20 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph Products["Products"]
-        APF[APF 2.0.2\nFirewall]
-        BFD[BFD 2.0.1\nBrute Force Detection]
-        LMD[LMD 2.0.1\nMalware Detection]
-        Sig[Sigforge 1.1.3\nSignature Engine]
-        Geo[geoscope 0.1.0\nGeoIP Pipeline]
+        APF[APF\nFirewall]
+        BFD[BFD\nBrute Force Detection]
+        LMD[LMD\nMalware Detection]
+        Sig[Sigforge\nSignature Engine]
+        Geo[geoscope\nGeoIP Pipeline]
     end
 
     subgraph Libraries["Shared Libraries"]
-        tlog[tlog_lib v2.0.3]
-        alert[alert_lib v1.0.4]
-        elog[elog_lib v1.0.3]
-        pkg[pkg_lib v1.0.4]
-        geoip[geoip_lib v1.0.2]
-        bats[batsman v1.2.0]
+        tlog[tlog_lib]
+        alert[alert_lib]
+        elog[elog_lib]
+        pkg[pkg_lib]
+        geoip[geoip_lib]
+        bats[batsman]
     end
 
     tlog --> APF & BFD & LMD
@@ -148,22 +152,22 @@ flowchart TD
     User --> Planner
 
     subgraph PlanPhase["Planning"]
-        Planner{{planner — research + spec + plan}}
+        Planner{{planner: research + spec + plan}}
     end
 
     Planner -->|spec ready| ChallengeReview
 
     subgraph PreImpl["Pre-Implementation"]
-        ChallengeReview{{reviewer — challenge mode}}
+        ChallengeReview{{reviewer: challenge mode}}
     end
 
     ChallengeReview -->|challenge findings| Planner
-    Planner -->|PLAN.md approved| Dispatch
+    Planner -->|plan approved| Dispatch
 
     subgraph Execution["Execution Loop"]
-        Dispatch[dispatcher — orchestrator]
+        Dispatch[dispatcher: orchestrator]
         Dispatch -->|phase context| Eng
-        Eng[engineer — TDD]
+        Eng[engineer: TDD]
         Eng -->|result + evidence| Dispatch
         Dispatch --> Gate1[Gate 1: Self-Report]
         Gate1 --> Gate2[Gate 2: qa]
@@ -178,7 +182,7 @@ flowchart TD
     Decision -->|retries exhausted| Escalate([Surface to User])
 
     MorePhases -->|yes| Dispatch
-    MorePhases -->|no| Ship([/r-ship — Merge])
+    MorePhases -->|no| Ship([/r-ship: Pull request])
 
     style User fill:#4a5568,color:#fff,stroke:#2d3748
     style Ship fill:#276749,color:#fff,stroke:#22543d
@@ -199,7 +203,7 @@ flowchart TD
 
 /r-build --parallel reads the dependency graph and dispatches batches:
 
-  PLAN.md Phase Dependencies
+  Plan Phase Dependencies
          │
          ▼
   ┌─────────────────────┐
@@ -261,7 +265,7 @@ flowchart TD
     end
 
     subgraph Shared["Shared filesystem (.rdf/work-output/)"]
-        WO[Files coexist —\nno collision\nno overwrite]
+        WO[Files coexist:\nno collision\nno overwrite]
     end
 
     A1 -.-> WO
@@ -321,7 +325,7 @@ flowchart LR
 
 All three layers parse phase scope identically via `rdf_parse_phase_scope`
 in `state/rdf-bus.sh`, reading `**Files:**` and (optional)
-`**Tests-may-touch:**` directly from PLAN.md. A change to the phase
+`**Tests-may-touch:**` directly from the plan. A change to the phase
 declaration propagates to all three call sites without code edits.
 
 | Component | Source |
@@ -338,7 +342,7 @@ declaration propagates to all three call sites without code edits.
 
 Phase content determines which gates the dispatcher activates. Scope is
 derived automatically from the file list, description, and governance
-context — no manual tagging required.
+context, with no manual tagging.
 
 ```
 Phase Content → Scope Classification → Gate Selection
@@ -426,14 +430,14 @@ sequenceDiagram
         Planner->>Planner: revise spec
     end
 
-    Planner->>Planner: decompose spec into PLAN.md
-    Planner->>User: PLAN.md ready
+    Planner->>Planner: decompose spec into a plan
+    Planner->>User: plan ready
     deactivate Planner
 
     User->>Dispatcher: /r-build [N]
     activate Dispatcher
     Note over Dispatcher: rdf_session_init →\nRDF_SESSION_ID = SID
-    Dispatcher->>Dispatcher: read PLAN.md phase N
+    Dispatcher->>Dispatcher: read plan phase N
     Dispatcher->>Dispatcher: load governance, select gates
 
     Dispatcher->>Engineer: phase context + governance + SID
@@ -465,7 +469,7 @@ sequenceDiagram
     end
 
     alt All gates pass
-        Dispatcher->>Dispatcher: commit, update PLAN.md
+        Dispatcher->>Dispatcher: commit, update plan
     else Gate failure, retries left
         Dispatcher->>Engineer: feedback, re-enter TDD
     else Retries exhausted
@@ -504,11 +508,11 @@ flowchart LR
 ```
 
 **Steps:**
-1. **Setup** — Read governance index, load conventions, constraints, anti-patterns.
-2. **Red** — Write a failing test for the acceptance criteria.
-3. **Green** — Minimum implementation to pass.
-4. **Refactor** — Clean up, keep green. Repeat for each requirement.
-5. **Evidence** — Structured report: test names, red/green output, coverage, files.
+1. **Setup:** Read governance index, load conventions, constraints, anti-patterns.
+2. **Red:** Write a failing test for the acceptance criteria.
+3. **Green:** Minimum implementation to pass.
+4. **Refactor:** Clean up, keep green. Repeat for each requirement.
+5. **Evidence:** Structured report: test names, red/green output, coverage, files.
 
 ---
 

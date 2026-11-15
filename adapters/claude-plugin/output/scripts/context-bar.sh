@@ -33,12 +33,14 @@ input=$(cat)
     IFS= read -r transcript_path
     IFS= read -r max_context
     IFS= read -r cost_usd
+    IFS= read -r effort
 } < <(printf '%s' "$input" | jq -r '
     .model.display_name // .model.id // "?",
     .cwd // "",
     .transcript_path // "",
     (.context_window.context_window_size // 200000 | tostring),
-    (.cost.total_cost_usd // "" | tostring)')
+    (.cost.total_cost_usd // "" | tostring),
+    .effort.level // ""')
 dir=$(basename "$cwd" 2>/dev/null || echo "?")
 
 # Get git branch, uncommitted file count, and sync status
@@ -228,7 +230,7 @@ if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
     fi
 
     # Compact format: ██░░ 40%/200k | ⚡83% $1.42 $0.12/t
-    ctx="${bar} ${pct_color}${pct_prefix}${pct}%/${max_k}k${C_GRAY} | ${cache_color}⚡${cache_hit_pct}%${cost_label}"
+    ctx="${bar} ${pct_color}${pct_prefix}${pct}%/${max_k}k${C_GRAY} | ${cache_color}⚡ ${cache_hit_pct}%${cost_label}"
 else
     # Transcript not available yet - show baseline estimate
     baseline=20000
@@ -271,9 +273,17 @@ if [[ -n "$cwd" ]]; then
     fi
 fi
 
-# Build output: Model | Dir | Branch (uncommitted) | Health | Context
-output="${C_ACCENT}${model}${C_GRAY} | 📁${dir}"
-[[ -n "$branch" ]] && output+=" | 🔀${branch} ${git_status}"
+# Account from the rdf registry by config dir: RDF_CLAUDE_ACCOUNT can be a stale shell default
+acct_dir="${CLAUDE_CONFIG_DIR%/}"
+acct_name=$(awk -F'\t' -v d="${acct_dir:-@primary}" '$2 == d { print $1; exit }' "$HOME/.rdf/accounts" 2>/dev/null)  # no registry = no account segment
+
+model_label="${model}${effort:+ · ${effort}}"
+
+# Build output: Model · Effort | Account | Dir | Branch (uncommitted) | Health | Context
+output="${C_ACCENT}${model}${C_GRAY}${effort:+ · ${effort}}"
+[[ -n "$acct_name" ]] && output+=" | 👤 ${acct_name}"
+output+=" | 📁 ${dir}"
+[[ -n "$branch" ]] && output+=" | 🔀 ${branch} ${git_status}"
 [[ -n "$health_indicator" ]] && output+="${health_indicator}"
 output+=" | ${ctx}${C_RESET}"
 
@@ -282,11 +292,11 @@ printf '%b\n' "$output"
 # Get user's last message (text only, not tool results, skip unhelpful messages)
 if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
     # Calculate visible length (without ANSI codes) - 10 chars for bar + content
-    plain_output="${model} | 📁${dir}"
-    [[ -n "$branch" ]] && plain_output+=" | 🔀${branch} ${git_status}"
+    plain_output="${model_label}${acct_name:+ | 👤 ${acct_name}} | 📁 ${dir}"
+    [[ -n "$branch" ]] && plain_output+=" | 🔀 ${branch} ${git_status}"
     cost_plain=""
     [[ -n "$cost_usd" ]] && cost_plain=" $(printf '$%.2f' "$cost_usd") \$0.00/t"
-    plain_output+=" | xxxxxxxxxx ${pct}%/${max_k}k | ⚡${cache_hit_pct:-0}%${cost_plain}"
+    plain_output+=" | xxxxxxxxxx ${pct}%/${max_k}k | ⚡ ${cache_hit_pct:-0}%${cost_plain}"
     max_len=${#plain_output}
     last_user_msg=$(jq -rs '
         # Messages to skip (not useful as context)

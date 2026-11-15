@@ -232,6 +232,14 @@ _no_contract() {
     _contract commands/r-ship.md 'rdf_clear_active_tier'
 }
 
+# ── /r-init: rdf init scaffolds reference/ first, so its presence is not governance ──
+
+@test "r-init treats a reference-only governance directory as a first run" {
+    _contract commands/r-init.md 'holding only `reference/`, as `rdf init` scaffolds it'
+    _contract commands/r-init.md 'holds anything besides `reference/`'
+    _no_contract commands/r-init.md '[Ii]f `\.rdf/governance/` already exists'
+}
+
 # ── /r-ship: per-minor platform-triage gate (D4, platform-alignment spike) ────
 
 @test "r-ship preflight carries the platform-triage line (1d)" {

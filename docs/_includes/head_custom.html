@@ -1,0 +1,21 @@
+<link rel="icon" type="image/svg+xml" href="{{ '/assets/favicon.svg' | relative_url }}">
+<meta name="theme-color" content="#0d1117">
+{% if page.url == "/" %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "RDF (rfxn Development Framework)",
+  "alternateName": "RDF",
+  "description": {{ site.description | jsonify }},
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS",
+  "url": {{ "/" | absolute_url | jsonify }},
+  "image": {{ "/assets/social-preview.png" | absolute_url | jsonify }},
+  "license": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Organization", "name": "R-fx Networks", "url": "https://github.com/rfxn" },
+  "sameAs": ["https://github.com/rfxn/rdf"]
+}
+</script>
+{% endif %}

@@ -21,13 +21,13 @@
   <!-- ══════════ Left: Profiles ══════════ -->
   <rect x="25" y="68" width="420" height="310" rx="6" fill="#161b22" stroke="#a371f7" stroke-width="1.5"/>
   <rect x="25" y="68" width="420" height="28" rx="6" fill="#a371f7" fill-opacity="0.15"/>
-  <text x="235" y="87" text-anchor="middle" fill="#a371f7" font-weight="bold" font-size="14">Profile — "what is this codebase?"</text>
+  <text x="235" y="87" text-anchor="middle" fill="#a371f7" font-weight="bold" font-size="14">Profile: "what is this codebase?"</text>
 
   <!-- Profile subtitle -->
   <text x="42" y="114" fill="#7d8590" font-size="11">Permanent. Auto-detected from project structure.</text>
-  <text x="42" y="130" fill="#7d8590" font-size="11">Seeds governance templates at /r-init time.</text>
+  <text x="42" y="130" fill="#7d8590" font-size="11">Seeds governance templates at rdf init time.</text>
 
-  <!-- Profile grid — row 1 -->
+  <!-- Profile grid, row 1 -->
   <rect x="42" y="146" width="125" height="50" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
   <text x="104" y="166" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">shell</text>
   <text x="104" y="182" text-anchor="middle" fill="#7d8590" font-size="9">portability, quoting</text>
@@ -40,7 +40,7 @@
   <text x="374" y="166" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">frontend</text>
   <text x="374" y="182" text-anchor="middle" fill="#7d8590" font-size="9">a11y, components</text>
 
-  <!-- Profile grid — row 2 -->
+  <!-- Profile grid, row 2 -->
   <rect x="42" y="204" width="125" height="50" rx="4" fill="#a371f7" fill-opacity="0.08" stroke="#a371f7" stroke-opacity="0.3" stroke-width="1"/>
   <text x="104" y="224" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">go</text>
   <text x="104" y="240" text-anchor="middle" fill="#7d8590" font-size="9">errors, concurrency</text>
@@ -53,13 +53,13 @@
   <text x="374" y="224" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold">core</text>
   <text x="374" y="240" text-anchor="middle" fill="#7d8590" font-size="9">commits, verification</text>
 
-  <text x="235" y="268" text-anchor="middle" fill="#7d8590" font-size="10">+ rust, typescript, perl, php, infrastructure</text>
+  <text x="235" y="268" text-anchor="middle" fill="#7d8590" font-size="10">+ rust, typescript, node, perl, php, infrastructure</text>
 
   <!-- Profile footer -->
   <line x1="42" y1="280" x2="430" y2="280" stroke="#30363d" stroke-width="0.5"/>
   <text x="42" y="300" fill="#58a6ff" font-size="11">Detected: .sh -> shell | go.mod -> go</text>
   <text x="42" y="318" fill="#58a6ff" font-size="11">Output: governance templates + reference docs</text>
-  <text x="42" y="336" fill="#7d8590" font-size="11">rdf init --type shell</text>
+  <text x="42" y="336" fill="#7d8590" font-size="11">rdf init &lt;path&gt; --type shell</text>
   <text x="42" y="352" fill="#7d8590" font-size="11">rdf profile list</text>
 
   <!-- ══════════ Center: multiply ══════════ -->
@@ -68,7 +68,7 @@
   <!-- ══════════ Right: Modes ══════════ -->
   <rect x="505" y="68" width="430" height="310" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.5"/>
   <rect x="505" y="68" width="430" height="28" rx="6" fill="#3fb950" fill-opacity="0.15"/>
-  <text x="720" y="87" text-anchor="middle" fill="#3fb950" font-weight="bold" font-size="14">Mode — "what am I doing right now?"</text>
+  <text x="720" y="87" text-anchor="middle" fill="#3fb950" font-weight="bold" font-size="14">Mode: "what am I doing right now?"</text>
 
   <!-- Mode subtitle -->
   <text x="522" y="114" fill="#7d8590" font-size="11">Session-scoped. Switched with /r-mode.</text>
@@ -94,5 +94,5 @@
   <!-- Mode footer -->
   <line x1="522" y1="332" x2="918" y2="332" stroke="#30363d" stroke-width="0.5"/>
   <text x="522" y="352" fill="#7d8590" font-size="11">/r-mode security | refactoring | debugging | ...</text>
-  <text x="522" y="368" fill="#7d8590" font-size="11">Overlays don't modify governance</text>
+  <text x="522" y="368" fill="#7d8590" font-size="11">Overlays leave your rules unchanged</text>
 </svg>

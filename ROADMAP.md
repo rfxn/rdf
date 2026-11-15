@@ -4,69 +4,7 @@ Where RDF is headed. Horizons are ordered by dependency, not by date:
 each one has to hold before the next matters. Suggestions and PRs
 against any of this are welcome (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
-## Now: polish the public surface
-
-- [x] LICENSE file, dynamic badges, accurate command inventory
-- [x] Community health files: security policy, code of conduct, issue templates
-- [x] User-agnostic paths throughout docs and CLI output (`~/.claude`, not
-      hardcoded home directories)
-- [x] Custom social-preview image and project homepage
-
-## Next: the five-minute on-ramp
-
-Make "drop it on any repo" true for someone with zero rfxn context:
-
-- [x] Quickstart: clone → generate → deploy → `/r-init` on your own repo,
-      with a worked example on a generic project
-- [x] Recorded demo (real session, not mockups) at the top of the README
-- [x] First-run hardening: everything works from a fresh clone under any
-      user account, with no rfxn workspace assumptions (3.6.5 extracted the
-      rfxn content; 3.7.0 fixed the fresh-clone failures found 2026-09-02:
-      hooks how-to on an empty HOME, doctor self-warnings, derfxn suite
-      wired into CI, context-audit off-workspace, stack-aware CONTRIBUTING,
-      bash 3.2 floor restored for rdf init/doctor)
-
-## Soon: first-class Claude Code plugin
-
-RDF ships a `plugin.json` today; the goal is full plugin-marketplace
-citizenship:
-
-- [x] Installable via `/plugin marketplace add rfxn/rdf` +
-      `/plugin install rdf@rdf` (repo as its own marketplace)
-- [x] Design pass on command namespacing (`/r-start` vs `/rdf:r-start`)
-      and dual install modes (symlink deploy vs plugin install)
-- [x] `claude plugin validate --strict` in CI
-- [x] Plugin-tier state parity: SessionStart bootstrap delivers the
-      `~/.rdf/state` helpers, so the full pipeline runs on plugin installs
-      (3.6.4)
-- [x] Submission to the community plugin marketplace
-
-## Now: the 2026-08 top-5
-
-From a full product-quality pass (architecture, docs, assumptions, measured
-usage, industry landscape; every item below verified against source before
-it earned a slot):
-
-1. [x] **Core-seam reliability**: shipped in 3.6.4 (see below)
-2. [x] **Make "drop it on any repo" true**: shipped in 3.6.5. rfxn content
-       extracted to the opt-in `rfxn-workspace` profile (hooks, `/r-init`
-       output, commands, reference docs all generic + grep-guarded),
-       `reference/` ships in CC-family outputs and `~/.claude/reference`,
-       deploy exits 1 on skips with a real hooks-merge how-to, node profile
-       detection, doc truth sweep (bash 3.2+ floor, links, `--tools`)
-3. ~~**Right-size the command surface to measured usage**~~: dropped
-       2026-09-24
-4. [x] **Consolidate adapters on evidence**: shipped in 3.7.0. Shared
-       adapter library, skills-native cc/plugin output, codex
-       via composite, project-scoped AGENTS.md, `--tools` real, dead
-       catalogs removed
-5. [ ] **(partial)** **Platform-alignment gate + eval hardening**: first
-       case ruled (Agent Teams → keep dispatcher; `docs/platform-triage.md`
-       ledger + `/r-ship` 1d gate); contract hardening landed (negation
-       guards + structural assertions, D3). Trigger/activation evals and
-       OWASP posture remain; see *Next minor* below
-
-## Next minor: platform alignment follow-ons
+## Next: platform alignment follow-ons
 
 From the platform-alignment spike's Go/No-Go summary
 ([design](docs/specs/2026-09-02-platform-alignment-spike-design.md) §8), not
@@ -95,7 +33,7 @@ carried in this release:
       built-in profiles; see `profiles/registry.json`)
 - [ ] Additional adapter targets as new AI runtimes stabilize
 
-## Shipped in 3.9.4: claims-check agent
+## Shipped in 3.9.4: claims-check agent, combined token report, launchers
 
 Promotes claims checking from the `/r-verify-claim` skill (one falsifiable claim) to a first-class
 agent that checks whole texts before they are posted; a full test run, a sentinel review and Codex
@@ -107,6 +45,10 @@ reviews of the agent and of the sentinel fix diff before tagging.
       its report, evidence and scratch
 - [x] Seven governance contracts for the claims checker; the frozen-fixture emitter test no longer
       breaks when an agent is added
+- [x] `rdf tokens` combined Claude Code and Codex report, row cache, parallel extraction and
+      `--all` / `--by` views
+- [x] `rdf run`, `rdf c`, `rdf x`, `rdf review` and `rdf use`, with `--yolo`, `--root` and
+      `--sandbox` launch modes and per-account Codex homes
 
 ## Shipped in 3.9.3: sourced pricing, Codex usage and environment assessment
 
@@ -190,16 +132,6 @@ Spec → plan → build → sentinel in one unattended pass.
       effort flattening (14 → 15 scopes)
 - [x] Session-scoped state keyed on `CLAUDE_CODE_SESSION_ID`; BATS 364 → 423
 
-## Delivered: 3.4 "Memory & Context"
-
-- [x] Context-scoped governance loading (3.2 T3): scoped `.claude/rules/`,
-      core left unscoped so it survives compaction
-- [x] Zero-effort auto-memory: SessionEnd journal capture + a lessons ID-index
-      injected read-only at session start
-- [x] Published per-session context cost with the `rdf-overhead.sh` harness
-      (default ~0.1K / `--rules` ~2.1K / `rdf-lite` ~0.7K always-loaded tokens)
-- [x] `rdf-lite` minimal deploy variant
-
 ## Shipped in 3.6.4: core-seam reliability
 
 Top-5 item 1, executed spec → plan → build → sentinel in one pass.
@@ -214,16 +146,6 @@ Top-5 item 1, executed spec → plan → build → sentinel in one pass.
 - [x] Plugin SessionStart bootstrap: full pipeline on plugin installs
 - [x] Doctor `catalogs` + `state-helpers` scopes (11 → 13 checks); BATS
       222 → 246
-
-## Delivered: 3.5.0 "Scale"
-
-- [x] Scale-adaptive ceremony: task-class tiers (full / quick-plan / bugfix)
-      with a security floor; tiers only remove ceremony, never the security
-      pass
-- [x] `/r-spec` Phase 1.5 Clarify de-ambiguation micro-gate
-- [x] `/r-build` consistency micro-gate (`rdf-consistency.sh`,
-      spec↔plan↔tasks)
-- [x] Living current-state spec (`docs/specs/CURRENT.md`) folded at `/r-ship`
 
 ## Shipped in 3.6.0: "Reach" (Wave 2)
 
@@ -244,6 +166,51 @@ enterprise Gemini CLI users. Spec + plan:
 - [x] Deploy/sync BATS coverage (audit M6) + doctor/sync frontmatter-strip
       guards + [multi-tool parity matrix](docs/multi-tool-parity.md)
 
+## The 2026-08 quality pass
+
+From a full product-quality pass (architecture, docs, assumptions, measured
+usage, industry landscape; every item below verified against source before
+it earned a slot):
+
+1. [x] **Core-seam reliability**: shipped in 3.6.4 (see below)
+2. [x] **Make "drop it on any repo" true**: shipped in 3.6.5. rfxn content
+       extracted to the opt-in `rfxn-workspace` profile (hooks, `/r-init`
+       output, commands, reference docs all generic + grep-guarded),
+       `reference/` ships in CC-family outputs and `~/.claude/reference`,
+       deploy exits 1 on skips with a real hooks-merge how-to, node profile
+       detection, doc truth sweep (bash 3.2+ floor, links, `--tools`)
+3. ~~**Right-size the command surface to measured usage**~~: dropped
+       2026-09-24
+4. [x] **Consolidate adapters on evidence**: shipped in 3.7.0. Shared
+       adapter library, skills-native cc/plugin output, codex
+       via composite, project-scoped AGENTS.md, `--tools` real, dead
+       catalogs removed
+5. [ ] **(partial)** **Platform-alignment gate + eval hardening**: first
+       case ruled (Agent Teams → keep dispatcher; `docs/platform-triage.md`
+       ledger + `/r-ship` 1d gate); contract hardening landed (negation
+       guards + structural assertions, D3). Trigger/activation evals and
+       OWASP posture remain; see *Next: platform alignment follow-ons* above
+
+## Delivered: 3.4 "Memory & Context"
+
+- [x] Context-scoped governance loading (3.2 T3): scoped `.claude/rules/`,
+      core left unscoped so it survives compaction
+- [x] Zero-effort auto-memory: SessionEnd journal capture + a lessons ID-index
+      injected read-only at session start
+- [x] Published per-session context cost with the `rdf-overhead.sh` harness
+      (default ~0.1K / `--rules` ~2.1K / `rdf-lite` ~0.7K always-loaded tokens)
+- [x] `rdf-lite` minimal deploy variant
+
+## Delivered: 3.5.0 "Scale"
+
+- [x] Scale-adaptive ceremony: task-class tiers (full / quick-plan / bugfix)
+      with a security floor; tiers only remove ceremony, never the security
+      pass
+- [x] `/r-spec` Phase 1.5 Clarify de-ambiguation micro-gate
+- [x] `/r-build` consistency micro-gate (`rdf-consistency.sh`,
+      spec↔plan↔tasks)
+- [x] Living current-state spec (`docs/specs/CURRENT.md`) folded at `/r-ship`
+
 ## Deferred (tracked, not scheduled)
 
 - Wave 3 coordination re-triage → a later minor (message bus recommended against,
@@ -255,3 +222,38 @@ enterprise Gemini CLI users. Spec + plan:
 
 *This file tracks direction, not promises. The changelog records what
 actually shipped.*
+## Shipped: the public surface
+
+- [x] LICENSE file, dynamic badges, accurate command inventory
+- [x] Community health files: security policy, code of conduct, issue templates
+- [x] User-agnostic paths throughout docs and CLI output (`~/.claude`, not
+      hardcoded home directories)
+- [x] Custom social-preview image and project homepage
+
+## Shipped: the five-minute on-ramp
+
+Make "drop it on any repo" true for someone with zero rfxn context:
+
+- [x] Quickstart: clone → generate → deploy → `/r-init` on your own repo,
+      with a worked example on a generic project
+- [x] Recorded demo (real session, not mockups) at the top of the README
+- [x] First-run hardening: everything works from a fresh clone under any
+      user account, with no rfxn workspace assumptions (3.6.5 extracted the
+      rfxn content; 3.7.0 fixed the fresh-clone failures found 2026-09-02:
+      hooks how-to on an empty HOME, doctor self-warnings, derfxn suite
+      wired into CI, context-audit off-workspace, stack-aware CONTRIBUTING,
+      bash 3.2 floor restored for rdf init/doctor)
+
+## Shipped: first-class Claude Code plugin
+
+Full plugin-marketplace citizenship:
+
+- [x] Installable via `/plugin marketplace add rfxn/rdf` +
+      `/plugin install rdf@rdf` (repo as its own marketplace)
+- [x] Design pass on command namespacing (`/r-start` vs `/rdf:r-start`)
+      and dual install modes (symlink deploy vs plugin install)
+- [x] `claude plugin validate --strict` in CI
+- [x] Plugin-tier state parity: SessionStart bootstrap delivers the
+      `~/.rdf/state` helpers, so the full pipeline runs on plugin installs
+      (3.6.4)
+- [x] Submission to the community plugin marketplace

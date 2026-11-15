@@ -1,14 +1,14 @@
 {
   "name": "rdf",
-  "displayName": "RDF — rfxn Development Framework",
-  "description": "Governance-driven AI development — convention enforcement, quality gates, and typed agent personas for any repo",
+  "displayName": "RDF: rfxn Development Framework",
+  "description": "Spec-driven governance for AI coding: project conventions, a spec-to-ship pipeline, adversarial quality gates and typed agents for any repo",
   "version": "3.9.4",
   "author": {
     "name": "R-fx Networks",
     "email": "proj@rfxn.com",
     "url": "https://github.com/rfxn"
   },
-  "homepage": "https://github.com/rfxn/rdf",
+  "homepage": "https://rfxn.github.io/rdf/",
   "repository": "https://github.com/rfxn/rdf",
   "license": "GPL-2.0",
   "agents": [
@@ -25,6 +25,7 @@
   "hooks": "./adapters/claude-plugin/output/hooks.json",
   "keywords": [
     "governance",
+    "spec-driven-development",
     "quality-gates",
     "agents",
     "code-review",

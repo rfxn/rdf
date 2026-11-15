@@ -9,7 +9,10 @@ current working directory). Can be a subdirectory for monorepo scoping.
 
 - `--force` — delete existing `.rdf/governance/` and regenerate
   from scratch. Without this flag, /r-init refuses to run when
-  governance already exists (directs to `/r-refresh` instead).
+  governance already exists (directs to `/r-refresh` instead). A
+  directory holding only `reference/`, as `rdf init` scaffolds it, is
+  not existing governance: proceed without asking and, unless `--force`
+  is set, leave it in place.
 
 ## Progress Tracking
 
@@ -331,8 +334,8 @@ generate from scan data where gaps exist, never duplicate.
 mkdir -p .rdf/governance
 ```
 
-If `.rdf/governance/` already exists (from a prior /r-init or
-/r-refresh):
+If `.rdf/governance/` holds anything besides `reference/` (from a
+prior /r-init or /r-refresh):
 
 - **Without `--force`:** stop and direct the user to `/r-refresh`
   (see Error Handling #4). DO NOT modify existing files.
@@ -758,8 +761,8 @@ not committed source. Do not prompt the user; this is the default.
    phases.
 3. If no convention files AND no source files are found, report that
    the directory appears empty and stop.
-4. If `.rdf/governance/` already exists with files AND `--force`
-   is NOT set, warn the user:
+4. If `.rdf/governance/` holds anything besides `reference/` AND
+   `--force` is NOT set, warn the user:
    - "Governance files already exist. To update, use `/r-refresh`."
    - "To regenerate from scratch, use `/r-init --force`."
    - Stop without modifying existing governance files.
@@ -779,7 +782,8 @@ not committed source. Do not prompt the user; this is the default.
 ### Re-Init vs Refresh
 
 - `/r-init` is for first-time governance generation. It refuses to
-  run if `.rdf/governance/` already exists (see Error Handling #4).
+  run if `.rdf/governance/` holds anything besides `reference/` (see
+  Error Handling #4).
 - `/r-init --force` deletes existing governance and regenerates from
   scratch. Use when governance is stale, corrupt, or after major
   codebase restructuring that `/r-refresh` can't handle.

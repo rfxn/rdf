@@ -1,5 +1,9 @@
 # RDF Agent Workforce
 
+How the agents are organized and which command dispatches which. For the user-facing
+versions, see [Agents](https://rfxn.github.io/rdf/agents.html) and
+[Slash commands](https://rfxn.github.io/rdf/commands.html).
+
 ---
 
 ## 1. Organization Chart

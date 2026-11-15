@@ -15,7 +15,10 @@ current working directory). Can be a subdirectory for monorepo scoping.
 
 - `--force` — delete existing `.rdf/governance/` and regenerate
   from scratch. Without this flag, /rdf:r-init refuses to run when
-  governance already exists (directs to `/rdf:r-refresh` instead).
+  governance already exists (directs to `/rdf:r-refresh` instead). A
+  directory holding only `reference/`, as `rdf init` scaffolds it, is
+  not existing governance: proceed without asking and, unless `--force`
+  is set, leave it in place.
 
 ## Progress Tracking
 
@@ -337,8 +340,8 @@ generate from scan data where gaps exist, never duplicate.
 mkdir -p .rdf/governance
 ```
 
-If `.rdf/governance/` already exists (from a prior /rdf:r-init or
-/rdf:r-refresh):
+If `.rdf/governance/` holds anything besides `reference/` (from a
+prior /rdf:r-init or /rdf:r-refresh):
 
 - **Without `--force`:** stop and direct the user to `/rdf:r-refresh`
   (see Error Handling #4). DO NOT modify existing files.
@@ -764,8 +767,8 @@ not committed source. Do not prompt the user; this is the default.
    phases.
 3. If no convention files AND no source files are found, report that
    the directory appears empty and stop.
-4. If `.rdf/governance/` already exists with files AND `--force`
-   is NOT set, warn the user:
+4. If `.rdf/governance/` holds anything besides `reference/` AND
+   `--force` is NOT set, warn the user:
    - "Governance files already exist. To update, use `/rdf:r-refresh`."
    - "To regenerate from scratch, use `/rdf:r-init --force`."
    - Stop without modifying existing governance files.
@@ -785,7 +788,8 @@ not committed source. Do not prompt the user; this is the default.
 ### Re-Init vs Refresh
 
 - `/rdf:r-init` is for first-time governance generation. It refuses to
-  run if `.rdf/governance/` already exists (see Error Handling #4).
+  run if `.rdf/governance/` holds anything besides `reference/` (see
+  Error Handling #4).
 - `/rdf:r-init --force` deletes existing governance and regenerates from
   scratch. Use when governance is stale, corrupt, or after major
   codebase restructuring that `/rdf:r-refresh` can't handle.

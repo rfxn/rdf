@@ -1,147 +1,136 @@
 ---
 title: Multi-Tool Parity
-nav_order: 4
+parent: Reference
+nav_order: 5
+description: "What RDF supports in Claude Code, Codex and Antigravity CLI: commands, skills, context files, hooks, plus the legacy Gemini CLI tier."
 ---
 
-# Multi-Tool Parity
+# Multi-tool parity
+{: .no_toc }
 
-RDF emits governance, commands, and skills for several AI coding tools from one
-canonical source. Reach (Wave 2) recasts the tool set around **three first-class
-citizens** (Claude Code, Codex CLI, and Antigravity CLI) plus **one frozen
-legacy tier**, Gemini CLI (enterprise). Design rationale lives in
-`docs/specs/2026-07-15-scale-reach-design.md` §13.
+RDF generates governance, commands and skills for several AI coding tools from one
+canonical source. Claude Code, Codex CLI and Antigravity CLI are first-class. Gemini CLI
+is a frozen legacy tier for enterprise users.
 
-## 1. Matrix
+1. TOC
+{:toc}
 
-| Tool | Command surface | Skill surface (`.agents/skills/`) | Context file | Hooks | Generate target |
-|------|-----------------|-----------------------------------|--------------|-------|-----------------|
-| Claude Code | `.claude/skills/<cmd>/SKILL.md` + intent `description:` frontmatter (same `adp_emit_skills` library emitter as `.agents/skills/`, own output tree) | own `skills/` tree, not the shared one | `CLAUDE.md` (NOT AGENTS.md) | `hooks.json` (manual merge) | `claude-code` |
-| Codex CLI | `.agents/skills/<cmd>/SKILL.md` (native scan) | shared `.agents/skills/` | `AGENTS.md` (Agent Skills + AGENTS.md composite) | deferred (`openai.yaml`, §13.7) | `codex` |
-| Antigravity CLI | skills (fuzzy-matched slash) | shared `.agents/skills/` | `AGENTS.md` + `GEMINI.md` | deferred (`.agents/hooks.json`, §13.7) | `antigravity` (composite) |
-| Gemini CLI (enterprise) | `.gemini/commands/*.toml` | via `agy plugin import gemini` | `GEMINI.md` | none | `gemini-cli` |
+## Compare the tools
 
-Tiers: the first three rows are first-class; Gemini CLI is **legacy / frozen**
-(kept for enterprise paid-API users, changed only for the TOML-escaping fix).
+| | Claude Code | Codex CLI | Antigravity CLI | Gemini CLI |
+|---|-------------|-----------|-----------------|------------|
+| **Tier** | First-class | First-class | First-class | Legacy, frozen |
+| **Commands** | All 38, as `.claude/skills/<cmd>/SKILL.md` with intent descriptions | 11 lifecycle, as `.agents/skills/<cmd>/SKILL.md` (native scan) | 11 lifecycle, as skills (fuzzy-matched slash) | `.gemini/commands/*.toml` |
+| **Skills** | Its own `skills/` tree | Shared `.agents/skills/` | Shared `.agents/skills/` | Through `agy plugin import gemini` |
+| **Context file** | `CLAUDE.md`, not `AGENTS.md` | `AGENTS.md` | `AGENTS.md` and `GEMINI.md` | `GEMINI.md` |
+| **Hooks** | `hooks.json` | [Deferred](#deferred-surfaces) | [Deferred](#deferred-surfaces) | None |
+| **Generate target** | `claude-code` | `codex` | `antigravity` | `gemini-cli` |
 
-**Claude Code: plugin install vs. symlink deploy.** The Claude Code row above
-describes the **symlink deploy** (`rdf deploy claude-code`), which also
-populates the `~/.rdf/state/` session-state helpers. A **plugin install**
-(`/plugin install rdf@rdf`) ships commands and agents plus a SessionStart hook
-that bootstraps the same `~/.rdf/state/` helpers on the plugin's first session
-start after install, so the 11 state-backed commands (`r-spec`, `r-plan`,
+### Claude Code: plugin or symlink deploy
+
+| | Symlink deploy | Plugin install |
+|---|----------------|----------------|
+| **Install** | `rdf deploy claude-code` | `/plugin install rdf@rdf` |
+| **Command names** | `/r-start` | `/rdf:r-start` |
+| **`rdf` CLI** | Yes | No |
+| **Hooks** | Manual merge into `settings.json` | Register automatically |
+| **`~/.rdf/state/` helpers** | Symlinked by deploy | Copied by a SessionStart hook |
+
+On a plugin install, the helpers arrive at the first session start after install. Until
+that restart, 11 state-backed commands run in a degraded mode: `r-spec`, `r-plan`,
 `r-build`, `r-ship`, `r-status`, `r-env`, `r-save`, `r-refresh`, `r-context-audit`,
-`r-vpe`, `r-util-mem-compact`) run in a **degraded mode** only before that
-first restart. `r-start` degrades gracefully (probe + fallback); the others
-require the helpers for full session-scoped state.
+`r-vpe` and `r-util-mem-compact`. `r-start` falls back gracefully. The others need the
+helpers for full session-scoped state.
 
-## 2. The `.agents/skills/` shared convention
+## The shared skills directory
 
-`.agents/skills/` is a **workspace-level shared directory** at the repo root:
-one tree that Codex, Antigravity, and every AAIF-compliant client read. Because
-it is shared, it is emitted exactly **once** by a dedicated adapter:
+`.agents/skills/` is one workspace-level tree that Codex, Antigravity CLI and every
+[Agent Skills](https://agentskills.io/) client read. It is emitted once, by a dedicated
+adapter, and is not duplicated into per-tool output:
 
-```
-rdf generate agent-skills     # emits .agents/skills/<cmd>/SKILL.md
-```
-
-It is NOT duplicated into per-tool output trees. Each emitted `SKILL.md` carries
-`name` + `description` frontmatter only (`name` equals the command basename and
-the parent directory name, per the AAIF constraint); optional AAIF fields
-(`license`, `metadata`, `allowed-tools`) are deliberately not emitted (§13.4).
-
-Deploy targets a workspace root:
-
-```
-rdf deploy --project-root /path/to/workspace agent-skills
+```bash
+rdf generate agent-skills                                  # emit the tree
+rdf deploy --project-root /path/to/workspace agent-skills  # symlink it into a workspace
 ```
 
-This symlinks `.agents/skills/` into the target workspace so `rdf generate
-agent-skills` updates deployed skills in place. `agent-skills` is the one
-project-scoped deploy target whose `--project-root` defaults to the current
-directory; `agents-md`, `codex`, and `antigravity` require it.
+Because the deploy is a symlink, regenerating updates deployed skills in place. Of the
+project-scoped deploy targets, only `agent-skills` defaults `--project-root` to the
+current directory; `agents-md`, `codex` and `antigravity` require it.
 
-## 2b. Composites and `AGENTS.md`
+Each `SKILL.md` carries only `name` (equal to the command basename and parent directory)
+and `description` frontmatter. Optional fields such as `license`, `metadata` and
+`allowed-tools` are deliberately not emitted.
 
-`codex` and `antigravity` are the **same composite on both verbs**: the
-`.agents/skills/` symlink plus `AGENTS.md` (copy-skip: an existing file is
-left alone unless `--force`):
+**The tree is bounded** to the 11 lifecycle commands: `/r-spec`, `/r-plan`, `/r-build`,
+`/r-ship`, `/r-start`, `/r-save`, `/r-status`, `/r-env`, `/r-audit`, `/r-refresh` and
+`/r-init`. Utility commands stay Claude Code only for now. The source of truth is
+`adapters/agent-skills/skill-meta.json`.
 
-```
+## Composites and AGENTS.md
+
+`codex` and `antigravity` are the same composite on both verbs: the `.agents/skills/`
+symlink plus `AGENTS.md`. An existing `AGENTS.md` is left alone unless you pass `--force`.
+
+```bash
 rdf generate --project-root /path/to/proj antigravity   # optional here
 rdf deploy   --project-root /path/to/proj antigravity   # required here
 ```
 
-`agents-md` is also a standalone generate/deploy target. Generating it with a
-`--project-root` composes `<root>/AGENTS.md` from that repo's **own**
-`CLAUDE.md` (falling back to its `.rdf/governance/index.md`, then a stub)
-and refuses a root that is not a git repository. Without `--project-root`,
-generate refreshes this checkout's tracked
-`adapters/agents-md/output/AGENTS.md`: RDF's self case, and the file that
-`rdf deploy agents-md` copies into a project root. `rdf generate` accepts its
-flags and target in any order.
+The quickest route is at init time, which does both steps:
 
-`rdf init --tools codex|antigravity|agent-skills|agents-md` does both steps at
-init time: the composites expand to `agent-skills agents-md`, so skills are
-symlinked into the new project and its `AGENTS.md` is composed from the
-`CLAUDE.md` that `init` just wrote (spec
-`docs/specs/2026-09-02-skills-native-adapter-consolidation-design.md` §5).
+```bash
+rdf init ~/projects/my-app --tools codex
+```
 
-**Bounded surface.** The shared skills tree covers the **11 lifecycle
-commands** (`/r-spec`, `/r-plan`, `/r-build`, `/r-ship`, `/r-start`,
-`/r-save`, `/r-status`, `/r-env`, `/r-audit`, `/r-refresh`, `/r-init`), not all 38 RDF
-commands (source of truth: `adapters/agent-skills/skill-meta.json`). Utility
-commands stay Claude-Code-only for now.
+`agents-md` is also a standalone target. With `--project-root`, generate composes
+`<root>/AGENTS.md` from that repository's own `CLAUDE.md`, falling back to its
+`.rdf/governance/index.md` and then a stub, and it refuses a root that is not a git
+repository. Without `--project-root`, generate refreshes this checkout's tracked
+`adapters/agents-md/output/AGENTS.md`, which `rdf deploy agents-md` copies into a project
+root. `rdf generate` accepts its flags and target in any order.
 
-## 3. Gemini `{{args}}` lossy edge
+## Model and effort routing
 
-Gemini CLI command TOML uses `{{args}}` token substitution. RDF command bodies
-are **not translated**: the canonical body is emitted verbatim into the prompt,
-so a body that reads `$ARGUMENTS` keeps that literal token; Gemini performs no
-substitution on it. What RDF adds is a **NOTE** comment (emitted only when the
-body references `$ARGUMENTS`) documenting that Gemini exposes just `{{args}}`
-(the whole invocation string) and does not tokenize positional forms: a command
-invoked as `/r-build 3` receives the raw `3`, unbound to any placeholder. The
-body's `$ARGUMENTS` therefore stays unsubstituted on the Gemini surface, an
-accepted limitation of the frozen legacy tier. The NOTE flags it so a Gemini
-CLI user knows to pass the argument through the `{{args}}` form instead.
+This applies to Claude Code only. `adapters/claude-code/agent-meta.json` pins `model` and
+`effort` per agent, and emits effort variants because the Agent tool cannot pass effort
+per call. See [Agents](agents.md).
 
-## 4. Legacy gemini-cli tier
+Codex and Antigravity CLI emit no agents today, so routing there stays with your session
+settings.
 
-Gemini CLI stopped serving free/Pro/Ultra tiers on 2026-06-18; enterprise and
-paid-API users are unaffected and the OSS repo stays active. RDF keeps the
-`gemini-cli` adapter **frozen** for those users: its `GEMINI.md` context and
-command TOML are unchanged except the one TOML-escaping fix.
+## Gemini CLI legacy tier
 
-- **TOML `'''`-literal fix.** The canonical command body contains characters
-  that basic TOML strings (`"..."`, `"""..."""`) interpret as escapes (regex
-  `\b`, sed `\|`). Emitting those bodies into `'''`-literal multi-line strings
-  (which do **not** process backslash escapes) makes the output parse strictly.
-- **Migration source.** `agy plugin import gemini` converts
-  `.gemini/commands/*.toml` INTO Antigravity skills, so strictly-valid TOML is
-  the migration source. Fixing the escaping directly serves Antigravity
-  adoption: a frozen legacy artifact that doubles as the transition input.
+Gemini CLI stopped serving free, Pro and Ultra tiers on 2026-06-18. Enterprise and
+paid-API users are unaffected, and the open source repository stays active. RDF keeps the
+adapter frozen for those users, with one exception: command TOML now uses `'''`-literal
+strings, so backslashes in command bodies parse strictly. That also serves migration,
+because `agy plugin import gemini` converts `.gemini/commands/*.toml` into Antigravity
+skills.
 
-## 4b. Model and effort routing
+<details markdown="block">
+<summary>The {% raw %}{{args}}{% endraw %} limitation</summary>
 
-Claude Code only. `adapters/claude-code/agent-meta.json` pins `model` and
-`effort` per agent and emits effort variants (`rdf-engineer-focused`,
-`rdf-reviewer-challenge`) because the Agent tool cannot pass effort per call.
-Codex (`.codex/agents/*.toml` `model_reasoning_effort`) and Antigravity
-(`.agents/agents/<name>.md` `model:`; effort is session-level) emit no agents
-today, so routing there stays with the user's session settings (deferred, §5).
+Gemini CLI command TOML substitutes {% raw %}`{{args}}`{% endraw %}, the whole invocation string, and does not
+tokenize positional arguments. RDF emits canonical command bodies verbatim, so a body that
+reads `$ARGUMENTS` keeps that literal token. A command invoked as `/r-build 3` receives the
+raw `3`, unbound to any placeholder.
 
-## 5. Deferred surfaces (probe-gated)
+RDF adds a NOTE comment to affected commands so a Gemini CLI user knows to pass the argument
+through the {% raw %}`{{args}}`{% endraw %} form. This is an accepted limitation of the frozen tier.
 
-The following ship only after a live-docs probe confirms a stable schema, per
-the audit lesson that runtime-observed facts get an engineer-validation pass
-before code. Cross-reference spec §13.7:
+</details>
 
-- Antigravity hooks (`<workspace>/.agents/hooks.json`): schema undocumented.
-- Antigravity subagents (markdown): schema actively churning.
-- Antigravity plugins (`~/.gemini/antigravity-cli/plugins/<name>/plugin.json`).
-- Codex `agents/openai.yaml` per-skill metadata: Codex-specific, optional.
-- Global/user-level `~/.agents/skills/` scanning: unverified.
-- SKILL.md optional AAIF fields (`license`, `metadata`, `allowed-tools`).
-- MCP server work: a standing §3 non-goal.
-- Codex / Antigravity per-agent effort emission (§4b): neither adapter emits
-  agents yet; Codex spawn-time overrides are reportedly ignored, so pin in TOML.
+## Deferred surfaces
+
+These ship only after a live probe confirms a stable schema:
+
+- Antigravity hooks (`<workspace>/.agents/hooks.json`): the schema is undocumented
+- Antigravity subagents (markdown): the schema is actively changing
+- Antigravity plugins (`~/.gemini/antigravity-cli/plugins/<name>/plugin.json`)
+- Codex `agents/openai.yaml` per-skill metadata
+- User-level `~/.agents/skills/` scanning: unverified
+- Optional `SKILL.md` fields (`license`, `metadata`, `allowed-tools`)
+- Per-agent effort for Codex and Antigravity CLI, since neither adapter emits agents yet
+
+MCP server work is a standing non-goal. Design record:
+[scale and reach spec](https://github.com/rfxn/rdf/blob/main/docs/specs/2026-07-15-scale-reach-design.md).

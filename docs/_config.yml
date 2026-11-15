@@ -1,20 +1,57 @@
-title: RDF
-tagline: rfxn Development Framework
-description: "Governance-driven AI development: convention enforcement, quality gates, and typed agent personas for Claude Code, Codex, and Antigravity CLI (+ Gemini CLI legacy)"
-search_placeholder_custom: Search RDF docs
-remote_theme: just-the-docs/just-the-docs
+title: RDF for AI Agents
+tagline: Spec-driven governance for Claude Code
+description: "Add project governance, a spec-to-ship pipeline and adversarial quality gates to Claude Code, Codex and Antigravity CLI. Install in five minutes."
+url: https://rfxn.github.io
+baseurl: /rdf
+lang: en-US
+author: R-fx Networks
+social:
+  name: R-fx Networks
+  links:
+    - https://github.com/rfxn/rdf
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-include-cache
 color_scheme: dark
 search_enabled: true
 heading_anchors: true
+back_to_top: true
+back_to_top_text: Back to top
+gh_edit_link: true
+gh_edit_link_text: Edit this page on GitHub
+gh_edit_repository: https://github.com/rfxn/rdf
+gh_edit_branch: main
+gh_edit_source: docs
+gh_edit_view_mode: edit
+callouts:
+  note:
+    title: Note
+    color: blue
+  tip:
+    title: Tip
+    color: green
+  warning:
+    title: Warning
+    color: red
 aux_links:
   "GitHub":
     - "https://github.com/rfxn/rdf"
   "Releases":
     - "https://github.com/rfxn/rdf/releases"
 nav_external_links:
-  - title: Full README
-    url: https://github.com/rfxn/rdf#readme
+  - title: Roadmap
+    url: https://github.com/rfxn/rdf/blob/main/ROADMAP.md
+  - title: Changelog
+    url: https://github.com/rfxn/rdf/blob/main/CHANGELOG
 footer_content: "GPL-2.0 · R-fx Networks, the team behind APF, LMD, and BFD"
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/social-preview.png
 exclude:
   - specs/
   - plans/
+  - platform-triage.md

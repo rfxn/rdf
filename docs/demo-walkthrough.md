@@ -1,9 +1,10 @@
 ---
 title: Demo Walkthrough
-nav_order: 3
+nav_order: 2
+description: "A real production change from spec to ship with RDF and Claude Code: the session output, review findings and quality gates from an LMD release."
 ---
 
-# RDF Workflow Demo
+# RDF workflow demo
 
 A walkthrough of the spec-plan-build-ship pipeline using a real
 development scenario on Linux Malware Detect (LMD), a production
@@ -12,6 +13,12 @@ malware scanner deployed on ~350,000 servers.
 RDF is the governance layer, not a runtime. Claude Code is the
 runtime. RDF tells it how to behave via governance files, agent
 definitions, and quality gates.
+
+{: .note }
+This session was captured on an earlier RDF release. The flow is the
+same, but gates are now selected from each phase's
+[change scope](pipeline.md#quality-gates) instead of plan metadata, and plans
+now live in `docs/plans/`.
 
 ---
 
@@ -203,7 +210,7 @@ Reading codebase...
 ```
 
 The **planner** agent reads the spec and all files in scope, then
-writes PLAN.md with a preamble and phase breakdown:
+writes the plan with a preamble and phase breakdown:
 
 ```markdown
 Plan written: **PLAN.md** (5 phases)
@@ -257,19 +264,18 @@ matching (set-based rule evaluation) on the same buffer.
 - [ ] Step 4: Commit
 ```
 
-The developer never sees gate configuration. They see `Risk: high`
-and `Type: refactor`; the dispatcher derives `G1+G2+G3-full`
-internally.
+The developer never sees gate configuration. The dispatcher derives
+`G1+G2+G3-full` internally.
 
 **Artifacts:**
-- `PLAN.md` (committed)
+- `PLAN.md`
 
 ---
 
 ## 4. `/r-build`: Execution
 
 Build executes one phase at a time. The dispatcher reads the phase
-metadata from PLAN.md and orchestrates the TDD cycle, quality gates,
+metadata from the plan and orchestrates the TDD cycle, quality gates,
 and commit.
 
 ```
@@ -350,11 +356,10 @@ you: /r-build    # Phase 4: benchmark + fix S-001/S-002 from sentinel
 you: /r-build    # Phase 5: legacy cleanup
 ```
 
-Phase 4 (`risk:low`, `type:config`) runs G1 only: just the engineer
-self-report. No QA dispatch, no sentinel. Fast.
+Phase 4 runs G1 only: just the engineer self-report. No QA dispatch,
+no sentinel. Fast.
 
-Phase 5 (`risk:medium`, `type:refactor`) gets G1+G2+G3-full again
-because refactors always need the full sentinel to catch regressions.
+Phase 5 gets G1+G2+G3-full again.
 
 ### End-of-Plan Sentinel
 

@@ -1553,6 +1553,29 @@ _doc_truth_context_bar() {
     fi
 }
 
+# ── doc-truth: command reference coverage ──
+# docs/commands.md is the only full listing, so an undocumented command is invisible.
+_doc_truth_commands() {
+    local path="$1"
+    local page="${path}/docs/commands.md"
+    [[ -f "$page" ]] || return 0
+
+    local total=0 missing=0 f name
+    for f in "${path}/canonical/commands"/*.md; do
+        [[ -f "$f" ]] || continue
+        name="$(command basename "$f" .md)"
+        total=$((total + 1))
+        if ! grep -qE "\`/${name}([^a-z-]|\$)" "$page"; then
+            _add_result "doc-truth" "$_FAIL" "docs/commands.md: /${name} is not documented"
+            missing=$((missing + 1))
+        fi
+    done
+
+    if [[ "$total" -gt 0 ]] && [[ "$missing" -eq 0 ]]; then
+        _add_result "doc-truth" "$_OK" "docs/commands.md: ${total}/${total} canonical commands documented"
+    fi
+}
+
 _check_doc_truth() {
     local path="$1"
     local canonical_dir="${path}/canonical"
@@ -1562,13 +1585,14 @@ _check_doc_truth() {
     fi
 
     _doc_truth_scan_tree "$path" "RDF.md" 1
-    _doc_truth_scan_tree "$path" "README.md" 0
+    _doc_truth_scan_tree "$path" "docs/architecture.md" 0
     _doc_truth_profiles "$path"
     _doc_truth_adapters "$path"
     _doc_truth_tests "$path"
     _doc_truth_dispatch "$path"
     _doc_truth_ci "$path"
     _doc_truth_context_bar "$path"
+    _doc_truth_commands "$path"
 }
 
 # Version resolver for doctor (avoids sourcing init.sh dependency)

@@ -167,11 +167,11 @@ teardown() { rm -rf "$FIX" 2>/dev/null || true; }  # cleanup, ignore errors
     fi
 }
 
-@test "README documents the --tools value set" {
-    # Scoped to the --tools paragraph: a bare repo-wide grep for `codex` passes
+@test "configuration reference documents the --tools value set" {
+    # Scoped to the --tools section: a bare repo-wide grep for `codex` passes
     # on any unrelated mention and proves nothing about this flag's docs
     local para
-    para="$(grep -A6 -- '--tools LIST' "$RDF_SRC/README.md")"
+    para="$(grep -A12 -- '--tools LIST' "$RDF_SRC/docs/configuration.md")"
     [ -n "$para" ]
     local value
     for value in claude-code agent-skills agents-md codex antigravity; do

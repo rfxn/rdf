@@ -27,7 +27,7 @@
   <text x="40" y="151" fill="#7d8590" font-size="11">3. Write Spec</text>
   <text x="40" y="169" fill="#7d8590" font-size="11">4. Challenge Review</text>
   <line x1="40" y1="182" x2="200" y2="182" stroke="#30363d" stroke-width="0.5"/>
-  <text x="40" y="200" fill="#e6edf3" font-size="11">Agent: planner (opus)</text>
+  <text x="40" y="200" fill="#e6edf3" font-size="11">Agent: planner</text>
   <text x="40" y="218" fill="#58a6ff" font-size="11">Output: docs/specs/*.md</text>
 
   <!-- Arrow 1: Spec → Plan -->
@@ -39,11 +39,11 @@
   <text x="360" y="89" text-anchor="middle" fill="#3fb950" font-weight="bold" font-size="14">/r-plan</text>
   <text x="280" y="115" fill="#7d8590" font-size="11">1. Read Spec + Codebase</text>
   <text x="280" y="133" fill="#7d8590" font-size="11">2. Decompose into Phases</text>
-  <text x="280" y="151" fill="#7d8590" font-size="11">3. Write PLAN.md</text>
+  <text x="280" y="151" fill="#7d8590" font-size="11">3. Write Plan</text>
   <text x="280" y="169" fill="#7d8590" font-size="11">4. Challenge Review</text>
   <line x1="280" y1="182" x2="440" y2="182" stroke="#30363d" stroke-width="0.5"/>
-  <text x="280" y="200" fill="#e6edf3" font-size="11">Agent: planner (opus)</text>
-  <text x="280" y="218" fill="#58a6ff" font-size="11">Output: PLAN.md</text>
+  <text x="280" y="200" fill="#e6edf3" font-size="11">Agent: planner</text>
+  <text x="280" y="218" fill="#58a6ff" font-size="11">Output: docs/plans/*.md</text>
 
   <!-- Arrow 2: Plan → Build -->
   <polygon points="465,143 495,155 465,167" fill="#3fb950" fill-opacity="0.6" stroke="#3fb950" stroke-width="1" filter="url(#glow)"/>
@@ -73,11 +73,11 @@
   <text x="760" y="169" fill="#7d8590" font-size="11">4. Publish</text>
   <line x1="760" y1="182" x2="920" y2="182" stroke="#30363d" stroke-width="0.5"/>
   <text x="760" y="200" fill="#e6edf3" font-size="11">Agents: qa + reviewer</text>
-  <text x="760" y="218" fill="#58a6ff" font-size="11">Output: PR + tag</text>
+  <text x="760" y="218" fill="#58a6ff" font-size="11">Output: pull request</text>
 
   <!-- Quality Gates Bar -->
   <rect x="25" y="260" width="910" height="60" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-  <text x="480" y="280" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="bold">Quality Gates  —  scope-derived depth</text>
+  <text x="480" y="280" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="bold">Quality Gates: depth follows scope</text>
 
   <circle cx="75" cy="300" r="4" fill="#3fb950"/>
   <text x="92" y="304" fill="#3fb950" font-size="11">G1: Self-report</text>

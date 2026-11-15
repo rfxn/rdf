@@ -1,5 +1,43 @@
 # RDF 3.9.4 Release Notes
 
+## Unreleased
+
+-- New Features --
+
+[New] docs site: guides, reference and project sections (pipeline, profiles and modes, token usage, accounts,
+      parallel sessions, slash commands, CLI, configuration, agents, architecture, extending, production use, FAQ)
+[New] docs site SEO: per-page descriptions, keyword titles, social image, sitemap, JSON-LD, generated llms.txt,
+      custom 404 and favicon; just-the-docs pinned to v0.12.0; docs/platform-triage.md leaves the public site
+[New] rdf doctor doc-truth: FAIL when a canonical command is missing from docs/commands.md; a test checks that
+      every relative markdown link in the README, ROADMAP, CONTRIBUTING and docs resolves
+[New] status line: effort level after the model (Model · xhigh) from Claude Code's .effort.level, and the rdf
+      account name (👤 work) from the ~/.rdf/accounts row matching CLAUDE_CONFIG_DIR
+
+-- Bug Fixes --
+
+[Fix] quickstart: adds the /r-init step that writes governance, plus PATH and hooks-merge steps, Codex and
+      Antigravity setup and update steps; the new FAQ holds uninstall paths; README no longer says rdf init
+      writes governance files
+[Fix] docs: exit codes match the CLI (1 for failures and most usage errors, 2 for usage errors from rdf run and
+      rdf tokens and for unknown accounts, 3 only from rdf migrate); rdf-lite installs with
+      rdf generate --lite --deploy, because rdf deploy --lite alone keeps all 38 skills
+[Fix] /r-init: a .rdf/governance/ holding only the reference/ docs rdf init scaffolds is a first run, not existing
+      governance, so the quickstart path no longer depends on the agent reasoning past the guard
+[Fix] docs: /r-ship output is a pull request, not a tag; RDF_HOME and RDF_CANONICAL are no longer listed as
+      overrides (bin/rdf sets the first, and setting the second breaks rdf_init); context cost states what the
+      ~0.1K excludes; the --rules figure is ~2.2K
+[Fix] docs: gate triggers, plan path (docs/plans/), profile reference counts and plugin helper behavior match the
+      code; demo GIF, diagrams and social image rebuilt from current output
+[Fix] status line: a space after the 📁, 🔀 and ⚡ icons so wide emoji no longer overlap the text after them
+
+-- Changes --
+
+[Change] README is now a landing page (829 lines to under 170, about 800 words); reference content moved to the
+         docs site, and a test caps its paragraphs, bullets and length
+[Change] rdf doctor doc-truth scans the directory tree in docs/architecture.md instead of the README's
+[Change] ROADMAP leads with open work; RDF.md CLI and tree brought current; plugin manifest and marketplace copy
+         drop em dashes and name spec-driven development
+
 ## 3.9.4
 
 -- New Features --

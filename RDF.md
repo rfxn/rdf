@@ -9,6 +9,7 @@ adapter generation. RDF is the single source of truth for all agent definitions,
 commands, scripts, and governance deployed into Claude Code, Codex,
 Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 
+**Docs:** [rfxn.github.io/rdf](https://rfxn.github.io/rdf/)
 **Version:** see [`VERSION`](VERSION) · [releases](https://github.com/rfxn/rdf/releases)
 **License:** GNU GPL v2
 
@@ -35,7 +36,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 - **Unified CLI:** Single `rdf` dispatcher with lazy-sourced subcommand modules
   (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
   `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`,
-  `rdf migrate`).
+  `rdf migrate`, `rdf run`, `rdf review`, `rdf account`, `rdf shell`).
 - **Not a runtime:** Claude Code / Codex / Antigravity CLI IS the runtime
   (Gemini CLI legacy). RDF is the governance layer that tells the runtime how to behave.
 - **Plugin is an adapter, not the architecture:** Claude Code plugin structure
@@ -48,8 +49,8 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   same repository do not corrupt each other. Every session has an
   `RDF_SESSION_ID` (the Claude Code session id, else a minted UUIDv7;
   inherited by all subagents; resume into a second concurrent terminal
-  with `claude --resume --fork-session`); every transient state file
-  (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) is
+  with `claude --resume --fork-session`); pipeline progress and phase handoff files
+  (`phase-N-result`, `vpe-progress`, `build-progress`, `sentinel-N`, etc.) are
   suffixed with that ID. A pre-commit hook active on every `rdf/phase-*` branch
   (one `includeIf "onbranch:"` include; the project's own hooks still run)
   physically rejects out-of-scope commits; the dispatcher's post-merge
@@ -67,7 +68,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
   `cc_generate_rules()` emits context-scoped governance into `output/rules/`
   (core unscoped so it survives compaction; language rules `paths:`-scoped and
   dormant until a matching file is read), deployed opt-in via
-  `rdf deploy --rules` or the minimal `rdf deploy --lite` (condensed governance,
+  `rdf deploy --rules` or the minimal `rdf generate --lite --deploy` (condensed governance,
   lifecycle commands only, hooks skipped). Deterministic state helpers
   `state/rdf-lessons.sh` (lessons index + consolidation scan) and
   `state/rdf-overhead.sh` (per-session token overhead) own the delta; native
@@ -92,26 +93,29 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 
 ---
 
-## Target Directory Structure
+## Directory Structure
 
 ```
 rdf/                                 # Repository root
 |-- bin/
-|   +-- rdf                          # Thin wrapper dispatcher (~55 lines)
+|   +-- rdf                          # Thin wrapper dispatcher
 |
 |-- lib/
 |   |-- rdf_common.sh                # Shared init, version, config, cleanup
 |   +-- cmd/                         # Subcommand handlers (sourced, not executed)
-|       |-- deploy.sh                # rdf deploy <claude-code|gemini-cli>
+|       |-- deploy.sh                # rdf deploy <claude-code|gemini-cli|codex|antigravity|agent-skills|agents-md>
 |       |-- generate.sh              # rdf generate <claude-code|claude-plugin|codex|agent-skills|antigravity|agents-md|gemini-cli|all> [--rules|--lite]
 |       |-- profile.sh               # rdf profile <list|install|remove|status>
-|       |-- init.sh                  # rdf init <path> [--type] [--batch] [--github]
+|       |-- init.sh                  # rdf init <path> [--type] [--tools] [--batch] [--github]
 |       |-- doctor.sh                # rdf doctor [path] [--all] [--scope]
 |       |-- migrate.sh               # rdf migrate (version migration helpers)
 |       |-- state.sh                 # rdf state [path] -> JSON to stdout
 |       |-- tokens.sh                # rdf tokens -> local token usage report
 |       |-- refresh.sh               # rdf refresh [path] [--scope memory|plan|github|all]
 |       |-- sync.sh                  # rdf sync -> pull ~/.claude/ back to canonical
+|       |-- run.sh                   # rdf run, rdf c, rdf x, rdf review -> launch a tool for an account
+|       |-- account.sh               # rdf account <add|list|link|remove|default|primary|dir>
+|       |-- shell.sh                 # rdf shell init -> rdf function (rdf use) and tab completion
 |       +-- github.sh                # rdf github <setup|sync-labels|ecosystem-init|ecosystem-add>
 |
 |-- canonical/                       # Tool-agnostic framework content
@@ -199,6 +203,7 @@ rdf/                                 # Repository root
 |   |-- rdf-bus.sh                   # Session identity + scoped filename helpers (3.1.0)
 |   |-- rdf-lessons.sh               # Lessons ID-index + consolidation scan (3.4)
 |   |-- rdf-overhead.sh              # Per-session token overhead -> JSON (3.4)
+|   |-- rdf-consistency.sh           # /r-build consistency gate
 |   |-- context-audit.sh             # Context weight audit -> JSON
 |   |-- rotate-work-output.sh        # Age/size-based work-output rotation
 |   +-- git-hooks/
@@ -223,7 +228,8 @@ rdf/                                 # Repository root
 - 7 universal agents with governance-driven behavior
 - 38 commands under `/r-` namespace (22 lifecycle + 16 utility)
 - Unified CLI (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
-  `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`, `rdf migrate`)
+  `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`, `rdf migrate`,
+  `rdf run`, `rdf review`, `rdf account`, `rdf shell`)
 - Tool-specific adapters (Claude Code, Claude Plugin, Agent Skills, Gemini CLI, AGENTS.md; Codex and Antigravity CLI served by the Agent Skills + AGENTS.md composite)
 - Governance initialization via `/r-init` with profile-based templates
 - GitHub Issues + Projects v2 integration
@@ -233,7 +239,6 @@ rdf/                                 # Repository root
 
 **Out of scope (deferred):**
 
-- Community-marketplace submission (plugin adapter + repo-as-marketplace already shipped)
 - Additional discipline profiles beyond the current 13 (`profiles/registry.json`)
 - SQLite state store (evaluate if flat files become unwieldy at 30+ projects)
 

@@ -1,57 +1,100 @@
 ---
 title: Quickstart
-nav_order: 2
+nav_order: 1
+description: "Add RDF to any repo in five minutes: install, scaffold your project, generate governance and start your first Claude Code session."
 ---
 
-# Quickstart: RDF on Your Repo in 5 Minutes
+# Quickstart: add RDF to your repo in 5 minutes
+{: .no_toc }
 
-No rfxn context required. You need `git`, `bash` 3.2+ (macOS system bash
-works, CI-verified), `jq`, and an AI
-coding runtime: Claude Code, Codex, or Antigravity CLI (Gemini CLI is
-supported as a legacy tier). Examples below use Claude Code.
+By the end, your AI coding agent has governance written for your project and
+the commands to take a change from spec to release. No rfxn context required.
+The examples use Claude Code. [Codex and Antigravity CLI](#using-codex-or-antigravity-cli)
+differ in one flag.
 
-## 1. Install RDF (once per machine)
+1. TOC
+{:toc}
+
+## Before you start
+
+| You need | Notes |
+|----------|-------|
+| `git` | Your project should be a git repository |
+| `bash` 3.2+ | macOS system bash works and is tested in CI |
+| `jq` | Hooks and the status line need it (`apt install jq`, `brew install jq`) |
+| An AI coding tool | Claude Code, Codex or Antigravity CLI |
+
+## Step 1: Install RDF
+
+Do this once per machine. Pick one option.
+
+### Option A: from source (recommended)
+
+This gives you the full toolset, including the `rdf` CLI, and bare `/r-*`
+commands.
 
 ```bash
 git clone https://github.com/rfxn/rdf.git ~/rdf && cd ~/rdf
-bin/rdf generate claude-code    # build adapter output from canonical sources
-bin/rdf deploy claude-code      # symlink deploy (~/.claude/skills/<n> -> output/skills/<n>; regeneration auto-updates)
+bin/rdf generate claude-code    # build the adapter output
+bin/rdf deploy claude-code      # symlink it into ~/.claude/
 ```
 
-Verify:
+Put `rdf` on your `PATH`. The rest of this page assumes you did:
 
 ```bash
-bin/rdf doctor
-# expect: 0 FAIL (WARNs are fine on a fresh install)
+mkdir -p ~/.local/bin && ln -s ~/rdf/bin/rdf ~/.local/bin/rdf
 ```
 
-**Prefer a one-command install?** RDF is also a Claude Code plugin:
-`/plugin marketplace add rfxn/rdf` then `/plugin install rdf@rdf`.
-Plugin commands are namespaced (`/rdf:r-start` instead of `/r-start`).
-Note: a SessionStart hook bootstraps the `~/.rdf/state/` helpers on the
-plugin's first session start after install; the state-backed commands
-(`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-env`, `r-save`, `r-refresh`,
-`r-context-audit`, `r-vpe`, `r-util-mem-compact`) run in a **degraded mode**
-only before that first restart ([parity details](multi-tool-parity)). Hooks
-auto-register on the plugin path (declared in `plugin.json`); the symlink
-deploy below is the mode that needs a manual merge of
-`adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json`
-(see `rdf deploy help`). Hooks and the status line also require `jq`.
-
-## 2. Initialize your project
-
-Point `rdf init` at any **existing** project directory; it fails with
-`directory not found` if the path does not exist, so clone any small repo
-or use a project you already have (the transcript below is a two-file Flask
-app). It auto-detects the stack and scaffolds governance:
+Deploy prints `manual merge required: hooks.json` just before its summary line.
+That step is yours because hooks change what your agent executes, so RDF leaves
+`settings.json` alone. Merge them once to turn on pre-commit checks, post-edit
+lint, compaction snapshots, the session journal and the status line. Run this
+from `~/rdf`:
 
 ```bash
-bin/rdf init ~/projects/my-app
+s=~/.claude/settings.json; [ -f "$s" ] || { command mkdir -p ~/.claude && echo '{}' > "$s"; }
+t=$(mktemp) && jq -s '.[0] * .[1]' "$s" adapters/claude-code/hooks/hooks.json > "$t" && command cp "$t" "$s" && command rm -f "$t"
 ```
 
-Real output from a plain Flask project:
+{: .warning }
+The merge replaces arrays. If you already define hooks for the same events,
+merge those by hand.
 
+Verify the install:
+
+```bash
+rdf doctor    # expect 0 FAIL; WARNs are normal on a fresh install
 ```
+
+### Option B: Claude Code plugin
+
+In Claude Code:
+
+```text
+/plugin marketplace add rfxn/rdf
+/plugin install rdf@rdf
+```
+
+Restart Claude Code once. Hooks register themselves, and a SessionStart hook
+installs the `~/.rdf/state/` helpers; 11 state-backed commands run degraded
+until that first restart ([details](multi-tool-parity.md#claude-code-plugin-or-symlink-deploy)).
+
+Plugin commands are namespaced, so `/r-start` becomes `/rdf:r-start`. This
+path has no `rdf` CLI, so skip Step 2 and start at Step 3 with `/rdf:r-init`.
+
+## Step 2: Scaffold your project
+
+Point `rdf init` at an existing project directory (it stops with `directory not
+found` otherwise). It detects your stack and writes the starting files, with no
+model calls:
+
+```bash
+rdf init ~/projects/my-app
+```
+
+Real output from a two-file Flask app:
+
+```text
 rdf: auto-detected profiles: python
 rdf: initializing: my-app (profiles=python, version=0.1.0)
 rdf:   created CLAUDE.md (profiles=python, sections=18)
@@ -65,84 +108,97 @@ rdf:   created MEMORY.md placeholder
 rdf: init complete: my-app
 ```
 
-What you now have:
+| Created | Purpose | Committed? |
+|---------|---------|------------|
+| `CLAUDE.md` | Conventions the agent follows, merged from your stack's profiles | No, excluded by default |
+| `.rdf/governance/reference/` | Domain reference docs from matching profiles | No |
+| `.rdf/memory/`, `.rdf/work-output/` | Session state and agent output | No |
+| `MEMORY.md` | Placeholder for session-persistent project facts | No |
+| `SECURITY.md`, `CONTRIBUTING.md` | Community-health starters to edit | Your choice |
 
-| Artifact | Purpose |
-|----------|---------|
-| `CLAUDE.md` | Project conventions the AI must follow (stack-specific) |
-| `.rdf/governance/` | Domain reference docs pulled from matching profiles |
-| `.rdf/memory/`, `.rdf/work-output/` | Session state + agent output (never committed) |
-| `SECURITY.md`, `CONTRIBUTING.md` | Community-health starters (edit to taste) |
+Force a stack with `--type rust,infrastructure`, or preview everything with
+`--dry-run`.
 
-Force a stack instead of auto-detect with `--type` (e.g.
-`--type rust,infrastructure`); preview with `--dry-run`.
-
-## 3. Start a session
+## Step 3: Generate governance
 
 Open your project in Claude Code and run:
 
+```text
+/r-init
 ```
+
+The agent reads your existing conventions, scans the code and tooling, and
+writes project-specific governance. Without this step, agents have the
+`CLAUDE.md` conventions but no project index to read. Trimmed output from the
+same Flask app:
+
+```text
+Python 100%, 2 tracked files | 4 files ingested, 7 generated | 9 HIGH / 0 MED / 3 LOW
+
+Governance (7 files in .rdf/governance/):
+  index.md  architecture.md  conventions.md  verification.md
+  constraints.md  anti-patterns.md  ignore.md
+
+Review: 3 low-confidence items
+Ready: /r-start to begin | /r-spec to design | /r-plan to plan
+```
+
+Read the low-confidence items it lists. Those are the guesses worth correcting.
+
+## Step 4: Start working
+
+```text
 /r-start
 ```
 
-You get a project dashboard: version, branch, plan progress, in-flight
-work, warnings. From there the pipeline is four commands:
+You get a dashboard of version, branch, plan progress, in-flight work and
+warnings. From there, four commands carry a change to release:
 
+```text
+/r-spec     design: research and brainstorm, then a spec with adversarial review
+/r-plan     decompose the spec into a phased plan
+/r-build    execute phases with TDD and quality gates
+/r-ship     preflight, verify, release
 ```
-/r-spec     design: research + brainstorm -> spec + adversarial review
-/r-plan     decompose spec into a phased plan
-/r-build    execute phases via TDD with quality gates
-/r-ship     preflight -> verify -> release
-```
 
-Small change? Skip the pipeline; governance and quality gates apply to
-normal sessions too. Run `/r-verify` for a QA pass or `/r-review` for an
-adversarial review of any diff.
+Small change? `/r-plan --bugfix` writes a short plan whose first phase lands a
+failing test, and keeps the ceremony minimal. You can also skip the pipeline: run `/r-verify` for a QA
+pass or `/r-review` for an adversarial review of any diff.
 
-## 4. Keep it healthy
+## Step 5: Keep it healthy
 
 ```bash
-bin/rdf doctor ~/projects/my-app   # convention drift, stale state, sync health
+rdf doctor ~/projects/my-app    # convention drift, stale state, sync health
 ```
 
-## 5. Optional: launching, completion and several accounts
-
-`bin/rdf run claude` and `bin/rdf run codex` launch either tool (`rdf c` and
-`rdf x` for short). `--yolo` or `-y` skips permission prompts
-(`--dangerously-skip-permissions` for Claude Code) and, for Codex, also turns
-off its sandbox (`--dangerously-bypass-approvals-and-sandbox`). `--sandbox`
-instead runs the tool's own sandbox with permission checks kept, and `--root`
-lets Claude Code skip permissions as root without isolating anything. `bin/rdf review`
-runs a Codex review, read-only unless `--write`. For `rdf use` and tab completion, add this line
-at the end of `~/.bashrc` or `~/.zshrc`:
+To update RDF later:
 
 ```bash
-eval "$(~/rdf/bin/rdf shell init)"
+cd ~/rdf && git pull && bin/rdf generate claude-code && bin/rdf deploy claude-code
 ```
 
-If you use more than one account (work and personal, say), register them
-once. They share projects, auto memory, `--resume` history and settings, and
-each keeps its own Claude Code login and, when you use Codex, its own Codex
-login:
+## Using Codex or Antigravity CLI
+
+Pass `--tools` at Step 2, then use the tool as usual:
 
 ```bash
-bin/rdf account add work --primary   # the login ~/.claude already holds
-bin/rdf account add personal         # creates ~/.claude-personal (and ~/.codex-personal)
-bin/rdf run claude @personal         # first launch asks you to log in
-bin/rdf account default personal     # launches without @name now use personal
-bin/rdf account list                 # logins and link health
+rdf init ~/projects/my-app --tools codex        # or: --tools antigravity
 ```
 
-`rdf use personal` makes an account sticky for the current shell instead. To
-change which login plain `claude`, IDE extensions and scripts use, quit every
-Claude Code session and run `bin/rdf account primary personal` (preview it
-with `--dry-run`; Linux only).
+This adds `.agents/skills/` with the 11 lifecycle commands and composes
+`AGENTS.md` from your project's `CLAUDE.md`. See
+[Multi-Tool Parity](multi-tool-parity.md) for what each tool supports.
 
 ## Where next
 
-- [README: full command reference](https://github.com/rfxn/rdf#4-usage)
-- [Demo walkthrough: a real production change end-to-end](demo-walkthrough.md)
-- [ROADMAP](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
+| Goal | Read |
+|------|------|
+| See a real change go from spec to ship | [Demo walkthrough](demo-walkthrough.md) |
+| Understand gates and pick a tier | [Pipeline and quality gates](pipeline.md) |
+| Look up a command | [Slash commands](commands.md) · [CLI](cli.md) |
+| See what your sessions cost | [Token usage](token-usage.md) |
+| Run work and personal accounts | [Launchers and accounts](accounts.md) |
+| Fix something | [FAQ and troubleshooting](faq.md) |
 
-Something break in the first five minutes? That's a bug:
+Something broke in the first five minutes? That's a bug:
 [open an issue](https://github.com/rfxn/rdf/issues/new/choose).

@@ -1,20 +1,21 @@
 ---
-title: Home
-nav_order: 1
+title: RDF for AI Agents
+nav_exclude: true
 permalink: /
 ---
 
-# RDF: rfxn Development Framework
+# RDF: spec-driven governance for AI coding agents
 {: .fs-8 }
 
-**Governance-driven AI development for teams that ship to production.**
+Make Claude Code, Codex and Antigravity CLI follow your project's rules on every task.
 {: .fs-5 .fw-300 }
 
-RDF is a convention governance layer for AI coding agents. It sits
-between you and the AI runtime (Claude Code, Codex, Antigravity CLI),
-encoding project conventions, quality gates, and domain expertise into
-typed agent personas, so the AI writes code that actually follows your
-rules.
+Drop RDF (rfxn Development Framework) on any repo. It detects your stack, writes
+project governance and takes each change from spec to ship, with review gates sized
+to the work.
+
+[Quickstart: 5 minutes](quickstart.md){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
+[View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }
 
 [![CI](https://github.com/rfxn/rdf/actions/workflows/ci.yml/badge.svg)](https://github.com/rfxn/rdf/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/release/rfxn/rdf?label=version&color=green)](https://github.com/rfxn/rdf/releases/latest)
@@ -22,95 +23,63 @@ rules.
 
 **7 agents · 38 commands · 13 profiles · 5 adapters · 7 modes**
 
-[Quickstart: 5 minutes](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mr-2 }
-[View on GitHub](https://github.com/rfxn/rdf){: .btn .fs-5 .mb-4 }
-
----
-
-![Real recorded session: clone, generate, deploy, init a Flask project, doctor: 0 FAIL](assets/demo.gif)
-
-*Real recorded session: install RDF, initialize a plain Flask project,
-verify health. 42 seconds, no edits, ends at `0 FAIL`.*
+![Replay of a real terminal session: clone RDF, generate, deploy, initialize a Flask project and run doctor, ending at 0 FAIL](assets/demo.gif)
 
 ## Install
 
-**As a Claude Code plugin** (one command, commands namespaced `/rdf:r-*`):
-
-```
-/plugin marketplace add rfxn/rdf
-/plugin install rdf@rdf
-```
-
-Plugin-only installs run in a **degraded mode** for the 11 state-backed
-commands (`r-spec`, `r-plan`, `r-build`, `r-ship`, `r-status`, `r-env`, `r-save`,
-`r-refresh`, `r-context-audit`, `r-vpe`, `r-util-mem-compact`): the full
-session-state machinery needs the `~/.rdf/state/` helpers that only the
-symlink deploy below populates. See [multi-tool parity](multi-tool-parity).
-
-**Or symlink deploy** (contributor mode, bare `/r-*` commands):
+**From source** gives you the full toolset, including the `rdf` CLI:
 
 ```bash
 git clone https://github.com/rfxn/rdf.git ~/rdf && cd ~/rdf
 bin/rdf generate claude-code && bin/rdf deploy claude-code
-bin/rdf init ~/projects/my-app     # auto-detects your stack
+bin/rdf init ~/projects/my-app    # detects your stack
 ```
 
-Each command deploys as its own `~/.claude/skills/<name>` directory symlink
-(`output/skills/<name>/SKILL.md` per adapter). Hooks auto-register on the
-plugin install; the symlink deploy requires a manual merge of
-`adapters/claude-code/hooks/hooks.json` into `~/.claude/settings.json` (see
-`rdf deploy help`). Hooks and the status line require `jq` on your PATH.
-Context cost is published and CI-guarded: the default deploy adds ~0.1K
-always-loaded tokens per session (~2.1K with opt-in scoped rules, ~0.7K for
-`rdf-lite`). Full walkthrough with real output: [Quickstart](quickstart).
+**As a Claude Code plugin**, with commands namespaced `/rdf:r-*`:
 
-**More than one account?** `rdf run claude|codex @personal` launches Claude
-Code or Codex for an account, and `rdf account` runs work and personal logins
-against the same projects, memory and `--resume` history. `rdf shell init` adds
-`rdf use` (an account per shell) and tab completion. See [Quickstart, step 5](quickstart).
+```text
+/plugin marketplace add rfxn/rdf
+/plugin install rdf@rdf
+```
+
+Then run `/r-init` in your project to generate its governance. The
+[Quickstart](quickstart.md) walks through every step with real output.
+
+## What you get
+
+- **Rules that stick:** agents read your conventions, constraints and checks before they work
+- **Review before code:** a reviewer challenges the spec and plan, then audits the diff
+- **Evidence at every gate:** test output, grep results and commit hashes
+- **Process that scales:** a docs edit gets a self-report; a credential change gets QA and three-pass review
+- **One source, several tools:** generates for Claude Code, Codex and Antigravity CLI
+- **Visible spend:** `rdf tokens` reports usage from local transcripts, and nothing leaves your machine
+- **Small footprint:** the default deploy adds ~0.1K always-loaded tokens, [before `CLAUDE.md` and skills](token-usage.md#what-rdf-adds-to-every-session)
 
 ## The pipeline
 
-![RDF Pipeline: spec, plan, build, ship](assets/pipeline.svg)
+![The RDF pipeline: spec, plan, build, ship, with quality gates scaled to scope](assets/pipeline.svg)
 
-Four commands take a change from idea to release: `/r-spec` (research +
-adversarial design review), `/r-plan` (execution-grade decomposition),
-`/r-build` (TDD with quality gates), `/r-ship` (preflight → publish).
-Small change? Skip the pipeline; governance applies to normal sessions
-too.
+Four commands take a change from idea to release. Enter at any stage, or skip them
+for small changes. See [Pipeline and quality gates](pipeline.md).
 
-## Why RDF
+## Find your way
 
-| Principle | What it means |
-|-----------|---------------|
-| **Governance as code** | Conventions live in versioned files the AI reads every session, not in your head or a wiki |
-| **Adversarial quality gates** | Reviewer agents challenge specs before implementation and audit code after it, with scope-derived depth |
-| **Convention inheritance** | project → workspace → profile → core layering (most specific wins); one edit propagates everywhere |
-| **Multi-adapter** | Author governance once; deploy to Claude Code (symlink or plugin), Codex, Antigravity CLI, Gemini CLI (legacy), or plain AGENTS.md |
+| I want to | Go to |
+|-----------|-------|
+| Try it on a repo | [Quickstart](quickstart.md) |
+| See a real production change, spec to ship | [Demo walkthrough](demo-walkthrough.md) |
+| Look up a command | [Slash commands](commands.md) · [CLI](cli.md) |
+| Use Codex or Antigravity CLI | [Multi-tool parity](multi-tool-parity.md) |
+| Measure what my sessions cost | [Token usage](token-usage.md) |
+| Run several accounts | [Launchers and accounts](accounts.md) |
+| Decide whether RDF fits | [FAQ](faq.md) |
 
-## Proven on production infrastructure
+## Proven in production
 
-RDF governs the development of security tooling running on
-**~350,000 servers** (APF, LMD, BFD). Measured across the RDF era
-(March–July 2026, derived from session logs and git history):
+RDF governs development of APF, LMD and BFD, security tools running on **~350,000 servers**.
 
-- **518 governed sessions** across 30+ projects at a sustained
-  **~4.3 sessions/day**, landing **2,513 git-verified commits**
-- **Three major releases shipped under governance** (LMD 2.0, APF 2.0,
-  BFD 2.0), plus **26 RDF releases in 18 weeks**
-- **6,871 BATS tests** across 13 governed repos, all CI-runnable
-- Every release backed by committed design specs (25) and implementation
-  plans (22); we design in the open:
-  [spec archive](https://github.com/rfxn/rdf/tree/main/docs/specs)
-
-## Docs
-
-- **[Quickstart: your repo in 5 minutes](quickstart)**
-- [Demo walkthrough: a real production change, spec to ship](demo-walkthrough)
-- [Multi-tool parity: Claude Code, Codex, Antigravity (+ Gemini legacy)](multi-tool-parity)
-- [Memory & context: RDF alongside native auto-memory](memory-context)
-- [Full command reference (README)](https://github.com/rfxn/rdf#4-usage)
-- [Roadmap](https://github.com/rfxn/rdf/blob/main/ROADMAP.md)
+**518** governed sessions · **2,513** git-verified commits · **3** major releases, March to
+July 2026. See [Production use](production.md).
 
 ## Get involved
 
@@ -118,4 +87,4 @@ RDF governs the development of security tooling running on
 [Discussions](https://github.com/rfxn/rdf/discussions) ·
 [Contributing](https://github.com/rfxn/rdf/blob/main/CONTRIBUTING.md) ·
 [Security policy](https://github.com/rfxn/rdf/blob/main/SECURITY.md) ·
-[Privacy policy](privacy)
+[Privacy policy](privacy.md)

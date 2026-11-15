@@ -1,0 +1,16 @@
+---
+layout: null
+permalink: /llms.txt
+sitemap: false
+---
+# RDF (rfxn Development Framework)
+
+> {{ site.description }}
+
+RDF is the governance layer for AI coding agents, not a runtime. It is unrelated to the W3C Resource Description Framework.
+
+Source: https://github.com/rfxn/rdf
+
+## Docs
+{% assign listed = site.html_pages | sort: "title" %}{% for p in listed %}{% if p.description and p.sitemap != false %}
+- [{{ p.title }}]({{ p.url | absolute_url }}): {{ p.description }}{% endif %}{% endfor %}

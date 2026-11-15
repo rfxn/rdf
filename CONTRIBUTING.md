@@ -18,6 +18,7 @@ of source:
 | An agent, command, or reference doc | `canonical/` (markdown, no tool frontmatter) | `bin/rdf generate claude-code` |
 | Framework tooling (CLI, libs, state helpers) | `bin/`, `lib/`, `state/` directly | n/a |
 | Tests | `tests/*.bats` | `make -C tests test` |
+| Docs | `README.md`, `docs/*.md` | `bin/rdf doctor` |
 
 **Never edit generated output** (`~/.claude/skills/`, `~/.claude/agents/`,
 `adapters/*/output/`). It is overwritten on every `rdf generate`. If you
@@ -54,6 +55,21 @@ bin/rdf doctor            # zero FAIL required
 
 Every behavior change needs a regression test. Portability changes should add a
 case that exercises the non-GNU / older-bash path (see `tests/portability.bats`).
+
+## Documentation
+
+The README is the landing page, so put detail on a site page. A test holds it under
+900 words, with no paragraph over 40 words and no bullet over 30.
+`docs/` builds the [docs site](https://rfxn.github.io/rdf/) with Jekyll and the
+just-the-docs theme:
+
+- Give every page `title`, `description` and a `parent` or `nav_order` in its front
+  matter. The `description` becomes its search snippet
+- Link between pages with relative `.md` paths, which work on GitHub and on the site
+- Add new commands to `docs/commands.md`; `rdf doctor` fails until you do
+- Edit diagrams in `assets/`, copy them to `docs/assets/`, and rebuild
+  `social-preview.png` from `social-preview.svg` with `rsvg-convert`. The GitHub social
+  preview is uploaded by hand in the repository settings
 
 ## Commit and PR process
 

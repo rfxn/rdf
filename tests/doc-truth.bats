@@ -195,7 +195,8 @@ RDFMD
     [[ "$output" == *"doc-truth|OK|README.md: profiles badge = "* ]]
     [[ "$output" == *"doc-truth|OK|README.md: adapters badge = "* ]]
     [[ "$output" == *"doc-truth|OK|RDF.md: "*" tree-cited paths exist on disk"* ]]
-    [[ "$output" == *"doc-truth|OK|README.md: "*" tree-cited paths exist on disk"* ]]
+    [[ "$output" == *"doc-truth|OK|docs/architecture.md: "*" tree-cited paths exist on disk"* ]]
+    [[ "$output" == *"doc-truth|OK|docs/commands.md: "*" canonical commands documented"* ]]
     [[ "$output" == *"doc-truth|OK|CONTRIBUTING.md:"*"CI claims match .github/workflows/ci.yml"* ]]
 }
 
@@ -390,6 +391,67 @@ FOOMD
     [[ "$output" != *"|WARN|"* ]]
     [[ "$output" != *"|FAIL|"* ]]
     rm -rf "$fix"
+}
+
+@test "doc-truth FAILs when a canonical command is missing from docs/commands.md" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/docs"
+    printf 'x\n' > "$fix/canonical/commands/r-foo.md"
+    printf 'x\n' > "$fix/canonical/commands/r-foo-bar.md"
+    printf '| `/r-foo-bar` | Listed |\n' > "$fix/docs/commands.md"
+    run _run_doc_truth _doc_truth_commands "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|FAIL|docs/commands.md: /r-foo is not documented"* ]]
+    [[ "$output" != *"/r-foo-bar is not documented"* ]]
+    rm -rf "$fix"
+}
+
+@test "doc-truth passes when every canonical command is in docs/commands.md" {
+    fix="$(mktemp -d)"
+    mkdir -p "$fix/canonical/commands" "$fix/docs"
+    printf 'x\n' > "$fix/canonical/commands/r-foo.md"
+    printf 'x\n' > "$fix/canonical/commands/r-bar.md"
+    printf '| `/r-foo [N\\|--flag]` | Listed |\n| `/r-bar` | Listed |\n' > "$fix/docs/commands.md"
+    run _run_doc_truth _doc_truth_commands "$fix"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"doc-truth|OK|docs/commands.md: 2/2 canonical commands documented"* ]]
+    [[ "$output" != *"|FAIL|"* ]]
+    rm -rf "$fix"
+}
+
+@test "README and docs: every relative markdown link resolves" {
+    local f link target broken=""
+    for f in "$RDF_SRC"/README.md "$RDF_SRC"/CONTRIBUTING.md "$RDF_SRC"/ROADMAP.md "$RDF_SRC"/docs/*.md; do
+        while IFS= read -r link; do
+            link="${link#](}"
+            link="${link%%#*}"
+            case "$link" in
+                ""|http://*|https://*|mailto:*) continue ;;
+            esac
+            target="$(dirname "$f")/${link}"
+            [ -e "$target" ] || broken="${broken} ${f##*/}:${link}"
+        done < <(grep -oE '\]\([^)[:space:]]+' "$f" || true)  # no links in a file is fine
+    done
+    [ -z "$broken" ] || { echo "broken links:${broken}"; false; }
+}
+
+@test "README stays a landing page: short paragraphs and bullets, under 900 words" {
+    local report
+    report="$(awk '
+        function para_end() {
+            if (n > 40) print "paragraph of " n " words: " head
+            n = 0; head = ""
+        }
+        function words(s) { gsub(/\]\([^)]*\)/, "]", s); return split(s, w, " ") }
+        /^```/ { para_end(); fence = !fence; next }
+        fence { next }
+        { total += NF }
+        /^- / { para_end(); if (words($0) > 30) print "bullet over 30 words: " $0; next }
+        /^[[:space:]]*$/ || /^[|#<]/ || /^!?\[!?\[/ { para_end(); next }
+        { if (n == 0) head = $0; n += words($0) }
+        END { para_end(); if (total > 900) print "README is " total " words" }
+    ' "$RDF_SRC/README.md")"
+    [ -z "$report" ] || { echo "$report"; false; }
 }
 
 @test "docs/_config.yml: no unquoted value holds ': ' (Jekyll rejects it and Pages stops deploying)" {

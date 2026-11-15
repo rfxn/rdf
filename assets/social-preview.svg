@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="social-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e14"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#social-bg)"/>
+  <text x="64" y="92" fill="#e6edf3" font-family="DejaVu Sans, sans-serif" font-size="62" font-weight="bold">RDF</text>
+  <text x="226" y="92" fill="#58a6ff" font-family="DejaVu Sans, sans-serif" font-size="30">Spec-driven governance for AI coding agents</text>
+  <text x="66" y="142" fill="#8b949e" font-family="DejaVu Sans, sans-serif" font-size="25">Project rules, a spec-to-ship pipeline and adversarial quality gates for</text>
+  <text x="66" y="176" fill="#8b949e" font-family="DejaVu Sans, sans-serif" font-size="25">Claude Code, Codex and Antigravity CLI</text>
+  <image x="110" y="200" width="1060" height="375" xlink:href="pipeline.svg"/>
+  <text x="66" y="612" fill="#7d8590" font-family="DejaVu Sans Mono, monospace" font-size="21">rfxn.github.io/rdf</text>
+</svg>
