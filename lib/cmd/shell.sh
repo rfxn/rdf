@@ -93,7 +93,7 @@ function _rdf_complete {
     _rdf_words "$@"
     COMPREPLY=()
     if [ "$COMP_CWORD" -le 1 ]; then
-        words="run review use account shell tokens state doctor generate deploy sync init refresh migrate profile github help version"
+        words="run review use account peers shell tokens state doctor generate deploy sync init refresh migrate profile github help version"
     else
         case "$_rdf_w1" in
             run|c|x)
@@ -124,6 +124,8 @@ function _rdf_complete {
                         add) words="--primary" ;;
                     esac
                 fi ;;
+            peers)
+                words="--here --json" ;;
             shell)
                 [ "$COMP_CWORD" -eq 2 ] && words="init help" ;;
             tokens)

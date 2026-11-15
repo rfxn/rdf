@@ -45,6 +45,7 @@ Commands:
   review     Read-only Codex review run (codex exec) for an account
   use        Account for this shell's launches (needs rdf shell init)
   account    Claude Code and Codex accounts that share projects and memory
+  peers      Live Claude Code sessions on every account and what each is doing
   shell      Shell function (rdf use) and tab completion
   github     GitHub Issues + Projects integration
   profile    Manage active domain profiles
@@ -69,6 +70,7 @@ case "${1:-}" in
     state)    shift; source "${RDF_LIBDIR}/cmd/state.sh";    cmd_state "$@" ;;
     tokens)   shift; source "${RDF_LIBDIR}/cmd/tokens.sh";   cmd_tokens "$@" ;;
     account)  shift; source "${RDF_LIBDIR}/cmd/account.sh";  cmd_account "$@" ;;
+    peers)    shift; source "${RDF_LIBDIR}/cmd/peers.sh";    cmd_peers "$@" ;;
     shell)    shift; source "${RDF_LIBDIR}/cmd/shell.sh";    cmd_shell "$@" ;;
     run)      shift; source "${RDF_LIBDIR}/cmd/run.sh";      cmd_run "$@" ;;
     c)        shift; source "${RDF_LIBDIR}/cmd/run.sh";      cmd_run claude "$@" ;;

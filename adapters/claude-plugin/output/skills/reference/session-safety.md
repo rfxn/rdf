@@ -28,6 +28,7 @@ convenience summaries.
 - **Run `/r-save` at session end** — ensures the active plan, MEMORY.md, and
   session-log.jsonl reflect the latest state and are recoverable independently
   of chat context.
+- **Before editing files another session may hold:** `rdf peers --here` lists live sessions in this repo on any account; message one with `SendMessage`.
 
 ## Preserve Input Context
 

@@ -12,6 +12,13 @@
       every relative markdown link in the README, ROADMAP, CONTRIBUTING and docs resolves
 [New] status line: effort level after the model (Model · xhigh) from Claude Code's .effort.level, and the rdf
       account name (👤 work) from the ~/.rdf/accounts row matching CLAUDE_CONFIG_DIR
+[New] rdf peers: live Claude Code sessions on every account and what each is doing (account, state, permission
+      mode, age, project, branch, title); a card per session (last prompt and reply, recent files, RDF progress
+      files), --here and --json; read-only, from the session registry and transcripts; stderr hints when an
+      account's registry is not shared or live sockets have no registry entry
+[New] rdf account: Claude Code's live-session registry (sessions/) is shared across accounts, so ListAgents and
+      SendMessage reach sessions on other accounts; link merges an account's own sessions/ into ~/.claude/sessions
+      and leaves it untouched on any conflict
 
 -- Bug Fixes --
 
@@ -37,6 +44,13 @@
 [Change] rdf doctor doc-truth scans the directory tree in docs/architecture.md instead of the README's
 [Change] ROADMAP leads with open work; RDF.md CLI and tree brought current; plugin manifest and marketplace copy
          drop em dashes and name spec-driven development
+[Change] rdf account link re-links existing Codex homes but no longer creates one: a new home has no Codex login,
+         so it switched an account using ~/.codex to a logged-out home (add still creates one; mkdir
+         ~/.codex-<name> and re-run link to add one); primary refuses while the target has its own sessions/ and
+         says to run rdf account link <name> first
+[Change] docs: accounts (sessions on every account see each other, held messages and crossSessionInbound, data
+         across orgs, scope), parallel sessions (rdf peers --here) and the CLI reference; the session-safety
+         reference points to rdf peers --here
 
 ## 3.9.4
 

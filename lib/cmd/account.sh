@@ -14,9 +14,10 @@ _ACCOUNT_PRIMARY_DIR="${_ACCOUNT_HOME}/.claude"
 _ACCOUNT_PRIMARY_MARK="@primary"
 _ACCOUNT_NAME_RE='^[a-z0-9][a-z0-9_-]{0,31}$'
 # Login, .claude.json, org remote-settings/policy-limits and plugins stay per account.
+# sessions/ is Claude Code's live-session registry; sharing it lets ListAgents/SendMessage reach every account.
 _ACCOUNT_SHARED=(projects history.jsonl paste-cache file-history tasks todos plans CLAUDE.md
     settings.json keybindings.json skills agents commands rules output-styles scripts governance
-    reference)
+    reference sessions)
 # Codex: an account's own home is ~/.codex-<name> when it exists, else ~/.codex; auth.json and Codex's state
 # databases stay per home, rollouts are shared so rdf tokens reads them in one place.
 _ACCOUNT_CODEX_DIR="${_ACCOUNT_HOME}/.codex"
@@ -35,7 +36,9 @@ Subcommands:
   add <name> --primary   Name the account already logged in to ~/.claude
   add <name>             Create ~/.claude-<name> (and ~/.codex-<name>) linked to shared state
   list                   Show accounts, logins and shared-link health (* = active)
-  link [<name>]          Re-link shared state for one or all accounts; adds missing Codex homes
+  link [<name>]          Re-link shared state for one or all accounts, merging each account's
+                         session registry into ~/.claude/sessions; re-links existing
+                         Codex homes but creates none (mkdir ~/.codex-<name> to add one)
   remove <name>          Unregister an account (its config dir and login are kept)
   default <name>|-       Account rdf run uses without @name or rdf use; '-' clears it
   primary <name> [--dry-run]
@@ -111,15 +114,62 @@ _account_display() {
     esac
 }
 
-# _account_link_dir NAME DIR — link each shared entry present in ~/.claude; never replaces a path
+# _account_link_dir NAME DIR: link each shared entry present in ~/.claude; only sessions/ is ever merged
 _account_link_dir() {
-    _account_link_into "$1" "config dir" "$2" "$_ACCOUNT_PRIMARY_DIR" "${_ACCOUNT_SHARED[@]}"
+    local sessions="${_ACCOUNT_PRIMARY_DIR}/sessions"
+    if [[ -d "$_ACCOUNT_PRIMARY_DIR" && ! -e "$sessions" && ! -L "$sessions" ]]; then
+        _account_try command mkdir -m 700 "$sessions" || rdf_warn "could not create ${sessions}"
+    fi
+    _account_link_into "$1" "config dir" "$2" "$_ACCOUNT_PRIMARY_DIR" sessions "${_ACCOUNT_SHARED[@]}"
 }
 
-# _account_link_into LABEL NOUN DIR SRCROOT ENTRY... — link each ENTRY present in SRCROOT into DIR
+# _account_merge_conflict NAME SRC DST ENTRY: warn and return 0 when DST/ENTRY must not move into SRC
+_account_merge_conflict() {
+    if [[ -L "${3}/${4}" ]]; then
+        rdf_warn "${1}: kept ${3}/${4} (a symlink; never moved)"
+    elif [[ -e "${2}/${4}" || -L "${2}/${4}" ]]; then
+        rdf_warn "${1}: kept ${3}/${4} (${2}/${4} already exists; remove the stale one)"
+    else
+        return 1
+    fi
+}
+
+# _account_merge_link NAME SRC DST: move DST's entries into SRC, then replace DST with a link; 1 if DST is kept
+_account_merge_link() {
+    local name="$1" src="$2" dst="$3" entry moved=0 conflicts=0
+    # a partial merge would split the registry, so any conflict leaves DST untouched
+    while IFS= read -r entry; do
+        if _account_merge_conflict "$name" "$src" "$dst" "$entry"; then
+            conflicts=$((conflicts + 1))
+        fi
+    done < <(_account_dir_entries "$dst")
+    if [[ "$conflicts" -gt 0 ]]; then
+        rdf_warn "${name}: kept ${dst} unmerged; resolve the entries above, then re-run 'rdf account link ${name}'"
+        return 1
+    fi
+    while IFS= read -r entry; do
+        if _account_merge_conflict "$name" "$src" "$dst" "$entry"; then
+            continue
+        elif _account_try command mv "${dst}/${entry}" "${src}/${entry}"; then
+            moved=$((moved + 1))
+        else
+            rdf_warn "${name}: could not move ${dst}/${entry} into ${src}"
+        fi
+    done < <(_account_dir_entries "$dst")
+    [[ "$moved" -eq 0 ]] || rdf_log "${name}: moved ${moved} entries from ${dst} into ${src}"
+    # a session starting mid-merge leaves DST non-empty, or recreates it after rmdir
+    if _account_try command rmdir "$dst" 2>/dev/null && [[ ! -e "$dst" && ! -L "$dst" ]]; then  # not empty: warned below
+        command ln -sn "$src" "$dst"
+        return 0
+    fi
+    rdf_warn "${name}: kept ${dst} (not empty after merging into ${src}; re-run 'rdf account link')"
+    return 1
+}
+
+# _account_link_into LABEL NOUN DIR SRCROOT MERGE ENTRY...: link each ENTRY present in SRCROOT into DIR; a real dir named MERGE is merged in
 _account_link_into() {
-    local name="$1" noun="$2" dir="$3" root="$4" entry src dst cur linked=0 present=0 kept=0
-    shift 4
+    local name="$1" noun="$2" dir="$3" root="$4" merge="$5" entry src dst cur linked=0 present=0 kept=0
+    shift 5
     if [[ ! -d "$dir" ]]; then
         rdf_warn "${name}: ${noun} missing: ${dir}"
         return 0
@@ -133,6 +183,12 @@ _account_link_into() {
             cur="$(command readlink "$dst")"
             if [[ "$cur" != "$src" ]]; then
                 rdf_warn "${name}: kept ${dst} (links to ${cur}, not ${src})"
+                kept=$((kept + 1))
+            fi
+        elif [[ "$entry" == "$merge" && -d "$dst" && -d "$src" ]]; then
+            if _account_merge_link "$name" "$src" "$dst"; then
+                linked=$((linked + 1))
+            else
                 kept=$((kept + 1))
             fi
         elif [[ -e "$dst" ]]; then
@@ -165,16 +221,21 @@ _account_codex_home() {
     [[ ! -d "${_ACCOUNT_HOME}/.codex-${1}" ]] || printf '%s\n' "${_ACCOUNT_HOME}/.codex-${1}"
 }
 
-# _account_codex_link NAME — create ~/.codex-NAME when Codex is in use (~/.codex exists) and link shared entries
+# _account_codex_link NAME [create]: link shared entries into ~/.codex-NAME when Codex is in use; only add creates the home
 _account_codex_link() {
     local home="${_ACCOUNT_HOME}/.codex-${1}"
     [[ -d "$_ACCOUNT_CODEX_DIR" ]] || return 0
     if [[ ! -d "$home" ]]; then
+        # a new home has no auth.json, so creating one on link would log a working ~/.codex account out
+        if [[ "${2:-}" != create ]]; then
+            rdf_log "${1} (codex): uses ~/.codex (mkdir ~/.codex-${1}, then re-run link, for its own Codex login)"
+            return 0
+        fi
         command mkdir -p "$home"
         command chmod 700 "$home"
     fi
     command mkdir -p "${_ACCOUNT_CODEX_DIR}/sessions" "${_ACCOUNT_CODEX_DIR}/archived_sessions"  # else codex makes its own and rollouts fork
-    _account_link_into "${1} (codex)" "Codex home" "$home" "$_ACCOUNT_CODEX_DIR" "${_ACCOUNT_CODEX_SHARED[@]}"
+    _account_link_into "${1} (codex)" "Codex home" "$home" "$_ACCOUNT_CODEX_DIR" "" "${_ACCOUNT_CODEX_SHARED[@]}"
 }
 
 # _account_codex_state NAME — Codex column for list: the home's login file, or the shared ~/.codex
@@ -230,7 +291,7 @@ _account_add() {
         command mkdir -p "$dir"
         command chmod 700 "$dir"
         _account_link_dir "$name" "$dir"
-        _account_codex_link "$name"
+        _account_codex_link "$name" create
     fi
 
     command mkdir -p "$(command dirname "$_ACCOUNT_REGISTRY")"
@@ -499,6 +560,8 @@ _account_primary() {
             [[ ! -L "${target}/${entry}" ]] || link="$(command readlink "${target}/${entry}")"
             [[ "$link" != "${_ACCOUNT_PRIMARY_DIR}/${entry}" ]] || continue
             if [[ -e "${_ACCOUNT_PRIMARY_DIR}/${entry}" || -L "${_ACCOUNT_PRIMARY_DIR}/${entry}" ]]; then
+                [[ "$entry" != sessions || -L "${target}/${entry}" || ! -d "${target}/${entry}" ]] \
+                    || rdf_die "${target}/sessions is not merged into ${_ACCOUNT_PRIMARY_DIR}/sessions yet; run 'rdf account link ${name}' first"
                 rdf_die "${target}/${entry} is not a link to ${_ACCOUNT_PRIMARY_DIR}/${entry} — merge it in and remove it first"
             fi
         fi

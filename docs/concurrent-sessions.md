@@ -2,7 +2,7 @@
 title: Parallel Sessions
 parent: Guides
 nav_order: 6
-description: "Run several Claude Code sessions against one repository without collisions: session-scoped state, a worktree scope guard and dirty-tree checks."
+description: "Run several Claude Code sessions against one repository without collisions: session-scoped state, a worktree scope guard, dirty-tree checks and rdf peers."
 ---
 
 # Parallel sessions
@@ -37,6 +37,38 @@ terminal, add `--fork-session` (or `--fs` with `rdf run`).
 | Pre-aggregation gate | The engineer checks for a dirty tree before build steps | `canonical/agents/engineer.md` |
 
 The scope guard works in any project. It chains your own hooks, so they still run.
+
+## See what other sessions are doing
+
+`rdf peers --here` lists the live Claude Code sessions under this checkout's git
+toplevel (from a linked worktree, that worktree only), on any
+[account](accounts.md#sessions-on-every-account-see-each-other).
+`rdf peers <name>` shows what one of them is doing: its last prompt and reply, the
+files it edited most recently, and its RDF progress files. Example output from a
+fixture:
+
+```text
+name:         api-retries
+account:      work
+pid:          1584525
+session:      0b6f2c1e-4a3d-4e8b-9c71-2f5d8a9e3b10
+state:        busy
+mode:         bypass
+started:      2h ago
+cwd:          /home/me/src/api
+branch:       fix/retry-backoff
+title:        Fix flaky retry backoff test
+last prompt:  make the retry backoff test deterministic
+last reply:   The backoff test reads the wall clock. I injected a fake clock into the retry loop and the test now passes 200 runs in a row.
+recent files:
+  /home/me/src/api/retry/backoff_test.go
+  /home/me/src/api/retry/backoff.go
+rdf progress: -
+message it: SendMessage to "api-retries"
+```
+
+Before you edit files another session may be working on, check here first. To
+coordinate, ask Claude to `SendMessage` to that session's name.
 
 ## Allow small test drift
 

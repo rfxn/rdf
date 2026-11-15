@@ -60,7 +60,7 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     mkdir -p "${HOME}/.claude/plans"
     run _rdf account link personal
     [ "$status" -eq 0 ]
-    [[ "$output" == *"personal: 2/5 shared entries linked (1 new, 3 kept)"* ]]
+    [[ "$output" == *"personal: 3/6 shared entries linked (1 new, 3 kept)"* ]]
     [ "$(readlink "${HOME}/.claude-personal/plans")" = "${HOME}/.claude/plans" ]
     run _rdf account link
     [ "$status" -eq 0 ]
@@ -78,8 +78,8 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     run _rdf account list
     [ "$status" -eq 0 ]
     [[ "$output" == *"* work           ~/.claude                primary      w@example.com (Work Org)"* ]]
-    [[ "$output" == *"  personal       ~/.claude-personal       4/4          p@example.com"* ]]
-    [[ "$output" == *"  spare          ~/.claude-spare          3/4          not logged in"* ]]
+    [[ "$output" == *"  personal       ~/.claude-personal       5/5          p@example.com"* ]]
+    [[ "$output" == *"  spare          ~/.claude-spare          4/5          not logged in"* ]]
     RDF_CLAUDE_ACCOUNT=personal run _rdf account list
     [[ "$output" == *"  work "* ]]
     [[ "$output" == *"* personal "* ]]
@@ -154,7 +154,7 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     [ "$status" -ne 0 ]
     run _rdf account add personal
     [ "$status" -eq 0 ]
-    [[ "$output" == *"4/4 shared entries linked (0 new, 0 kept)"* ]]
+    [[ "$output" == *"5/5 shared entries linked (0 new, 0 kept)"* ]]
     [ -f "${HOME}/.claude-personal/.credentials.json" ]
 }
 
@@ -185,6 +185,84 @@ teardown() { rm -rf "$HOME" 2>/dev/null || true; }  # cleanup, ignore errors
     run _rdf account remove work
     [[ "$output" == *"default cleared"* ]]
     [ ! -e "$D" ]
+}
+
+@test "add links sessions to ~/.claude/sessions, creating it 700 when absent, never creating ~/.claude" {
+    [ ! -e "${HOME}/.claude/sessions" ]
+    run _rdf account add personal
+    [ "$status" -eq 0 ]
+    [ -d "${HOME}/.claude/sessions" ]
+    [ "$(_mode "${HOME}/.claude/sessions")" = "700" ]
+    [ "$(readlink "${HOME}/.claude-personal/sessions")" = "${HOME}/.claude/sessions" ]
+    [[ "$output" == *"personal: 5/5 shared entries linked (5 new, 0 kept)"* ]]
+    rm -rf "${HOME}/.claude"
+    run _rdf account add spare
+    [ "$status" -eq 0 ]
+    [ ! -e "${HOME}/.claude" ]
+}
+
+@test "link merges a real sessions dir into ~/.claude/sessions; a same-name file or symlink leaves it unmerged" {
+    _rdf account add personal
+    S="${HOME}/.claude/sessions"
+    P="${HOME}/.claude-personal"
+    rm "${P}/sessions"
+    mkdir "${P}/sessions" "${HOME}/elsewhere"
+    printf 'live\n' > "${P}/sessions/111.json"
+    printf 'k\n' > "${P}/sessions/111.abc.key"
+    printf 'dot\n' > "${P}/sessions/.hidden"
+    run _rdf account link personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"personal: moved 3 entries from ${P}/sessions into ${S}"* ]]
+    [[ "$output" == *"personal: 5/5 shared entries linked (1 new, 0 kept)"* ]]
+    [ "$(readlink "${P}/sessions")" = "$S" ]
+    [ "$(cat "${S}/111.json")" = "live" ]
+    [ "$(cat "${S}/111.abc.key")" = "k" ]
+    [ "$(cat "${S}/.hidden")" = "dot" ]
+
+    rm "${P}/sessions"
+    mkdir "${P}/sessions"
+    printf 'stale\n' > "${P}/sessions/111.json"
+    printf 'new\n' > "${P}/sessions/222.json"
+    ln -s "${HOME}/elsewhere" "${P}/sessions/lnk"
+    run _rdf account link personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"kept ${P}/sessions/111.json (${S}/111.json already exists"* ]]
+    [[ "$output" == *"kept ${P}/sessions/lnk (a symlink"* ]]
+    [[ "$output" == *"kept ${P}/sessions unmerged; resolve the entries above, then re-run 'rdf account link personal'"* ]]
+    [[ "$output" != *"personal: moved"* ]]
+    [[ "$output" == *"personal: 4/5 shared entries linked (0 new, 1 kept)"* ]]
+    [ -d "${P}/sessions" ]
+    [ ! -L "${P}/sessions" ]
+    [ "$(cat "${S}/111.json")" = "live" ]
+    [ "$(cat "${P}/sessions/111.json")" = "stale" ]
+    [ "$(cat "${P}/sessions/222.json")" = "new" ]
+    [ ! -e "${S}/222.json" ]
+    [ "$(readlink "${P}/sessions/lnk")" = "${HOME}/elsewhere" ]
+    [ ! -L "${S}/lnk" ]
+
+    rm "${P}/sessions/lnk"
+    run _rdf account link personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"kept ${P}/sessions unmerged"* ]]
+    [ "$(cat "${P}/sessions/222.json")" = "new" ]
+    [ ! -e "${S}/222.json" ]
+
+    rm "${P}/sessions/111.json"
+    run _rdf account link personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"personal: moved 1 entries from ${P}/sessions into ${S}"* ]]
+    [ "$(readlink "${P}/sessions")" = "$S" ]
+    [ "$(cat "${S}/222.json")" = "new" ]
+
+    rm "${P}/sessions"
+    ln -s "${HOME}/elsewhere" "${P}/sessions"
+    printf 'other\n' > "${HOME}/elsewhere/333.json"
+    run _rdf account link personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"kept ${P}/sessions (links to ${HOME}/elsewhere, not ${S})"* ]]
+    [ "$(readlink "${P}/sessions")" = "${HOME}/elsewhere" ]
+    [ "$(cat "${HOME}/elsewhere/333.json")" = "other" ]
+    [ ! -e "${S}/333.json" ]
 }
 
 # _rdfs — rdf with the uname/ps/mv/awk stubs from _swap_fixture first on PATH
@@ -223,7 +301,7 @@ STUB
     _rdf account add spare
     P="${HOME}/.claude-personal"
     W="${HOME}/.claude-work"
-    mkdir -p "${P}/plugins" "${P}/sessions" "${P}/plans"
+    mkdir -p "${P}/plugins" "${P}/plans"
     printf '{"oauthAccount":{"emailAddress":"p@example.com"}}\n' > "${P}/.claude.json"
     printf 'personal\n' > "${P}/.credentials.json"
     printf 'mine\n' > "${P}/plans/p.md"
@@ -268,11 +346,12 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     [ "$(jq -r '.a[0].installPath' "${W}/plugins/installed_plugins.json")" = "${W}/plugins/cache/a" ]
     [ "$(cat "${W}/plugins/blocklist.json")" = "{ }" ]
     [ -d "${HOME}/.claude/sessions" ]
+    [ ! -L "${HOME}/.claude/sessions" ]
     [ "$(cat "${HOME}/.claude/plans/p.md")" = "mine" ]
     [ -d "${HOME}/.claude/projects" ]
     [ ! -L "${HOME}/.claude/projects" ]
     [ "$(_mode "$W")" = "700" ]
-    for e in projects skills settings.json history.jsonl plans; do
+    for e in projects skills settings.json history.jsonl plans sessions; do
         [ "$(readlink "${W}/${e}")" = "${HOME}/.claude/${e}" ]
     done
     [ "$(readlink "${HOME}/.claude-spare/projects")" = "${HOME}/.claude/projects" ]
@@ -282,7 +361,7 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     [ "$(_rdf account dir work)" = "$W" ]
     run _rdf account list
     [[ "$output" == *"personal       ~/.claude                primary      p@example.com"* ]]
-    [[ "$output" == *"work           ~/.claude-work           5/5          w@example.com (Work Org)"* ]]
+    [[ "$output" == *"work           ~/.claude-work           6/6          w@example.com (Work Org)"* ]]
 }
 
 @test "primary --dry-run lists the moves and changes nothing; every refusal changes nothing" {
@@ -339,7 +418,6 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     rm "${P}/ide"
     rmdir "${HOME}/.claude/ide"
 
-    mkdir -p "${HOME}/.claude/sessions"
     printf '{}\n' > "${HOME}/.claude/sessions/$$.json"
     run _rdfs account primary personal
     [ "$status" -eq 1 ]
@@ -348,7 +426,7 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     run _rdfs account primary personal --dry-run
     [ "$status" -eq 0 ]
     [[ "$output" == *"running: pid $$"* ]]
-    rm -r "${HOME}/.claude/sessions"
+    rm "${HOME}/.claude/sessions/$$.json"
 
     mkdir -p "${P}/daemon"
     printf '{"proto":1,"supervisorPid":%s,"workers":{}}\n' "$$" > "${P}/daemon/roster.json"
@@ -364,6 +442,29 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     [[ "$output" == *"running: pid 4243 (claude process)"* ]]
     rm "${HOME}/ps.out"
     [ "$(_tree)" = "$before" ]
+}
+
+@test "primary on an account with a pre-link sessions dir points to rdf account link, then swaps after it" {
+    _swap_fixture
+    rm "${P}/sessions"
+    mkdir "${P}/sessions"
+    printf 'old\n' > "${P}/sessions/9999999.json"
+    before="$(_tree)"
+    for args in "personal --dry-run" "personal"; do
+        IFS=' ' read -r -a argv <<< "$args"
+        run _rdfs account primary "${argv[@]}"
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"${P}/sessions is not merged into ${HOME}/.claude/sessions yet; run 'rdf account link personal' first"* ]]
+        [[ "$output" != *"merge it in and remove it first"* ]]
+    done
+    [ "$(_tree)" = "$before" ]
+    run _rdf account link personal
+    [ "$status" -eq 0 ]
+    run _rdfs account primary personal
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"primary is now personal"* ]]
+    [ "$(cat "${HOME}/.claude/sessions/9999999.json")" = "old" ]
+    [ "$(readlink "${W}/sessions")" = "${HOME}/.claude/sessions" ]
 }
 
 @test "primary undoes every move when a move or the registry write fails" {
@@ -452,7 +553,7 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     [ ! -e "${HOME}/.codex-work" ]
 }
 
-@test "codex: link adds missing Codex homes; list shows each account's Codex state; dir --codex prints the home; remove keeps it" {
+@test "codex: link never creates a Codex home, re-links one the user made; list shows each account's Codex state; dir --codex prints the home; remove keeps it" {
     run _rdf account add work --primary
     run _rdf account add personal
     mkdir -p "${HOME}/.codex/sessions"
@@ -460,6 +561,13 @@ _mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }  # GNU stat, then B
     [[ "$output" == *"CODEX"* ]]
     run _rdf account dir personal --codex
     [ "$output" = "" ]
+    run _rdf account link
+    [ "$status" -eq 0 ]
+    [ ! -e "${HOME}/.codex-personal" ]
+    [[ "$output" == *"personal (codex): uses ~/.codex"* ]]
+    run _rdf account dir personal --codex
+    [ "$output" = "" ]
+    mkdir -m 700 "${HOME}/.codex-personal"
     run _rdf account link
     [ "$status" -eq 0 ]
     [ -L "${HOME}/.codex-personal/sessions" ]

@@ -78,6 +78,28 @@ state-helpers  content-drift  doc-stats  readme  doc-truth  harness  env
 
 See [Launchers and accounts](accounts.md).
 
+## Sessions
+
+| Command | What it does |
+|---------|--------------|
+| `rdf peers [<name>] [--here] [--json]` | Live Claude Code sessions on every account and what each is doing |
+
+| `rdf peers` option | Effect |
+|--------------------|--------|
+| `<name>` | Card for one session (exact name, else a unique prefix): pid, cwd, last prompt and reply, recent files, RDF progress files |
+| `--here` | Only sessions under this checkout's git toplevel (else the current directory); from a linked worktree, that worktree only |
+| `--json` | JSON array, or one object with `<name>` |
+
+Table columns: `NAME` (`*` marks this session), `ACCOUNT`, `STATE`, `MODE` (the
+session's permission mode, `bypass` for `bypassPermissions`), `AGE`, `PROJECT`,
+`BRANCH`, `TITLE`. JSON keys: `name`, `account`, `pid`, `session_id`,
+`status`, `mode`, `started_at`, `cwd`, `branch`, `title`, `last_prompt`, `self`;
+a card adds `last_reply`, `recent_files` and `rdf_progress`. `rdf peers` only
+reads. It exits 1 when `<name>` matches no live session, or more than one, and
+lists the candidates.
+
+See [Sessions on every account](accounts.md#sessions-on-every-account-see-each-other).
+
 ## Measure
 
 | Command | What it does |
@@ -101,8 +123,8 @@ See [Token usage](token-usage.md) for recipes.
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Failure: unknown command, missing dependency or file, a skipped deploy item, or a FAIL from `rdf doctor` |
-| 2 | Invalid usage from `rdf run`, `rdf c`, `rdf x` or `rdf tokens`, or an unknown account name |
+| 1 | Failure: unknown command, missing dependency or file, a skipped deploy item, a FAIL from `rdf doctor`, or an `rdf peers <name>` that matches no single live session |
+| 2 | Invalid usage from `rdf run`, `rdf c`, `rdf x`, `rdf tokens` or `rdf peers`, or an unknown account name |
 
 `rdf migrate` has its own set: 0 migrated, 1 failed, 2 nothing to migrate, 3 conflict
 (both `.claude/governance/` and `.rdf/governance/` exist).

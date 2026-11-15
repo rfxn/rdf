@@ -36,7 +36,7 @@ Antigravity CLI, or AGENTS.md environments (+ Gemini CLI legacy).
 - **Unified CLI:** Single `rdf` dispatcher with lazy-sourced subcommand modules
   (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
   `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`,
-  `rdf migrate`, `rdf run`, `rdf review`, `rdf account`, `rdf shell`).
+  `rdf migrate`, `rdf run`, `rdf review`, `rdf account`, `rdf peers`, `rdf shell`).
 - **Not a runtime:** Claude Code / Codex / Antigravity CLI IS the runtime
   (Gemini CLI legacy). RDF is the governance layer that tells the runtime how to behave.
 - **Plugin is an adapter, not the architecture:** Claude Code plugin structure
@@ -115,6 +115,7 @@ rdf/                                 # Repository root
 |       |-- sync.sh                  # rdf sync -> pull ~/.claude/ back to canonical
 |       |-- run.sh                   # rdf run, rdf c, rdf x, rdf review -> launch a tool for an account
 |       |-- account.sh               # rdf account <add|list|link|remove|default|primary|dir>
+|       |-- peers.sh                 # rdf peers [<name>] [--here] [--json] -> live sessions on every account
 |       |-- shell.sh                 # rdf shell init -> rdf function (rdf use) and tab completion
 |       +-- github.sh                # rdf github <setup|sync-labels|ecosystem-init|ecosystem-add>
 |
@@ -229,7 +230,7 @@ rdf/                                 # Repository root
 - 38 commands under `/r-` namespace (22 lifecycle + 16 utility)
 - Unified CLI (`rdf generate`, `rdf deploy`, `rdf profile`, `rdf init`, `rdf doctor`,
   `rdf state`, `rdf tokens`, `rdf refresh`, `rdf sync`, `rdf github`, `rdf migrate`,
-  `rdf run`, `rdf review`, `rdf account`, `rdf shell`)
+  `rdf run`, `rdf review`, `rdf account`, `rdf peers`, `rdf shell`)
 - Tool-specific adapters (Claude Code, Claude Plugin, Agent Skills, Gemini CLI, AGENTS.md; Codex and Antigravity CLI served by the Agent Skills + AGENTS.md composite)
 - Governance initialization via `/r-init` with profile-based templates
 - GitHub Issues + Projects v2 integration
